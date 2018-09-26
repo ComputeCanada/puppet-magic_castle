@@ -208,28 +208,19 @@ node /^mgmt\d+$/ {
   }
 
   # Slurm Controller
-  package { ['slurm-slurmctld']:
-    ensure => 'installed',
-  }
-  service { 'slurmctld':
-    ensure  => 'running',
-    enable  => true,
-    require => Package['slurm-slurmctld']
-  }
-
+  include slurm::controller
 }
 
 node /^login\d+$/ {
   include common
   include client
-  # JupyterHub
   include jupyterhub
-
 }
 
 node /^node\d+$/ {
   include common
   include client
+  include slurm::node
 
   file_line { 'kmod_nvidia_exclude':
     ensure => present,
@@ -240,27 +231,6 @@ node /^node\d+$/ {
   package { 'kmod-nvidia-390.48':
     ensure  => 'installed',
     require => File_line['kmod_nvidia_exclude']
-  }
-
-  package { 'slurm-slurmd':
-    ensure => 'installed'
-  }
-
-  service { 'slurmd':
-    ensure  => 'running',
-    enable  => 'true',
-    require => Package['slurm-slurmd']
-  }
-
-  exec { 'slurm_config':
-    command => "/bin/flock /etc/slurm/node.conf.lock /usr/bin/sed -i \"s/NodeName=$hostname .*/$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)/g\" /etc/slurm/node.conf",
-    unless  => "/usr/bin/grep -q \"$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)\" /etc/slurm/node.conf"
-  }
-
-  exec { 'scontrol reconfigure':
-    path => ['/usr/bin'],
-    subscribe => Exec['slurm_config'],
-    refreshonly => true
   }
 
 }

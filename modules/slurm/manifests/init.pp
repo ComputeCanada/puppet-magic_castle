@@ -5,7 +5,7 @@ class slurm::base (String $munge_key) {
     gid    =>  '2001'
   }
 
-  user { 'slurm': 
+  user { 'slurm':
     ensure  => 'present',
     groups  => 'slurm',
     uid     => '2001',
@@ -20,7 +20,7 @@ class slurm::base (String $munge_key) {
     gid    =>  '2002'
   }
 
-  user { 'munge': 
+  user { 'munge':
     ensure  => 'present',
     groups  => 'munge',
     uid     => '2002',
@@ -134,5 +134,39 @@ END
     mode          => '0755',
     checksum      => 'md5',
     checksum_value => 'ff2beaa7be1ec0238fd621938f31276c',
+  }
+}
+
+class slurm::controller {
+  package { ['slurm-slurmctld']:
+    ensure => 'installed',
+  }
+  service { 'slurmctld':
+    ensure  => 'running',
+    enable  => true,
+    require => Package['slurm-slurmctld']
+  }
+}
+
+class slurm::node {
+  package { 'slurm-slurmd':
+    ensure => 'installed'
+  }
+
+  service { 'slurmd':
+    ensure  => 'running',
+    enable  => 'true',
+    require => Package['slurm-slurmd']
+  }
+
+  exec { 'slurm_config':
+    command => "/bin/flock /etc/slurm/node.conf.lock /usr/bin/sed -i \"s/NodeName=$hostname .*/$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)/g\" /etc/slurm/node.conf",
+    unless  => "/usr/bin/grep -q \"$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)\" /etc/slurm/node.conf"
+  }
+
+  exec { 'scontrol reconfigure':
+    path => ['/usr/bin'],
+    subscribe => Exec['slurm_config'],
+    refreshonly => true
   }
 }
