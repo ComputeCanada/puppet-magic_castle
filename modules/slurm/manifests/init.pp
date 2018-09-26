@@ -170,4 +170,11 @@ class slurm::node {
     subscribe => Exec['slurm_config'],
     refreshonly => true
   }
+
+  exec { "scontrol_update_state":
+    command => "scontrol update nodename=$hostname state=idle",
+    path => ['/usr/bin'],
+    subscribe => Service['slurmd'],
+    refreshonly => true
+  }
 }
