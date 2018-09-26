@@ -60,9 +60,7 @@ class common {
     protect  => "false"
   }
 
-  class { 'slurm::base':
-    munge_key => "abcdefghijklmnopqrstuvwxyz012345"
-  }
+  include slurm::base
 }
 
 class client {
@@ -76,54 +74,9 @@ class client {
   }
 
   # FreeIPA
-  $admin_passwd = "abcdefghijk0123456"
-  $domain = "phoenix.calculquebec.cloud"
-  $mgmt01_ip = "10.0.0.9"
-
-  package { 'ipa-client':
-    ensure => 'installed',
-    notify => Service['dbus']
-  }
-
-  file_line { 'resolv_search':
-    ensure => present,
-    path   => "/etc/resolv.conf",
-    match  => "search",
-    line   => "search $domain"
-  }
-  file_line { 'resolv_nameserver':
-    ensure  => present,
-    path    => "/etc/resolv.conf",
-    after   => "search $domain",
-    line    => "nameserver $mgmt01_ip",
-    require => File_line['resolv_search']
-  }
-
-  exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname $hostname.$domain",
-    unless  => "/usr/bin/test `hostname` = $hostname.$domain"
-  }
-
-  # TODO: add chattr +i /etc/resolv.conf
-  exec { 'ipa-client-install':
-    command => "/sbin/ipa-client-install \
-                --mkhomedir \
-                --ssh-trust-dns \
-                --enable-dns-updates \
-                --unattended \
-                --force-join \
-                -p admin \
-                -w $admin_passwd",
-    tries => 10,
-    try_sleep => 30,
-    require => [File_line['resolv_nameserver'],
-                File_line['resolv_search'],
-                Exec['set_hostname']],
-    creates => '/etc/ipa/default.conf'
-  }
+  include freeipa::client
 
   # NFS
-  $server = 'mgmt01'
   class { '::nfs':
     client_enabled => true,
     nfs_v4_client  => true,
@@ -190,35 +143,7 @@ node /^mgmt\d+$/ {
   $cidr    = "$network/$masklen"
 
   # FreeIPA
-  package { "ipa-server-dns":
-    ensure => "installed",
-    notify => Service['dbus']
-  }
-
-  $admin_passwd = "abcdefghijk0123456"
-  $domain = "phoenix.calculquebec.cloud"
-  $realm = upcase($domain)
-  $ip = $facts['networking']['ip']
-  exec { 'ipa-server-install':
-    command => "/sbin/ipa-server-install \
-                --setup-dns \
-                --hostname $hostname.$domain \
-                --ds-password $admin_passwd \
-                --admin-password $admin_passwd \
-                --mkhomedir \
-                --ssh-trust-dns \
-                --unattended \
-                --forwarder=1.1.1.1 \
-                --forwarder=8.8.8.8 \
-                --ip-address=$ip \
-                --no-host-dns \
-                --no-dnssec-validation \
-                --real=$realm",
-    creates => '/etc/ipa/default.conf',
-    timeout => 0,
-    require => [Package['ipa-server-dns'],
-                Class['::swap_file']]
-  }
+  include freeipa::server
 
   # rsyslog
   file_line { 'rsyslog_modload_imtcp':
