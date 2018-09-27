@@ -14,7 +14,7 @@ SelectTypeParameters=CR_Core_Memory
 include /etc/slurm/node.conf
 
 # PARTITION CONFIGURATIONS
-PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES
+PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256
 
 SlurmctldPort=6817
 SlurmdPort=6818
