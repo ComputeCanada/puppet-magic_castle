@@ -77,7 +77,7 @@ class freeipa::server (String $admin_passwd,
     timeout => 0,
     require => [Package['ipa-server-dns'],
                 Class['::swap_file']],
-    before  => File['resolv_search']
+    before  => File_line['resolv_search']
   }
 
   file_line { 'resolv_search':
