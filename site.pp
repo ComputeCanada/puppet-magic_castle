@@ -26,6 +26,10 @@ class common {
     },
   }
 
+  package { 'systemd':
+    ensure => 'latest'
+  }
+
   package { 'vim':
     ensure => 'installed'
   }
@@ -97,10 +101,6 @@ class client {
   nfs::client::mount { '/etc/slurm':
       server => 'mgmt01',
       share => 'slurm'
-  }
-
-  file { ['/etc/rc.d/rc0.d/K90network', '/etc/rc.d/rc6.d/K90network']:
-    ensure => 'absent'
   }
 
   # CVMFS
