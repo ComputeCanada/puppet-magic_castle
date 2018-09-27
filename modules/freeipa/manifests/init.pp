@@ -76,6 +76,23 @@ class freeipa::server (String $admin_passwd,
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns'],
-                Class['::swap_file']]
+                Class['::swap_file']],
+    before  => File['resolv_search']
   }
+
+  file_line { 'resolv_search':
+    ensure => present,
+    path   => "/etc/resolv.conf",
+    match  => "search",
+    line   => "search $domain_name"
+  }
+
+  file_line { 'resolv_nameserver':
+    ensure  => present,
+    path    => "/etc/resolv.conf",
+    after   => "search $domain_name",
+    line    => "nameserver 127.0.0.1",
+    require => File_line['resolv_search']
+  }
+
 }
