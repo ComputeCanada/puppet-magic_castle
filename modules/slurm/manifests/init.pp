@@ -1,5 +1,4 @@
-
-class slurm::base (String $munge_key) {
+class slurm::base (String $cluster_name, String $munge_key) {
   group { 'slurm':
     ensure => 'present',
     gid    =>  '2001'
@@ -72,7 +71,7 @@ class slurm::base (String $munge_key) {
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => file('slurm/slurm.conf')
+    content => epp('slurm/slurm.conf', {'cluster_name' => $cluster_name})
   }
 
   $node_template = @(END)
