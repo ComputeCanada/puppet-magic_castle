@@ -64,7 +64,8 @@ class slurm::base (String $munge_key) {
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => file('slurm/epilog')
+    content => file('slurm/epilog'),
+    mode    => "0755"
   }
 
   file { '/etc/slurm/slurm.conf':
