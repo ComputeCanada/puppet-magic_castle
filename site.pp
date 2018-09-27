@@ -99,6 +99,10 @@ class client {
       share => 'slurm'
   }
 
+  file { ['/etc/rc.d/rc0.d/K90network', '/etc/rc.d/rc6.d/K90network']:
+    ensure => 'absent'
+  }
+
   # CVMFS
   package { 'cvmfs-repo':
     name     => 'cvmfs-release-2-6.noarch',
