@@ -219,7 +219,9 @@ node /^login\d+$/ {
 
 node /^node\d+$/ {
   include common
-  include client
+  class { 'client':
+    before => Class['slurm::node']
+  }
   include slurm::node
 
   file_line { 'kmod_nvidia_exclude':
