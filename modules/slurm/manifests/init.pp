@@ -44,7 +44,7 @@ class slurm::base (String $cluster_name, String $munge_key) {
     ensure  => 'directory',
     owner   => 'slurm',
     group   => 'slurm',
-    seltype => 'etc_t'
+    seltype => 'usr_t'
   }
 
   file { '/etc/munge':
