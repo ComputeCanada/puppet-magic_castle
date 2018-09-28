@@ -67,7 +67,7 @@ class freeipa::guest_accounts(String $admin_passwd,
       command => "/sbin/ipa_create_user.sh $user",
       creates => "/home/$user",
       env     => ["IPA_ADMIN_PASSWD=$admin_passwd",
-                  "IPA_GUEST_PASSWD=$guest_passwd"]
+                  "IPA_GUEST_PASSWD=$guest_passwd"],
       require => [File['/sbin/ipa_create_user.sh'],
                   Selinux::Module['mkhomedir_helper'],
                   Exec['ipa-server-install']]
