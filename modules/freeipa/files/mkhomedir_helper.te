@@ -1,4 +1,4 @@
-module my-mkhomedirhelper 1.0;
+module mkhomedir_helper 1.0;
 
 require {
 	type oddjob_mkhomedir_t;
