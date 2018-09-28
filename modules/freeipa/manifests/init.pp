@@ -53,7 +53,7 @@ class freeipa::guest_accounts(String $admin_passwd,
                               String $prefix = "user")
 {
   file { '/sbin/ipa_create_user.sh':
-    source => 'puppet:///modules/freeipa/create_user.sh',
+    source => 'puppet:///modules/freeipa/ipa_create_user.sh',
     mode   => '0700'
   }
 
