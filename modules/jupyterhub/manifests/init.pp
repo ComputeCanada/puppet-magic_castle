@@ -1,4 +1,5 @@
-class jupyterhub (String $domain_name = "") {
+class jupyterhub (String $domain_name = "",
+                  Bool   $use_ssl = True) {
   selinux::module { 'login':
     ensure    => 'present',
     source_te => 'puppet:///modules/jupyterhub/login.te',
@@ -6,7 +7,7 @@ class jupyterhub (String $domain_name = "") {
   }
   selinux::boolean { 'httpd_can_network_connect': }
 
-  user { 'jupyterhub': 
+  user { 'jupyterhub':
     ensure  => 'present',
     groups  => 'jupyterhub',
     uid     => '2003',
@@ -19,7 +20,7 @@ class jupyterhub (String $domain_name = "") {
     gid    =>  '2003'
   }
 
-  class { 'nodejs': 
+  class { 'nodejs':
     repo_url_suffix => '8.x',
   }
 
@@ -71,12 +72,12 @@ class jupyterhub (String $domain_name = "") {
     source => 'puppet:///modules/jupyterhub/submit.sh',
     mode   => '0644',
     owner  => 'jupyterhub'
-  }  
+  }
   exec { 'jupyter_tarball':
     command => "/opt/jupyterhub/bin/build_venv_tarball.sh",
     creates => '/project/jupyter_singleuser.tar.gz',
     require => [File['build_venv_tarball.sh'],
-                NFS::Client::Mount['/project'], 
+                NFS::Client::Mount['/project'],
                 Service['autofs']]
   }
 
@@ -100,10 +101,10 @@ class jupyterhub (String $domain_name = "") {
     require => Exec['jupyterhub_pip']
   }
 
-  service { 'jupyterhub': 
+  service { 'jupyterhub':
     ensure  => running,
     enable  => true,
-    require => [Exec['jupyterhub_batchspawner'], 
+    require => [Exec['jupyterhub_batchspawner'],
                 File['jupyterhub.service'],
                 File['jupyterhub_config.py'],
                 File['submit.sh']]
@@ -113,6 +114,7 @@ class jupyterhub (String $domain_name = "") {
     path    => '/etc/nginx/conf.d/jupyterhub.conf',
     content => epp('jupyterhub/jupyterhub.conf', {'domain_name' => $domain_name}),
     mode    => '0644',
+    replace => ! $use_ssl,
     notify  => Service['nginx']
   }
 
@@ -137,7 +139,7 @@ class jupyterhub (String $domain_name = "") {
     enable  => true
   }
 
-  if $domain_name != "" {
+  if $domain_name != "" and $use_ssl {
     exec { 'cerbot-nginx':
       command => "/bin/certbot --nginx --register-unsafely-without-email --noninteractive --redirect --agree-tos --domains $domain_name",
       creates => "/etc/letsencrypt/live/$domain_name/cert.pem",
