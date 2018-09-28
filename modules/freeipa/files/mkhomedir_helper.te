@@ -1,0 +1,7 @@
+#============= oddjob_mkhomedir_t ==============
+
+#!!!! This avc is allowed in the current policy
+allow oddjob_mkhomedir_t usr_t:dir { add_name create setattr write };
+
+#!!!! This avc is allowed in the current policy
+allow oddjob_mkhomedir_t usr_t:file { create setattr write };
