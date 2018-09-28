@@ -1,3 +1,12 @@
+module my-mkhomedirhelper 1.0;
+
+require {
+	type oddjob_mkhomedir_t;
+	type usr_t;
+	class file { create setattr write };
+	class dir { add_name create setattr write };
+}
+
 #============= oddjob_mkhomedir_t ==============
 
 #!!!! This avc is allowed in the current policy
