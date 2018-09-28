@@ -52,6 +52,12 @@ class freeipa::guest_accounts(String $admin_passwd,
                               Integer $nb_accounts,
                               String $prefix = "user")
 {
+  selinux::module { 'mkhomedir_helper':
+    ensure    => 'present',
+    source_te => 'puppet:///modules/freeipa/mkhomedir_helper.te',
+    builder   => 'refpolicy'
+  }
+
   file { '/sbin/ipa_create_user.sh':
     source => 'puppet:///modules/freeipa/ipa_create_user.sh',
     mode   => '0700'
@@ -61,21 +67,15 @@ class freeipa::guest_accounts(String $admin_passwd,
     exec{ "add_$user":
       command => "/sbin/ipa_create_user.sh $admin_passwd $user $guest_passwd",
       creates => "/home/$user",
-      require => File['/sbin/ipa_create_user.sh']
+      require => [File['/sbin/ipa_create_user.sh'],
+                  Selinux::Module['mkhomedir_helper']]
     }
   }
-
 }
 
 class freeipa::server (String $admin_passwd,
                        String $domain_name) 
 {
-
-  selinux::module { 'mkhomedir_helper':
-    ensure    => 'present',
-    source_te => 'puppet:///modules/freeipa/mkhomedir_helper.te',
-    builder   => 'refpolicy'
-  }
 
   package { "ipa-server-dns":
     ensure => "installed",
