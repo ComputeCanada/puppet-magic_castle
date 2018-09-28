@@ -51,6 +51,12 @@ class freeipa::server (String $admin_passwd,
                        String $domain_name) 
 {
 
+  selinux::module { 'mkhomedir_helper':
+    ensure    => 'present',
+    source_te => 'puppet:///modules/freeipa/mkhomedir_helper.te',
+    builder   => 'refpolicy'
+  }
+
   package { "ipa-server-dns":
     ensure => "installed",
     notify => Service['dbus']
