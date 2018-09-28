@@ -28,7 +28,6 @@ class freeipa::client(String $admin_passwd,
     unless  => "/usr/bin/test `hostname` = $hostname.$domain_name"
   }
 
-  # TODO: add chattr +i /etc/resolv.conf
   exec { 'ipa-client-install':
     command => "/sbin/ipa-client-install \
                 --mkhomedir \
