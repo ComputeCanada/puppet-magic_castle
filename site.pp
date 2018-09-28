@@ -185,10 +185,12 @@ node /^mgmt\d+$/ {
   }
 
   # Shared folders
-  file { '/scratch' :
-    ensure => directory,
+  file { ['/project', '/scratch'] :
+    ensure  => directory,
+    seltype => 'usr_t'
   }
-  file { ['/project', '/project/6002799', '/project/6002799/photos'] :
+
+  file { ['/project/6002799', '/project/6002799/photos'] :
     ensure => directory
   }
 
