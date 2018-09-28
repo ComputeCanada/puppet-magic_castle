@@ -1,5 +1,5 @@
 class jupyterhub (String $domain_name = "",
-                  Bool   $use_ssl = True) {
+                  Boolean $use_ssl = true) {
   selinux::module { 'login':
     ensure    => 'present',
     source_te => 'puppet:///modules/jupyterhub/login.te',
