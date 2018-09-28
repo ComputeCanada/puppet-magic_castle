@@ -5,6 +5,9 @@ class common {
     mode => 'enforcing',
     type => 'targeted',
   }
+  package { 'selinux-policy':
+    ensure => 'latest'
+  }
 
   service { 'rsyslog':
     ensure => running,
