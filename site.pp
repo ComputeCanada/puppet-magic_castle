@@ -151,6 +151,7 @@ node /^mgmt\d+$/ {
 
   # FreeIPA
   include freeipa::server
+  include freeipa::guest_accounts
 
   # rsyslog
   file_line { 'rsyslog_modload_imtcp':

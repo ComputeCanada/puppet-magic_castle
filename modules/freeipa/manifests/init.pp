@@ -47,6 +47,26 @@ class freeipa::client(String $admin_passwd,
   }
 }
 
+class freeipa::guest_accounts(String $admin_passwd,
+                              String $guest_passwd,
+                              Integer $nb_accounts,
+                              String $prefix = "user")
+{
+  file { '/sbin/ipa_create_user.sh':
+    source => 'puppet:///modules/freeipa/create_user.sh'
+    mode   => '0700'
+  }
+
+  range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
+    exec{ "add_$user":
+      command => "/sbin/ipa_create_user.sh $admin_passwd $user $guest_passwd",
+      creates => "/home/$user",
+      require => File['/sbin/ipa_create_user.sh']
+    }
+  }
+
+}
+
 class freeipa::server (String $admin_passwd,
                        String $domain_name) 
 {
