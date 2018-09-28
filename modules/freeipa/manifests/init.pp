@@ -64,13 +64,13 @@ class freeipa::guest_accounts(String $admin_passwd,
 
   range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
     exec{ "add_$user":
-      command => "/sbin/ipa_create_user.sh $user",
-      creates => "/home/$user",
-      env     => ["IPA_ADMIN_PASSWD=$admin_passwd",
-                  "IPA_GUEST_PASSWD=$guest_passwd"],
-      require => [File['/sbin/ipa_create_user.sh'],
-                  Selinux::Module['mkhomedir_helper'],
-                  Exec['ipa-server-install']]
+      command     => "/sbin/ipa_create_user.sh $user",
+      creates     => "/home/$user",
+      environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
+                      "IPA_GUEST_PASSWD=$guest_passwd"],
+      require     => [File['/sbin/ipa_create_user.sh'],
+                      Selinux::Module['mkhomedir_helper'],
+                      Exec['ipa-server-install']]
     }
   }
 }
