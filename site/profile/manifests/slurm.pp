@@ -66,7 +66,7 @@ class profile::slurm::base (String $cluster_name,
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => 'puppet:///modules/profile/slurm/epilog'
+    content => 'puppet:///modules/profile/slurm/epilog',
     mode    => "0755"
   }
 
