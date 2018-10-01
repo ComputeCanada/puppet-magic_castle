@@ -2,6 +2,15 @@ class profile::freeipa::base (String $admin_passwd,
                               String $dns_ip,
                               String $domain_name)
 {
+  package { 'systemd':
+    ensure => 'latest'
+  }
+
+  service { 'dbus':
+    ensure => running,
+    enable => true
+  }
+
   file_line { 'resolv_search':
     ensure => present,
     path   => "/etc/resolv.conf",

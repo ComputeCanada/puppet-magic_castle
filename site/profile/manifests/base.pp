@@ -9,11 +9,6 @@ class profile::base {
     ensure => 'latest'
   }
 
-  service { 'dbus':
-    ensure => running,
-    enable => true
-  }
-
   class { '::swap_file':
     files => {
       '/mnt/swap' => {
@@ -22,10 +17,6 @@ class profile::base {
         swapfilesize => '1 GB',
       },
     },
-  }
-
-  package { 'systemd':
-    ensure => 'latest'
   }
 
   package { 'vim':
