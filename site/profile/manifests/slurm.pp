@@ -1,4 +1,6 @@
-class slurm::base (String $cluster_name, String $munge_key) {
+class profile::slurm::base (String $cluster_name,
+                            String $munge_key)
+{
   group { 'slurm':
     ensure => 'present',
     gid    =>  '2001'
@@ -24,7 +26,7 @@ class slurm::base (String $cluster_name, String $munge_key) {
     groups  => 'munge',
     uid     => '2002',
     home    => '/var/lib/munge',
-    comment =>  'MUNGE Uid N Gid Emporium',
+    comment => 'MUNGE Uid N Gid Emporium',
     shell   => '/sbin/nologin',
     before  => Package['munge']
   }
@@ -57,14 +59,14 @@ class slurm::base (String $cluster_name, String $munge_key) {
     ensure => 'present',
     owner  => 'slurm',
     group  => 'slurm',
-    content => file('slurm/cgroup.conf')
+    content => 'puppet:///modules/profile/slurm/cgroup.conf'
   }
 
   file { '/etc/slurm/epilog':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => file('slurm/epilog'),
+    content => 'puppet:///modules/profile/slurm/epilog'
     mode    => "0755"
   }
 
@@ -72,7 +74,7 @@ class slurm::base (String $cluster_name, String $munge_key) {
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => epp('slurm/slurm.conf', {'cluster_name' => $cluster_name})
+    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name})
   }
 
   $node_template = @(END)
@@ -138,7 +140,9 @@ END
   }
 }
 
-class slurm::controller {
+class profile::slurm::controller {
+  include profile::slurm::base
+
   package { ['slurm-slurmctld']:
     ensure => 'installed',
   }
@@ -149,7 +153,9 @@ class slurm::controller {
   }
 }
 
-class slurm::node {
+class profile::slurm::node {
+  include profile::slurm::base
+
   package { 'slurm-slurmd':
     ensure => 'installed'
   }
@@ -181,4 +187,8 @@ class slurm::node {
     subscribe => Service['slurmd'],
     refreshonly => true
   }
+}
+
+class profile::slurm::submitter {
+  include profile::slurm::base
 }

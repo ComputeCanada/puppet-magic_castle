@@ -11,7 +11,7 @@ node /^mgmt\d+$/ {
   include profile::nfs::server
   include profile::rsyslog::server
   include profile::squid::server
-  include slurm::controller
+  include profile::slurm::controller
 }
 
 node /^login\d+$/ {
@@ -20,6 +20,7 @@ node /^login\d+$/ {
   include profile::nfs::client
   include profile::cvmfs::client
   include profile::rsyslog::client
+  include profile::slurm::submitter
   include jupyterhub
 }
 
@@ -30,5 +31,5 @@ node /^node\d+$/ {
   include profile::rsyslog::client
   include profile::cvmfs::client
   include profile::gpu
-  include slurm::node
+  include profile::slurm::node
 }
