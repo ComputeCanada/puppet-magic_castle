@@ -24,15 +24,15 @@ class profile::freeipa::base (String $admin_passwd,
     after   => "search $domain_name",
     line    => "nameserver $dns_ip",
     require => File_line['resolv_search']
-  }  
+  }
 }
 
 class profile::freeipa::client
 {
   include profile::freeipa::base
-  $domain_name = hiera("profile::freeipa::base::domain_name")
-  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")
-  
+  $domain_name = lookup("profile::freeipa::base::domain_name")
+  $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
+
   package { 'ipa-client':
     ensure => 'installed',
     notify => Service['dbus']
@@ -65,7 +65,7 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
                                        Integer $nb_accounts,
                                        String $prefix = "user")
 {
-  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")
+  $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
 
   selinux::module { 'mkhomedir_helper':
     ensure    => 'present',
@@ -96,8 +96,8 @@ class profile::freeipa::server
   class { 'profile::freeipa::base':
     dns_ip => '127.0.0.1'
   }
-  $domain_name = hiera("profile::freeipa::base::domain_name")
-  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")  
+  $domain_name = lookup("profile::freeipa::base::domain_name")
+  $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
 
   package { "ipa-server-dns":
     ensure => "installed",

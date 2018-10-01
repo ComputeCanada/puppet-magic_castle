@@ -5,6 +5,7 @@ class profile::base {
     mode => 'enforcing',
     type => 'targeted',
   }
+  
   package { 'selinux-policy':
     ensure => 'latest'
   }
