@@ -1,5 +1,5 @@
 class profile::base {
-    include stdlib
+  include stdlib
 
   class { selinux:
     mode => 'enforcing',
