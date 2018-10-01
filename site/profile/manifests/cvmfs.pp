@@ -20,7 +20,7 @@ class profile::cvmfs::client (String $squid_server = "mgmt01") {
 
   file { '/etc/cvmfs/default.local':
     ensure  => 'present',
-    content => 'puppet:///modules/profile/cvmfs/default.local',
+    content => epp('profile/cvmfs/default.local', { 'squid_server' => $squid_server })
     require => Package['cvmfs']
   }
 
