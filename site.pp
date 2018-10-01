@@ -7,10 +7,10 @@ node default {
 node /^mgmt\d+$/ {
   require profile::base
   require profile::freeipa::server
+  include profile::freeipa::guest_accounts
   include profile::nfs::server
   include profile::rsyslog::server
   include profile::squid::server
-  include freeipa::guest_accounts
   include slurm::controller
 }
 

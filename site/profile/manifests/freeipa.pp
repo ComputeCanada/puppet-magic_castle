@@ -52,9 +52,9 @@ class profile::freeipa::client
   }
 }
 
-class freeipa::guest_accounts(String $guest_passwd,
-                              Integer $nb_accounts,
-                              String $prefix = "user")
+class profile::freeipa::guest_accounts(String $guest_passwd,
+                                       Integer $nb_accounts,
+                                       String $prefix = "user")
 {
   $admin_passwd = hiera("profile::freeipa::base::admin_passwd")
 
