@@ -5,7 +5,7 @@ class profile::base {
     mode => 'enforcing',
     type => 'targeted',
   }
-  
+
   package { 'selinux-policy':
     ensure => 'latest'
   }
@@ -50,6 +50,4 @@ class profile::base {
     gpgkey   => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-elrepo.org",
     protect  => "false"
   }
-
-  include slurm::base
 }
