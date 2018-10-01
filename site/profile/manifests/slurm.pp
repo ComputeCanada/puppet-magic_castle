@@ -161,9 +161,12 @@ class profile::slurm::node {
   }
 
   service { 'slurmd':
-    ensure  => 'running',
-    enable  => 'true',
-    require => Package['slurm-slurmd']
+    ensure    => 'running',
+    enable    => 'true',
+    require   => Package['slurm-slurmd'],
+    subscribe => [File['/etc/slurm/cgroup.conf'],
+                  File['/etc/slurm/slurm.conf'],
+                  File['/etc/slurm/plugstack.conf']]
   }
 
   file { '/localscratch':
