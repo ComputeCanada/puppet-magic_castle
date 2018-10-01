@@ -23,6 +23,9 @@ class profile::nfs::client (String $server = "mgmt01") {
 }
 
 class profile::nfs::server {
+  $masklen = netmask_to_masklen("$netmask")
+  $cidr    = "$network/$masklen"
+
   file { ['/project', '/scratch'] :
     ensure  => directory,
     seltype => 'usr_t'
