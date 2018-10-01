@@ -9,11 +9,6 @@ class profile::base {
     ensure => 'latest'
   }
 
-  service { 'rsyslog':
-    ensure => running,
-    enable => true
-  }
-
   service { 'dbus':
     ensure => running,
     enable => true
@@ -34,9 +29,6 @@ class profile::base {
   }
 
   package { 'vim':
-    ensure => 'installed'
-  }
-  package { 'rsyslog':
     ensure => 'installed'
   }
 

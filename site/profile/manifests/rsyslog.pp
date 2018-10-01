@@ -1,4 +1,15 @@
+class profile::rsyslog::base {
+  package { 'rsyslog':
+    ensure => 'installed'
+  }
+  service { 'rsyslog':
+    ensure => running,
+    enable => true
+  }
+}
+
 class profile::rsyslog::client (String $server = "mgmt01") {
+  include profile::rsyslog::base
   file_line { 'remote_host':
     ensure => present,
     path   => "/etc/rsyslog.conf",
@@ -9,6 +20,7 @@ class profile::rsyslog::client (String $server = "mgmt01") {
 }
 
 class profile::rsyslog::server {
+  include profile::rsyslog::base
   file_line { 'rsyslog_modload_imtcp':
     ensure => present,
     path   => "/etc/rsyslog.conf",
