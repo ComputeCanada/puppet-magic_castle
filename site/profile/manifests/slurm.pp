@@ -59,14 +59,14 @@ class profile::slurm::base (String $cluster_name,
     ensure => 'present',
     owner  => 'slurm',
     group  => 'slurm',
-    content => 'puppet:///modules/profile/slurm/cgroup.conf'
+    source => 'puppet:///modules/profile/slurm/cgroup.conf'
   }
 
   file { '/etc/slurm/epilog':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => 'puppet:///modules/profile/slurm/epilog',
+    source  => 'puppet:///modules/profile/slurm/epilog',
     mode    => "0755"
   }
 
