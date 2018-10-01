@@ -181,7 +181,8 @@ class profile::slurm::node {
   exec { 'scontrol reconfigure':
     path => ['/usr/bin'],
     subscribe => Exec['slurm_config'],
-    refreshonly => true
+    refreshonly => true,
+    returns     => [0, 1]
   }
 
   exec { "scontrol_update_state":
