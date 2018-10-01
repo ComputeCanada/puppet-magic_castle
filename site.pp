@@ -6,7 +6,7 @@ node default {
 
 node /^mgmt\d+$/ {
   require profile::base
-  require freeipa::server
+  require profile::freeipa::server
   include profile::nfs::server
   include profile::rsyslog::server
   include profile::squid::server
@@ -16,7 +16,7 @@ node /^mgmt\d+$/ {
 
 node /^login\d+$/ {
   require profile::base
-  require freeipa::client
+  require profile::freeipa::client
   include profile::nfs::client
   include profile::cvmfs::client
   include profile::rsyslog::client
@@ -25,7 +25,7 @@ node /^login\d+$/ {
 
 node /^node\d+$/ {
   require profile::base
-  require freeipa::client
+  require profile::freeipa::client
   require profile::nfs::client
   include profile::rsyslog::client
   include profile::cvmfs::client

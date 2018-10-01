@@ -1,13 +1,7 @@
-class freeipa::client(String $admin_passwd,
-                      String $dns_ip, 
-                      String $domain_name) 
+class profile::freeipa::base (String $admin_passwd,
+                              String $dns_ip,
+                              String $domain_name)
 {
-  
-  package { 'ipa-client':
-    ensure => 'installed',
-    notify => Service['dbus']
-  }
-
   file_line { 'resolv_search':
     ensure => present,
     path   => "/etc/resolv.conf",
@@ -21,6 +15,18 @@ class freeipa::client(String $admin_passwd,
     after   => "search $domain_name",
     line    => "nameserver $dns_ip",
     require => File_line['resolv_search']
+  }  
+}
+
+class profile::freeipa::client
+{
+  include profile::freeipa::base
+  $domain_name = hiera("profile::freeipa::base::domain_name")
+  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")
+  
+  package { 'ipa-client':
+    ensure => 'installed',
+    notify => Service['dbus']
   }
 
   exec { 'set_hostname':
@@ -46,19 +52,20 @@ class freeipa::client(String $admin_passwd,
   }
 }
 
-class freeipa::guest_accounts(String $admin_passwd,
-                              String $guest_passwd,
+class freeipa::guest_accounts(String $guest_passwd,
                               Integer $nb_accounts,
                               String $prefix = "user")
 {
+  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")
+
   selinux::module { 'mkhomedir_helper':
     ensure    => 'present',
-    source_te => 'puppet:///modules/freeipa/mkhomedir_helper.te',
+    source_te => 'puppet:///modules/profile/freeipa/mkhomedir_helper.te',
     builder   => 'refpolicy'
   }
 
   file { '/sbin/ipa_create_user.sh':
-    source => 'puppet:///modules/freeipa/ipa_create_user.sh',
+    source => 'puppet:///modules/profile/freeipa/ipa_create_user.sh',
     mode   => '0700'
   }
 
@@ -75,9 +82,13 @@ class freeipa::guest_accounts(String $admin_passwd,
   }
 }
 
-class freeipa::server (String $admin_passwd,
-                       String $domain_name) 
+class profile::freeipa::server
 {
+  class { 'profile::freeipa::base':
+    dns_ip => '127.0.0.1'
+  }
+  $domain_name = hiera("profile::freeipa::base::domain_name")
+  $admin_passwd = hiera("profile::freeipa::base::admin_passwd")  
 
   package { "ipa-server-dns":
     ensure => "installed",
@@ -107,20 +118,4 @@ class freeipa::server (String $admin_passwd,
                 Class['::swap_file']],
     before  => File_line['resolv_search']
   }
-
-  file_line { 'resolv_search':
-    ensure => present,
-    path   => "/etc/resolv.conf",
-    match  => "search",
-    line   => "search $domain_name"
-  }
-
-  file_line { 'resolv_nameserver':
-    ensure  => present,
-    path    => "/etc/resolv.conf",
-    after   => "search $domain_name",
-    line    => "nameserver 127.0.0.1",
-    require => File_line['resolv_search']
-  }
-
 }
