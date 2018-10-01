@@ -26,7 +26,7 @@ class profile::cvmfs::client (String $squid_server = "mgmt01") {
 
   file { '/etc/profile.d/z-00-computecanada.sh':
     ensure  => 'present',
-    source => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh',
+    source  => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh',
     require => File['/etc/cvmfs/default.local']
   }
 
