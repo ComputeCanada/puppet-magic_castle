@@ -25,11 +25,13 @@ node /^login\d+$/ {
 }
 
 node /^node\d+$/ {
-  require profile::base
-  require profile::freeipa::client
-  require profile::nfs::client
+  include profile::base
+  include profile::freeipa::client
+  include profile::nfs::client
   include profile::rsyslog::client
   include profile::cvmfs::client
   include profile::gpu
   include profile::slurm::node
+
+  Class['profile::freeipa::client'] -> Class['profile::nfs::client'] -> Class['profile::slurm::node']
 }
