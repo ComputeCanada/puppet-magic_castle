@@ -13,6 +13,6 @@ class profile::squid::server {
 
   file { '/etc/squid/squid.conf':
     ensure  => 'present',
-    content => epp('squid/squid.conf', {'cidr' => $cidr})
+    content => epp('profile/squid/squid.conf', {'cidr' => $cidr})
   }  
 }
