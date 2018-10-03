@@ -128,6 +128,11 @@ END
     require => Yumrepo['darrenboss-slurm']
   }
 
+  package { 'slurm-contribs':
+    ensure => 'installed',
+    require => Yumrepo['darrenboss-slurm']
+  }
+
   file { 'cc-tmpfs_mount.so':
     ensure        => 'present',
     source        => 'https://gist.github.com/cmd-ntrf/a9305513809e7c9a104f79f0f15ec067/raw/da71a07f455206e21054f019d26a277daeaa0f00/cc-tmpfs_mounts.so',
