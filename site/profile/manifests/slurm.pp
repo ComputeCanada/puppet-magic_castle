@@ -191,7 +191,7 @@ AccountingStorageType=accounting_storage/slurmdbd
     enable  => true,
     require => [Package['slurm-slurmdbd'],
                 File['/etc/slurm/slurmdbd.conf'],
-                File['/etc/slurm/slurm.conf']],
+                Concat::Fragment['slurm.conf_slurmdbd']],
     before  => Service['slurmctld']
   }
 
