@@ -216,8 +216,8 @@ AccountingStorageType=accounting_storage/slurmdbd
   }
 
   # Add guest accounts to the accounting database
-  $nb_accounts = lookup('profile::freeipa::guest_accounts::nb_accounts', Integer, 'unique', 0)
-  $prefix      = lookup('profile::freeipa::guest_accounts::prefix', String, 'unique', 'user')
+  $nb_accounts = lookup({ name => 'profile::freeipa::guest_accounts::nb_accounts', default_value => 0 })
+  $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
   range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
     exec{ "slurm_add_$user":
       command     => "/usr/bin/sacctmgr add user $user Account=def-$cluster_name -i",
