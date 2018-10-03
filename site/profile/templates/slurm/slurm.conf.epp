@@ -1,6 +1,5 @@
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
-ControlMachine=mgmt01
 AuthType=auth/munge
 CryptoType=crypto/munge
 SlurmUser=slurm

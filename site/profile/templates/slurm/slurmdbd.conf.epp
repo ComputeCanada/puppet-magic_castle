@@ -1,0 +1,10 @@
+AuthType=auth/munge
+LogFile=/var/log/slurmdbd.log
+DbdHost=<%= $dbd_host %>
+DbdPort=6819
+SlurmUser=slurm
+StorageHost=localhost
+StorageUser=slurm
+StoragePass=<%= $storage_pass %>
+StorageLoc=slurm_acct_db
+StorageType=accounting_storage/mysql

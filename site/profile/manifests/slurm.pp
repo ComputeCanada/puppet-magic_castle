@@ -70,11 +70,17 @@ class profile::slurm::base (String $cluster_name,
     mode    => "0755"
   }
 
-  file { '/etc/slurm/slurm.conf':
-    ensure  => 'present',
+  concat { '/etc/slurm/slurm.conf':
     owner   => 'slurm',
     group   => 'slurm',
-    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name})
+    ensure  => 'present',
+    mode    => '0644'
+  }
+
+  concat::fragment { 'slurm.conf_header':
+    target  => '/etc/slurm/slurm.conf',
+    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
+    order   => '01'
   }
 
   $node_template = @(END)
@@ -145,6 +151,59 @@ END
   }
 }
 
+class profile::slurm::accounting {
+  class { 'mysql::server':
+    remove_default_accounts => true
+  }
+
+  $storage_pass = lookup('profile::slurm::accounting::password')
+  mysql::db { 'slurm_acct_db':
+    ensure  => present,
+    user     => 'slurm',
+    password => $storage_pass,
+    host     => 'localhost',
+    grant    => ['ALL'],
+  }
+
+  $slurm_conf = "
+AccountingStorageHost=$hostname
+AccountingStorageType=accounting_storage/slurmdbd
+"
+  concat::fragment { 'slurm.conf_slurmdbd':
+    target  => '/etc/slurm/slurm.conf',
+    order   => '50',
+    content => $slurm_conf
+  }
+
+  file { '/etc/slurm/slurmdbd.conf':
+    ensure  => present,
+    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $hostname, 'storage_pass' => $storage_pass}),
+    owner   => 'slurm',
+    mode    => '0600',
+  }
+
+  package { 'slurm-slurmdbd':
+    ensure => present
+  }
+
+  service { 'slurmdbd':
+    ensure  => running,
+    enable  => true,
+    require => [Package['slurm-slurmdbd'],
+                File['/etc/slurm/slurmdbd.conf'],
+                File['/etc/slurm/slurm.conf']],
+    before  => Service['slurmctld']
+  }
+
+  $cluster_name = lookup('profile::slurm::base::cluster_name')
+  exec { 'sacctmgr_add_cluster':
+    command => "/usr/bin/sacctmgr add cluster $cluster_name",
+    unless  => "/bin/test `/usr/bin/sacctmgr show cluster Names=$cluster_name -n | wc -l` == 1",
+    before  => Service['slurmctld']
+  }
+
+}
+
 class profile::slurm::controller {
   include profile::slurm::base
 
@@ -155,6 +214,12 @@ class profile::slurm::controller {
     ensure  => 'running',
     enable  => true,
     require => Package['slurm-slurmctld']
+  }
+
+  concat::fragment { 'slurm.conf_slurmctld':
+    target  => '/etc/slurm/slurm.conf',
+    order   => '10',
+    content => "ControlMachine=$hostname"
   }
 }
 
