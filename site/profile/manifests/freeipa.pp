@@ -79,7 +79,7 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
   }
 
   range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
-    exec{ "add_$user":
+    exec{ "ipa_add_$user":
       command     => "/sbin/ipa_create_user.sh $user",
       creates     => "/home/$user",
       environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
