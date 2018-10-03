@@ -213,6 +213,7 @@ AccountingStorageType=accounting_storage/slurmdbd
   exec { "slurm_create_account":
     command => "/usr/bin/sacctmgr add account def-$cluster_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
     unless  => "/bin/test `/usr/bin/sacctmgr show account Names=def-$cluster_name -n | wc -l` == 1",
+    require => Service['slurmdbd'],
   }
 
   # Add guest accounts to the accounting database
