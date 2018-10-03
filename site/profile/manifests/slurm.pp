@@ -226,7 +226,8 @@ class profile::slurm::controller {
   concat::fragment { 'slurm.conf_slurmctld':
     target  => '/etc/slurm/slurm.conf',
     order   => '10',
-    content => "ControlMachine=$hostname"
+    content => "ControlMachine=$hostname",
+    notify  => Service['slurmctld']
   }
 }
 

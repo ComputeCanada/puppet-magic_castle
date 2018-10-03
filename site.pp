@@ -26,6 +26,7 @@ node /^mgmt\d+$/ {
   include profile::rsyslog::server
   include profile::squid::server
   include profile::slurm::controller
+  include profile::slurm::accounting
 }
 
 node /^node\d+$/ {
