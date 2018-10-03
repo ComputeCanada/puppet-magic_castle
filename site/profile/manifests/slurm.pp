@@ -203,7 +203,7 @@ AccountingStorageType=accounting_storage/slurmdbd
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   exec { 'sacctmgr_add_cluster':
-    command => "/usr/bin/sacctmgr add cluster $cluster_name",
+    command => "/usr/bin/sacctmgr add cluster $cluster_name -i",
     unless  => "/bin/test `/usr/bin/sacctmgr show cluster Names=$cluster_name -n | wc -l` == 1",
     require => Service['slurmdbd'],
     notify  => Service['slurmctld']
