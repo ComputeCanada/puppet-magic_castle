@@ -261,7 +261,6 @@ class profile::slurm::node {
     enable    => 'true',
     require   => Package['slurm-slurmd'],
     subscribe => [File['/etc/slurm/cgroup.conf'],
-                  File['/etc/slurm/slurm.conf'],
                   File['/etc/slurm/plugstack.conf']]
   }
 
