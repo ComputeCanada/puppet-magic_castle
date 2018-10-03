@@ -235,6 +235,7 @@ class profile::slurm::controller {
     mode    => '0644'
   }
 
+  $cluster_name = lookup('profile::slurm::base::cluster_name')
   concat::fragment { 'slurm.conf_header':
     target  => '/etc/slurm/slurm.conf',
     content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
