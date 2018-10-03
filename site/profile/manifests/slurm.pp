@@ -70,19 +70,6 @@ class profile::slurm::base (String $cluster_name,
     mode    => "0755"
   }
 
-  concat { '/etc/slurm/slurm.conf':
-    owner   => 'slurm',
-    group   => 'slurm',
-    ensure  => 'present',
-    mode    => '0644'
-  }
-
-  concat::fragment { 'slurm.conf_header':
-    target  => '/etc/slurm/slurm.conf',
-    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
-    order   => '01'
-  }
-
   $node_template = @(END)
 <% for i in 1..250 do -%>
 NodeName=node<%= i %> State=FUTURE
@@ -239,6 +226,19 @@ class profile::slurm::controller {
     ensure  => 'running',
     enable  => true,
     require => Package['slurm-slurmctld']
+  }
+
+  concat { '/etc/slurm/slurm.conf':
+    owner   => 'slurm',
+    group   => 'slurm',
+    ensure  => 'present',
+    mode    => '0644'
+  }
+
+  concat::fragment { 'slurm.conf_header':
+    target  => '/etc/slurm/slurm.conf',
+    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
+    order   => '01'
   }
 
   concat::fragment { 'slurm.conf_slurmctld':
