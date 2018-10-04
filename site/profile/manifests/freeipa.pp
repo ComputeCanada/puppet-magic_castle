@@ -27,12 +27,11 @@ class profile::freeipa::base (String $admin_passwd,
   }
 }
 
-class profile::freeipa::client
+class profile::freeipa::client (String $server = "mgmt01")
 {
   include profile::freeipa::base
   $domain_name = lookup("profile::freeipa::base::domain_name")
   $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
-  $dns_ip = lookup("profile::freeipa::base::dns_ip")
 
   package { 'ipa-client':
     ensure => 'installed',
@@ -45,7 +44,7 @@ class profile::freeipa::client
   }
 
   tcp_conn_validator { 'ipa_dns':
-    host      => $dns_ip,
+    host      => $server,
     port      => 53,
     try_sleep => 5,
     timeout   => 1200,
