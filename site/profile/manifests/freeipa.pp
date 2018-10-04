@@ -48,7 +48,7 @@ class profile::freeipa::client
     host      => $dns_ip,
     port      => 53,
     try_sleep => 5,
-    timeout   => 1000,
+    timeout   => 1200,
   }
 
   exec { 'ipa-client-install':
