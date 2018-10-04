@@ -27,11 +27,12 @@ class profile::freeipa::base (String $admin_passwd,
   }
 }
 
-class profile::freeipa::client (String $server = "mgmt01")
+class profile::freeipa::client
 {
   include profile::freeipa::base
   $domain_name = lookup("profile::freeipa::base::domain_name")
   $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
+  $dns_ip = lookup("profile::freeipa::base::dns_ip")
 
   package { 'ipa-client':
     ensure => 'installed',
@@ -44,10 +45,19 @@ class profile::freeipa::client (String $server = "mgmt01")
   }
 
   tcp_conn_validator { 'ipa_dns':
-    host      => $server,
+    host      => $dns_ip,
     port      => 53,
-    try_sleep => 5,
+    try_sleep => 10,
     timeout   => 1200,
+  }
+
+  http_conn_validator { 'ipa_http':
+    host          => $dns_ip,
+    port          => 80,
+    test_url      => '/ipa/ui',
+    expected_code => 301,
+    try_sleep     => 10,
+    timeout       => 1200,
   }
 
   exec { 'ipa-client-install':
@@ -62,7 +72,8 @@ class profile::freeipa::client (String $server = "mgmt01")
     require => [File_line['resolv_nameserver'],
                 File_line['resolv_search'],
                 Exec['set_hostname'],
-                Tcp_conn_validator['ipa_dns']],
+                Tcp_conn_validator['ipa_dns'],
+                Http_conn_validator['ipa_http']],
     creates => '/etc/ipa/default.conf'
   }
 }
