@@ -32,6 +32,7 @@ class profile::freeipa::client
   include profile::freeipa::base
   $domain_name = lookup("profile::freeipa::base::domain_name")
   $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
+  $dns_ip = lookup("profile::freeipa::base::dns_ip")
 
   package { 'ipa-client':
     ensure => 'installed',
@@ -43,6 +44,13 @@ class profile::freeipa::client
     unless  => "/usr/bin/test `hostname` = $hostname.$domain_name"
   }
 
+  tcp_conn_validator { 'ipa_dns':
+    host      => $dns_ip,
+    port      => 53,
+    try_sleep => 5,
+    timeout   => 1000,
+  }
+
   exec { 'ipa-client-install':
     command => "/sbin/ipa-client-install \
                 --mkhomedir \
@@ -52,11 +60,10 @@ class profile::freeipa::client
                 --force-join \
                 -p admin \
                 -w $admin_passwd",
-    tries => 10,
-    try_sleep => 30,
     require => [File_line['resolv_nameserver'],
                 File_line['resolv_search'],
-                Exec['set_hostname']],
+                Exec['set_hostname'],
+                Tcp_conn_validator['ipa_dns']],
     creates => '/etc/ipa/default.conf'
   }
 }
