@@ -219,9 +219,14 @@ AccountingStorageType=accounting_storage/slurmdbd
 class profile::slurm::controller {
   include profile::slurm::base
 
-  package { ['slurm-slurmctld']:
+  package { 'slurm-slurmctld':
     ensure => 'installed',
   }
+
+  package { 'mailx':
+    ensure => 'installed',
+  }
+
   service { 'slurmctld':
     ensure  => 'running',
     enable  => true,
