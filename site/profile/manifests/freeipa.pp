@@ -65,7 +65,7 @@ class profile::freeipa::client
     require   => [File_line['resolv_nameserver'],
                   File_line['resolv_search'],
                   Exec['set_hostname'],
-                  Tcp_conn_validator['ipa_dns'],
+                  Tcp_conn_validator['ipa_dns']],
     creates => '/etc/ipa/default.conf'
   }
 }
