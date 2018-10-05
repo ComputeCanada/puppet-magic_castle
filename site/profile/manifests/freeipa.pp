@@ -51,29 +51,21 @@ class profile::freeipa::client
     timeout   => 1200,
   }
 
-  http_conn_validator { 'ipa_http':
-    host          => $dns_ip,
-    port          => 80,
-    test_url      => '/ipa/ui',
-    expected_code => 301,
-    try_sleep     => 10,
-    timeout       => 1200,
-  }
-
   exec { 'ipa-client-install':
-    command => "/sbin/ipa-client-install \
-                --mkhomedir \
-                --ssh-trust-dns \
-                --enable-dns-updates \
-                --unattended \
-                --force-join \
-                -p admin \
-                -w $admin_passwd",
-    require => [File_line['resolv_nameserver'],
-                File_line['resolv_search'],
-                Exec['set_hostname'],
-                Tcp_conn_validator['ipa_dns'],
-                Http_conn_validator['ipa_http']],
+    command   => "/sbin/ipa-client-install \
+                  --mkhomedir \
+                  --ssh-trust-dns \
+                  --enable-dns-updates \
+                  --unattended \
+                  --force-join \
+                  -p admin \
+                  -w $admin_passwd",
+    tries     => 10,
+    try_sleep => 10,
+    require   => [File_line['resolv_nameserver'],
+                  File_line['resolv_search'],
+                  Exec['set_hostname'],
+                  Tcp_conn_validator['ipa_dns'],
     creates => '/etc/ipa/default.conf'
   }
 }
