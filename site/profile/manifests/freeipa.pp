@@ -15,13 +15,13 @@ class profile::freeipa::base (String $admin_passwd,
     ensure => present,
     path   => "/etc/resolv.conf",
     match  => "search",
-    line   => "search $domain_name"
+    line   => "search int.$domain_name"
   }
 
   file_line { 'resolv_nameserver':
     ensure  => present,
     path    => "/etc/resolv.conf",
-    after   => "search $domain_name",
+    after   => "search int.$domain_name",
     line    => "nameserver $dns_ip",
     require => File_line['resolv_search']
   }
@@ -40,8 +40,8 @@ class profile::freeipa::client
   }
 
   exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname $hostname.$domain_name",
-    unless  => "/usr/bin/test `hostname` = $hostname.$domain_name"
+    command => "/bin/hostnamectl set-hostname $hostname.int.$domain_name",
+    unless  => "/usr/bin/test `hostname` = $hostname.int.$domain_name"
   }
 
   tcp_conn_validator { 'ipa_dns':
@@ -113,12 +113,12 @@ class profile::freeipa::server
     notify => Service['dbus']
   }
 
-  $realm = upcase($domain_name)
+  $realm = upcase("int.$domain_name")
   $ip = $facts['networking']['ip']
   exec { 'ipa-server-install':
     command => "/sbin/ipa-server-install \
                 --setup-dns \
-                --hostname $hostname.$domain_name \
+                --hostname $hostname.int.$domain_name \
                 --ds-password $admin_passwd \
                 --admin-password $admin_passwd \
                 --mkhomedir \
