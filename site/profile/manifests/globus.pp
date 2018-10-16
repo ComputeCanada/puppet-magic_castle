@@ -22,7 +22,9 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   if ($globus_user != '') and ($globus_password != '') {
     exec { '/usr/bin/globus-connect-server-setup':
       environment => ["GLOBUS_USER=${globus_user}",
-                      "GLOBUS_PASSWORD=${globus_password}"],
+                      "GLOBUS_PASSWORD=${globus_password}",
+                      'HOME=/root'],
+      creates     => '/var/lib/globus-connect-server/myproxy-server.conf'
     }
   }
 
