@@ -1,4 +1,4 @@
-class profile::globus::base (String globus_user = '', String globus_password = '')
+class profile::globus::base (String $globus_user = '', String $globus_password = '')
 {
   package { 'globus-connect-server-repo':
     ensure   => 'installed',
