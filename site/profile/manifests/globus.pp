@@ -9,25 +9,26 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
 
   package { 'globus-connect-server':
     ensure  => 'installed',
-    require => Package['globus-connect-server-repo']
+    require => [Package['yum-plugin-priorities'],
+                Package['globus-connect-server-repo']]
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  # file { '/etc/globus-connect-server.conf':
-  #   ensure  => 'present',
-  #   content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name,
-  #                                                                 'hostname'    => $hostname }),
-  # }
+  file { '/etc/globus-connect-server.conf':
+    ensure  => 'present',
+    content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name,
+                                                                  'hostname'    => $hostname }),
+  }
 
-  # if ($globus_user != '') and ($globus_password != '') {
-  #   exec { '/usr/bin/globus-connect-server-setup':
-  #     environment => ["GLOBUS_USER=${globus_user}",
-  #                     "GLOBUS_PASSWORD=${globus_password}",
-  #                     "HOME=${::root_home}"],
-  #     creates     => '/var/lib/globus-connect-server/myproxy-server.conf',
-  #     require     => [Package['globus-connect-server'],
-  #                     File['/etc/globus-connect-server.conf']]
-  #   }
-  # }
+  if ($globus_user != '') and ($globus_password != '') {
+    exec { '/usr/bin/globus-connect-server-setup':
+      environment => ["GLOBUS_USER=${globus_user}",
+                      "GLOBUS_PASSWORD=${globus_password}",
+                      "HOME=${::root_home}"],
+      refreshonly => true,
+      require     => [Package['globus-connect-server'],
+                      File['/etc/globus-connect-server.conf']]
+    }
+  }
 
 }
