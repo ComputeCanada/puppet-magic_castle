@@ -5,7 +5,8 @@ node default {
   include profile::cvmfs::client
   include profile::rsyslog::client
   include profile::slurm::submitter
-  # include jupyterhub
+  include profile::globus::base
+  include jupyterhub
 }
 
 node /^login\d+$/ {
@@ -15,7 +16,8 @@ node /^login\d+$/ {
   include profile::cvmfs::client
   include profile::rsyslog::client
   include profile::slurm::submitter
-  # include jupyterhub
+  include profile::globus::base
+  include jupyterhub
 }
 
 node /^mgmt\d+$/ {
