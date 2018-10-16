@@ -10,6 +10,10 @@ class profile::base {
     ensure => 'latest'
   }
 
+  package { 'yum-plugin-priorities':
+    ensure => 'installed'
+  }
+
   class { '::swap_file':
     files => {
       '/mnt/swap' => {

@@ -7,6 +7,8 @@ node default {
   include profile::slurm::submitter
   include profile::globus::base
   include jupyterhub
+
+  Class['profile::base'] -> Class['profile::globus::base']
 }
 
 node /^login\d+$/ {

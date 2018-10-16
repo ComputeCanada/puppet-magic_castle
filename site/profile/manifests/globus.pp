@@ -13,11 +13,11 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  file { '/etc/globus-connect-server.conf':
-    ensure  => 'present',
-    content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name,
-                                                                  'hostname'    => $hostname }),
-  }
+  # file { '/etc/globus-connect-server.conf':
+  #   ensure  => 'present',
+  #   content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name,
+  #                                                                 'hostname'    => $hostname }),
+  # }
 
   # if ($globus_user != '') and ($globus_password != '') {
   #   exec { '/usr/bin/globus-connect-server-setup':
