@@ -26,8 +26,8 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
                       "GLOBUS_PASSWORD=${globus_password}",
                       "HOME=${::root_home}"],
       refreshonly => true,
-      require     => [Package['globus-connect-server'],
-                      File['/etc/globus-connect-server.conf']]
+      require     => Package['globus-connect-server'],
+      subscribe   => File['/etc/globus-connect-server.conf'],
     }
   }
 
