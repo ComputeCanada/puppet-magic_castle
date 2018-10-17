@@ -28,9 +28,8 @@ class profile::base {
     ensure => 'installed'
   }
 
-  service { 'firewalld':
-    ensure => 'stopped',
-    enable => 'mask'
+  package { 'firewalld':
+    ensure => 'absent',
   }
 
   package { ['iptables', 'iptables-services'] :
