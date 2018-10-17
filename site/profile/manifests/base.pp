@@ -53,4 +53,15 @@ class profile::base {
     gpgkey   => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-elrepo.org",
     protect  => "false"
   }
+
+  package { 'haveged':
+    ensure => 'installed',
+    require => Yumrepo['epel']
+  }
+
+  service { 'haveged':
+    ensure  => running,
+    enable  => true,
+    require => Package['haveged']
+  }
 }
