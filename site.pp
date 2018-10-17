@@ -5,8 +5,15 @@ node default {
   include profile::cvmfs::client
   include profile::rsyslog::client
   include profile::slurm::submitter
-  include profile::globus::base
   include jupyterhub
+
+  # Make sure Globus is installed last
+  stage { 'last':
+    after => Stage['main']
+  }
+  class { 'profile::globus::base':
+    stage => last
+  }
 }
 
 node /^login\d+$/ {
