@@ -8,12 +8,11 @@ node default {
   include jupyterhub
 
   # Make sure Globus is installed last
-  stage { 'last':
-    after => Stage['main']
-  }
+  stage { 'last': }
   class { 'profile::globus::base':
     stage => last
   }
+  Stage['main'] -> Stage['last']
 }
 
 node /^login\d+$/ {
