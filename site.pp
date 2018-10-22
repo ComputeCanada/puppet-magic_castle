@@ -22,20 +22,19 @@ node /^login\d+$/ {
 }
 
 node /^mgmt\d+$/ {
-  stage { 'first': }
-  # include profile::freeipa::server
-  class { 'profile::freeipa::server':
-    stage => 'first'
-  }
+  include profile::slurm::controller
+  include profile::nfs::server
+  include profile::freeipa::server
+
   include profile::base
   include profile::freeipa::guest_accounts
-  include profile::nfs::server
   include profile::rsyslog::server
   include profile::squid::server
-  include profile::slurm::controller
   include profile::slurm::accounting
 
-  Stage['first'] -> Stage['main']
+  Class['profile::slurm::controller'] ->
+  Class['profile::nfs::server'] ->
+  Class['profile::freeipa::server']
 }
 
 node /^node\d+$/ {
