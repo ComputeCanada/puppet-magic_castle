@@ -101,9 +101,10 @@ END
   }
 
   service { 'munge':
-    ensure => 'running',
-    enable => 'true',
+    ensure    => 'running',
+    enable    => 'true',
     subscribe => File['/etc/munge/munge.key']
+    require   => Package['munge']
   }
 
   yumrepo { 'darrenboss-slurm':
@@ -117,13 +118,15 @@ END
   }
 
   package { 'slurm':
-    ensure => 'installed',
-    require => Yumrepo['darrenboss-slurm']
+    ensure  => 'installed',
+    require => Yumrepo['darrenboss-slurm'],
+    require => [Package['munge'], Package['munge-libs']]
   }
 
   package { 'slurm-contribs':
-    ensure => 'installed',
-    require => Yumrepo['darrenboss-slurm']
+    ensure  => 'installed',
+    require => Yumrepo['darrenboss-slurm'],
+    require => [Package['munge'], Package['munge-libs']]
   }
 
   file { 'cc-tmpfs_mount.so':
@@ -220,7 +223,8 @@ class profile::slurm::controller {
   include profile::slurm::base
 
   package { 'slurm-slurmctld':
-    ensure => 'installed',
+    ensure  => 'installed',
+    require => [Package['munge'], Package['munge-libs']]
   }
 
   package { 'mailx':
