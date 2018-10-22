@@ -23,14 +23,11 @@ node /^login\d+$/ {
 
 node /^mgmt\d+$/ {
   stage { 'first': }
-  # include profile::base
-  class { 'profile::base':
-    stage => 'first'
-  }
   # include profile::freeipa::server
   class { 'profile::freeipa::server':
     stage => 'first'
   }
+  include profile::base
   include profile::freeipa::guest_accounts
   include profile::nfs::server
   include profile::rsyslog::server

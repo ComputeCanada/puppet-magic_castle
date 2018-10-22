@@ -135,8 +135,7 @@ class profile::freeipa::server
                 --real=$realm",
     creates => '/etc/ipa/default.conf',
     timeout => 0,
-    require => [Package['ipa-server-dns'],
-                Class['::swap_file']],
+    require => [Package['ipa-server-dns']],
     before  => File_line['resolv_search']
   }
 }
