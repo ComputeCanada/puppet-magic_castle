@@ -129,6 +129,9 @@ class profile::freeipa::server
                 --ip-address=$ip \
                 --no-host-dns \
                 --no-dnssec-validation \
+                --no-ui-redirect \
+                --no-pkinit \
+                --no-ntp \
                 --real=$realm",
     creates => '/etc/ipa/default.conf',
     timeout => 0,
