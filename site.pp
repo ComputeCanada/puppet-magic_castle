@@ -23,6 +23,7 @@ node /^login\d+$/ {
 
 node /^mgmt\d+$/ {
   include profile::slurm::controller
+  include profile::slurm::accounting
   include profile::nfs::server
   include profile::freeipa::server
 
@@ -30,11 +31,6 @@ node /^mgmt\d+$/ {
   include profile::freeipa::guest_accounts
   include profile::rsyslog::server
   include profile::squid::server
-  include profile::slurm::accounting
-
-  Class['profile::slurm::controller'] ->
-  Class['profile::nfs::server'] ->
-  Class['profile::freeipa::server']
 }
 
 node /^node\d+$/ {
