@@ -119,14 +119,14 @@ END
 
   package { 'slurm':
     ensure  => 'installed',
-    require => Yumrepo['darrenboss-slurm'],
-    require => Package['munge']
+    require => [Package['munge'],
+                Yumrepo['darrenboss-slurm']],
   }
 
   package { 'slurm-contribs':
     ensure  => 'installed',
-    require => Yumrepo['darrenboss-slurm'],
-    require => Package['munge']
+    require => [Package['munge'],
+                Yumrepo['darrenboss-slurm']],
   }
 
   file { 'cc-tmpfs_mount.so':
