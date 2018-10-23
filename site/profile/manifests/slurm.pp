@@ -174,7 +174,9 @@ AccountingStorageType=accounting_storage/slurmdbd
   }
 
   package { 'slurm-slurmdbd':
-    ensure => present
+    ensure => present,
+    require => [Package['munge'],
+                Yumrepo['darrenboss-slurm']],
   }
 
   transition { 'stop_slurmctld_service':
