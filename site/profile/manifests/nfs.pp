@@ -1,7 +1,12 @@
 class profile::nfs::client (String $server = "mgmt01") {
+  $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
+                          default_value => $::domain })
+  $nfs_domain  = "int.$domain_name"
+
   class { '::nfs':
     client_enabled => true,
     nfs_v4_client  => true,
+    nfs_v4_idmap_domain => $nfs_domain
   }
   selinux::boolean { 'use_nfs_home_dirs': }
   nfs::client::mount { '/home':
@@ -19,12 +24,15 @@ class profile::nfs::client (String $server = "mgmt01") {
   nfs::client::mount { '/etc/slurm':
       server => $server,
       share => 'slurm'
-  }  
+  }
 }
 
 class profile::nfs::server {
-  $masklen = netmask_to_masklen("$netmask")
-  $cidr    = "$network/$masklen"
+  $masklen     = netmask_to_masklen("$netmask")
+  $cidr        = "$network/$masklen"
+  $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
+                          default_value => $::domain })
+  $nfs_domain  = "int.$domain_name"
 
   file { ['/project', '/scratch'] :
     ensure  => directory,
