@@ -179,11 +179,11 @@ AccountingStorageType=accounting_storage/slurmdbd
                 Yumrepo['darrenboss-slurm']],
   }
 
-  transition { 'stop_slurmctld_service':
-    resource   => Service['slurmctld'],
-    attributes => { ensure => stopped },
-    prior_to   => Exec['sacctmgr_add_cluster'],
-  }
+  # transition { 'stop_slurmctld_service':
+  #   resource   => Service['slurmctld'],
+  #   attributes => { ensure => stopped },
+  #   prior_to   => Exec['sacctmgr_add_cluster'],
+  # }
 
   service { 'slurmdbd':
     ensure  => running,
