@@ -81,7 +81,8 @@ END
     owner   => 'slurm',
     group   => 'slurm',
     replace => 'false',
-    content => inline_template($node_template)
+    content => inline_template($node_template),
+    seltype => 'etc_t'
   }
 
   file { '/etc/slurm/plugstack.conf':
