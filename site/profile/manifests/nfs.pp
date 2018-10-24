@@ -52,13 +52,14 @@ class profile::nfs::server {
     ensure => 'present',
     source => "https://images-assets.nasa.gov/image/VAFB-20180302-PH_ANV01_0056/VAFB-20180302-PH_ANV01_0056~orig.jpg"
   }
-  
+
   class { '::nfs':
     server_enabled => true,
     nfs_v4 => true,
     storeconfigs_enabled => false,
     nfs_v4_export_root  => "/export",
-    nfs_v4_export_root_clients => "$cidr(ro,fsid=root,insecure,no_subtree_check,async,root_squash)"
+    nfs_v4_export_root_clients => "$cidr(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
+    nfs_v4_idmap_domain => $nfs_domain
   }
 
   nfs::server::export{ ['/etc/slurm', '/home', '/project', '/scratch'] :
