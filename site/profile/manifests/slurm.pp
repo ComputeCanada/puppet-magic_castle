@@ -279,7 +279,8 @@ class profile::slurm::node {
   }
 
   file { '/localscratch':
-    ensure => 'directory'
+    ensure  => 'directory',
+    seltype => 'default_t'
   }
 
   exec { 'slurm_config':
