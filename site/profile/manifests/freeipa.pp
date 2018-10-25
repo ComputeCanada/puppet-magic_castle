@@ -25,6 +25,19 @@ class profile::freeipa::base (String $admin_passwd,
     line    => "nameserver $dns_ip",
     require => File_line['resolv_search']
   }
+
+  file_line { 'peerdns':
+    ensure => present,
+    path   => '/etc/sysconfig/network-scripts/ifcfg-eth0',
+    line   => 'PEERDNS=no'
+  }
+
+  file_line { 'ifcfg_dns1':
+    ensure => present,
+    path   => '/etc/sysconfig/network-scripts/ifcfg-eth0',
+    line   => "DNS1=$dns_ip"
+  }
+
 }
 
 class profile::freeipa::client
