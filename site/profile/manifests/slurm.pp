@@ -295,11 +295,11 @@ class profile::slurm::node {
     returns     => [0, 1]
   }
 
-  exec { "scontrol_update_state":
-    command => "scontrol update nodename=$hostname state=idle",
-    path => ['/usr/bin'],
-    subscribe => Service['slurmd'],
-    refreshonly => true
+  exec { 'scontrol_update_state':
+    command   => "scontrol update nodename=$hostname state=idle",
+    onlyif    => "test $(sinfo -n $hostname -o %t -h) = down"
+    path      => ['/usr/bin'],
+    subscribe => Service['slurmd']
   }
 }
 
