@@ -297,7 +297,7 @@ class profile::slurm::node {
 
   exec { 'scontrol_update_state':
     command   => "scontrol update nodename=$hostname state=idle",
-    onlyif    => "test $(sinfo -n $hostname -o %t -h) = down"
+    onlyif    => "test $(sinfo -n $hostname -o %t -h) = down",
     path      => ['/usr/bin'],
     subscribe => Service['slurmd']
   }
