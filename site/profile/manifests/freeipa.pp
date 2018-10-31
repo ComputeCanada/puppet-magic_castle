@@ -11,6 +11,11 @@ class profile::freeipa::base (String $admin_passwd,
     enable => true
   }
 
+  service { 'sssd':
+    ensure => running,
+    enable => true
+  }
+
   file_line { 'resolv_search':
     ensure => present,
     path   => "/etc/resolv.conf",
@@ -79,7 +84,8 @@ class profile::freeipa::client
                   File_line['resolv_search'],
                   Exec['set_hostname'],
                   Tcp_conn_validator['ipa_dns']],
-    creates => '/etc/ipa/default.conf'
+    creates => '/etc/ipa/default.conf',
+    notify => Service['sssd']
   }
 }
 
