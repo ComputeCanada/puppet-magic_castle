@@ -13,5 +13,6 @@ mod 'yelp-netstdlib', '0.0.1'
 mod 'petems-swap_file', '4.0.0'
 mod 'herculesteam-augeasproviders_sysctl', '2.2.0'
 mod 'herculesteam-augeasproviders_core', '2.1.5'
+mod 'puppet-yum', '3.1.1'
 mod 'jupyterhub',
     :git => 'https://git.computecanada.ca/fafor10/puppet_jupyterhub.git'
