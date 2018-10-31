@@ -69,6 +69,13 @@ class profile::freeipa::client
     timeout   => 1200,
   }
 
+  tcp_conn_validator { 'ipa_ldap':
+    host      => $dns_ip,
+    port      => 389,
+    try_sleep => 10,
+    timeout   => 1200,
+  }
+
   exec { 'ipa-client-install':
     command   => "/sbin/ipa-client-install \
                   --mkhomedir \
@@ -83,9 +90,9 @@ class profile::freeipa::client
     require   => [File_line['resolv_nameserver'],
                   File_line['resolv_search'],
                   Exec['set_hostname'],
-                  Tcp_conn_validator['ipa_dns']],
-    creates => '/etc/ipa/default.conf',
-    notify => Service['sssd']
+                  Tcp_conn_validator['ipa_dns'],
+                  Tcp_conn_validator['ipa_ldap']],
+    creates => '/etc/ipa/default.conf'
   }
 }
 
