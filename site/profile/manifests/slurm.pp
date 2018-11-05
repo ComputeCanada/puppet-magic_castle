@@ -108,26 +108,26 @@ END
     require   => Package['munge']
   }
 
-  yumrepo { 'darrenboss-slurm':
+  yumrepo { 'slurm-copr-repo':
     enabled             => 'true',
-    descr               => 'Copr repo for Slurm owned by darrenboss',
-    baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/darrenboss/Slurm/epel-7-$basearch/',
+    descr               => 'Copr repo for Slurm owned by cmdntrf',
+    baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/epel-7-$basearch/',
     skip_if_unavailable => 'true',
     gpgcheck            => 1,
-    gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/darrenboss/Slurm/pubkey.gpg',
+    gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/pubkey.gpg',
     repo_gpgcheck       => 0,
   }
 
   package { 'slurm':
     ensure  => 'installed',
     require => [Package['munge'],
-                Yumrepo['darrenboss-slurm']],
+                Yumrepo['slurm-copr-repo']],
   }
 
   package { 'slurm-contribs':
     ensure  => 'installed',
     require => [Package['munge'],
-                Yumrepo['darrenboss-slurm']],
+                Yumrepo['slurm-copr-repo']],
   }
 
   file { 'cc-tmpfs_mount.so':
@@ -177,7 +177,7 @@ AccountingStorageType=accounting_storage/slurmdbd
   package { 'slurm-slurmdbd':
     ensure => present,
     require => [Package['munge'],
-                Yumrepo['darrenboss-slurm']],
+                Yumrepo['slurm-copr-repo']],
   }
 
   # transition { 'stop_slurmctld_service':
