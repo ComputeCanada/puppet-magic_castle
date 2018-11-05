@@ -72,7 +72,7 @@ class profile::slurm::base (String $cluster_name,
 
   $node_template = @(END)
 <% for i in 1..250 do -%>
-NodeName=node<%= i %> State=FUTURE
+NodeName=node<%= i %> State=CLOUD
 <% end -%>
 END
 
