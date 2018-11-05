@@ -284,13 +284,14 @@ class profile::slurm::node {
   }
 
   exec { 'slurm_config':
-    command => "/bin/flock /etc/slurm/node.conf.lock /usr/bin/sed -i \"s/NodeName=$hostname .*/$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)/g\" /etc/slurm/node.conf",
-    unless  => "/usr/bin/grep -q \"$(/usr/sbin/slurmd -C | /usr/bin/head -n 1)\" /etc/slurm/node.conf"
+    command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=$hostname .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
+    path    => ['/usr/bin', '/usr/sbin'],
+    unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf'
   }
 
   exec { 'scontrol reconfigure':
-    path => ['/usr/bin'],
-    subscribe => Exec['slurm_config'],
+    path        => ['/usr/bin'],
+    subscribe   => Exec['slurm_config'],
     refreshonly => true,
     returns     => [0, 1]
   }
