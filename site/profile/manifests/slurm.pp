@@ -286,7 +286,8 @@ class profile::slurm::node {
   exec { 'slurm_config':
     command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=$hostname .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
     path    => ['/usr/bin', '/usr/sbin'],
-    unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf'
+    unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf',
+    notify  => Service['slurmd']
   }
 
   exec { 'scontrol reconfigure':
