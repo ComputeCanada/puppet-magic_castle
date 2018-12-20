@@ -143,8 +143,7 @@ class profile::freeipa::server
                 --mkhomedir \
                 --ssh-trust-dns \
                 --unattended \
-                --forwarder=1.1.1.1 \
-                --forwarder=8.8.8.8 \
+                --auto-forwarders \
                 --ip-address=$ip \
                 --no-host-dns \
                 --no-dnssec-validation \
