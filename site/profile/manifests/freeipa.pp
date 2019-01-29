@@ -134,6 +134,12 @@ class profile::freeipa::server
 
   $realm = upcase("int.$domain_name")
   $ip = $facts['networking']['ip']
+  exec { 'remove-hosts-entry':
+    command => "/usr/bin/sed -i '/$ip/d' /etc/hosts",
+    timeout => 0,
+    before  => Exec['ipa-server-install']
+  }
+
   exec { 'ipa-server-install':
     command => "/sbin/ipa-server-install \
                 --setup-dns \
