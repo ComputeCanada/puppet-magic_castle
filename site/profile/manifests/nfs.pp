@@ -28,8 +28,8 @@ class profile::nfs::client (String $server = "mgmt01") {
 }
 
 class profile::nfs::server {
-  # GCP instances netmask is set to /32 but the network netmask is available
-  if $gce {
+  if $facts['gce'] {
+    # GCP instances netmask is set to /32 but the network netmask is available
     $netmask = $gce['instance']['networkInterfaces'][0]['subnetmask']
   }
   $masklen     = netmask_to_masklen("$netmask")
