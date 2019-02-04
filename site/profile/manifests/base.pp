@@ -64,4 +64,8 @@ class profile::base {
     enable  => true,
     require => Package['haveged']
   }
+
+  package { 'xauth':
+    ensure => 'installed'
+  }
 }
