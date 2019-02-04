@@ -141,9 +141,10 @@ class profile::freeipa::server
 
   $realm = upcase("int.$domain_name")
   $ip = $facts['networking']['ip']
+
+  # Remove hosts entry only once before install FreeIPA
   exec { 'remove-hosts-entry':
     command => "/usr/bin/sed -i '/$ip/d' /etc/hosts",
-    timeout => 0,
     before  => Exec['ipa-server-install'],
     unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log']
   }
