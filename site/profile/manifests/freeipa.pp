@@ -144,7 +144,8 @@ class profile::freeipa::server
   exec { 'remove-hosts-entry':
     command => "/usr/bin/sed -i '/$ip/d' /etc/hosts",
     timeout => 0,
-    before  => Exec['ipa-server-install']
+    before  => Exec['ipa-server-install'],
+    unless  => ['test -f /var/log/ipaserver-install.log']
   }
 
   exec { 'ipa-server-install':
