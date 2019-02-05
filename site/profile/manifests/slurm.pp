@@ -203,10 +203,11 @@ AccountingStorageType=accounting_storage/slurmdbd
     notify  => Service['slurmctld']
   }
 
+  $account_name = "def-sponsor00"
   # Create account for every user
   exec { "slurm_create_account":
-    command => "/usr/bin/sacctmgr add account def-$cluster_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
-    unless  => "/bin/test `/usr/bin/sacctmgr show account Names=def-$cluster_name -n | wc -l` == 1",
+    command => "/usr/bin/sacctmgr add account $account_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
+    unless  => "/bin/test `/usr/bin/sacctmgr show account Names=$account_name -n | wc -l` == 1",
     require => Service['slurmdbd'],
   }
 
@@ -215,7 +216,7 @@ AccountingStorageType=accounting_storage/slurmdbd
   $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
   range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
     exec{ "slurm_add_$user":
-      command     => "/usr/bin/sacctmgr add user $user Account=def-$cluster_name -i",
+      command     => "/usr/bin/sacctmgr add user $user Account=$account_name -i",
       unless      => "/bin/test `/usr/bin/sacctmgr show user Names=$user -n | wc -l` == 1",
       require     => [Exec['slurm_create_account'], Exec["ipa_add_$user"]]
     }
