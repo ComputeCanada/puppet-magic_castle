@@ -28,7 +28,7 @@ kdestroy
 mkhomedir_helper $USERNAME
 
 # Project space
-if [ ! -z "${SPONSOR+xxx}" ]; then
+if [ -n "${SPONSOR}" ]; then
     echo $IPA_ADMIN_PASSWD | kinit admin
     GROUP="def-$SPONSOR"
     if ! ipa group-find "$GROUP" ; then
