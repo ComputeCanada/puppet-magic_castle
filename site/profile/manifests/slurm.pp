@@ -93,7 +93,7 @@ END
   }
 
   $slurm_path = @(END)
-export SLURM_HOME=/opt/software/slurm/current
+export SLURM_HOME=/opt/software/slurm
 
 export PATH=$SLURM_HOME/bin:$PATH
 export MANPATH=$SLURM_HOME/share/man:$MANPATH
