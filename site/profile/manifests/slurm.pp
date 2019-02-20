@@ -92,6 +92,23 @@ END
     content => 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
   }
 
+  $slurm_path = @(END)
+export SLURM_HOME=/opt/software/slurm/current
+
+export PATH=$SLURM_HOME/bin:$PATH
+export MANPATH=$SLURM_HOME/share/man:$MANPATH
+export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
+if [[ $UID -eq 0 ]]; then
+   export PATH=$SLURM_HOME/sbin:$PATH
+fi
+END
+
+  file { '/etc/profile.d/z-00-slurm.sh':
+     ensure  => 'present',
+     content => $slurm_path
+  }
+
   file { '/etc/munge/munge.key':
     ensure => 'present',
     owner  => 'munge',
