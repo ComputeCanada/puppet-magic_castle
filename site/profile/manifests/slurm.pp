@@ -89,7 +89,7 @@ END
     ensure => 'present',
     owner  => 'slurm',
     group  => 'slurm',
-    content => 'required /usr/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
+    content => 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
   }
 
   file { '/etc/munge/munge.key':
@@ -138,7 +138,7 @@ END
   file { 'cc-tmpfs_mount.so':
     ensure         => 'present',
     source         => 'https://gist.github.com/cmd-ntrf/a9305513809e7c9a104f79f0f15ec067/raw/da71a07f455206e21054f019d26a277daeaa0f00/cc-tmpfs_mounts.so',
-    path           => '/usr/lib64/slurm/cc-tmpfs_mounts.so',
+    path           => '/opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so',
     owner          => 'slurm',
     group          => 'slurm',
     mode           => '0755',
@@ -202,8 +202,9 @@ AccountingStorageType=accounting_storage/slurmdbd
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   exec { 'sacctmgr_add_cluster':
-    command => "/usr/bin/sacctmgr add cluster $cluster_name -i",
-    unless  => "/bin/test `/usr/bin/sacctmgr show cluster Names=$cluster_name -n | wc -l` == 1",
+    command => "sacctmgr add cluster $cluster_name -i",
+    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    unless  => "test `sacctmgr show cluster Names=$cluster_name -n | wc -l` == 1",
     require => Service['slurmdbd'],
     notify  => Service['slurmctld']
   }
@@ -211,8 +212,9 @@ AccountingStorageType=accounting_storage/slurmdbd
   $account_name = "def-sponsor00"
   # Create account for every user
   exec { "slurm_create_account":
-    command => "/usr/bin/sacctmgr add account $account_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
-    unless  => "/bin/test `/usr/bin/sacctmgr show account Names=$account_name -n | wc -l` == 1",
+    command => "sacctmgr add account $account_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
+    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    unless  => "test `sacctmgr show account Names=$account_name -n | wc -l` == 1",
     require => Service['slurmdbd'],
   }
 
@@ -221,8 +223,9 @@ AccountingStorageType=accounting_storage/slurmdbd
   $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
   range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
     exec{ "slurm_add_$user":
-      command     => "/usr/bin/sacctmgr add user $user Account=$account_name -i",
-      unless      => "/bin/test `/usr/bin/sacctmgr show user Names=$user -n | wc -l` == 1",
+      command     => "sacctmgr add user $user Account=$account_name -i",
+      path        => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+      unless      => "test `sacctmgr show user Names=$user -n | wc -l` == 1",
       require     => [Exec['slurm_create_account'], Exec["ipa_add_$user"]]
     }
   }
@@ -291,13 +294,13 @@ class profile::slurm::node {
 
   exec { 'slurm_config':
     command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=$hostname .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
-    path    => ['/usr/bin', '/usr/sbin'],
+    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf',
     notify  => Service['slurmd']
   }
 
   exec { 'scontrol reconfigure':
-    path        => ['/usr/bin'],
+    path        => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe   => Exec['slurm_config'],
     refreshonly => true,
     returns     => [0, 1]
@@ -306,7 +309,7 @@ class profile::slurm::node {
   exec { 'scontrol_update_state':
     command   => "scontrol update nodename=$hostname state=idle",
     onlyif    => "test $(sinfo -n $hostname -o %t -h) = down",
-    path      => ['/usr/bin'],
+    path      => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe => Service['slurmd']
   }
 }
