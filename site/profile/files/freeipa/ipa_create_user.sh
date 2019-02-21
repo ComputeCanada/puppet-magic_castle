@@ -25,7 +25,7 @@ echo $IPA_GUEST_PASSWD | ipa user-add $USERNAME --first "-" --last "-" --cn "$US
 kdestroy
 echo -e "$IPA_GUEST_PASSWD\n$IPA_GUEST_PASSWD\n$IPA_GUEST_PASSWD" | kinit $USERNAME
 kdestroy
-mkhomedir_helper $USERNAME
+mkhomedir_helper $USERNAME 0027
 
 # Project space
 if [ -n "${SPONSOR}" ]; then
