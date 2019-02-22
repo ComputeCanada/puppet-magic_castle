@@ -43,15 +43,16 @@ if [ -n "${SPONSOR}" ]; then
 
     PRO_USER="/project/$GROUP/$USERNAME"
     mkdir -p $PRO_USER
-    chmod 750 $PRO_USER
-    chown $USERNAME:$USERNAME $PRO_USER
     mkdir -p "/home/$USERNAME/projects"
     ln -sfT "/project/$GROUP" "/home/$USERNAME/projects/$GROUP"
+    ln -sfT "/project/$GROUP" "/home/$USERNAME/project"
+    chown -R $USERNAME:$USERNAME "/home/$USERNAME/projects" "/home/$USERNAME/project" $PRO_USER
+    chmod 750 "/home/$USERNAME/projects" $PRO_USER
 fi
 
 # Scratch spaces
 SCR_USER="/scratch/$USERNAME"
 mkdir -p $SCR_USER
+ln -sfT $SCR_USER "/home/$USERNAME/scratch"
+chown $USERNAME:$USERNAME $SCR_USER "/home/$USERNAME/scratch"
 chmod 750 $SCR_USER
-chown $USERNAME:$USERNAME $SCR_USER
-ln -sfT $SCR_USER /home/$USERNAME/scratch
