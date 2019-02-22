@@ -54,5 +54,5 @@ fi
 SCR_USER="/scratch/$USERNAME"
 mkdir -p $SCR_USER
 ln -sfT $SCR_USER "/home/$USERNAME/scratch"
-chown $USERNAME:$USERNAME $SCR_USER "/home/$USERNAME/scratch"
+chown -h $USERNAME:$USERNAME $SCR_USER "/home/$USERNAME/scratch"
 chmod 750 $SCR_USER
