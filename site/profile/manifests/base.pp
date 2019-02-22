@@ -68,4 +68,9 @@ class profile::base {
   package { 'xauth':
     ensure => 'installed'
   }
+
+  sshd_config { "PermitRootLogin":
+    ensure => present,
+    value  => "no",
+  }
 }
