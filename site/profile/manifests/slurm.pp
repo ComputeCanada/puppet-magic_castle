@@ -93,12 +93,14 @@ END
   }
 
   $slurm_path = @(END)
-export SLURM_HOME=/opt/software/slurm
+# Add Slurm custom paths for local users
+if [[ $UID -lt 10000 ]]; then
+  export SLURM_HOME=/opt/software/slurm
 
-export PATH=$SLURM_HOME/bin:$PATH
-export MANPATH=$SLURM_HOME/share/man:$MANPATH
-export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-
+  export PATH=$SLURM_HOME/bin:$PATH
+  export MANPATH=$SLURM_HOME/share/man:$MANPATH
+  export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+fi
 if [[ $UID -eq 0 ]]; then
    export PATH=$SLURM_HOME/sbin:$PATH
 fi
