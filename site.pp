@@ -6,8 +6,8 @@ node default {
   include profile::rsyslog::client
   include profile::slurm::submitter
   include profile::globus::base
+  include profile::singularity
   include jupyterhub
-
 }
 
 node /^login\d+$/ {
@@ -18,6 +18,7 @@ node /^login\d+$/ {
   include profile::rsyslog::client
   include profile::slurm::submitter
   include profile::globus::base
+  include profile::singularity
   include jupyterhub
 }
 
@@ -41,6 +42,7 @@ node /^node\d+$/ {
   include profile::cvmfs::client
   include profile::gpu
   include profile::slurm::node
+  include profile::singularity
 
   Class['profile::freeipa::client'] -> Class['profile::nfs::client'] -> Class['profile::slurm::node']
 }
