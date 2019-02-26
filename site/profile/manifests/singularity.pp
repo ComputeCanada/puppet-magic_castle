@@ -1,6 +1,6 @@
 class profile::singularity {
   $singularity_version = "3.1"
-  
+
   yumrepo { 'singularity-copr-repo':
     enabled             => 'true',
     descr               => 'Copr repo for Singularity owned by cmdntrf',
@@ -18,6 +18,6 @@ class profile::singularity {
 
   file { '/opt/software/singularity':
     ensure => 'link',
-    target => '/opt/software/singularity-$singularity_version'
+    target => "/opt/software/singularity-$singularity_version"
   }
 }
