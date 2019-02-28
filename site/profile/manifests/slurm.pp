@@ -188,7 +188,7 @@ AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 #AccountingStorageEnforce=limits
 JobAcctGatherType=jobacct_gather/linux
-JobAcctGatherFrequency=task=300
+JobAcctGatherFrequency=task=30
 JobAcctGatherParams=NoOverMemoryKill,UsePSS
 "
   concat::fragment { 'slurm.conf_slurmdbd':
