@@ -251,7 +251,7 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
       command     => "sacctmgr add user $user Account=$account_name -i",
       path        => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
       unless      => "test `sacctmgr show user Names=$user -n | wc -l` == 1",
-      require     => [Exec['slurm_create_account'], Exec["ipa_add_$user"]]
+      require     => Exec['slurm_create_account']
     }
   }
 
