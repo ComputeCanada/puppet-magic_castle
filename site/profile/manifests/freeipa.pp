@@ -43,6 +43,12 @@ class profile::freeipa::base (String $admin_passwd,
     line   => "DNS1=$dns_ip"
   }
 
+  file { '/etc/rsyslog.d/ignore-systemd-session-slice.conf':
+    ensure  => present,
+    source => 'puppet:///modules/profile/freeipa/ignore-systemd-session-slice.conf',
+    mode   => '0644'
+  }
+
 }
 
 class profile::freeipa::client
