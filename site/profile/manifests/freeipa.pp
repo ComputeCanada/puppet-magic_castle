@@ -120,7 +120,7 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
   }
 
   exec{ "ipa_add_user":
-    command     => "ipa_create_user.sh ${prefix}{01..${nb_accounts}} sponsor00",
+    command     => "ipa_create_user.sh ${prefix}{01..${nb_accounts}} Sponsor=sponsor00",
     unless      => "test `ls /home | grep ${prefix} | wc -l` == ${nb_accounts}",
     environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
                     "IPA_GUEST_PASSWD=$guest_passwd"],
