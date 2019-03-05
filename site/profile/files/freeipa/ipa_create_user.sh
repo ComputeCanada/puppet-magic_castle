@@ -27,7 +27,10 @@ if [ -z "${IPA_GUEST_PASSWD+xxx}" ]; then
 fi
 
 for USERNAME in ${USERNAMES[@]}; do
-    # TODO : look if username is already in ipa first
+    # Skip if the username already exists
+    if id -u $USERNAME > /dev/null; then
+        continue
+    fi
 
     echo $IPA_ADMIN_PASSWD | kinit admin
     echo $IPA_GUEST_PASSWD | ipa user-add $USERNAME --first "-" --last "-" --cn "$USERNAME" --shell /bin/bash --password
