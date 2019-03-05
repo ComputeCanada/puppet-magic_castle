@@ -9,7 +9,7 @@ else
     USERNAMES+=($LAST)
 fi
 
-if [ -z $USERNAMES ]; then
+if [ -z "${USERNAMES}" ]; then
     echo "$0 username1 username2 ... [Sponsor=sponsor-name]"
     exit
 fi
@@ -27,8 +27,8 @@ if [ -z "${IPA_GUEST_PASSWD+xxx}" ]; then
 fi
 
 for USERNAME in ${USERNAMES[@]}; do
-    # Skip if the username already exists
-    if id -u $USERNAME > /dev/null; then
+    # Skip if the username has already been created
+    if [[ -d "/home/$USERNAME" ]] ; then
         continue
     fi
 
