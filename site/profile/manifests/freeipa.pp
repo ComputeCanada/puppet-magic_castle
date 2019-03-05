@@ -119,16 +119,16 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
     mode   => '0700'
   }
 
-  range("${prefix}01", "${prefix}${nb_accounts}").each |$user| {
-    exec{ "ipa_add_$user":
-      command     => "/sbin/ipa_create_user.sh $user sponsor00",
-      creates     => "/home/$user",
-      environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
-                      "IPA_GUEST_PASSWD=$guest_passwd"],
-      require     => [File['/sbin/ipa_create_user.sh'],
-                      Selinux::Module['mkhomedir_helper'],
-                      Exec['ipa-server-install']]
-    }
+  exec{ "ipa_add_user":
+    command     => "ipa_create_user.sh ${prefix}{01..${nb_accounts}} sponsor00",
+    unless      => "test `ls /home | grep ${prefix} | wc -l` == ${nb_accounts}",
+    environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
+                    "IPA_GUEST_PASSWD=$guest_passwd"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require     => [File['/sbin/ipa_create_user.sh'],
+                    Selinux::Module['mkhomedir_helper'],
+                    Exec['ipa-server-install']],
+    provider    => shell
   }
 }
 
