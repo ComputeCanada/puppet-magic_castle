@@ -151,7 +151,8 @@ END
 
   package { 'slurm-libpmi':
     ensure  => 'installed',
-    require => [Yumrepo['slurm-copr-repo']]
+    require => [Package['munge'],
+                Yumrepo['slurm-copr-repo']]
   }
 
   file { 'cc-tmpfs_mount.so':
