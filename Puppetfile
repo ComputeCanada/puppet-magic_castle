@@ -15,5 +15,5 @@ mod 'herculesteam-augeasproviders_sysctl', '2.2.0'
 mod 'herculesteam-augeasproviders_core', '2.1.5'
 mod 'herculesteam-augeasproviders_ssh', '3.1.0'
 mod 'puppet-yum', '3.1.1'
-mod 'jupyterhub',
-    :git => 'https://git.computecanada.ca/fafor10/puppet_jupyterhub.git'
+# mod 'jupyterhub',
+    # :git => 'https://git.computecanada.ca/fafor10/puppet_jupyterhub.git'
