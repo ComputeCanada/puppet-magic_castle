@@ -27,8 +27,9 @@ if [ -z "${IPA_GUEST_PASSWD+xxx}" ]; then
 fi
 
 for USERNAME in ${USERNAMES[@]}; do
+    USER_HOME="/mnt/home/$USERNAME"
     # Skip if the username has already been created
-    if [[ -d "/home/$USERNAME" ]] ; then
+    if [[ -d "$USER_HOME" ]] ; then
         continue
     fi
 
@@ -37,7 +38,9 @@ for USERNAME in ${USERNAMES[@]}; do
     kdestroy
     echo -e "$IPA_GUEST_PASSWD\n$IPA_GUEST_PASSWD\n$IPA_GUEST_PASSWD" | kinit $USERNAME
     kdestroy
-    mkhomedir_helper $USERNAME 0027
+
+    cp -r /etc/skel $USER_HOME
+    chown -R $USERNAME:$USERNAME $USER_HOME
 
     # Project space
     if [ -n "${SPONSOR}" ]; then
@@ -55,17 +58,17 @@ for USERNAME in ${USERNAMES[@]}; do
 
         PRO_USER="/project/$GROUP/$USERNAME"
         mkdir -p $PRO_USER
-        mkdir -p "/home/$USERNAME/projects"
-        ln -sfT "/project/$GROUP" "/home/$USERNAME/projects/$GROUP"
-        ln -sfT "/project/$GROUP" "/home/$USERNAME/project"
-        chown -R $USERNAME:$USERNAME "/home/$USERNAME/projects" "/home/$USERNAME/project" $PRO_USER
-        chmod 750 "/home/$USERNAME/projects" $PRO_USER
+        mkdir -p "$USER_HOME/projects"
+        ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
+        ln -sfT "/project/$GROUP" "$USER_HOME/project"
+        chown -R $USERNAME:$USERNAME "$USER_HOME/projects" "$USER_HOME/project" $PRO_USER
+        chmod 750 "$USER_HOME/projects" $PRO_USER
     fi
 
     # Scratch spaces
     SCR_USER="/scratch/$USERNAME"
     mkdir -p $SCR_USER
-    ln -sfT $SCR_USER "/home/$USERNAME/scratch"
-    chown -h $USERNAME:$USERNAME $SCR_USER "/home/$USERNAME/scratch"
+    ln -sfT $SCR_USER "$USER_HOME/scratch"
+    chown -h $USERNAME:$USERNAME $SCR_USER "$USER_HOME/scratch"
     chmod 750 $SCR_USER
 done
