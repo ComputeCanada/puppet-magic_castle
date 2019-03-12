@@ -163,6 +163,7 @@ class profile::freeipa::server
                 --ds-password $admin_passwd \
                 --admin-password $admin_passwd \
                 --mkhomedir \
+                --idstart=50000 \
                 --ssh-trust-dns \
                 --unattended \
                 --auto-forwarders \
