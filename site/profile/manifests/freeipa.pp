@@ -51,7 +51,7 @@ class profile::freeipa::base (String $admin_passwd,
 
 }
 
-class profile::freeipa::client
+class profile::freeipa::client(String $server = "mgmt01")
 {
   include profile::freeipa::base
   $domain_name = lookup("profile::freeipa::base::domain_name")
@@ -100,6 +100,18 @@ class profile::freeipa::client
                   Tcp_conn_validator['ipa_ldap']],
     creates => '/etc/ipa/default.conf'
   }
+
+  # If the ipa-server is reinstalled, the ipa-client needs to be reinstall too.
+  # The installation is only done if the certificate on the ipa-server no
+  # longer corresponds to the one currently installed on the client. When this
+  # happens, curl returns a code 35.
+  exec { 'ipa-client-uninstall':
+    command => '/sbin/ipa-client-install -U --uninstall',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    onlyif  => ['test -f /etc/ipa/default.conf',
+                "curl --silent https://$server.int.$domain_name/ipa/json; test $? == 35"]
+  }
+
 }
 
 class profile::freeipa::guest_accounts(String $guest_passwd,
