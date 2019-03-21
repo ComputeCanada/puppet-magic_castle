@@ -211,12 +211,6 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
                 Yumrepo['slurm-copr-repo']],
   }
 
-  # transition { 'stop_slurmctld_service':
-  #   resource   => Service['slurmctld'],
-  #   attributes => { ensure => stopped },
-  #   prior_to   => Exec['sacctmgr_add_cluster'],
-  # }
-
   service { 'slurmdbd':
     ensure  => running,
     enable  => true,

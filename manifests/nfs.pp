@@ -66,7 +66,7 @@ class profile::nfs::server {
     nfs_v4_idmap_domain => $nfs_domain
   }
 
-  nfs::server::export{ ['/etc/slurm', '/home', '/project', '/scratch'] :
+  nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
     ensure  => 'mounted',
     clients => "$cidr(rw,sync,no_root_squash,no_all_squash)"
   }
