@@ -69,8 +69,14 @@ class profile::base {
     ensure => 'installed'
   }
 
+  service { 'sshd':
+    ensure => running,
+    enable => true,
+  }
+
   sshd_config { "PermitRootLogin":
     ensure => present,
     value  => "no",
+    notify => Service['sshd']
   }
 }
