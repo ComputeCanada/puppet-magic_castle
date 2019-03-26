@@ -32,8 +32,14 @@ class profile::base {
     ensure => 'absent',
   }
 
-  package { ['iptables', 'iptables-services'] :
-    ensure => 'installed'
+  class { 'firewall': }
+
+  firewall { '001 drop access to metadata server':
+    chain       => 'OUTPUT',
+    proto       => 'tcp',
+    destination => '169.254.169.254',
+    action      => 'drop',
+    uid         => '! root'
   }
 
   yumrepo { 'epel':
