@@ -22,6 +22,22 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   }
 
   if ($globus_user != '') and ($globus_password != '') {
+
+    firewall { '100 Globus connect server - globus.org':
+      chain  => 'INPUT'
+      dport  => [2811, 7512],
+      proto  => 'tcp',
+      source => "54.237.254.192/29",
+      action => 'accept'
+    }
+
+    firewall { '101 Globus connect server - users':
+      chain  => 'INPUT'
+      dport  => "50000-51000",
+      proto  => 'tcp',
+      action => 'accept'
+    }
+
     exec { '/usr/bin/globus-connect-server-setup':
       environment => ["GLOBUS_USER=${globus_user}",
                       "GLOBUS_PASSWORD=${globus_password}",
@@ -32,5 +48,4 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       subscribe   => File['/etc/globus-connect-server.conf'],
     }
   }
-
 }
