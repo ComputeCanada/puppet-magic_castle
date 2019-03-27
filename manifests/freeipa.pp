@@ -6,12 +6,7 @@ class profile::freeipa::base (String $admin_passwd,
     ensure => 'latest'
   }
 
-  service { 'dbus':
-    ensure => running,
-    enable => true
-  }
-
-  service { 'sssd':
+  service { 'systemd-logind':
     ensure => running,
     enable => true
   }
@@ -59,8 +54,7 @@ class profile::freeipa::client(String $server = "mgmt01")
   $dns_ip = lookup("profile::freeipa::base::dns_ip")
 
   package { 'ipa-client':
-    ensure => 'installed',
-    notify => Service['dbus']
+    ensure => 'installed'
   }
 
   exec { 'set_hostname':
@@ -98,7 +92,8 @@ class profile::freeipa::client(String $server = "mgmt01")
                   Exec['set_hostname'],
                   Tcp_conn_validator['ipa_dns'],
                   Tcp_conn_validator['ipa_ldap']],
-    creates => '/etc/ipa/default.conf'
+    creates => '/etc/ipa/default.conf',
+    notify  => Service['systemd-logind']
   }
 
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstall too.
@@ -154,8 +149,7 @@ class profile::freeipa::server
   $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
 
   package { "ipa-server-dns":
-    ensure => "installed",
-    notify => Service['dbus']
+    ensure => "installed"
   }
 
   $realm = upcase("int.$domain_name")
@@ -189,6 +183,7 @@ class profile::freeipa::server
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns']],
-    before  => File_line['resolv_search']
+    before  => File_line['resolv_search'],
+    notify  => Service['systemd-logind']
   }
 }
