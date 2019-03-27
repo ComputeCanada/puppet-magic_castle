@@ -32,15 +32,22 @@ class profile::base {
     ensure => 'absent',
   }
 
-  # class { 'firewall': }
+  class { 'firewall': }
 
-  # firewall { '001 drop access to metadata server':
-  #   chain       => 'OUTPUT',
-  #   proto       => 'tcp',
-  #   destination => '169.254.169.254',
-  #   action      => 'drop',
-  #   uid         => '! root'
-  # }
+  firewall { '001 accept all from local network':
+    chain  => 'INPUT',
+    proto  => 'all',
+    source => profile::getcidr(),
+    action => 'accept'
+  }
+
+  firewall { '001 drop access to metadata server':
+    chain       => 'OUTPUT',
+    proto       => 'tcp',
+    destination => '169.254.169.254',
+    action      => 'drop',
+    uid         => '! root'
+  }
 
   yumrepo { 'epel':
     baseurl        => 'http://dl.fedoraproject.org/pub/epel/$releasever/$basearch',
