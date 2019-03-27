@@ -28,12 +28,6 @@ class profile::nfs::client (String $server = "mgmt01") {
 }
 
 class profile::nfs::server {
-  if $facts['gce'] {
-    # GCP instances netmask is set to /32 but the network netmask is available
-    $netmask = $gce['instance']['networkInterfaces'][0]['subnetmask']
-  }
-  $masklen     = netmask_to_masklen("$netmask")
-  $cidr        = "$network/$masklen"
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
                           default_value => $::domain })
   $nfs_domain  = "int.$domain_name"
@@ -57,6 +51,7 @@ class profile::nfs::server {
     source => "https://images-assets.nasa.gov/image/VAFB-20180302-PH_ANV01_0056/VAFB-20180302-PH_ANV01_0056~orig.jpg"
   }
 
+  $cidr = profile::getcidr()
   class { '::nfs':
     server_enabled => true,
     nfs_v4 => true,

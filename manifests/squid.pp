@@ -1,11 +1,4 @@
 class profile::squid::server {
-  if $facts['gce'] {
-    # GCP instances netmask is set to /32 but the network netmask is available
-    $netmask = $gce['instance']['networkInterfaces'][0]['subnetmask']
-  }
-  $masklen = netmask_to_masklen("$netmask")
-  $cidr    = "$network/$masklen"
-
   package { "squid":
     ensure => "installed"
   }
@@ -15,6 +8,7 @@ class profile::squid::server {
     enable => 'true'
   }
 
+  $cidr = profile::getcidr()
   file { '/etc/squid/squid.conf':
     ensure  => 'present',
     content => epp('profile/squid/squid.conf', {'cidr' => $cidr})
