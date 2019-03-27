@@ -24,7 +24,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   if ($globus_user != '') and ($globus_password != '') {
 
     firewall { '100 Globus connect server - globus.org':
-      chain  => 'INPUT'
+      chain  => 'INPUT',
       dport  => [2811, 7512],
       proto  => 'tcp',
       source => "54.237.254.192/29",
@@ -32,7 +32,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
     }
 
     firewall { '101 Globus connect server - users':
-      chain  => 'INPUT'
+      chain  => 'INPUT',
       dport  => "50000-51000",
       proto  => 'tcp',
       action => 'accept'
