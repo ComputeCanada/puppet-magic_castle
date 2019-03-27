@@ -58,15 +58,6 @@ class profile::base {
     descr          => "Extra Packages for Enterprise Linux"
   }
 
-  yumrepo { 'elrepo':
-    descr    => "ELRepo.org Community Enterprise Linux Repository - el7",
-    baseurl  => 'http://muug.ca/mirror/elrepo/elrepo/el7/$basearch/',
-    enabled  => "true",
-    gpgcheck => "false",
-    gpgkey   => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-elrepo.org",
-    protect  => "false"
-  }
-
   package { 'haveged':
     ensure => 'installed',
     require => Yumrepo['epel']
