@@ -1,7 +1,7 @@
 class profile::base {
   include stdlib
 
-  class { selinux:
+  class { 'selinux':
     mode => 'enforcing',
     type => 'targeted',
   }
