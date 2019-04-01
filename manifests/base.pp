@@ -6,10 +6,6 @@ class profile::base {
     type => 'targeted',
   }
 
-  package { 'selinux-policy':
-    ensure => 'latest'
-  }
-
   package { 'yum-plugin-priorities':
     ensure => 'installed'
   }
