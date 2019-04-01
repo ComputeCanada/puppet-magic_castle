@@ -96,7 +96,20 @@ class profile::freeipa::client(String $server = "mgmt01")
     notify  => Service['systemd-logind']
   }
 
-  # If the ipa-server is reinstalled, the ipa-client needs to be reinstall too.
+  # If selinux_provider is ipa, each time a new
+  # user logs in, the selinux policy is rebuilt.
+  # This can cause serious slow down when multiple
+  # concurrent users try to login at the same time
+  # since the rebuilt is done for each user sequentially.
+  file_line { 'selinux_provider':
+    ensure  => present,
+    path    => "/etc/sssd/sssd.conf",
+    after   => "id_provider = ipa",
+    line    => "selinux_provider = none",
+    require => Exec['ipa-client-install']
+  }
+
+  # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
   # The installation is only done if the certificate on the ipa-server no
   # longer corresponds to the one currently installed on the client. When this
   # happens, curl returns a code 35.
