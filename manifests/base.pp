@@ -6,6 +6,20 @@ class profile::base {
     type => 'targeted',
   }
 
+  # Configure centos user selinux mapping
+  exec { 'selinux_login_centos':
+    command => 'semanage login -a -S targeted -s "unconfined_u" -r "s0-s0:c0.c1023" centos',
+    unless  => 'grep -q "centos:unconfined_u:s0-s0:c0.c1023" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
+  # Configure default login selinux mapping
+  exec { 'selinux_login_default':
+    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
+    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
   package { 'yum-plugin-priorities':
     ensure => 'installed'
   }
