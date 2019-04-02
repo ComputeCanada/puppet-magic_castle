@@ -154,6 +154,11 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
     mode   => '0700'
   }
 
+  exec { 'semanage_fcontext_mnt_home':
+    command => 'semanage fcontext -a -e /home /mnt/home',
+    unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs_dist'
+  }
+
   exec{ "ipa_add_user":
     command     => "ipa_create_user.sh ${prefix}{01..${nb_accounts}} Sponsor=sponsor00",
     unless      => "test `ls /mnt/home | grep ${prefix} | wc -l` == ${nb_accounts}",
