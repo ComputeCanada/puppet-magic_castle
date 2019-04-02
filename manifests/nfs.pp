@@ -12,22 +12,22 @@ class profile::nfs::client (String $server = "mgmt01") {
   nfs::client::mount { '/home':
       server => $server,
       share => 'home',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/project':
       server => $server,
       share => 'project',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/scratch':
       server => $server,
       share => 'scratch',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/etc/slurm':
       server => $server,
       share => 'slurm',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
 }
 
@@ -75,6 +75,6 @@ class profile::nfs::server {
 
   nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
     ensure  => 'mounted',
-    clients => "$cidr(rw,async,no_root_squash,no_all_squash)"
+    clients => "$cidr(rw,async,no_root_squash,no_all_squash,security_label)"
   }
 }
