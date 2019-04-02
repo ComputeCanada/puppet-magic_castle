@@ -70,7 +70,7 @@ class profile::nfs::server {
     path   => '/etc/sysconfig/nfs',
     line   => 'RPCNFSDARGS="-V 4.2"',
     match  => '^RPCNFSDARGS\=',
-    notify => Service['nfs-server']
+    notify => Service['nfs-server.service']
   }
 
   nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
