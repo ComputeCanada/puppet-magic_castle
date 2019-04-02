@@ -35,4 +35,16 @@ class profile::cvmfs::client (String $squid_server = "mgmt01") {
     enable  => true,
     require => File['/etc/cvmfs/default.local']
   }
+
+  # Fix issue with BASH_ENV, SSH and lmod where
+  # ssh client would get a "Permission denied" when
+  # trying to connect to a server. The errors
+  # results from the SELinux context type of
+  # /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lmod/lmod/init/bash
+  # To be authorized in the ssh context, it would need
+  # to be a bin_t type, but it is a fusefs_t and since
+  # CVMFS is a read-only filesystem, the context cannot be changed.
+  # 'use_fusefs_home_dirs' policy fix that issue.
+  selinux::boolean { 'use_fusefs_home_dirs': }
+
 }
