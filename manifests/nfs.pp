@@ -11,19 +11,23 @@ class profile::nfs::client (String $server = "mgmt01") {
   selinux::boolean { 'use_nfs_home_dirs': }
   nfs::client::mount { '/home':
       server => $server,
-      share => 'home'
+      share => 'home',
+      options_nfsv4 => 'tcp,nolock,rsize=32768,wsize=32768,intr,noatime,actimeo=3,v4.2'
   }
   nfs::client::mount { '/project':
       server => $server,
-      share => 'project'
+      share => 'project',
+      options_nfsv4 => 'tcp,nolock,rsize=32768,wsize=32768,intr,noatime,actimeo=3,v4.2'
   }
   nfs::client::mount { '/scratch':
       server => $server,
-      share => 'scratch'
+      share => 'scratch',
+      options_nfsv4 => 'tcp,nolock,rsize=32768,wsize=32768,intr,noatime,actimeo=3,v4.2'
   }
   nfs::client::mount { '/etc/slurm':
       server => $server,
-      share => 'slurm'
+      share => 'slurm',
+      options_nfsv4 => 'tcp,nolock,rsize=32768,wsize=32768,intr,noatime,actimeo=3,v4.2'
   }
 }
 
@@ -59,6 +63,14 @@ class profile::nfs::server {
     nfs_v4_export_root  => "/export",
     nfs_v4_export_root_clients => "$cidr(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
     nfs_v4_idmap_domain => $nfs_domain
+  }
+
+  file_line { 'rpc_nfs_args_v4.2':
+    ensure => present,
+    path   => '/etc/sysconfig/nfs',
+    line   => 'RPCNFSDARGS="-V 4.2"',
+    match  => '^RPCNFSDARGS\=',
+    notify => Service['nfs-server']
   }
 
   nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
