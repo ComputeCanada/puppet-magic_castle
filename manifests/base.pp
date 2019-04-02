@@ -13,13 +13,6 @@ class profile::base {
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
-  # Configure default login selinux mapping
-  exec { 'selinux_login_default':
-    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
-    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  }
-
   package { 'yum-plugin-priorities':
     ensure => 'installed'
   }

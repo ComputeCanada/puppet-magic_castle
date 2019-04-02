@@ -109,6 +109,14 @@ class profile::freeipa::client(String $server = "mgmt01")
     require => Exec['ipa-client-install']
   }
 
+  # Configure default login selinux mapping
+  exec { 'selinux_login_default':
+    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
+    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => Exec['ipa-client-install']
+  }
+
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
   # The installation is only done if the certificate on the ipa-server no
   # longer corresponds to the one currently installed on the client. When this
