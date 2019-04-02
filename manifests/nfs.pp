@@ -75,6 +75,6 @@ class profile::nfs::server {
 
   nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
     ensure  => 'mounted',
-    clients => "$cidr(rw,sync,no_root_squash,no_all_squash)"
+    clients => "$cidr(rw,async,no_root_squash,no_all_squash)"
   }
 }
