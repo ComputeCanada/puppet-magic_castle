@@ -96,6 +96,12 @@ class profile::freeipa::client(String $server = "mgmt01")
     notify  => Service['systemd-logind']
   }
 
+  service { 'sssd':
+    ensure  => running,
+    enable  => true,
+    require => Exec['ipa-client-install']
+  }
+
   # If selinux_provider is ipa, each time a new
   # user logs in, the selinux policy is rebuilt.
   # This can cause serious slow down when multiple
@@ -106,7 +112,8 @@ class profile::freeipa::client(String $server = "mgmt01")
     path    => "/etc/sssd/sssd.conf",
     after   => "id_provider = ipa",
     line    => "selinux_provider = none",
-    require => Exec['ipa-client-install']
+    require => Exec['ipa-client-install'],
+    notify  => Service['sssd']
   }
 
   # Configure default login selinux mapping
