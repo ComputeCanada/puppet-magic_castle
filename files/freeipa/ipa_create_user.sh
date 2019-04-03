@@ -70,4 +70,7 @@ for USERNAME in ${USERNAMES[@]}; do
         chmod 750 $SCR_USER
     fi
 done
+restorecon -F -R /mnt/home
+restorecon -F -R /project
+restorecon -F -R /scratch
 kdestroy -A

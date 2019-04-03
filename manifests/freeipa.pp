@@ -168,7 +168,8 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     require     => [File['/sbin/ipa_create_user.sh'],
                     Selinux::Module['mkhomedir_helper'],
-                    Exec['ipa-server-install']],
+                    Exec['ipa-server-install'],
+                    Exec['semanage_fcontext_mnt_home']],
     provider    => shell,
     timeout     => 0
   }
