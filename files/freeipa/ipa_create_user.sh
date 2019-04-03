@@ -57,8 +57,7 @@ for USERNAME in ${USERNAMES[@]}; do
             mkdir -p $PRO_USER
             mkdir -p "$USER_HOME/projects"
             ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
-            ln -sfT "/project/$GROUP" "$USER_HOME/project"
-            chown -R $USERNAME:$USERNAME "$USER_HOME/projects" "$USER_HOME/project" $PRO_USER
+            chown -R $USERNAME:$USERNAME "$USER_HOME/projects" $PRO_USER
             chmod 750 "$USER_HOME/projects" $PRO_USER
         fi
 
