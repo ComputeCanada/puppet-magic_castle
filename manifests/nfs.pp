@@ -8,7 +8,12 @@ class profile::nfs::client (String $server = "mgmt01") {
     nfs_v4_client  => true,
     nfs_v4_idmap_domain => $nfs_domain
   }
-  selinux::boolean { 'use_nfs_home_dirs': }
+
+  # use_nfs_home_dirs is not needed as long as we can export
+  # the selinux file labels with 'security_label' in nfs server
+  # and seclabel in nfs client.
+  # selinux::boolean { 'use_nfs_home_dirs': }
+
   nfs::client::mount { '/home':
       server => $server,
       share => 'home',
