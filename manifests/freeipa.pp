@@ -156,7 +156,7 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
 
   exec { 'semanage_fcontext_mnt_home':
     command => 'semanage fcontext -a -e /home /mnt/home',
-    unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs_dist',
+    unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
