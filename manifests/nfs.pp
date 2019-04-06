@@ -43,7 +43,7 @@ class profile::nfs::server {
 
   file { ['/project', '/scratch'] :
     ensure  => directory,
-    seltype => 'usr_t'
+    # seltype => 'usr_t'
   }
 
   $cidr = profile::getcidr()
