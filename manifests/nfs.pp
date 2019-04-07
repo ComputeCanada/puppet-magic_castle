@@ -66,6 +66,7 @@ class profile::nfs::server {
 
   nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
     ensure  => 'mounted',
-    clients => "$cidr(rw,async,no_root_squash,no_all_squash,security_label)"
+    clients => "$cidr(rw,async,no_root_squash,no_all_squash,security_label)",
+    notify  => Service['nfs-idmap.service']
   }
 }
