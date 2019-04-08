@@ -20,7 +20,7 @@ for USERNAME in ${USERNAMES}; do
     USER_HOME="/mnt/home/$USERNAME"
     if [[ ! -d "$USER_HOME" ]] ; then
         cp -r /etc/skel $USER_HOME
-        chmod 740 $USER_HOME
+        chmod 700 $USER_HOME
         chown -R $USERNAME:$USERNAME $USER_HOME
         # Project space
         for GROUP in $(groups $USERNAME | tr " " "\n" | grep -o "def-.*"); do
@@ -40,5 +40,5 @@ for USERNAME in ${USERNAMES}; do
     fi
 done
 restorecon -F -R /mnt/home
-restorecon -F -R /project
-restorecon -F -R /scratch
+# restorecon -F -R /project
+# restorecon -F -R /scratch
