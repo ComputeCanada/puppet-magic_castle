@@ -143,15 +143,14 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
 {
   $admin_passwd = lookup("profile::freeipa::base::admin_passwd")
 
-  selinux::module { 'mkhomedir_helper':
-    ensure    => 'present',
-    source_te => 'puppet:///modules/profile/freeipa/mkhomedir_helper.te',
-    builder   => 'refpolicy'
+  file { '/sbin/ipa_create_user.py':
+    source => 'puppet:///modules/profile/freeipa/ipa_create_user.py',
+    mode   => '0755'
   }
 
-  file { '/sbin/ipa_create_user.sh':
-    source => 'puppet:///modules/profile/freeipa/ipa_create_user.sh',
-    mode   => '0700'
+  file { '/sbin/mkhomedir.sh':
+    source => 'puppet:///modules/profile/freeipa/mkhomedir.sh',
+    mode   => '0755'
   }
 
   exec { 'semanage_fcontext_mnt_home':
@@ -160,18 +159,22 @@ class profile::freeipa::guest_accounts(String $guest_passwd,
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
-  exec{ "ipa_add_user":
-    command     => "ipa_create_user.sh ${prefix}{01..${nb_accounts}} Sponsor=sponsor00",
+  exec{ 'ipa_add_user':
+    command     => "ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
     unless      => "test `ls /mnt/home | grep ${prefix} | wc -l` == ${nb_accounts}",
     environment => ["IPA_ADMIN_PASSWD=$admin_passwd",
                     "IPA_GUEST_PASSWD=$guest_passwd"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require     => [File['/sbin/ipa_create_user.sh'],
-                    Selinux::Module['mkhomedir_helper'],
-                    Exec['ipa-server-install'],
-                    Exec['semanage_fcontext_mnt_home']],
-    provider    => shell,
-    timeout     => 0
+    require     => [File['/sbin/ipa_create_user.py'],
+                    Exec['ipa-server-install']]
+  }
+
+  exec{ 'mkhomedir':
+    command => "/sbin/mkhomedir.sh  ${prefix}{01..${nb_accounts}}",
+    unless  => "test `ls /mnt/home | grep ${prefix} | wc -l` == ${nb_accounts}",
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => [Exec['ipa_add_user'],
+                Exec['semanage_fcontext_mnt_home']],
   }
 }
 
