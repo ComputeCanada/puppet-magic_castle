@@ -22,12 +22,12 @@ class profile::nfs::client (String $server = "mgmt01") {
   nfs::client::mount { '/project':
       server => $server,
       share => 'project',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/scratch':
       server => $server,
       share => 'scratch',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/etc/slurm':
       server => $server,
