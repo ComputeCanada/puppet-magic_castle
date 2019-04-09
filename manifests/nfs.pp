@@ -22,12 +22,12 @@ class profile::nfs::client (String $server = "mgmt01") {
   nfs::client::mount { '/project':
       server => $server,
       share => 'project',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/scratch':
       server => $server,
       share => 'scratch',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/etc/slurm':
       server => $server,
@@ -64,9 +64,15 @@ class profile::nfs::server {
     notify => Service['nfs-server.service']
   }
 
-  nfs::server::export{ ['/etc/slurm', '/mnt/home', '/project', '/scratch'] :
+  nfs::server::export{ ['/etc/slurm', '/mnt/home'] :
     ensure  => 'mounted',
     clients => "$cidr(rw,async,no_root_squash,no_all_squash,security_label)",
+    notify  => Service['nfs-idmap.service']
+  }
+
+  nfs::server::export{ ['/project', '/scratch']:
+    ensure  => 'mounted',
+    clients => "$cidr(rw,async,no_root_squash,no_all_squash)",
     notify  => Service['nfs-idmap.service']
   }
 }
