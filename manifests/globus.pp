@@ -27,13 +27,13 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       chain  => 'INPUT',
       dport  => [2811, 7512],
       proto  => 'tcp',
-      source => "54.237.254.192/29",
+      source => '54.237.254.192/29',
       action => 'accept'
     }
 
     firewall { '101 Globus connect server - users':
       chain  => 'INPUT',
-      dport  => "50000-51000",
+      dport  => '50000-51000',
       proto  => 'tcp',
       action => 'accept'
     }
@@ -42,7 +42,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       environment => ["GLOBUS_USER=${globus_user}",
                       "GLOBUS_PASSWORD=${globus_password}",
                       "HOME=${::root_home}",
-                      "TERM=vt100"],
+                      'TERM=vt100'],
       refreshonly => true,
       require     => Package['globus-connect-server'],
       subscribe   => File['/etc/globus-connect-server.conf'],
@@ -52,22 +52,22 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
 
 class profile::globus::server_v5 {
   package { 'globus-toolkit-repo':
-    name     => 'globus-toolkit-repo-6.0.14-1.noarch',
-    provider => 'rpm',
     ensure   => 'installed',
+    provider => 'rpm',
+    name     => 'globus-toolkit-repo-6.0.14-1.noarch',
     source   => 'http://downloads.globus.org/toolkit/gt6/stable/installers/repo/rpm/globus-toolkit-repo-latest.noarch.rpm'
   }
 
   yumrepo { 'globus-connect-server-5-stable-el7.repo':
-    name    => "Globus-Connect-Server-5-Stable",
     ensure  => present,
+    name    => 'Globus-Connect-Server-5-Stable',
     enabled => 1,
     require => Package['globus-toolkit-repo']
   }
 
   yumrepo { 'globus-toolkit-6-stable-el7.repo':
-    name    => "Globus-Toolkit-6-Stable",
     ensure  => present,
+    name    => 'Globus-Toolkit-6-Stable',
     enabled => 1,
     require => Package['globus-toolkit-repo']
   }

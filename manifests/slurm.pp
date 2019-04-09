@@ -1,5 +1,6 @@
-class profile::slurm::base (String $cluster_name,
-                            String $munge_key)
+class profile::slurm::base (
+  String $cluster_name,
+  String $munge_key)
 {
   group { 'slurm':
     ensure => 'present',
@@ -63,11 +64,11 @@ class profile::slurm::base (String $cluster_name,
   }
 
   file { '/etc/slurm/epilog':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    source  => 'puppet:///modules/profile/slurm/epilog',
-    mode    => "0755"
+    ensure => 'present',
+    owner  => 'slurm',
+    group  => 'slurm',
+    source => 'puppet:///modules/profile/slurm/epilog',
+    mode   => '0755'
   }
 
   $node_template = @(END)
@@ -80,15 +81,15 @@ END
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    replace => 'false',
+    replace => false,
     content => inline_template($node_template),
     seltype => 'etc_t'
   }
 
   file { '/etc/slurm/plugstack.conf':
-    ensure => 'present',
-    owner  => 'slurm',
-    group  => 'slurm',
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
     content => 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
   }
 
@@ -107,31 +108,31 @@ fi
 END
 
   file { '/etc/profile.d/z-00-slurm.sh':
-     ensure  => 'present',
-     content => $slurm_path
+    ensure  => 'present',
+    content => $slurm_path
   }
 
   file { '/etc/munge/munge.key':
-    ensure => 'present',
-    owner  => 'munge',
-    group  => 'munge',
-    mode   => '0400',
+    ensure  => 'present',
+    owner   => 'munge',
+    group   => 'munge',
+    mode    => '0400',
     content => $munge_key,
     before  => Service['munge']
   }
 
   service { 'munge':
     ensure    => 'running',
-    enable    => 'true',
+    enable    => true,
     subscribe => File['/etc/munge/munge.key'],
     require   => Package['munge']
   }
 
   yumrepo { 'slurm-copr-repo':
-    enabled             => 'true',
+    enabled             => true,
     descr               => 'Copr repo for Slurm owned by cmdntrf',
     baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/epel-7-$basearch/',
-    skip_if_unavailable => 'true',
+    skip_if_unavailable => true,
     gpgcheck            => 1,
     gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/pubkey.gpg',
     repo_gpgcheck       => 0,
@@ -175,7 +176,7 @@ class profile::slurm::accounting {
 
   $storage_pass = lookup('profile::slurm::accounting::password')
   mysql::db { 'slurm_acct_db':
-    ensure  => present,
+    ensure   => present,
     user     => 'slurm',
     password => $storage_pass,
     host     => 'localhost',
@@ -184,7 +185,7 @@ class profile::slurm::accounting {
 
   $slurm_conf = "
 ## Accounting
-AccountingStorageHost=$hostname
+AccountingStorageHost=${::hostname}
 AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 #AccountingStorageEnforce=limits
@@ -200,13 +201,13 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
 
   file { '/etc/slurm/slurmdbd.conf':
     ensure  => present,
-    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $hostname, 'storage_pass' => $storage_pass}),
+    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $::hostname, 'storage_pass' => $storage_pass}),
     owner   => 'slurm',
     mode    => '0600',
   }
 
   package { 'slurm-slurmdbd':
-    ensure => present,
+    ensure  => present,
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
   }
@@ -222,30 +223,30 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   exec { 'sacctmgr_add_cluster':
-    command => "sacctmgr add cluster $cluster_name -i",
+    command => "sacctmgr add cluster ${cluster_name} -i",
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show cluster Names=$cluster_name -n | wc -l` == 1",
+    unless  => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
     require => Service['slurmdbd'],
     notify  => Service['slurmctld']
   }
 
-  $account_name = "def-sponsor00"
+  $account_name = 'def-sponsor00'
   # Create account for every user
-  exec { "slurm_create_account":
-    command => "sacctmgr add account $account_name -i Description='Cloud Cluster Account' Organization='Compute Canada'",
+  exec { 'slurm_create_account':
+    command => "sacctmgr add account ${account_name} -i Description='Cloud Cluster Account' Organization='Compute Canada'",
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show account Names=$account_name -n | wc -l` == 1",
+    unless  => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
     require => Service['slurmdbd'],
   }
 
   # Add guest accounts to the accounting database
   $nb_accounts = lookup({ name => 'profile::freeipa::guest_accounts::nb_accounts', default_value => 0 })
   $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
-  exec{ "slurm_add_user":
-    command     => "sacctmgr add user ${prefix}[01-${nb_accounts}] Account=${account_name} -i",
-    path        => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless      => "test `sacctmgr show user Names=${prefix}[01-${nb_accounts}] -n | wc -l` == ${nb_accounts}",
-    require     => Exec['slurm_create_account']
+  exec{ 'slurm_add_user':
+    command => "sacctmgr add user ${prefix}[01-${nb_accounts}] Account=${account_name} -i",
+    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    unless  => "test `sacctmgr show user Names=${prefix}[01-${nb_accounts}] -n | wc -l` == ${nb_accounts}",
+    require => Exec['slurm_create_account']
   }
 
 }
@@ -269,10 +270,10 @@ class profile::slurm::controller {
   }
 
   concat { '/etc/slurm/slurm.conf':
-    owner   => 'slurm',
-    group   => 'slurm',
-    ensure  => 'present',
-    mode    => '0644'
+    ensure => 'present',
+    group  => 'slurm',
+    owner  => 'slurm',
+    mode   => '0644'
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
@@ -285,7 +286,7 @@ class profile::slurm::controller {
   concat::fragment { 'slurm.conf_slurmctld':
     target  => '/etc/slurm/slurm.conf',
     order   => '10',
-    content => "ControlMachine=$hostname",
+    content => "ControlMachine=${::hostname}",
     notify  => Service['slurmctld']
   }
 }
@@ -299,7 +300,7 @@ class profile::slurm::node {
 
   service { 'slurmd':
     ensure    => 'running',
-    enable    => 'true',
+    enable    => true,
     require   => Package['slurm-slurmd'],
     subscribe => [File['/etc/slurm/cgroup.conf'],
                   File['/etc/slurm/plugstack.conf']]
@@ -311,7 +312,7 @@ class profile::slurm::node {
   }
 
   exec { 'slurm_config':
-    command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=$hostname .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
+    command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=${::hostname} .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf',
     notify  => Service['slurmd']
@@ -325,8 +326,8 @@ class profile::slurm::node {
   }
 
   exec { 'scontrol_update_state':
-    command   => "scontrol update nodename=$hostname state=idle",
-    onlyif    => "test $(sinfo -n $hostname -o %t -h) = down",
+    command   => "scontrol update nodename=${::hostname} state=idle",
+    onlyif    => "test $(sinfo -n ${::hostname} -o %t -h) = down",
     path      => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe => Service['slurmd']
   }

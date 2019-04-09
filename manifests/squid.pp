@@ -1,11 +1,11 @@
 class profile::squid::server {
-  package { "squid":
-    ensure => "installed"
+  package { 'squid':
+    ensure => 'installed'
   }
 
   service { 'squid':
     ensure => 'running',
-    enable => 'true'
+    enable => true
   }
 
   $cidr = profile::getcidr()

@@ -1,20 +1,20 @@
-class profile::cvmfs::client (String $squid_server = "mgmt01") {
+class profile::cvmfs::client (String $squid_server = 'mgmt01') {
   package { 'cvmfs-repo':
-    name     => 'cvmfs-release-2-6.noarch',
-    provider => 'rpm',
     ensure   => 'installed',
+    provider => 'rpm',
+    name     => 'cvmfs-release-2-6.noarch',
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm'
   }
 
   package { 'cc-cvmfs-repo':
-    name     => 'computecanada-release-1.0-1.noarch',
-    provider => 'rpm',
     ensure   => 'installed',
+    provider => 'rpm',
+    name     => 'computecanada-release-1.0-1.noarch',
     source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/Packages/computecanada-release-1.0-1.noarch.rpm'
   }
 
   package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
-    ensure => 'installed',
+    ensure  => 'installed',
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
