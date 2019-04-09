@@ -1,0 +1,23 @@
+{
+    "name": "puppet-slurm_cloud",
+    "version": "1.0.0",
+    "author": "Félix-Antoine Fortin",
+    "summary": "Installs, configures, and manage Slurm Cloud services.",
+    "license": "MIT",
+    "source": "https://git.computecanada.ca/magic_castle/puppet-slurm_cloud",
+    "project_page": "https://git.computecanada.ca/magic_castle/puppet-slurm_cloud",
+    "issues_url": "https://git.computecanada.ca/magic_castle/puppet-slurm_cloud/issues",
+    "dependencies": [ 
+        { "name":"puppetlabs/firewall", "version_requirement": " >= 1.15.1" },
+        { "name":"puppetlabs/mysql", "version_requirement": " >= 8.0.1"  },
+        { "name":"puppetlabs/stdlib", "version_requirement": " >= 5.2.0"  },
+        { "name":"puppetlabs/concat", "version_requirement": " >= 5.3.0"  },
+        { "name":"puppet/selinux", "version_requirement": " >= 1.6.1"  },
+        { "name":"puppet/healthcheck", "version_requirement": " >= 1.0.0"  },
+        { "name": "derdanne-nfs", "version_requirement": " >= 2.1.2"  },
+        { "name": "yelp-netstdlib", "version_requirement": " >= 0.0.1"  },
+        { "name": "petems-swap_file", "version_requirement": " >= 4.0.2"  },
+        { "name": "herculesteam-augeasproviders_ssh", "version_requirement": " >= 3.2.1"  },
+        { "name": "puppet-yum", "version_requirement": " >= 3.1.1"  }
+     ]
+}
