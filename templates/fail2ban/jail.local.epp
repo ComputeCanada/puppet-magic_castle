@@ -1,0 +1,12 @@
+[DEFAULT]
+bantime = 3600
+ignoreip = 127.0.0.1/8 <%= $cidr %>
+
+[sshd]
+enabled = true
+
+[ssh-ban-root]
+enabled = true
+filter = ssh-ban-root
+logpath = /var/log/secure
+maxretry = 0
