@@ -31,6 +31,6 @@ class profile::fail2ban {
     path   => '/etc/fail2ban/filter.d/sshd.conf',
     line   => '         ^%(__prefix_line_sl)sReceived disconnect from <HOST>%(__on_port_opt)s:\s*11: Bye Bye%(__suff)s$',
     after  => '^normal\ \=*',
-    notify => Service['fail2ban.service']
+    notify => Service['fail2ban']
   }
 }
