@@ -242,13 +242,14 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
   # Add guest accounts to the accounting database
   $nb_accounts = lookup({ name => 'profile::freeipa::guest_accounts::nb_accounts', default_value => 0 })
   $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
+  $nb_zeros    = inline_template("<%= '0' * ('${nb_accounts}'.length - 1) %>")
+  $user_range  = "${prefix}[${nb_zeros}1-${nb_accounts}]"
   exec{ 'slurm_add_user':
-    command => "sacctmgr add user ${prefix}[01-${nb_accounts}] Account=${account_name} -i",
+    command => "sacctmgr add user ${user_range} Account=${account_name} -i",
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show user Names=${prefix}[01-${nb_accounts}] -n | wc -l` == ${nb_accounts}",
+    unless  => "test `sacctmgr show user Names=${user_range} -n | wc -l` == ${nb_accounts}",
     require => Exec['slurm_create_account']
   }
-
 }
 
 class profile::slurm::controller {
