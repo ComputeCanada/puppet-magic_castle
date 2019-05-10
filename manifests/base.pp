@@ -35,6 +35,10 @@ class profile::base {
     ensure => 'absent',
   }
 
+  package { 'pdsh':
+    ensure => 'installed'
+  }
+
   class { 'firewall': }
 
   firewall { '001 accept all from local network':
