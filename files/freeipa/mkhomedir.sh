@@ -12,7 +12,7 @@ for GROUP in $ALL_GROUPS; do
     GID=$(getent group $GROUP | cut -d: -f3)
     mkdir -p "/project/$GID"
     chown root:"$GROUP" "/project/$GID"
-    chmod 770 "/project/$GID"
+    chmod 2770 "/project/$GID"
     ln -sfT "/project/$GID" "/project/$GROUP"
 done
 
