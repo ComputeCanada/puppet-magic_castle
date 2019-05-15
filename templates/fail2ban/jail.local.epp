@@ -4,6 +4,7 @@ ignoreip = 127.0.0.1/8 <%= $cidr %>
 
 [sshd]
 enabled = true
+filter = sshd-aggressive
 
 [ssh-ban-root]
 enabled = true
