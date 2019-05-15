@@ -91,4 +91,29 @@ class profile::base {
     value  => 'no',
     notify => Service['sshd']
   }
+
+  sshd_config { 'MACs':
+    ensure => present,
+    value  => 'umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
+    notify => Service['sshd']
+  }
+
+  sshd_config { 'KexAlgorithms':
+    ensure => present,
+    value  => 'curve25519-sha256,curve25519-sha256@libssh.org',
+    notify => Service['sshd']
+  }
+
+  sshd_config { 'HostKeyAlgorithms':
+    ensure => present,
+    value  => 'ssh-rsa',
+    notify => Service['sshd']
+  }
+
+  sshd_config { 'Ciphers':
+    ensure => present,
+    value => 'chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
+    notify => Service['sshd']
+  }
+
 }
