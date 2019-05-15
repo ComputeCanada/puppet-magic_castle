@@ -28,8 +28,10 @@ for USERNAME in ${USERNAMES}; do
             mkdir -p $PRO_USER
             mkdir -p "$USER_HOME/projects"
             ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
-            chown -R $USERNAME:$USERNAME "$USER_HOME/projects" $PRO_USER
-            chmod 750 "$USER_HOME/projects" $PRO_USER
+            chgrp $USERNAME "$USER_HOME/projects"
+            chown $USERNAME $PRO_USER
+            chmod 0755 "$USER_HOME/projects"
+            chmod 2700 $PRO_USER
         done
         # Scratch space
         SCR_USER="/scratch/$USERNAME"
