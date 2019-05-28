@@ -1,4 +1,4 @@
-class profile::nfs::client (String $server = 'mgmt01') {
+class profile::nfs::client (String $server) {
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
                           default_value => $::domain })
   $nfs_domain  = "int.${domain_name}"
