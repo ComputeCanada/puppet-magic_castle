@@ -194,6 +194,7 @@ class profile::freeipa::server
 
   $realm = upcase("int.${domain_name}")
   $ip = $facts['networking']['ip']
+  $arpa = profile::getarpa()
 
   # Remove hosts entry only once before install FreeIPA
   exec { 'remove-hosts-entry':
@@ -219,6 +220,8 @@ class profile::freeipa::server
                 --no-ui-redirect \
                 --no-pkinit \
                 --no-ntp \
+                --allow-zone-overlap \
+                --reverse-zone=${arpa} \
                 --real=${realm}",
     creates => '/etc/ipa/default.conf',
     timeout => 0,
