@@ -15,12 +15,20 @@ def init_api():
     api.Backend.cli.create_context()
 
 def user_add(uid, first, last, password, shell):
+    kargs = dict(uid=unicode(uid),
+                 givenname=unicode(first),
+                 sn=unicode(last),
+                 userpassword=unicode(password),
+                 loginshell=unicode(shell))
     try:
-        return api.Command.user_add(uid=unicode(uid),
-                                    givenname=unicode(first),
-                                    sn=unicode(last),
-                                    userpassword=unicode(password),
-                                    loginshell=unicode(shell))
+        uidnumber = os.stat('/mnt/home/' + uid).st_uid
+    except:
+        pass
+    else:
+        kargs['uidnumber'] = uidnumber
+
+    try:
+        return api.Command.user_add(**kargs)
     except errors.DuplicateEntry:
         return
 
