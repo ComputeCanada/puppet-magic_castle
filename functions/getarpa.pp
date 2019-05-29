@@ -1,6 +1,6 @@
 function profile::getarpa() >> String {
-  $network_list = $network.split(".")
-  $network_list.reverse!
-  $network_list.delete('0')
-  $network_list.join('.')+'.in-addr.arpa.'
+  $network_list = split($network, '[.]')
+  $inv_network_list = reverse($network_list)
+  $prefix = join($inv_network_list - ['0'], '.')
+  "${prefix}.in-addr.arpa."
 }
