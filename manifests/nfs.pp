@@ -1,4 +1,4 @@
-class profile::nfs::client (String $server) {
+class profile::nfs::client (String $server_ip) {
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
                           default_value => $::domain })
   $nfs_domain  = "int.${domain_name}"
@@ -15,22 +15,22 @@ class profile::nfs::client (String $server) {
   # selinux::boolean { 'use_nfs_home_dirs': }
 
   nfs::client::mount { '/home':
-      server        => $server,
+      server        => $server_ip,
       share         => 'home',
       options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/project':
-      server        => $server,
+      server        => $server_ip,
       share         => 'project',
       options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/scratch':
-      server        => $server,
+      server        => $server_ip,
       share         => 'scratch',
       options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
   nfs::client::mount { '/etc/slurm':
-      server        => $server,
+      server        => $server_ip,
       share         => 'slurm',
       options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }

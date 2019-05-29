@@ -8,13 +8,13 @@ class profile::rsyslog::base {
   }
 }
 
-class profile::rsyslog::client (String $server = 'mgmt01') {
+class profile::rsyslog::client (String $server_ip) {
   include profile::rsyslog::base
   file_line { 'remote_host':
     ensure => present,
     path   => '/etc/rsyslog.conf',
     match  => '^#\*.\* @@remote-host:514',
-    line   => "*.* @@${server}:514",
+    line   => "*.* @@${server_ip}:514",
     notify => Service['rsyslog']
   }
 }

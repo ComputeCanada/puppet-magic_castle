@@ -47,12 +47,14 @@ class profile::freeipa::base (
 
 }
 
-class profile::freeipa::client(String $server = 'mgmt01')
+class profile::freeipa::client(String $server_ip)
 {
-  include profile::freeipa::base
+  class { 'profile::freeipa::base':
+    dns_ip => $server_ip
+  }
+
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-  $dns_ip = lookup('profile::freeipa::base::dns_ip')
 
   package { 'ipa-client':
     ensure => 'installed'
@@ -64,14 +66,14 @@ class profile::freeipa::client(String $server = 'mgmt01')
   }
 
   tcp_conn_validator { 'ipa_dns':
-    host      => $dns_ip,
+    host      => $server_ip,
     port      => 53,
     try_sleep => 10,
     timeout   => 1200,
   }
 
   tcp_conn_validator { 'ipa_ldap':
-    host      => $dns_ip,
+    host      => $server_ip,
     port      => 389,
     try_sleep => 10,
     timeout   => 1200,
@@ -133,7 +135,7 @@ class profile::freeipa::client(String $server = 'mgmt01')
     command => '/sbin/ipa-client-install -U --uninstall',
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     onlyif  => ['test -f /etc/ipa/default.conf',
-                "curl --silent https://${server}.int.${domain_name}/ipa/json; test $? == 35"]
+                'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
   }
 
 }
