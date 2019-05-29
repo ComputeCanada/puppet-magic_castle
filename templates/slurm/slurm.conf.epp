@@ -1,7 +1,7 @@
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
 ControlMachine=<%= $control_machine %>
-ControlAddr=<%= control_machine_ip %>
+ControlAddr=<%= $control_machine_ip %>
 AuthType=auth/munge
 CryptoType=crypto/munge
 SlurmUser=slurm
