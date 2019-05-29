@@ -1,7 +1,20 @@
 class profile::slurm::base (
   String $cluster_name,
+  String $slurmctld_ip,
+  String $slurmdbd_ip,
   String $munge_key)
 {
+  $slurmcltd_host = 'slurmctld1'
+  $slurmdbd_host = 'slurmdbd1'
+
+  host { "${slurmcltd_host}":
+    ip => $slurmctld_ip
+  }
+
+  host { "${slurmdbd_host}":
+    ip => $slurmdbd_ip
+  }
+
   group { 'slurm':
     ensure => 'present',
     gid    =>  '2001'
@@ -69,6 +82,18 @@ class profile::slurm::base (
     group  => 'slurm',
     source => 'puppet:///modules/profile/slurm/epilog',
     mode   => '0755'
+  }
+
+  file { '/etc/slurm/slurm.conf':
+    ensure  => 'present',
+    content => epp('profile/slurm/slurm.conf', { 'cluster_name'       => $cluster_name,
+                                                 'control_machine'    => $slurmcltd_host,
+                                                 'control_machine_ip' => $slurmctld_ip,
+                                                 'storage_host'       => $slurmdbd_host,
+                                               }),
+    group   => 'slurm',
+    owner   => 'slurm',
+    mode    => '0644'
   }
 
   $node_template = @(END)
@@ -169,39 +194,24 @@ END
   }
 }
 
-class profile::slurm::accounting {
+class profile::slurm::accounting(String $password) {
+  $slurmdbd_host = 'slurmdbd1'
+
   class { 'mysql::server':
     remove_default_accounts => true
   }
 
-  $storage_pass = lookup('profile::slurm::accounting::password')
   mysql::db { 'slurm_acct_db':
     ensure   => present,
     user     => 'slurm',
-    password => $storage_pass,
+    password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
   }
 
-  $slurm_conf = "
-## Accounting
-AccountingStorageHost=${::hostname}
-AccountingStorageType=accounting_storage/slurmdbd
-AccountingStorageTRES=gres/gpu,cpu,mem
-#AccountingStorageEnforce=limits
-JobAcctGatherType=jobacct_gather/linux
-JobAcctGatherFrequency=task=30
-JobAcctGatherParams=NoOverMemoryKill,UsePSS
-"
-  concat::fragment { 'slurm.conf_slurmdbd':
-    target  => '/etc/slurm/slurm.conf',
-    order   => '50',
-    content => $slurm_conf
-  }
-
   file { '/etc/slurm/slurmdbd.conf':
     ensure  => present,
-    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $::hostname, 'storage_pass' => $storage_pass}),
+    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $slurmdbd_host, 'storage_pass' => $password}),
     owner   => 'slurm',
     mode    => '0600',
   }
@@ -216,8 +226,8 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     ensure  => running,
     enable  => true,
     require => [Package['slurm-slurmdbd'],
-                File['/etc/slurm/slurmdbd.conf'],
-                Concat::Fragment['slurm.conf_slurmdbd']],
+                File['/etc/slurm/slurm.conf'],
+                File['/etc/slurm/slurmdbd.conf']],
     before  => Service['slurmctld']
   }
 
@@ -267,28 +277,8 @@ class profile::slurm::controller {
   service { 'slurmctld':
     ensure  => 'running',
     enable  => true,
-    require => Package['slurm-slurmctld']
-  }
-
-  concat { '/etc/slurm/slurm.conf':
-    ensure => 'present',
-    group  => 'slurm',
-    owner  => 'slurm',
-    mode   => '0644'
-  }
-
-  $cluster_name = lookup('profile::slurm::base::cluster_name')
-  concat::fragment { 'slurm.conf_header':
-    target  => '/etc/slurm/slurm.conf',
-    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
-    order   => '01'
-  }
-
-  concat::fragment { 'slurm.conf_slurmctld':
-    target  => '/etc/slurm/slurm.conf',
-    order   => '10',
-    content => "ControlMachine=${::hostname}",
-    notify  => Service['slurmctld']
+    require => [Package['slurm-slurmctld'],
+                File['/etc/slurm/slurm.conf']]
   }
 }
 
@@ -303,7 +293,8 @@ class profile::slurm::node {
     ensure    => 'running',
     enable    => true,
     require   => Package['slurm-slurmd'],
-    subscribe => [File['/etc/slurm/cgroup.conf'],
+    subscribe => [File['/etc/slurm/slurm.conf'],
+                  File['/etc/slurm/cgroup.conf'],
                   File['/etc/slurm/plugstack.conf']]
   }
 

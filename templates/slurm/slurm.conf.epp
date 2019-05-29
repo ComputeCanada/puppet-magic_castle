@@ -1,5 +1,7 @@
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
+ControlMachine=<%= $control_machine %>
+ControlAddr=<%= control_machine_ip %>
 AuthType=auth/munge
 CryptoType=crypto/munge
 SlurmUser=slurm
@@ -36,3 +38,12 @@ TaskPlugin=task/cgroup
 
 StateSaveLocation=/var/spool/slurm
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none bash"
+
+## Accounting
+AccountingStorageHost=<%= $storage_host %>
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageTRES=gres/gpu,cpu,mem
+#AccountingStorageEnforce=limits
+JobAcctGatherType=jobacct_gather/linux
+JobAcctGatherFrequency=task=30
+JobAcctGatherParams=NoOverMemoryKill,UsePSS
