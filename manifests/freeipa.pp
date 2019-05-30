@@ -109,7 +109,7 @@ class profile::freeipa::client(String $server_ip)
   $reverse_zone = profile::getreversezone()
   $ptr_record = profile::getptrrecord()
   exec { 'ipa_dnsrecord-add_ptr':
-    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-rec=${::hostname}",
+    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-rec=${::fqdn}",
     unless      => "dig -x ${::ipaddress} | grep -q ';; ANSWER SECTION:'",
     require     => [File['kinit_wrapper'], Exec['ipa-client-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
