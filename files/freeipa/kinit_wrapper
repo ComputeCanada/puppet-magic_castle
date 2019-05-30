@@ -1,0 +1,9 @@
+#!/bin/bash
+trap kdestroy EXIT
+
+if [ -z "${IPA_ADMIN_PASSWD}" ]; then
+    kinit admin
+else
+    echo $IPA_ADMIN_PASSWD | kinit admin &> /dev/null
+fi
+$*

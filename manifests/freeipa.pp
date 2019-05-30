@@ -12,6 +12,13 @@ class profile::freeipa::base (
     enable => true
   }
 
+  file { 'kinit_wrapper':
+    ensure => present,
+    path   => '/usr/bin/kinit_wrapper',
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755'
+  }
+
   file_line { 'resolv_search':
     ensure => present,
     path   => '/etc/resolv.conf',
@@ -97,6 +104,16 @@ class profile::freeipa::client(String $server_ip)
                   Tcp_conn_validator['ipa_ldap']],
     creates   => '/etc/ipa/default.conf',
     notify    => Service['systemd-logind']
+  }
+
+  $reverse_zone = profile::getreversezone()
+  $ptr_record = profile::getptrrecord()
+  exec { 'ipa_dnsrecord-add_ptr':
+    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-rec=${::hostname}",
+    unless      => "dig -x ${::ip} | grep -q ";; ANSWER SECTION:"",
+    require     => [File['kinit_wrapper'], Exec['ipa-client-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
   service { 'sssd':
