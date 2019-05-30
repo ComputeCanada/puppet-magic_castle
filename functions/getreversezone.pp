@@ -1,4 +1,4 @@
-function profile::getarpa() >> String {
+function profile::getreversezone() >> String {
   $network_list = split($network, '[.]')
   $netmask_list = split(profile::getnetmask(), '[.]')
 
