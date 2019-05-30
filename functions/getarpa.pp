@@ -1,6 +1,9 @@
 function profile::getarpa() >> String {
   $network_list = split($network, '[.]')
-  $inv_network_list = reverse($network_list)
-  $prefix = join($inv_network_list - ['0'], '.')
-  "${prefix}.in-addr.arpa."
+  $netmask_list = split(profile::getnetmask(), '[.]')
+
+  $filtered_network = $network_list.filter |$i, $v| { $netmask_list[$i] != '0' }
+
+  $zone = join(reverse($filtered_network), '.')
+  "${zone}.in-addr.arpa."
 }
