@@ -62,7 +62,7 @@ class profile::freeipa::client(String $server_ip)
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-  $fqnd = ${::hostname}.int.${domain_name}
+  $fqdn = "${::hostname}.int.${domain_name}"
 
   package { 'ipa-client':
     ensure => 'installed'
