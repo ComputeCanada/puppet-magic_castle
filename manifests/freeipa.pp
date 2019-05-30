@@ -62,14 +62,15 @@ class profile::freeipa::client(String $server_ip)
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $fqnd = ${::hostname}.int.${domain_name}
 
   package { 'ipa-client':
     ensure => 'installed'
   }
 
   exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname ${::hostname}.int.${domain_name}",
-    unless  => "/usr/bin/test `hostname` = ${::hostname}.int.${domain_name}"
+    command => "/bin/hostnamectl set-hostname ${fqdn}",
+    unless  => "/usr/bin/test `hostname` = ${fqdn}"
   }
 
   tcp_conn_validator { 'ipa_dns':
@@ -109,7 +110,7 @@ class profile::freeipa::client(String $server_ip)
   $reverse_zone = profile::getreversezone()
   $ptr_record = profile::getptrrecord()
   exec { 'ipa_dnsrecord-add_ptr':
-    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-hostname=${::fqdn}.",
+    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-hostname=${fqdn}.",
     unless      => "dig -x ${::ipaddress} | grep -q ';; ANSWER SECTION:'",
     require     => [File['kinit_wrapper'], Exec['ipa-client-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
