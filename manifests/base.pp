@@ -1,4 +1,4 @@
-class profile::base {
+class profile::base (String $admin_username = 'centos') {
   include stdlib
 
   class { 'selinux':
@@ -6,11 +6,11 @@ class profile::base {
     type => 'targeted',
   }
 
-  # Configure centos user selinux mapping
-  exec { 'selinux_login_centos':
-    command => 'semanage login -a -S targeted -s "unconfined_u" -r "s0-s0:c0.c1023" centos',
-    unless  => 'grep -q "centos:unconfined_u:s0-s0:c0.c1023" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  # Configure admin_username user selinux mapping
+  exec { 'selinux_login_admin':
+    command => "semanage login -a -S targeted -s 'unconfined_u' -r 's0-s0:c0.c1023' ${admin_username}",
+    unless  => "grep -q '${admin_username}:unconfined_u:s0-s0:c0.c1023' /etc/selinux/targeted/seusers",
+    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
   package { 'yum-plugin-priorities':
