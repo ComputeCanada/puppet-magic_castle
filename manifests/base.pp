@@ -1,4 +1,4 @@
-class profile::base (String $admin_username = 'centos') {
+class profile::base (String $sudoer_username = 'centos') {
   include stdlib
 
   class { 'selinux':
@@ -6,10 +6,10 @@ class profile::base (String $admin_username = 'centos') {
     type => 'targeted',
   }
 
-  # Configure admin_username user selinux mapping
-  exec { 'selinux_login_admin':
-    command => "semanage login -a -S targeted -s 'unconfined_u' -r 's0-s0:c0.c1023' ${admin_username}",
-    unless  => "grep -q '${admin_username}:unconfined_u:s0-s0:c0.c1023' /etc/selinux/targeted/seusers",
+  # Configure sudoer_username user selinux mapping
+  exec { 'selinux_login_sudoer':
+    command => "semanage login -a -S targeted -s 'unconfined_u' -r 's0-s0:c0.c1023' ${sudoer_username}",
+    unless  => "grep -q '${sudoer_username}:unconfined_u:s0-s0:c0.c1023' /etc/selinux/targeted/seusers",
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
