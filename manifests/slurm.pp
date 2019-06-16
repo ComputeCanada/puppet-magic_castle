@@ -130,11 +130,11 @@ END
 
   yumrepo { 'slurm-copr-repo':
     enabled             => true,
-    descr               => 'Copr repo for Slurm owned by cmdntrf',
-    baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/epel-7-$basearch/',
+    descr               => 'Copr repo for Slurm19 owned by cmdntrf',
+    baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-7-$basearch/',
     skip_if_unavailable => true,
     gpgcheck            => 1,
-    gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm/pubkey.gpg',
+    gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/pubkey.gpg',
     repo_gpgcheck       => 0,
   }
 
@@ -287,7 +287,7 @@ class profile::slurm::controller {
   concat::fragment { 'slurm.conf_slurmctld':
     target  => '/etc/slurm/slurm.conf',
     order   => '10',
-    content => "ControlMachine=${::hostname}",
+    content => "SlurmctldHost=${::hostname}(${::ipaddress})",
     notify  => Service['slurmctld']
   }
 }
