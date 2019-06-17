@@ -176,8 +176,18 @@ END
 }
 
 class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
+
+  $override_options = {
+    'mysqld' => {
+      'innodb_buffer_pool_size' => '1024M',
+      'innodb_log_file_size' => '64M',
+      'innodb_lock_wait_timeout' => '900',
+    }
+  }
+
   class { 'mysql::server':
-    remove_default_accounts => true
+    remove_default_accounts => true,
+    override_options        => $override_options
   }
 
   mysql::db { 'slurm_acct_db':
