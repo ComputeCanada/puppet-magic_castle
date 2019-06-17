@@ -235,6 +235,7 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     port      => $dbd_port,
     try_sleep => 5,
     timeout   => 60,
+    require   => Service['slurmdbd']
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
