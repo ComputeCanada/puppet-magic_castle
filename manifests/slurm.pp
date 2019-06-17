@@ -12,7 +12,7 @@ class profile::slurm::base (
     groups  => 'slurm',
     uid     => '2001',
     home    => '/var/lib/slurm',
-    comment =>  'Slurm workload manager',
+    comment => 'Slurm workload manager',
     shell   => '/bin/bash',
     before  => Package['slurm']
   }
