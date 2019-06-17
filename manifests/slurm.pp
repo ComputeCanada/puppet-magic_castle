@@ -37,6 +37,12 @@ class profile::slurm::base (
     require => Yumrepo['epel']
   }
 
+  file { '/var/log/slurm':
+    ensure => 'directory',
+    owner  => 'slurm',
+    group  => 'slurm'
+  }
+
   file { '/var/spool/slurm':
     ensure => 'directory',
     owner  => 'slurm',

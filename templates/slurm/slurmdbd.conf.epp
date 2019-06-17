@@ -1,5 +1,5 @@
 AuthType=auth/munge
-LogFile=/var/log/slurmdbd.log
+LogFile=/var/log/slurm/slurmdbd.log
 DbdHost=<%= $dbd_host %>
 DbdPort=<%= $dbd_port %>
 SlurmUser=slurm
