@@ -333,6 +333,13 @@ class profile::slurm::node {
     seltype => 'default_t'
   }
 
+
+  file { '/var/spool/slurmd':
+    ensure => 'directory',
+    owner  => 'slurm',
+    group  => 'slurm'
+  }
+
   exec { 'slurm_config':
     command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=${::hostname} .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
