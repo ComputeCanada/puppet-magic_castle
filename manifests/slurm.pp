@@ -169,7 +169,7 @@ END
   }
 }
 
-class profile::slurm::accounting {
+class profile::slurm::accounting(Integer $dbd_port = 6819) {
   class { 'mysql::server':
     remove_default_accounts => true
   }
@@ -201,7 +201,11 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
 
   file { '/etc/slurm/slurmdbd.conf':
     ensure  => present,
-    content => epp('profile/slurm/slurmdbd.conf', {'dbd_host' => $::hostname, 'storage_pass' => $storage_pass}),
+    content => epp('profile/slurm/slurmdbd.conf',
+      { 'dbd_host'     => $::hostname,
+        'dbd_port'     => $dbd_port,
+        'storage_pass' => $storage_pass
+      }),
     owner   => 'slurm',
     mode    => '0600',
   }
@@ -221,22 +225,33 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     before  => Service['slurmctld']
   }
 
+  tcp_conn_validator { 'slurmdbd_port':
+    host      => $::hostname,
+    port      => $dbd_port,
+    try_sleep => 5,
+    timeout   => 60,
+  }
+
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   exec { 'sacctmgr_add_cluster':
-    command => "sacctmgr add cluster ${cluster_name} -i",
-    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
-    require => Service['slurmdbd'],
-    notify  => Service['slurmctld']
+    command   => "sacctmgr add cluster ${cluster_name} -i",
+    path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
+    tries     => 5,
+    try_sleep => 5,
+    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
+    notify    => Service['slurmctld']
   }
 
   $account_name = 'def-sponsor00'
   # Create account for every user
   exec { 'slurm_create_account':
-    command => "sacctmgr add account ${account_name} -i Description='Cloud Cluster Account' Organization='Compute Canada'",
-    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
-    require => Service['slurmdbd'],
+    command   => "sacctmgr add account ${account_name} -i Description='Cloud Cluster Account' Organization='Compute Canada'",
+    path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
+    tries     => 5,
+    try_sleep => 5,
+    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
   }
 
   # Add guest accounts to the accounting database
