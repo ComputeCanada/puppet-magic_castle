@@ -169,16 +169,15 @@ END
   }
 }
 
-class profile::slurm::accounting(Integer $dbd_port = 6819) {
+class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   class { 'mysql::server':
     remove_default_accounts => true
   }
 
-  $storage_pass = lookup('profile::slurm::accounting::password')
   mysql::db { 'slurm_acct_db':
     ensure   => present,
     user     => 'slurm',
-    password => $storage_pass,
+    password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
   }
@@ -204,7 +203,7 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     content => epp('profile/slurm/slurmdbd.conf',
       { 'dbd_host'     => $::hostname,
         'dbd_port'     => $dbd_port,
-        'storage_pass' => $storage_pass
+        'storage_pass' => $password
       }),
     owner   => 'slurm',
     mode    => '0600',
