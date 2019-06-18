@@ -354,8 +354,8 @@ class profile::slurm::node {
   }
 
   $access_conf = "+:wheel:ALL
-      -:ALL:ALL'
-      "
+  -:ALL:ALL
+  "
 
   file { '/etc/security/access.conf':
     ensure  => present,
