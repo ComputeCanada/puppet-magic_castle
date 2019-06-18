@@ -360,6 +360,11 @@ class profile::slurm::node {
 -:ALL:ALL',
   }
 
+  selinux::module { 'sshd_pam_slurm_adopt':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/slurm/pam_slurm_adopt.pp',
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,

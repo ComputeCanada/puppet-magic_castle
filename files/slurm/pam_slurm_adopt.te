@@ -1,0 +1,12 @@
+module sshd_pam_slurm_adopt 1.0;
+
+require {
+        type sshd_t;
+        type var_spool_t;
+        class sock_file write;
+}
+
+#============= sshd_t ==============
+
+#!!!! WARNING: 'var_spool_t' is a base type.
+allow sshd_t var_spool_t:sock_file write;
