@@ -28,6 +28,7 @@ SlurmdPidFile=/var/run/slurmd.pid
 
 # JOBS AND TASKS/RESOURCES CONTROL
 TmpFS=/localscratch
+PrologFlags=contain
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog
 MpiDefault=pmi2
