@@ -362,7 +362,7 @@ class profile::slurm::node {
 
   selinux::module { 'sshd_pam_slurm_adopt':
     ensure    => 'present',
-    source_pp => 'puppet:///modules/slurm/pam_slurm_adopt.pp',
+    source_pp => 'puppet:///modules/profile/slurm/pam_slurm_adopt.pp',
   }
 
   service { 'slurmd':
