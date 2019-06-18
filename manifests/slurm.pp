@@ -340,7 +340,7 @@ class profile::slurm::node {
     type     => 'account',
     control  => 'sufficient',
     module   => 'pam_slurm_adopt.so',
-    position => 'after module pam_nologin.so',
+    position => 'after module password-auth',
   }
 
   pam { 'Add pam_access':
