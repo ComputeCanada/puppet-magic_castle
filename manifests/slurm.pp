@@ -334,6 +334,23 @@ class profile::slurm::node {
     ensure => 'installed'
   }
 
+  pam { 'Add pam_slurm_adopt':
+    ensure    => present,
+    service   => 'sshd',
+    type      => 'account',
+    control   => 'sufficient',
+    module    => 'pam_slurm_adopt.so',
+    arguments => '',
+    position  => 'before module pam_access.so',
+  }
+
+  file_line { 'access_allow_wheel_deny_all':
+    ensure => present,
+    path   => '/etc/security/access.conf',
+    line   => '+:wheel:ALL
+-:ALL:ALL',
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,

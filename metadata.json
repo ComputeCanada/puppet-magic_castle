@@ -18,6 +18,7 @@
         { "name": "yelp-netstdlib", "version_requirement": " >= 0.0.1"  },
         { "name": "petems-swap_file", "version_requirement": " >= 4.0.2"  },
         { "name": "herculesteam-augeasproviders_ssh", "version_requirement": " >= 3.2.1"  },
-        { "name": "puppet-yum", "version_requirement": " >= 3.1.1"  }
+        { "name": "puppet-yum", "version_requirement": " >= 3.1.1"  },
+        { "name": "herculesteam/augeasproviders_pam", "version_requirement": " >= 2.2.1"  }
      ]
 }
