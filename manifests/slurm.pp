@@ -353,11 +353,13 @@ class profile::slurm::node {
     require  => Pam['Add pam_slurm_adopt']
   }
 
-  file_line { 'access_allow_wheel_deny_all':
-    ensure => present,
-    path   => '/etc/security/access.conf',
-    line   => '+:wheel:ALL
--:ALL:ALL',
+  $access_conf = "+:wheel:ALL
+      -:ALL:ALL'
+      "
+
+  file { '/etc/security/access.conf':
+    ensure  => present,
+    content => $access_conf
   }
 
   selinux::module { 'sshd_pam_slurm_adopt':
