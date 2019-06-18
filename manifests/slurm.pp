@@ -335,13 +335,22 @@ class profile::slurm::node {
   }
 
   pam { 'Add pam_slurm_adopt':
-    ensure    => present,
-    service   => 'sshd',
-    type      => 'account',
-    control   => 'sufficient',
-    module    => 'pam_slurm_adopt.so',
-    arguments => '',
-    position  => 'before module pam_access.so',
+    ensure   => present,
+    service  => 'sshd',
+    type     => 'account',
+    control  => 'sufficient',
+    module   => 'pam_slurm_adopt.so',
+    position => 'after module pam_nologin.so',
+  }
+
+  pam { 'Add pam_access':
+    ensure   => present,
+    service  => 'sshd',
+    type     => 'account',
+    control  => 'required',
+    module   => 'pam_access.so',
+    position => 'after module pam_slurm_adopt.so',
+    require  => Pam['Add pam_slurm_adopt']
   }
 
   file_line { 'access_allow_wheel_deny_all':
