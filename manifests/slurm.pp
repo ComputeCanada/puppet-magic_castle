@@ -330,6 +330,10 @@ class profile::slurm::node {
     ensure => 'installed'
   }
 
+  package { 'slurm-pam_slurm':
+    ensure => 'installed'
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
@@ -342,7 +346,6 @@ class profile::slurm::node {
     ensure  => 'directory',
     seltype => 'default_t'
   }
-
 
   file { '/var/spool/slurmd':
     ensure => 'directory',
