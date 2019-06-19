@@ -353,9 +353,9 @@ class profile::slurm::node {
     require  => Pam['Add pam_slurm_adopt']
   }
 
-  $access_conf = "+:wheel:ALL
-  -:ALL:ALL
-  "
+  $access_conf = '# Allow admin to connect, deny all other
++:wheel:ALL
+-:ALL:ALL'
 
   file { '/etc/security/access.conf':
     ensure  => present,
