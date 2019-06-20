@@ -355,7 +355,8 @@ class profile::slurm::node {
 
   $access_conf = '# Allow admin to connect, deny all other
 +:wheel:ALL
--:ALL:ALL'
+-:ALL:ALL
+'
 
   file { '/etc/security/access.conf':
     ensure  => present,
