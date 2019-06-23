@@ -353,7 +353,10 @@ class profile::slurm::node {
     require  => Pam['Add pam_slurm_adopt']
   }
 
-  $access_conf = '# Allow admin to connect, deny all other
+  $access_conf = '
+# Allow root cronjob
++ : root : cron crond :0 tty1 tty2 tty3 tty4 tty5 tty6
+# Allow admin to connect, deny all other
 +:wheel:ALL
 -:ALL:ALL
 '
