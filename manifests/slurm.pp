@@ -69,6 +69,13 @@ class profile::slurm::base (
     source => 'puppet:///modules/profile/slurm/cgroup.conf'
   }
 
+  file { '/etc/slurm/cgroup_allowed_devices_file.conf':
+    ensure => 'present',
+    owner  => 'slurm',
+    group  => 'slurm',
+    source => 'puppet:///modules/profile/slurm/cgroup_allowed_devices_file.conf'
+  }
+
   file { '/etc/slurm/epilog':
     ensure => 'present',
     owner  => 'slurm',
