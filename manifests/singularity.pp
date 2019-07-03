@@ -1,5 +1,5 @@
 class profile::singularity {
-  $singularity_version = '3.1'
+  $singularity_version = '3.2'
 
   yumrepo { 'singularity-copr-repo':
     enabled             => true,
@@ -11,9 +11,15 @@ class profile::singularity {
     repo_gpgcheck       => 0,
   }
 
+  # EPEL also provides singularity, but it is installed in /usr/bin.
+  # We disable all repo except our own singularity repo for the duration
+  # of the install.
   package { 'singularity':
-    ensure  => 'installed',
-    require => Yumrepo['singularity-copr-repo']
+    ensure          => 'installed',
+    require         => Yumrepo['singularity-copr-repo'],
+    install_options => [
+      { '--disablerepo' => '*' },
+      { '--enablerepo'  => 'singularity-copr-repo' }],
   }
 
   file { '/opt/software/singularity':
