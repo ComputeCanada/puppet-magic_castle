@@ -1,3 +1,9 @@
+# Slurm base class that is included in each different profile.
+# The class configures the slurm and munge users, install the
+# base slurm packages and configures everything that is required
+# on all types of nodes.
+# @param cluster_name Specifies the name of the cluster as it appears in slurm.conf
+# @param munge_key Specifies the munge secret key that allows slurm nodes to communicate
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key)
@@ -103,7 +109,10 @@ END
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
+    content => @(EOT/L),
+      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
+      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
+      |EOT
   }
 
   $slurm_path = @(END)
@@ -171,7 +180,10 @@ END
 
   file { 'cc-tmpfs_mount.so':
     ensure         => 'present',
-    source         => 'https://gist.github.com/cmd-ntrf/a9305513809e7c9a104f79f0f15ec067/raw/da71a07f455206e21054f019d26a277daeaa0f00/cc-tmpfs_mounts.so',
+    source         => @(EOT/L),
+      https://gist.github.com/cmd-ntrf/a9305513809e7c9a104f79f0f15ec067/
+      raw/da71a07f455206e21054f019d26a277daeaa0f00/cc-tmpfs_mounts.so
+      |EOT
     path           => '/opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so',
     owner          => 'slurm',
     group          => 'slurm',
@@ -182,6 +194,9 @@ END
   }
 }
 
+# Slurm accouting. This where is slurm accounting database and daemon is ran.
+# @param password Specifies the password to access the MySQL database with user slurm.
+# @param dbd_port Specfies the port on which run the slurmdbd daemon.
 class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
   $override_options = {
@@ -269,7 +284,10 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
   $account_name = 'def-sponsor00'
   # Create account for every user
   exec { 'slurm_create_account':
-    command   => "sacctmgr add account ${account_name} -i Description='Cloud Cluster Account' Organization='Compute Canada'",
+    command   => @("EOT"/L),
+      sacctmgr add account ${account_name} \
+      -i Description='Cloud Cluster Account' Organization='Compute Canada'
+      |EOT
     path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
     tries     => 5,
@@ -290,6 +308,7 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
   }
 }
 
+# Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
   include profile::slurm::base
 
@@ -330,6 +349,7 @@ class profile::slurm::controller {
   }
 }
 
+# Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
   include profile::slurm::base
 
@@ -398,7 +418,11 @@ class profile::slurm::node {
   }
 
   exec { 'slurm_config':
-    command => "flock /etc/slurm/node.conf.lock sed -i \"s/NodeName=${::hostname} .*/$(slurmd -C | head -n 1)/g\" /etc/slurm/node.conf",
+    command => @("EOT"/L),
+      flock /etc/slurm/node.conf.lock \
+      sed -i "s/NodeName=${::hostname} .*/$(slurmd -C | head -n 1)/g" \
+      /etc/slurm/node.conf
+      |EOT
     path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf',
     notify  => Service['slurmd']
@@ -419,6 +443,9 @@ class profile::slurm::node {
   }
 }
 
+# Slurm submitter class. This is for instances that neither run slurmd
+# and slurmctld but still need to be able to communicate with the slurm
+# controller through Slurm command-line tools.
 class profile::slurm::submitter {
   include profile::slurm::base
 }
