@@ -198,7 +198,7 @@ END
     source         => @(EOT/L),
       https://gist.github.com/cmd-ntrf/a9305513809e7c9a104f79f0f15ec067/\
       raw/da71a07f455206e21054f019d26a277daeaa0f00/cc-tmpfs_mounts.so
-      |EOT
+      |-EOT
     path           => '/opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so',
     owner          => 'slurm',
     group          => 'slurm',
