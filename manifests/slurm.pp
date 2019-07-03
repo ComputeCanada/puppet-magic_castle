@@ -105,6 +105,21 @@ END
     seltype => 'etc_t'
   }
 
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => @(EOT/L),
+      ###########################################################
+      # Slurm's Generic Resource (GRES) configuration file
+      # Use NVML to gather GPU configuration information
+      # Information about all other GRES gathered from slurm.conf
+      ###########################################################
+      AutoDetect=nvml
+      |EOT
+    seltype => 'etc_t'
+  }
+
   file { '/etc/slurm/plugstack.conf':
     ensure  => 'present',
     owner   => 'slurm',
