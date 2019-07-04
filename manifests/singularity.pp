@@ -18,7 +18,7 @@ class profile::singularity {
     ensure          => 'installed',
     require         => Yumrepo['singularity-copr-repo'],
     install_options => [
-      { '--disablerepo' => '*' },
+      { '--disablerepo' => 'epel' },
       { '--enablerepo'  => 'singularity-copr-repo' }],
   }
 
