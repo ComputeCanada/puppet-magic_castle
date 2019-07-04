@@ -33,6 +33,14 @@ class profile::gpu {
       ensure  => 'installed',
       require => [Package['cuda-repo'], Package['kernel-devel']]
     }
+
+    kmod::load { [
+      'nvidia',
+      'nvidia_drm',
+      'nvidia_modeset',
+      'nvidia_uvm'
+      ]:
+    }
   }
 
   file { '/usr/lib64/nvidia':
