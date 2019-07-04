@@ -27,6 +27,10 @@ class profile::base (String $sudoer_username = 'centos') {
     },
   }
 
+  package { 'pciutils':
+    ensure => 'installed'
+  }
+
   package { 'vim':
     ensure => 'installed'
   }
