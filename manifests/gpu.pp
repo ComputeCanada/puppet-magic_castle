@@ -6,6 +6,10 @@ class profile::gpu {
     source   => 'http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-repo-rhel7-10.1.168-1.x86_64.rpm'
   }
 
+  package { 'kernel-devel':
+    ensure => 'installed'
+  }
+
   package { [
     'nvidia-driver-cuda-libs',
     'nvidia-driver-NVML',
@@ -18,7 +22,7 @@ class profile::gpu {
     'nvidia-modprobe',
     ]:
     ensure  => 'installed',
-    require => Package['cuda-repo']
+    require => [Package['cuda-repo'], Package['kernel-devel']]
   }
 
   file { '/usr/lib64/nvidia':
