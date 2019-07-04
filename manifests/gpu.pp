@@ -59,8 +59,9 @@ class profile::gpu {
 
   $nvidia_libs.each |String $lib| {
     file { "/usr/lib64/nvidia/${lib}":
-      ensure => link,
-      target => "/usr/lib64/${lib}",
+      ensure  => link,
+      target  => "/usr/lib64/${lib}",
+      seltype => 'lib_t'
     }
   }
 
