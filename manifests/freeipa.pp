@@ -258,4 +258,12 @@ class profile::freeipa::server
     before  => File_line['resolv_search'],
     notify  => Service['systemd-logind']
   }
+
+  exec { 'ipa_config-mod_auth-otp':
+    command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
 }
