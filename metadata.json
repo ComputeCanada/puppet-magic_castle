@@ -20,6 +20,8 @@
         { "name": "herculesteam-augeasproviders_ssh", "version_requirement": " >= 3.2.1"  },
         { "name": "puppet-yum", "version_requirement": " >= 3.1.1"  },
         { "name": "herculesteam/augeasproviders_pam", "version_requirement": " >= 2.2.1"  },
-        { "name": "camptocamp/kmod", "version_requirement": " >= 2.3.0"  }
+        { "name": "camptocamp/kmod", "version_requirement": " >= 2.3.0"  },
+        { "name": "puppet-prometheus", "version_requirement": " >= 7.0.0"},
+        { "name": "KyleAnderson-consul", "version_requirement": " >= 5.1.0"}
      ]
 }
