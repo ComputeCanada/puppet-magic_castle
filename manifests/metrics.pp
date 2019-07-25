@@ -7,10 +7,11 @@ class profile::metrics::server {
       'bootstrap_expect' => 1,
       'data_dir'         => '/opt/consul',
       'log_level'        => 'INFO',
-      'node_name'        => $facts['fqdn'],
+      'node_name'        => $facts['hostname'],
       'server'           => true,
     }
   }
+
   class { 'prometheus::server':
     version        => '2.11.1',
     scrape_configs => [
@@ -21,14 +22,19 @@ class profile::metrics::server {
         'consul_sd_configs' => [{'server' => 'localhost:8500'}],
         'relabel_configs'   => [
           {
-            'source_labels' => [ '__meta_consul_tags' ],
+            'source_labels' => ['__meta_consul_tags'],
             'regex'         => '.*,monitor,.*',
             'action'        => 'keep'
+          },
+          {
+            'source_labels' => ['__meta_consul_node'],
+            'target_label'  => 'instance'
           }
         ],
       },
     ]
   }
+
   include prometheus::node_exporter
   consul::service { 'node_exporter':
     port => 9100,
@@ -43,7 +49,7 @@ class profile::metrics::client(String $server_ip) {
     config_hash => {
       'data_dir'   => '/opt/consul',
       'log_level'  => 'INFO',
-      'node_name'  => $facts['fqdn'],
+      'node_name'  => $facts['hostname'],
       'retry_join' => [$server_ip]
     }
   }
