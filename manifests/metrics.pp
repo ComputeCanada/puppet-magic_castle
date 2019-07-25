@@ -36,7 +36,7 @@ class profile::metrics::server {
   }
 }
 
-class profile::metrics::agent(String $server_ip) {
+class profile::metrics::client(String $server_ip) {
   include prometheus::node_exporter
   class { '::consul':
     version     => '1.5.2',
