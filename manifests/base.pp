@@ -35,6 +35,10 @@ class profile::base (String $sudoer_username = 'centos') {
     ensure => 'installed'
   }
 
+  package { 'unzip':
+    ensure => 'installed'
+  }
+
   package { 'firewalld':
     ensure => 'absent',
   }
