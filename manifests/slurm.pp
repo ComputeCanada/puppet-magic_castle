@@ -210,7 +210,7 @@ END
 
   file { 'slurm.conf.tpl':
     ensure  => 'present',
-    target  => '/etc/slurm/slurm.conf.tpl',
+    path    => '/etc/slurm/slurm.conf.tpl',
     content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
     group   => 'slurm',
     owner   => 'slurm',
