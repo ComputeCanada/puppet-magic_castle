@@ -91,7 +91,7 @@ class profile::slurm::base (
   }
 
   $node_template = @(END)
-{{with tree "slurmd" | explode }}{{range $key, $value := . -}}
+{{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
 NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}}
 {{end -}}
 {{end -}}
