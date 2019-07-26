@@ -271,8 +271,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     ensure  => running,
     enable  => true,
     require => [Package['slurm-slurmdbd'],
-                File['/etc/slurm/slurmdbd.conf'],
-                Concat::Fragment['slurm.conf_slurmdbd']],
+                File['/etc/slurm/slurmdbd.conf']],
     before  => Service['slurmctld']
   }
 
