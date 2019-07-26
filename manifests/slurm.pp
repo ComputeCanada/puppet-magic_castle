@@ -328,11 +328,11 @@ class profile::slurm::controller {
 
   consul_key_value { 'slurmctld/nodename':
     ensure => 'present',
-    value  => ${facts['hostname']}
+    value  => $facts['hostname']
   }
   consul_key_value { 'slurmctld/ip':
     ensure => 'present',
-    value  => ${facts['networking']['ip']}
+    value  => $facts['networking']['ip']
   }
 
   package { 'slurm-slurmctld':
