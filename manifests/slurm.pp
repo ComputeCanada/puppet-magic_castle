@@ -326,7 +326,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 class profile::slurm::controller {
   include profile::slurm::base
 
-  consul_key_value { 'slurmctld/nodename':
+  consul_key_value { 'slurmctld/hostname':
     ensure => 'present',
     value  => $facts['hostname']
   }
