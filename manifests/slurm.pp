@@ -92,7 +92,9 @@ class profile::slurm::base (
 
   $node_template = @(END)
 {{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
+{{ if and $value.nodename $value.cpus $value.realmemory -}}
 NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}}
+{{end -}}
 {{end -}}
 {{end -}}
 END
@@ -346,23 +348,23 @@ class profile::slurm::controller {
   }
 
   consul_template::watch { 'slurm.conf':
-      require     => File['/etc/slurm/slurm.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/slurm.conf.tpl',
-        destination => '/etc/slurm/slurm.conf',
-        command     => 'systemctl restart slurmcltd',
-      }
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'systemctl restart slurmcltd || true',
+    }
   }
 
   consul_template::watch { 'node.conf':
-      require     => File['/etc/slurm/node.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/node.conf.tpl',
-        destination => '/etc/slurm/node.conf',
-        command     => 'systemctl restart slurmctld',
-      }
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'systemctl restart slurmctld || true',
+    }
   }
 
   service { 'slurmctld':
@@ -452,22 +454,22 @@ class profile::slurm::node {
   }
 
   consul_template::watch { 'slurm.conf':
-      require     => File['/etc/slurm/slurm.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/slurm.conf.tpl',
-        destination => '/etc/slurm/slurm.conf',
-        command     => 'systemctl restart slurmd',
-      }
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'systemctl restart slurmd',
+    }
   }
   consul_template::watch { 'node.conf':
-      require     => File['/etc/slurm/node.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/node.conf.tpl',
-        destination => '/etc/slurm/node.conf',
-        command     => 'systemctl restart slurmd',
-      }
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'systemctl restart slurmd',
+    }
   }
 
   service { 'slurmd':
@@ -495,21 +497,21 @@ class profile::slurm::submitter {
   include profile::slurm::base
 
   consul_template::watch { 'slurm.conf':
-      require     => File['/etc/slurm/slurm.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/slurm.conf.tpl',
-        destination => '/etc/slurm/slurm.conf',
-        command     => 'true',
-      },
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'true',
+    },
   }
   consul_template::watch { 'node.conf':
-      require     => File['/etc/slurm/node.conf.tpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/slurm/node.conf.tpl',
-        destination => '/etc/slurm/node.conf',
-        command     => 'true',
-      },
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'true',
+    },
   }
 }
