@@ -63,10 +63,10 @@ class profile::metrics::client(String $server_ip) {
   }
 
   tcp_conn_validator { 'consul':
-    host      => '127.0.0.1',
+    host      => $server_ip,
     port      => 8500,
     try_sleep => 5,
-    timeout   => 60,
+    timeout   => 120,
     require   => Service['consul']
   }
 

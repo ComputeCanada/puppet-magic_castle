@@ -91,6 +91,7 @@ class profile::slurm::base (
   }
 
   $node_template = @(END)
+# Nodes definition
 {{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
 {{ if and $value.nodename $value.cpus $value.realmemory -}}
 NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}}
