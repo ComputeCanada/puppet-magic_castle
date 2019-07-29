@@ -362,7 +362,7 @@ class profile::slurm::controller {
       perms       => '0644',
       source      => '/etc/slurm/slurm.conf.tpl',
       destination => '/etc/slurm/slurm.conf',
-      command     => 'systemctl restart slurmcltd || true',
+      command     => 'systemctl restart slurmctld || true',
     }
   }
 
