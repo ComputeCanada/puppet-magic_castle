@@ -294,8 +294,11 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
     tries     => 5,
     try_sleep => 5,
-    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
-    notify    => Service['slurmctld']
+    notify    => Service['slurmctld'],
+    require   => [Service['slurmdbd'],
+                  Tcp_conn_validator['slurmdbd_port'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   $account_name = 'def-sponsor00'
@@ -309,7 +312,10 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
     tries     => 5,
     try_sleep => 5,
-    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
+    require   => [Service['slurmdbd'],
+                  Tcp_conn_validator['slurmdbd_port'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   # Add guest accounts to the accounting database
