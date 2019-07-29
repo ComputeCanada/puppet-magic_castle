@@ -12,6 +12,14 @@ class profile::metrics::server {
     }
   }
 
+  tcp_conn_validator { 'consul':
+    host      => 'localhost',
+    port      => 8500,
+    try_sleep => 5,
+    timeout   => 60,
+    require   => Service['consul']
+  }
+
   class { 'prometheus::server':
     version        => '2.11.1',
     scrape_configs => [
@@ -53,6 +61,15 @@ class profile::metrics::client(String $server_ip) {
       'retry_join' => [$server_ip]
     }
   }
+
+  tcp_conn_validator { 'consul':
+    host      => 'localhost',
+    port      => 8500,
+    try_sleep => 5,
+    timeout   => 60,
+    require   => Service['consul']
+  }
+
   consul::service { 'node_exporter':
     port => 9100,
     tags => ['monitor'],

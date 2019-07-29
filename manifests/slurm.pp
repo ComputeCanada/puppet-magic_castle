@@ -229,7 +229,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   consul_key_value { 'slurmdbd/hostname':
     ensure  => 'present',
     value   => $facts['hostname'],
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
 
   $override_options = {
@@ -339,12 +339,12 @@ class profile::slurm::controller {
   consul_key_value { 'slurmctld/hostname':
     ensure  => 'present',
     value   => $facts['hostname'],
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
   consul_key_value { 'slurmctld/ip':
     ensure  => 'present',
     value   => $facts['networking']['ip'],
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
 
   package { 'slurm-slurmctld':
@@ -392,18 +392,18 @@ class profile::slurm::node {
   consul_key_value { "slurmd/${facts['hostname']}/nodename":
     ensure  => 'present',
     value   => $facts['hostname'],
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
   consul_key_value { "slurmd/${facts['hostname']}/cpus":
     ensure  => 'present',
     value   => "${facts['processors']['count']}",
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
   consul_key_value { "slurmd/${facts['hostname']}/realmemory":
     ensure  => 'present',
     value   => "${real_memory}",
-    require => Service['consul']
+    require => Tcp_conn_validator['consul']
   }
 
   package { 'slurm-slurmd':
