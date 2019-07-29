@@ -13,7 +13,7 @@ class profile::metrics::server {
   }
 
   tcp_conn_validator { 'consul':
-    host      => 'localhost',
+    host      => '127.0.0.1',
     port      => 8500,
     try_sleep => 5,
     timeout   => 60,
