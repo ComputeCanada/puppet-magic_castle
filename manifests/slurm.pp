@@ -325,7 +325,6 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
   include profile::slurm::base
-
   consul_key_value { 'slurmctld/hostname':
     ensure  => 'present',
     value   => $facts['hostname'],
@@ -346,10 +345,32 @@ class profile::slurm::controller {
     ensure => 'installed',
   }
 
+  consul_template::watch { 'slurm.conf':
+      require     => File['/etc/slurm/slurm.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/slurm.conf.tpl',
+        destination => '/etc/slurm/slurm.conf',
+        command     => 'systemctl restart slurmcltd',
+      }
+  }
+
+  consul_template::watch { 'node.conf':
+      require     => File['/etc/slurm/node.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/node.conf.tpl',
+        destination => '/etc/slurm/node.conf',
+        command     => 'systemctl restart slurmctld',
+      }
+  }
+
   service { 'slurmctld':
     ensure  => 'running',
-    enable  => true,
-    require => Package['slurm-slurmctld']
+    enable  => 'true',
+    require => [Package['slurm-slurmctld'],
+                Consul_template::Watch['slurm.conf'],
+                Consul_template::Watch['node.conf']]
   }
 }
 
@@ -419,14 +440,6 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/pam_slurm_adopt.pp',
   }
 
-  service { 'slurmd':
-    ensure    => 'running',
-    enable    => true,
-    require   => Package['slurm-slurmd'],
-    subscribe => [File['/etc/slurm/cgroup.conf'],
-                  File['/etc/slurm/plugstack.conf']]
-  }
-
   file { '/localscratch':
     ensure  => 'directory',
     seltype => 'default_t'
@@ -436,6 +449,35 @@ class profile::slurm::node {
     ensure => 'directory',
     owner  => 'slurm',
     group  => 'slurm'
+  }
+
+  consul_template::watch { 'slurm.conf':
+      require     => File['/etc/slurm/slurm.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/slurm.conf.tpl',
+        destination => '/etc/slurm/slurm.conf',
+        command     => 'systemctl restart slurmd',
+      }
+  }
+  consul_template::watch { 'node.conf':
+      require     => File['/etc/slurm/node.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/node.conf.tpl',
+        destination => '/etc/slurm/node.conf',
+        command     => 'systemctl restart slurmd',
+      }
+  }
+
+  service { 'slurmd':
+    ensure    => 'running',
+    enable    => true,
+    subscribe => [File['/etc/slurm/cgroup.conf'],
+                  File['/etc/slurm/plugstack.conf']],
+    require   => [Package['slurm-slurmd'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   exec { 'scontrol_update_state':
@@ -451,4 +493,23 @@ class profile::slurm::node {
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   include profile::slurm::base
+
+  consul_template::watch { 'slurm.conf':
+      require     => File['/etc/slurm/slurm.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/slurm.conf.tpl',
+        destination => '/etc/slurm/slurm.conf',
+        command     => 'true',
+      },
+  }
+  consul_template::watch { 'node.conf':
+      require     => File['/etc/slurm/node.conf.tpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/slurm/node.conf.tpl',
+        destination => '/etc/slurm/node.conf',
+        command     => 'true',
+      },
+  }
 }
