@@ -11,7 +11,9 @@ SelectType=select/cons_res
 SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
+{{ if tree "slurmd/" -}}
 include /etc/slurm/node.conf
+{{end -}}
 
 # PARTITION CONFIGURATIONS
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
