@@ -266,4 +266,10 @@ class profile::freeipa::server
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
+
+  service { 'ipa':
+    ensure  => running,
+    enable  => true,
+    require => Exec['ipa-server-install']
+  }
 }
