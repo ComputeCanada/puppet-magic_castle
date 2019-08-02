@@ -12,6 +12,14 @@ class profile::metrics::server {
     }
   }
 
+  tcp_conn_validator { 'consul':
+    host      => '127.0.0.1',
+    port      => 8500,
+    try_sleep => 5,
+    timeout   => 60,
+    require   => Service['consul']
+  }
+
   class { 'prometheus::server':
     version        => '2.11.1',
     scrape_configs => [
@@ -19,7 +27,7 @@ class profile::metrics::server {
         'job_name'          => 'consul',
         'scrape_interval'   => '10s',
         'scrape_timeout'    => '10s',
-        'consul_sd_configs' => [{'server' => 'localhost:8500'}],
+        'consul_sd_configs' => [{'server' => '127.0.0.1:8500'}],
         'relabel_configs'   => [
           {
             'source_labels' => ['__meta_consul_tags'],
@@ -53,6 +61,24 @@ class profile::metrics::client(String $server_ip) {
       'retry_join' => [$server_ip]
     }
   }
+
+  tcp_conn_validator { 'consul-server':
+    host      => $server_ip,
+    port      => 8300,
+    try_sleep => 5,
+    timeout   => 120,
+    require   => Service['consul']
+  }
+
+  tcp_conn_validator { 'consul':
+    host      => '127.0.0.1',
+    port      => 8500,
+    try_sleep => 5,
+    timeout   => 60,
+    require   => [Service['consul'],
+                  Tcp_conn_validator['consul-server']]
+  }
+
   consul::service { 'node_exporter':
     port => 9100,
     tags => ['monitor'],

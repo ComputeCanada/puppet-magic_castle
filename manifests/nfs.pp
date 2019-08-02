@@ -29,11 +29,6 @@ class profile::nfs::client (String $server_ip) {
       share         => 'scratch',
       options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
   }
-  nfs::client::mount { '/etc/slurm':
-      server        => $server_ip,
-      share         => 'slurm',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
-  }
 }
 
 class profile::nfs::server {
@@ -64,7 +59,7 @@ class profile::nfs::server {
     notify => Service['nfs-server.service']
   }
 
-  nfs::server::export{ ['/etc/slurm', '/mnt/home'] :
+  nfs::server::export{ ['/mnt/home'] :
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service']

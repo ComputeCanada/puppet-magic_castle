@@ -91,17 +91,20 @@ class profile::slurm::base (
   }
 
   $node_template = @(END)
-<% for i in 1..250 do -%>
-NodeName=node<%= i %> State=FUTURE
-<% end -%>
+# Nodes definition
+{{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
+{{ if and $value.nodename $value.cpus $value.realmemory -}}
+NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}}
+{{end -}}
+{{end -}}
+{{end -}}
 END
 
-  file { '/etc/slurm/node.conf':
+  file { '/etc/slurm/node.conf.tpl':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    replace => false,
-    content => inline_template($node_template),
+    content => $node_template,
     seltype => 'etc_t'
   }
 
@@ -207,12 +210,28 @@ END
     checksum_value => 'ff2beaa7be1ec0238fd621938f31276c',
     require        => Package['slurm']
   }
+
+  file { 'slurm.conf.tpl':
+    ensure  => 'present',
+    path    => '/etc/slurm/slurm.conf.tpl',
+    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
+    group   => 'slurm',
+    owner   => 'slurm',
+    mode    => '0644',
+    require => File['/etc/slurm']
+  }
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
 class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
+
+  consul_key_value { 'slurmdbd/hostname':
+    ensure  => 'present',
+    value   => $facts['hostname'],
+    require => Tcp_conn_validator['consul']
+  }
 
   $override_options = {
     'mysqld' => {
@@ -233,22 +252,6 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
-  }
-
-  $slurm_conf = "
-## Accounting
-AccountingStorageHost=${::hostname}
-AccountingStorageType=accounting_storage/slurmdbd
-AccountingStorageTRES=gres/gpu,cpu,mem
-#AccountingStorageEnforce=limits
-JobAcctGatherType=jobacct_gather/linux
-JobAcctGatherFrequency=task=30
-JobAcctGatherParams=NoOverMemoryKill,UsePSS
-"
-  concat::fragment { 'slurm.conf_slurmdbd':
-    target  => '/etc/slurm/slurm.conf',
-    order   => '50',
-    content => $slurm_conf
   }
 
   file { '/etc/slurm/slurmdbd.conf':
@@ -273,7 +276,7 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     enable  => true,
     require => [Package['slurm-slurmdbd'],
                 File['/etc/slurm/slurmdbd.conf'],
-                Concat::Fragment['slurm.conf_slurmdbd']],
+                Mysql::Db['slurm_acct_db']],
     before  => Service['slurmctld']
   }
 
@@ -290,10 +293,14 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     command   => "sacctmgr add cluster ${cluster_name} -i",
     path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
-    tries     => 5,
+    tries     => 2,
     try_sleep => 5,
-    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
-    notify    => Service['slurmctld']
+    timeout   => 5,
+    notify    => Service['slurmctld'],
+    require   => [Service['slurmdbd'],
+                  Tcp_conn_validator['slurmdbd_port'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   $account_name = 'def-sponsor00'
@@ -307,7 +314,11 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
     unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
     tries     => 5,
     try_sleep => 5,
-    require   => [Service['slurmdbd'], Tcp_conn_validator['slurmdbd_port']],
+    timeout   => 5,
+    require   => [Service['slurmdbd'],
+                  Tcp_conn_validator['slurmdbd_port'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   # Add guest accounts to the accounting database
@@ -326,6 +337,16 @@ JobAcctGatherParams=NoOverMemoryKill,UsePSS
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
   include profile::slurm::base
+  consul_key_value { 'slurmctld/hostname':
+    ensure  => 'present',
+    value   => $facts['hostname'],
+    require => Tcp_conn_validator['consul']
+  }
+  consul_key_value { 'slurmctld/ip':
+    ensure  => 'present',
+    value   => $facts['networking']['ip'],
+    require => Tcp_conn_validator['consul']
+  }
 
   package { 'slurm-slurmctld':
     ensure  => 'installed',
@@ -336,37 +357,55 @@ class profile::slurm::controller {
     ensure => 'installed',
   }
 
+  consul_template::watch { 'slurm.conf':
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'systemctl restart slurmctld || true',
+    }
+  }
+
+  consul_template::watch { 'node.conf':
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'systemctl restart slurmctld || true',
+    }
+  }
+
   service { 'slurmctld':
     ensure  => 'running',
-    enable  => true,
-    require => Package['slurm-slurmctld']
-  }
-
-  concat { '/etc/slurm/slurm.conf':
-    ensure => 'present',
-    group  => 'slurm',
-    owner  => 'slurm',
-    mode   => '0644'
-  }
-
-  $cluster_name = lookup('profile::slurm::base::cluster_name')
-  concat::fragment { 'slurm.conf_header':
-    target  => '/etc/slurm/slurm.conf',
-    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
-    order   => '01'
-  }
-
-  concat::fragment { 'slurm.conf_slurmctld':
-    target  => '/etc/slurm/slurm.conf',
-    order   => '10',
-    content => "SlurmctldHost=${::hostname}(${::ipaddress})",
-    notify  => Service['slurmctld']
+    enable  => 'true',
+    require => [Package['slurm-slurmctld'],
+                Consul_template::Watch['slurm.conf'],
+                Consul_template::Watch['node.conf']]
   }
 }
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
   include profile::slurm::base
+
+  consul_key_value { "slurmd/${facts['hostname']}/nodename":
+    ensure  => 'present',
+    value   => $facts['hostname'],
+    require => Tcp_conn_validator['consul']
+  }
+  consul_key_value { "slurmd/${facts['hostname']}/cpus":
+    ensure  => 'present',
+    value   => "${facts['processors']['count']}",
+    require => Tcp_conn_validator['consul']
+  }
+  $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
+  consul_key_value { "slurmd/${facts['hostname']}/realmemory":
+    ensure  => 'present',
+    value   => "${real_memory}",
+    require => Tcp_conn_validator['consul']
+  }
 
   package { 'slurm-slurmd':
     ensure => 'installed'
@@ -413,14 +452,6 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/pam_slurm_adopt.pp',
   }
 
-  service { 'slurmd':
-    ensure    => 'running',
-    enable    => true,
-    require   => Package['slurm-slurmd'],
-    subscribe => [File['/etc/slurm/cgroup.conf'],
-                  File['/etc/slurm/plugstack.conf']]
-  }
-
   file { '/localscratch':
     ensure  => 'directory',
     seltype => 'default_t'
@@ -432,22 +463,33 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
-  exec { 'slurm_config':
-    command => @("EOT"/L),
-      flock /etc/slurm/node.conf.lock \
-      sed -i "s/NodeName=${::hostname} .*/$(slurmd -C | head -n 1)/g" \
-      /etc/slurm/node.conf
-      |EOT
-    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => 'grep -q "$(slurmd -C | head -n 1)" /etc/slurm/node.conf',
-    notify  => Service['slurmd']
+  consul_template::watch { 'slurm.conf':
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'systemctl restart slurmd',
+    }
+  }
+  consul_template::watch { 'node.conf':
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'systemctl restart slurmd',
+    }
   }
 
-  exec { 'scontrol reconfigure':
-    path        => ['/usr/bin', '/opt/software/slurm/bin'],
-    subscribe   => Exec['slurm_config'],
-    refreshonly => true,
-    returns     => [0, 1]
+  service { 'slurmd':
+    ensure    => 'running',
+    enable    => true,
+    subscribe => [File['/etc/slurm/cgroup.conf'],
+                  File['/etc/slurm/plugstack.conf']],
+    require   => [Package['slurm-slurmd'],
+                  Consul_template::Watch['slurm.conf'],
+                  Consul_template::Watch['node.conf']]
   }
 
   exec { 'scontrol_update_state':
@@ -463,4 +505,23 @@ class profile::slurm::node {
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   include profile::slurm::base
+
+  consul_template::watch { 'slurm.conf':
+    require     => File['/etc/slurm/slurm.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm.conf.tpl',
+      destination => '/etc/slurm/slurm.conf',
+      command     => 'true',
+    },
+  }
+  consul_template::watch { 'node.conf':
+    require     => File['/etc/slurm/node.conf.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/node.conf.tpl',
+      destination => '/etc/slurm/node.conf',
+      command     => 'true',
+    },
+  }
 }

@@ -1,5 +1,6 @@
 class profile::base (String $sudoer_username = 'centos') {
   include stdlib
+  include ::consul_template
 
   class { 'selinux':
     mode => 'enforcing',

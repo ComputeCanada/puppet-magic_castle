@@ -22,6 +22,7 @@
         { "name": "herculesteam/augeasproviders_pam", "version_requirement": " >= 2.2.1"  },
         { "name": "camptocamp/kmod", "version_requirement": " >= 2.3.0"  },
         { "name": "puppet-prometheus", "version_requirement": " >= 7.0.0"},
-        { "name": "KyleAnderson-consul", "version_requirement": " >= 5.1.0"}
+        { "name": "KyleAnderson-consul", "version_requirement": " >= 5.1.0"},
+        { "name": "cmdntrf-consul_template", "version_requirement": " >= 2.2.0"}
      ]
 }
