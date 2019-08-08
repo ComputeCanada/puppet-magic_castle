@@ -80,7 +80,7 @@ class profile::base (String $sudoer_username = 'centos') {
   }
 
   package { 'pdsh':
-    ensure => 'installed',
+    ensure  => 'installed',
     require => Yumrepo['epel']
   }
 
