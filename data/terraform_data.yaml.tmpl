@@ -12,7 +12,7 @@ profile::slurm::base::munge_key: "${munge_key}"
 profile::slurm::accounting::password: "${freeipa_passwd}"
 
 profile::freeipa::client::server_ip: "${mgmt01_ip}"
-profile::metrics::client::server_ip: "${mgmt01_ip}"
+profile::consul::client::server_ip: "${mgmt01_ip}"
 profile::nfs::client::server_ip: "${mgmt01_ip}"
 profile::rsyslog::client::server_ip: "${mgmt01_ip}"
 profile::cvmfs::client::squid_ip: "${mgmt01_ip}"
