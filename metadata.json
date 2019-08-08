@@ -11,7 +11,6 @@
         { "name": "puppetlabs/firewall", "version_requirement": " >= 1.15.1" },
         { "name": "puppetlabs/mysql", "version_requirement": " >= 8.0.1"  },
         { "name": "puppetlabs/stdlib", "version_requirement": " >= 5.2.0"  },
-        { "name": "puppetlabs/concat", "version_requirement": " >= 5.3.0"  },
         { "name": "puppet/selinux", "version_requirement": " >= 1.6.1"  },
         { "name": "puppet/healthcheck", "version_requirement": " >= 1.0.0"  },
         { "name": "derdanne-nfs", "version_requirement": " >= 2.1.2"  },
