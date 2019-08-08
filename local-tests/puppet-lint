@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-puppet-lint manifests/* \
+puppet-lint manifests/* site/profile/manifests/* \
 --no-autoloader_layout-check \
 --fail-on-warnings \
 --no-arrow_alignment-check \

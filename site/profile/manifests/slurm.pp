@@ -379,7 +379,7 @@ class profile::slurm::controller {
 
   service { 'slurmctld':
     ensure  => 'running',
-    enable  => 'true',
+    enable  => true,
     require => [Package['slurm-slurmctld'],
                 Consul_template::Watch['slurm.conf'],
                 Consul_template::Watch['node.conf']]
@@ -397,13 +397,13 @@ class profile::slurm::node {
   }
   consul_key_value { "slurmd/${facts['hostname']}/cpus":
     ensure  => 'present',
-    value   => "${facts['processors']['count']}",
+    value   => String($facts['processors']['count']),
     require => Tcp_conn_validator['consul']
   }
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
   consul_key_value { "slurmd/${facts['hostname']}/realmemory":
     ensure  => 'present',
-    value   => "${real_memory}",
+    value   => String($real_memory),
     require => Tcp_conn_validator['consul']
   }
 
@@ -512,7 +512,7 @@ class profile::slurm::submitter {
       perms       => '0644',
       source      => '/etc/slurm/slurm.conf.tpl',
       destination => '/etc/slurm/slurm.conf',
-      command     => 'true',
+      command     => '/bin/true',
     },
   }
   consul_template::watch { 'node.conf':
@@ -521,7 +521,7 @@ class profile::slurm::submitter {
       perms       => '0644',
       source      => '/etc/slurm/node.conf.tpl',
       destination => '/etc/slurm/node.conf',
-      command     => 'true',
+      command     => '/bin/true',
     },
   }
 }
