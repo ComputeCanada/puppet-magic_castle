@@ -1,0 +1,25 @@
+image: ruby:2.5.5
+variables:
+ GIT_SUBMODULE_STRATEGY: "recursive"
+ DEBIAN_FRONTEND: "noninteractive"
+ NOKOGIRI_USE_SYSTEM_LIBRARIES: "true"
+
+before_script:
+ - wget https://apt.puppetlabs.com/puppetlabs-release-pc1-stretch.deb
+ - dpkg -i puppetlabs-release-pc1-stretch.deb
+ - apt-get -qq update
+ - git submodule sync
+ - git submodule update --init
+
+puppet:
+ stage: build
+ tags: 
+  - k8s
+ script:
+  - apt-get -qq -o=Dpkg::Use-Pty=0 install puppet-agent ruby-dev
+  - gem install --no-document rails-erb-lint puppet-lint
+  - local-tests/puppet-validate
+  - local-tests/puppet-lint
+  - local-tests/erb-syntax
+  - local-tests/puppet-missing-files module
+

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+export PATH=/opt/puppetlabs/bin:$PATH
+set -euo pipefail
+cd manifests
+echo "Checking Puppet .pp files for syntax errors..."
+find . -type f -name "*.pp" | xargs puppet parser validate --debug
+cd ../templates
+echo "Checking Puppet .epp files for syntax errors..."
+find . -type f -name "*.epp" | xargs puppet epp validate --debug
