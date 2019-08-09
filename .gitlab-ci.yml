@@ -21,5 +21,5 @@ puppet:
   - local-tests/puppet-validate
   - local-tests/puppet-lint
   - local-tests/erb-syntax
-  - local-tests/puppet-missing-files module
+  - local-tests/puppet-missing-files site manifests
 
