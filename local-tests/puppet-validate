@@ -9,7 +9,7 @@ for file in $(find $(find . -name manifests -type d) -type f -name "*.pp"); do
 done
 
 echo "Checking Puppet .epp files for syntax errors..."
-for file in $(find $(find . -name templates -type d) -type f -name "*.epp"); do 
-    echo $file 
+for file in $(find $(find . -name templates -type d) -type f -name "*.epp"); do
+    echo $file
     puppet epp validate --debug $file
 done
