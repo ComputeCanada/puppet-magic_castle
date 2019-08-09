@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 export PATH=/opt/puppetlabs/bin:$PATH
 set -euo pipefail
+
 echo "Checking Puppet .pp files for syntax errors..."
-find . -type f -name "*.pp" | xargs puppet parser validate --debug
+for file in $(find $(find . -name manifests -type d) -type f -name "*.pp"); do
+    echo $file
+    puppet parser validate --debug $file
+done
+
 echo "Checking Puppet .epp files for syntax errors..."
-find . -type f -name "*.epp" | xargs puppet epp validate --debug
+for file in $(find $(find . -name templates -type d) -type f -name "*.epp"); do 
+    echo $file 
+    puppet epp validate --debug $file
+done
