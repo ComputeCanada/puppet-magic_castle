@@ -14,6 +14,7 @@ class profile::metrics::server {
         'job_name'          => 'consul',
         'scrape_interval'   => '10s',
         'scrape_timeout'    => '10s',
+        'honor_labels'      => true,
         'consul_sd_configs' => [{'server' => '127.0.0.1:8500'}],
         'relabel_configs'   => [
           {
