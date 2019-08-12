@@ -41,6 +41,37 @@ class profile::nfs::server {
     # seltype => 'usr_t'
   }
 
+  file { '/lib/systemd/system/clean-nfs-rbind.service':
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
+    content => @(END)
+[Unit]
+Before=nfs-server.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStop=/usr/bin/sed -i '/\/export\//d' /etc/fstab
+
+[Install]
+WantedBy=multi-user.target
+END
+  }
+
+  exec { 'clean-nfs-rbind-systemd-reload':
+    command     => 'systemctl daemon-reload',
+    path        => [ '/usr/bin', '/bin', '/usr/sbin' ],
+    refreshonly => true,
+    require     => File['/lib/systemd/system/clean-nfs-rbind.service']
+  }
+
+  service { 'clean-nfs-rbind':
+    ensure  => running,
+    enable  => true,
+    require => Exec['clean-nfs-rbind-systemd-reload']
+  }
+
   $cidr = profile::getcidr()
   class { '::nfs':
     server_enabled             => true,
