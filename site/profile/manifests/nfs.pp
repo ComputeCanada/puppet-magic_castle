@@ -101,4 +101,13 @@ END
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash)",
     notify  => Service['nfs-idmap.service']
   }
+
+  exec { 'unexportfs_exportfs':
+    command => 'exportfs -ua; cat /proc/fs/nfs/exports; exportfs -a',
+    path    => ['/usr/sbin', '/usr/bin'],
+    onlyif  => 'grep -q "/export\s" /proc/fs/nfs/exports',
+    require => [Nfs::Server::Export['/mnt/home'],
+                Nfs::Server::Export['/project'],
+                Nfs::Server::Export['/scratch']]
+  }
 }
