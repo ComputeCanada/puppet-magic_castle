@@ -1,3 +1,6 @@
+stage { ['first', 'second'] : }
+Stage['first'] -> Stage['second'] -> Stage['main']
+
 node default {
   include profile::consul::client
   include profile::base
@@ -22,13 +25,23 @@ node /^login\d+$/ {
 }
 
 node /^mgmt01$/ {
-  include profile::consul::server
+  class { [
+    'profile::consul::server',
+    'profile::metrics::exporter'
+    ]:
+    stage => 'first'
+  }
+
+  class { [
+    'profile::freeipa::server',
+    'profile::nfs::server',
+    ]:
+    stage => 'second'
+  }
+
   include profile::metrics::server
-  include profile::metrics::exporter
   include profile::rsyslog::server
-  include profile::freeipa::server
   include profile::squid::server
-  include profile::nfs::server
   include profile::slurm::controller
 
   include profile::base
