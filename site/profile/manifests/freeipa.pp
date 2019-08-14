@@ -7,6 +7,10 @@ class profile::freeipa::base (
     ensure => 'latest'
   }
 
+  package { 'NetworkManager':
+    ensure => absent
+  }
+
   service { 'systemd-logind':
     ensure => running,
     enable => true
@@ -19,11 +23,28 @@ class profile::freeipa::base (
     mode   => '0755'
   }
 
+  file { '/etc/dhclient.conf':
+    ensure => absent
+  }
+
+  file { 'dhclient.conf':
+    ensure  => present,
+    path    => '/etc/dhcp/dhclient.conf',
+    mode    => '0644',
+    content => @("END")
+# Set the dhclient retry interval to 10 seconds instead of 5 minutes.
+retry 10;
+prepend domain-search "int.${domain_name}";
+prepend domain-name-servers ${dns_ip};
+END
+  }
+
   file_line { 'resolv_search':
-    ensure => present,
-    path   => '/etc/resolv.conf',
-    match  => 'search',
-    line   => "search int.${domain_name}"
+    ensure  => present,
+    path    => '/etc/resolv.conf',
+    match   => 'search',
+    line    => "search int.${domain_name}",
+    require => File['dhclient.conf']
   }
 
   file_line { 'resolv_nameserver':
@@ -91,8 +112,6 @@ class profile::freeipa::client(String $server_ip)
 
   exec { 'ipa-client-install':
     command   => "/sbin/ipa-client-install \
-                  --domain ${int_domain_name} \
-                  --realm ${realm} \
                   --mkhomedir \
                   --ssh-trust-dns \
                   --enable-dns-updates \
