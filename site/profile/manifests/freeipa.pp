@@ -7,6 +7,11 @@ class profile::freeipa::base (
     ensure => 'latest'
   }
 
+  service { 'NetworkManager':
+    ensure => stopped,
+    enable => false
+  }
+
   package { [
     'NetworkManager',
     'NetworkManager-tui',
@@ -35,7 +40,7 @@ class profile::freeipa::base (
     ensure  => present,
     path    => '/etc/dhcp/dhclient.conf',
     mode    => '0644',
-    require => Package['NetworkManager'],
+    require => Service['NetworkManager'],
     content => @("END")
 # Set the dhclient retry interval to 10 seconds instead of 5 minutes.
 retry 10;
