@@ -91,7 +91,6 @@ class profile::freeipa::client(String $server_ip)
 
   exec { 'ipa-client-install':
     command   => "/sbin/ipa-client-install \
-                  --server ${server_ip} \
                   --domain ${int_domain_name} \
                   --realm ${realm} \
                   --mkhomedir \
