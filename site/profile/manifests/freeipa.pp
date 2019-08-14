@@ -7,8 +7,12 @@ class profile::freeipa::base (
     ensure => 'latest'
   }
 
-  package { 'NetworkManager':
-    ensure => absent
+  package { [
+    'NetworkManager',
+    'NetworkManager-tui',
+    'NetworkManager-team'
+    ]:
+    ensure => purged
   }
 
   service { 'systemd-logind':
@@ -31,6 +35,7 @@ class profile::freeipa::base (
     ensure  => present,
     path    => '/etc/dhcp/dhclient.conf',
     mode    => '0644',
+    require => Package['NetworkManager'],
     content => @("END")
 # Set the dhclient retry interval to 10 seconds instead of 5 minutes.
 retry 10;
