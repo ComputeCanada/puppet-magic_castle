@@ -61,8 +61,10 @@ class profile::freeipa::client(String $server_ip)
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-  $fqdn = "${::hostname}.int.${domain_name}"
+  $fqdn = "${::hostname}.${int_domain_name}"
+  $realm = upcase($int_domain_name)
 
   package { 'ipa-client':
     ensure => 'installed'
@@ -89,6 +91,9 @@ class profile::freeipa::client(String $server_ip)
 
   exec { 'ipa-client-install':
     command   => "/sbin/ipa-client-install \
+                  --server ${server_ip} \
+                  --domain ${int_domain_name} \
+                  --realm ${realm} \
                   --mkhomedir \
                   --ssh-trust-dns \
                   --enable-dns-updates \
@@ -221,7 +226,9 @@ class profile::freeipa::server
     ensure => 'installed'
   }
 
-  $realm = upcase("int.${domain_name}")
+  $int_domain_name = "int.${domain_name}"
+  $realm = upcase($int_domain_name)
+  $fqdn = "${::hostname}.${int_domain_name}"
   $ip = $facts['networking']['ip']
   $reverse_zone = profile::getreversezone()
 
@@ -235,7 +242,7 @@ class profile::freeipa::server
   exec { 'ipa-server-install':
     command => "/sbin/ipa-server-install \
                 --setup-dns \
-                --hostname ${::hostname}.int.${domain_name} \
+                --hostname ${fqdn} \
                 --ds-password ${admin_passwd} \
                 --admin-password ${admin_passwd} \
                 --mkhomedir \
@@ -251,7 +258,8 @@ class profile::freeipa::server
                 --no-ntp \
                 --allow-zone-overlap \
                 --reverse-zone=${reverse_zone} \
-                --real=${realm}",
+                --realm=${realm} \
+                --domain=${int_domain_name}",
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns']],
