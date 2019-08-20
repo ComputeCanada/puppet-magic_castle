@@ -168,14 +168,26 @@ END
     require   => Package['munge']
   }
 
-  yumrepo { 'slurm-copr-repo':
-    enabled             => true,
-    descr               => 'Copr repo for Slurm19 owned by cmdntrf',
-    baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-7-$basearch/',
-    skip_if_unavailable => true,
-    gpgcheck            => 1,
-    gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/pubkey.gpg',
-    repo_gpgcheck       => 0,
+  if $facts['nvidia_gpu_count'] > 0 {
+    yumrepo { 'slurm-copr-repo':
+      enabled             => true,
+      descr               => 'Copr repo for Slurm19 owned by cmdntrf',
+      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/epel-7-$basearch/',
+      skip_if_unavailable => true,
+      gpgcheck            => 1,
+      gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/pubkey.gpg',
+      repo_gpgcheck       => 0,
+    }
+  } else {
+    yumrepo { 'slurm-copr-repo':
+      enabled             => true,
+      descr               => 'Copr repo for Slurm19 owned by cmdntrf',
+      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-7-$basearch/',
+      skip_if_unavailable => true,
+      gpgcheck            => 1,
+      gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/pubkey.gpg',
+      repo_gpgcheck       => 0,
+    }
   }
 
   package { 'slurm':
