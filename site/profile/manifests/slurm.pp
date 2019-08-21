@@ -492,7 +492,7 @@ class profile::slurm::node {
 ###########################################################
 <% if $gpu_count > 0 { -%>
 AutoDetect=nvml
-<% Integer[0, $gpu_count].each |$gpu| { -%>
+<% Integer[0, $gpu_count - 1].each |$gpu| { -%>
 Name=gpu
 <% } -%>
 <% } -%>
