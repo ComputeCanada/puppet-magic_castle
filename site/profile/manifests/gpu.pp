@@ -34,12 +34,19 @@ class profile::gpu {
       require => [Package['cuda-repo'], Package['kernel-devel']]
     }
 
+    exec { 'dkms autoinstall':
+      path    => ['/usr/bin', '/usr/sbin'],
+      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      require => Package['dkms-nvidia']
+    }
+
     kmod::load { [
       'nvidia',
       'nvidia_drm',
       'nvidia_modeset',
       'nvidia_uvm'
       ]:
+      require => Exec['dkms autoinstall']
     }
   }
 
