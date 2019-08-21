@@ -491,7 +491,7 @@ class profile::slurm::node {
 # Information about all other GRES gathered from slurm.conf
 ###########################################################
 AutoDetect=nvml
-<% Integer[0, ${facts['nvidia_gpu_count']}].each |$gpu| { -%>
+<% Integer[0, $gpu_count].each |$gpu| { -%>
 Name=gpu
 <% } -%>
 |EOT
@@ -500,7 +500,7 @@ Name=gpu
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => inline_template($gres_template),
+    content => inline_epp($gres_template, { 'gpu_count' => $facts['nvidia_gpu_count'] }),
     seltype => 'etc_t'
   }
 
