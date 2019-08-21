@@ -48,7 +48,7 @@ AccountingStorageHost={{ key "slurmdbd/hostname" }}
 AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 #AccountingStorageEnforce=limits
-JobAcctGatherType=jobacct_gather/linux
+JobAcctGatherType=jobacct_gather/cgroup
 JobAcctGatherFrequency=task=30
 JobAcctGatherParams=NoOverMemoryKill,UsePSS
 {{ end }}
