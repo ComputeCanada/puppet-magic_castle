@@ -1,6 +1,6 @@
 class profile::gpu {
   $cuda_ver = '10.1.168-1'
-  $driver_ver = '418.67'
+  $driver_ver = '418.87'
   package { 'cuda-repo':
     ensure   => 'installed',
     provider => 'rpm',
