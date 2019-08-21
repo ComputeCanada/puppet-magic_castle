@@ -94,7 +94,7 @@ class profile::slurm::base (
 # Nodes definition
 {{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
 {{ if and $value.nodename $value.cpus $value.realmemory -}}
-NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}} Gres=gpu:{{$value.gpus}}
+NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}} {{if gt (parseInt $value.gpus) 0}}Gres=gpu:{{$value.gpus}}{{end}}
 {{end -}}
 {{end -}}
 {{end -}}
