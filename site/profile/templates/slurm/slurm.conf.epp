@@ -7,10 +7,11 @@ SlurmctldHost={{ key "slurmctld/hostname" }}({{ key "slurmctld/ip" }})
 
 # SCHEDULER CONFIGURATIONS
 SchedulerType=sched/backfill
-SelectType=select/cons_res
+SelectType=select/cons_tres
 SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
+GresTypes=gpu
 {{ if tree "slurmd/" -}}
 include /etc/slurm/node.conf
 {{end -}}

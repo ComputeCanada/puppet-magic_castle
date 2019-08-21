@@ -94,7 +94,7 @@ class profile::slurm::base (
 # Nodes definition
 {{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
 {{ if and $value.nodename $value.cpus $value.realmemory -}}
-NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}}
+NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}} Gres=gpu:{{$value.gpus}}
 {{end -}}
 {{end -}}
 {{end -}}
@@ -105,21 +105,6 @@ END
     owner   => 'slurm',
     group   => 'slurm',
     content => $node_template,
-    seltype => 'etc_t'
-  }
-
-  file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => @(EOT/L),
-      ###########################################################
-      # Slurm's Generic Resource (GRES) configuration file
-      # Use NVML to gather GPU configuration information
-      # Information about all other GRES gathered from slurm.conf
-      ###########################################################
-      AutoDetect=nvml
-      |EOT
     seltype => 'etc_t'
   }
 
@@ -418,6 +403,11 @@ class profile::slurm::node {
     value   => String($real_memory),
     require => Tcp_conn_validator['consul']
   }
+  consul_key_value { "slurmd/${facts['hostname']}/gpus":
+    ensure  => 'present',
+    value   => String(facts['nvidia_gpu_count']),
+    require => Tcp_conn_validator['consul']
+  }
 
   package { 'slurm-slurmd':
     ensure => 'installed'
@@ -492,6 +482,26 @@ class profile::slurm::node {
       destination => '/etc/slurm/node.conf',
       command     => 'systemctl restart slurmd',
     }
+  }
+
+  $gres_template = @(EOT/L)
+###########################################################
+# Slurm's Generic Resource (GRES) configuration file
+# Use NVML to gather GPU configuration information
+# Information about all other GRES gathered from slurm.conf
+###########################################################
+AutoDetect=nvml
+<% Integer[0, ${facts['nvidia_gpu_count']}].each |$gpu| { -%>
+Name=gpu
+<% } -%>
+|EOT
+
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => inline_template($gres_template),
+    seltype => 'etc_t'
   }
 
   service { 'slurmd':
