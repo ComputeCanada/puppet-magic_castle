@@ -405,7 +405,7 @@ class profile::slurm::node {
   }
   consul_key_value { "slurmd/${facts['hostname']}/gpus":
     ensure  => 'present',
-    value   => String(facts['nvidia_gpu_count']),
+    value   => String($facts['nvidia_gpu_count']),
     require => Tcp_conn_validator['consul']
   }
 
