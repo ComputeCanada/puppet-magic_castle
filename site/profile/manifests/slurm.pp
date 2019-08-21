@@ -490,9 +490,11 @@ class profile::slurm::node {
 # Use NVML to gather GPU configuration information
 # Information about all other GRES gathered from slurm.conf
 ###########################################################
+<% if $gpu_count > 0 { -%>
 AutoDetect=nvml
 <% Integer[0, $gpu_count].each |$gpu| { -%>
 Name=gpu
+<% } -%>
 <% } -%>
 |EOT
 
