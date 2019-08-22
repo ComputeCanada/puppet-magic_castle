@@ -224,12 +224,13 @@ class profile::freeipa::guest_accounts(
   }
 
   exec{ 'ipa_add_user':
-    command     => "ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
-    onlyif      => "test `stat -c '%U' /mnt/home/user* | grep user | wc -l` != ${nb_accounts}",
+    command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
+    onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
                     "IPA_GUEST_PASSWD=${guest_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     require     => [File['/sbin/ipa_create_user.py'],
+                    File['kinit_wrapper'],
                     Exec['ipa-server-install']]
   }
 
