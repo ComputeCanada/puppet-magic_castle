@@ -235,7 +235,7 @@ class profile::freeipa::guest_accounts(
 
   exec{ 'mkhomedir':
     command => "/sbin/mkhomedir.sh  ${prefix}{01..${nb_accounts}}",
-    unless  => "test `ls /mnt/home | grep ${prefix} | wc -l` == ${nb_accounts}",
+    unless  => "ls /mnt/home/${prefix}{01..${nb_accounts}} &> /dev/null",
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     require => [Exec['ipa_add_user'],
                 Exec['semanage_fcontext_mnt_home']],
