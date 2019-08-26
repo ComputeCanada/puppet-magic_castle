@@ -1,0 +1,18 @@
+dist: bionic
+language: ruby
+
+rvm:
+  - 2.5
+
+before_install:
+  - wget https://apt.puppetlabs.com/puppet6-release-bionic.deb
+  - sudo dpkg -i puppet6-release-bionic.deb
+  - sudo apt-get -qq update
+  - sudo apt-get -qq -o=Dpkg::Use-Pty=0 install puppet-agent ruby-dev
+  - sudo gem install --no-document rails-erb-lint puppet-lint
+
+script:
+  - local-tests/puppet-validate
+  - local-tests/puppet-lint
+  - local-tests/erb-syntax
+  - local-tests/puppet-missing-files site manifests
