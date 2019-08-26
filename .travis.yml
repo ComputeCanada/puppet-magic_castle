@@ -5,10 +5,9 @@ before_install:
   - sudo dpkg -i puppet6-release-bionic.deb
   - sudo apt-get -qq update
   - sudo apt-get -qq -o=Dpkg::Use-Pty=0 install puppet-agent ruby-dev build-essential patch ruby-dev zlib1g-dev liblzma-dev python
-  - sudo /opt/puppetlabs/puppet/bin/gem install --no-document rails-erb-lint puppet-lint
+  - sudo /opt/puppetlabs/puppet/bin/gem install --no-document puppet-lint
 
 script:
   - local-tests/puppet-validate
   - local-tests/puppet-lint
-  - local-tests/erb-syntax
   - local-tests/puppet-missing-files site manifests
