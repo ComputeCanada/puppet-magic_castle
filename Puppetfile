@@ -30,5 +30,5 @@ mod 'puppetlabs-transition', '0.1.1'
 mod 'yelp-netstdlib', '0.0.1'
 
 mod 'computecanada-jupyterhub',
-    :git => 'https://git.computecanada.ca/magic_castle/puppet-jupyterhub.git',
+    :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
     :branch => 'master'
