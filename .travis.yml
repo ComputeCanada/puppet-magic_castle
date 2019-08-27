@@ -6,3 +6,4 @@ sudo: false
 cache: bundler
 script: 
   - bundle exec rake test
+  - local-tests/puppet-missing-files
