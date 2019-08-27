@@ -1,13 +1,8 @@
-dist: bionic
-
-before_install:
-  - wget https://apt.puppetlabs.com/puppet6-release-bionic.deb
-  - sudo dpkg -i puppet6-release-bionic.deb
-  - sudo apt-get -qq update
-  - sudo apt-get -qq -o=Dpkg::Use-Pty=0 install puppet-agent ruby-dev build-essential patch ruby-dev zlib1g-dev liblzma-dev python
-  - sudo /opt/puppetlabs/puppet/bin/gem install --no-document puppet-lint
-
-script:
-  - local-tests/puppet-validate
-  - local-tests/puppet-lint
-  - local-tests/puppet-missing-files site manifests
+language: ruby
+rvm: 2.5.5
+env: PUPPET_VERSION='~> 6.8'
+before_install: rm Gemfile.lock || true
+sudo: false
+cache: bundler
+script: 
+  - bundle exec rake
