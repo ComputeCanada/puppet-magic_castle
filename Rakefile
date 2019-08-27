@@ -6,6 +6,7 @@ require 'puppet-syntax/tasks/puppet-syntax'
 PuppetLint.configuration.send("disable_80chars")
 PuppetLint.configuration.log_format = "%{path}:%{line}:%{check}:%{KIND}:%{message}"
 PuppetLint.configuration.fail_on_warnings = true
+PuppetLint.configuration.send('disable_autoloader_layout')
 
 exclude_paths = [
   "pkg/**/*",
