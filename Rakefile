@@ -11,7 +11,7 @@ exclude_paths = [
   "pkg/**/*",
   "vendor/**/*",
   "spec/**/*",
-  "site/files/**/*"
+  "site/profile/files/**/*"
 ]
 PuppetLint.configuration.ignore_paths = exclude_paths
 PuppetSyntax.exclude_paths = exclude_paths
