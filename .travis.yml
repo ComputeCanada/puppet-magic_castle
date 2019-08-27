@@ -5,4 +5,4 @@ before_install: rm Gemfile.lock || true
 sudo: false
 cache: bundler
 script: 
-  - bundle exec rake
+  - bundle exec rake test
