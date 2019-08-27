@@ -10,7 +10,8 @@ PuppetLint.configuration.fail_on_warnings = true
 exclude_paths = [
   "pkg/**/*",
   "vendor/**/*",
-  "spec/**/*",
+  "spec/**/*"
+  "site/files/**/*",
 ]
 PuppetLint.configuration.ignore_paths = exclude_paths
 PuppetSyntax.exclude_paths = exclude_paths
