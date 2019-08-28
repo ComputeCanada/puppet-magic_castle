@@ -44,6 +44,18 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       require     => Package['globus-connect-server'],
       subscribe   => File['/etc/globus-connect-server.conf'],
     }
+
+    service { 'myproxy-server':
+      ensure  => running,
+      enable  => true,
+      require => Exec['/usr/bin/globus-connect-server-setup']
+    }
+
+    service { 'globus-gridftp-server':
+      ensure  => running,
+      enable  => true,
+      require => Exec['/usr/bin/globus-connect-server-setup']
+    }
   }
 }
 
