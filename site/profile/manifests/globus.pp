@@ -8,8 +8,6 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  $cluster_name = split($domain_name, '.')[0]
-
   if ($globus_user != '') and ($globus_password != '') {
     package { 'globus-connect-server':
       ensure  => 'installed',
@@ -19,8 +17,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
 
     file { '/etc/globus-connect-server.conf':
       ensure  => 'present',
-      content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name,
-                                                                    'hostname'    => $cluster_name }),
+      content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name }),
     }
 
     firewall { '100 Globus connect server - globus.org':

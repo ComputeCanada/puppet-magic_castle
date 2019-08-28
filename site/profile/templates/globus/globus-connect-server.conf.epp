@@ -26,7 +26,7 @@ Password = %(GLOBUS_PASSWORD)s
 ; The special value %(SHORT_HOSTNAME)s will substitute the non-qualified
 ; portion of an ec2 instance's public hostname, falling back to the
 ; non-qualified hostname portion of the machine's nodename
-Name = <%= $hostname %>
+Name = <%= $domain_name %>
 
 ; True or False, determining if the endpoint will be public or private.
 ; If not specified, this will default to False (non-public).
