@@ -1,4 +1,4 @@
 function profile::getcidr() >> String {
   $masklen = netmask_to_masklen(profile::getnetmask())
-  "${network}/${masklen}"
+  "${network_eth0}/${masklen}"
 }

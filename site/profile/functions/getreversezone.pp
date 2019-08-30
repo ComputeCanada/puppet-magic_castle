@@ -1,5 +1,5 @@
 function profile::getreversezone() >> String {
-  $network_list = split($network, '[.]')
+  $network_list = split($network_eth0, '[.]')
   $netmask_list = split(profile::getnetmask(), '[.]')
 
   $filtered_network = $network_list.filter |$i, $v| { $netmask_list[$i] != '0' }
