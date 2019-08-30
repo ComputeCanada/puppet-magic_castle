@@ -48,7 +48,13 @@ class profile::base (String $sudoer_username = 'centos') {
     ensure => 'absent',
   }
 
-  class { 'firewall': }
+  class { 'firewall':
+    purge => true
+  }
+
+  class { 'firewallchain':
+    purge => true
+  }
 
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
