@@ -341,7 +341,7 @@ class profile::slurm::controller {
   }
   consul_key_value { 'slurmctld/ip':
     ensure  => 'present',
-    value   => $facts['networking']['ip'],
+    value   => $facts['ipaddress_eth0'],
     require => Tcp_conn_validator['consul']
   }
 
