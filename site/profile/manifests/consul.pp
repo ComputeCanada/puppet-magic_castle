@@ -17,14 +17,6 @@ class profile::consul::server {
     }
   }
 
-  class { '::consul_template':
-    config_hash => {
-      'consul' => {
-        'token' => lookup('profile::consul::acl_api_token')
-      }
-    }
-  }
-
   tcp_conn_validator { 'consul':
     host      => '127.0.0.1',
     port      => 8500,
@@ -42,14 +34,6 @@ class profile::consul::client(String $server_ip) {
       'log_level'  => 'INFO',
       'node_name'  => $facts['hostname'],
       'retry_join' => [$server_ip]
-    }
-  }
-
-  class { '::consul_template':
-    config_hash => {
-      'consul' => {
-        'token' => lookup('profile::consul::acl_api_token')
-      }
     }
   }
 

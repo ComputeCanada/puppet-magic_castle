@@ -1,6 +1,14 @@
 class profile::base (String $sudoer_username = 'centos') {
   include stdlib
 
+  class { '::consul_template':
+    config_hash => {
+      'consul' => {
+        'token' => lookup('profile::consul::acl_api_token')
+      }
+    }
+  }
+
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
     ensure => absent
   }
