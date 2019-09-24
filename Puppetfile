@@ -5,7 +5,7 @@ forge "https://forgeapi.puppetlabs.com"
 mod 'KyleAnderson-consul', '5.1.0'
 mod 'camptocamp-kmod', '2.3.1'
 mod 'camptocamp-systemd', '2.6.0'
-mod 'cmdntrf-consul_template', '2.2.0'
+mod 'cmdntrf-consul_template', '2.3.0'
 mod 'derdanne-nfs', '2.1.2'
 mod 'herculesteam-augeasproviders_core', '2.5.0'
 mod 'herculesteam-augeasproviders_pam', '2.2.1'

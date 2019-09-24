@@ -225,9 +225,10 @@ END
 class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
   consul_key_value { 'slurmdbd/hostname':
-    ensure  => 'present',
-    value   => $facts['hostname'],
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => $facts['hostname'],
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
 
   $override_options = {
@@ -335,14 +336,16 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 class profile::slurm::controller {
   include profile::slurm::base
   consul_key_value { 'slurmctld/hostname':
-    ensure  => 'present',
-    value   => $facts['hostname'],
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => $facts['hostname'],
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
   consul_key_value { 'slurmctld/ip':
-    ensure  => 'present',
-    value   => $facts['ipaddress_eth0'],
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => $facts['ipaddress_eth0'],
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
 
   package { 'slurm-slurmctld':
@@ -388,25 +391,29 @@ class profile::slurm::node {
   include profile::slurm::base
 
   consul_key_value { "slurmd/${facts['hostname']}/nodename":
-    ensure  => 'present',
-    value   => $facts['hostname'],
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => $facts['hostname'],
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
   consul_key_value { "slurmd/${facts['hostname']}/cpus":
-    ensure  => 'present',
-    value   => String($facts['processors']['count']),
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => String($facts['processors']['count']),
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
   consul_key_value { "slurmd/${facts['hostname']}/realmemory":
-    ensure  => 'present',
-    value   => String($real_memory),
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => String($real_memory),
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
   consul_key_value { "slurmd/${facts['hostname']}/gpus":
-    ensure  => 'present',
-    value   => String($facts['nvidia_gpu_count']),
-    require => Tcp_conn_validator['consul']
+    ensure        => 'present',
+    value         => String($facts['nvidia_gpu_count']),
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
 
   package { 'slurm-slurmd':

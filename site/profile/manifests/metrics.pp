@@ -15,7 +15,10 @@ class profile::metrics::server {
         'scrape_interval'   => '10s',
         'scrape_timeout'    => '10s',
         'honor_labels'      => true,
-        'consul_sd_configs' => [{'server' => '127.0.0.1:8500'}],
+        'consul_sd_configs' => [{
+          'server' => '127.0.0.1:8500',
+          'token'  => lookup('consul::acl_api_token')
+        }],
         'relabel_configs'   => [
           {
             'source_labels' => ['__meta_consul_tags'],

@@ -7,6 +7,21 @@ class profile::consul::server {
       'log_level'        => 'INFO',
       'node_name'        => $facts['hostname'],
       'server'           => true,
+      'acl' => {
+        'enabled'        => true,
+        'default_policy' => 'deny',
+        'tokens'         => {
+          'master' => lookup('profile::consul::acl_api_token')
+        }
+      }
+    }
+  }
+
+  class { '::consul_template':
+    config_hash => {
+      'consul' => {
+        'token' => lookup('profile::consul::acl_api_token')
+      }
     }
   }
 
@@ -27,6 +42,14 @@ class profile::consul::client(String $server_ip) {
       'log_level'  => 'INFO',
       'node_name'  => $facts['hostname'],
       'retry_join' => [$server_ip]
+    }
+  }
+
+  class { '::consul_template':
+    config_hash => {
+      'consul' => {
+        'token' => lookup('profile::consul::acl_api_token')
+      }
     }
   }
 

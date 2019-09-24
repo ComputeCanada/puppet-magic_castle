@@ -1,6 +1,5 @@
 class profile::base (String $sudoer_username = 'centos') {
   include stdlib
-  include ::consul_template
 
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
     ensure => absent
