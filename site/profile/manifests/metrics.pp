@@ -17,7 +17,7 @@ class profile::metrics::server {
         'honor_labels'      => true,
         'consul_sd_configs' => [{
           'server' => '127.0.0.1:8500',
-          'token'  => lookup('consul::acl_api_token')
+          'token'  => lookup('profile::consul::acl_api_token')
         }],
         'relabel_configs'   => [
           {
