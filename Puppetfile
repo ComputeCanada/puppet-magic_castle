@@ -2,7 +2,9 @@
 
 forge "https://forgeapi.puppetlabs.com"
 
-mod 'KyleAnderson-consul', '5.1.0'
+mod 'KyleAnderson-consul',
+    :git    => 'https://github.com/cmd-ntrf/puppet-consul.git',
+    :branch => 'reload_try_sleep'
 mod 'camptocamp-kmod', '2.3.1'
 mod 'camptocamp-systemd', '2.6.0'
 mod 'cmdntrf-consul_template', '2.3.0'
