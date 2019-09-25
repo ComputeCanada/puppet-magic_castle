@@ -31,10 +31,11 @@ class profile::consul::client(String $server_ip) {
   class { '::consul':
     version     => '1.5.2',
     config_hash => {
-      'data_dir'   => '/opt/consul',
-      'log_level'  => 'INFO',
-      'node_name'  => $facts['hostname'],
-      'retry_join' => [$server_ip]
+      'data_dir'        => '/opt/consul',
+      'log_level'       => 'INFO',
+      'node_name'       => $facts['hostname'],
+      'retry_join'      => [$server_ip],
+      'acl_agent_token' => lookup('profile::consul::acl_api_token')
     }
   }
 
