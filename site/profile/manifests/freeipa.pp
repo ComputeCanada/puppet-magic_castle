@@ -120,15 +120,19 @@ class profile::freeipa::client(String $server_ip)
     timeout   => 1200,
   }
 
+  $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
+      /sbin/ipa-client-install \
+      --mkhomedir \
+      --ssh-trust-dns \
+      --enable-dns-updates \
+      --unattended \
+      --force-join \
+      -p admin \
+      -w ${admin_passwd}
+      | IPACLIENTINSTALL
+
   exec { 'ipa-client-install':
-    command   => "/sbin/ipa-client-install \
-                  --mkhomedir \
-                  --ssh-trust-dns \
-                  --enable-dns-updates \
-                  --unattended \
-                  --force-join \
-                  -p admin \
-                  -w ${admin_passwd}",
+    command   => Sensitive($ipa_client_install_cmd),
     tries     => 10,
     try_sleep => 10,
     require   => [File_line['resolv_nameserver'],
@@ -267,27 +271,32 @@ class profile::freeipa::server
     unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log']
   }
 
+
+  $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
+      /sbin/ipa-server-install \
+      --setup-dns \
+      --hostname ${fqdn} \
+      --ds-password ${admin_passwd} \
+      --admin-password ${admin_passwd} \
+      --mkhomedir \
+      --idstart=50000 \
+      --ssh-trust-dns \
+      --unattended \
+      --auto-forwarders \
+      --ip-address=${::ipaddress_eth0} \
+      --no-host-dns \
+      --no-dnssec-validation \
+      --no-ui-redirect \
+      --no-pkinit \
+      --no-ntp \
+      --allow-zone-overlap \
+      --reverse-zone=${reverse_zone} \
+      --realm=${realm} \
+      --domain=${int_domain_name}
+      | IPASERVERINSTALL
+
   exec { 'ipa-server-install':
-    command => "/sbin/ipa-server-install \
-                --setup-dns \
-                --hostname ${fqdn} \
-                --ds-password ${admin_passwd} \
-                --admin-password ${admin_passwd} \
-                --mkhomedir \
-                --idstart=50000 \
-                --ssh-trust-dns \
-                --unattended \
-                --auto-forwarders \
-                --ip-address=${::ipaddress_eth0} \
-                --no-host-dns \
-                --no-dnssec-validation \
-                --no-ui-redirect \
-                --no-pkinit \
-                --no-ntp \
-                --allow-zone-overlap \
-                --reverse-zone=${reverse_zone} \
-                --realm=${realm} \
-                --domain=${int_domain_name}",
+    command => Sensitive($ipa_server_install_cmd),
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns']],
