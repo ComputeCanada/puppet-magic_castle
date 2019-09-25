@@ -1,7 +1,9 @@
 class profile::consul::server {
   class { '::consul':
-    version     => '1.5.2',
-    config_hash => {
+    version       => '1.5.2',
+    config_mode   => '0640',
+    acl_api_token => lookup('profile::consul::acl_api_token'),
+    config_hash   => {
       'bootstrap_expect' => 1,
       'data_dir'         => '/opt/consul',
       'log_level'        => 'INFO',
@@ -14,8 +16,7 @@ class profile::consul::server {
           'master' => lookup('profile::consul::acl_api_token')
         }
       }
-    },
-    acl_api_token => lookup('profile::consul::acl_api_token')
+    }
   }
 
   tcp_conn_validator { 'consul':
@@ -30,6 +31,7 @@ class profile::consul::server {
 class profile::consul::client(String $server_ip) {
   class { '::consul':
     version     => '1.5.2',
+    config_mode => '0640',
     config_hash => {
       'data_dir'        => '/opt/consul',
       'log_level'       => 'INFO',
