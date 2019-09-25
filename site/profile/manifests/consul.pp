@@ -14,7 +14,8 @@ class profile::consul::server {
           'master' => lookup('profile::consul::acl_api_token')
         }
       }
-    }
+    },
+    acl_api_token => lookup('profile::consul::acl_api_token')
   }
 
   tcp_conn_validator { 'consul':
