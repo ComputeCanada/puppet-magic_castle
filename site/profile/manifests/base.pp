@@ -9,6 +9,10 @@ class profile::base (String $sudoer_username = 'centos') {
     }
   }
 
+  # Allow users to run TCP servers - activated to allow users
+  # to run mpi jobs.
+  selinux::boolean { 'selinuxuser_tcp_server': }
+
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
     ensure => absent
   }
