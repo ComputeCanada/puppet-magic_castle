@@ -321,7 +321,34 @@ class profile::freeipa::server
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
-
+  exec { 'ipa_hostgroup_not_mgmt':
+    command     => 'kinit_wrapper ipa hostgroup-add not_mgmt',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
+  -> exec { 'ipa_automember_not_mgmt':
+    command     => 'kinit_wrapper ipa automember-add not_mgmt --type=hostgroup',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
+  -> exec { 'ipa_automember_condition_not_mgmt':
+    command     => 'kinit_wrapper ipa automember-add-condition not_mgmt --type=hostgroup --key=fqdn --inclusive-regex=.* --exclusive-regex="^mgmt.*"',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
+  -> exec { 'ipa_automember_rebuild_hostgroup':
+    command     => 'kinit_wrapper ipa automember-rebuild --type=hostgroup',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
 
   service { 'ipa':
     ensure  => running,
