@@ -308,17 +308,19 @@ class profile::freeipa::server
   exec { 'ipa_config-mod_auth-otp':
     command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'],],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install']
   }
 
   exec { 'ipa_automember_ipausers':
     command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'], ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install']
   }
 
   exec { 'ipa_hostgroup_not_mgmt':
@@ -326,23 +328,24 @@ class profile::freeipa::server
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install']
   }
-  -> exec { 'ipa_automember_not_mgmt':
+  ~> exec { 'ipa_automember_not_mgmt':
     command     => 'kinit_wrapper ipa automember-add not_mgmt --type=hostgroup',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
-  -> exec { 'ipa_automember_condition_not_mgmt':
+  ~> exec { 'ipa_automember_condition_not_mgmt':
     command     => 'kinit_wrapper ipa automember-add-condition not_mgmt --type=hostgroup --key=fqdn --inclusive-regex=.* --exclusive-regex="^mgmt.*"',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
-  -> exec { 'ipa_automember_rebuild_hostgroup':
+  ~> exec { 'ipa_automember_rebuild_hostgroup':
     command     => 'kinit_wrapper ipa automember-rebuild --type=hostgroup',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
@@ -353,25 +356,28 @@ class profile::freeipa::server
   exec { 'ipa_hbacrule_notmgmt':
     command     => 'kinit_wrapper ipa hbacrule-add ipauser_not_mgmt --servicecat=all',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'],],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install']
   }
 
   exec { 'ipa_hbacrule_notmgmt_addusers':
     command     => 'kinit_wrapper ipa hbacrule-add-user ipauser_not_mgmt --groups=ipausers',
     refreshonly => true,
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    require     => [File['kinit_wrapper'],],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require     => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_automember_ipausers']]
+    subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_automember_ipausers']]
   }
 
   exec { 'ipa_hbacrule_notmgmt_addhosts':
     command     => 'kinit_wrapper ipa hbacrule-add-host ipauser_not_mgmt --hostgroups=not_mgmt',
     refreshonly => true,
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    require     => [File['kinit_wrapper'],],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require     => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']]
+    subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']]
   }
 
   service { 'ipa':
