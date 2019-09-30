@@ -292,7 +292,8 @@ class profile::freeipa::server
       --allow-zone-overlap \
       --reverse-zone=${reverse_zone} \
       --realm=${realm} \
-      --domain=${int_domain_name}
+      --domain=${int_domain_name} \
+      --no_hbac_allow
       | IPASERVERINSTALL
 
   exec { 'ipa-server-install':
