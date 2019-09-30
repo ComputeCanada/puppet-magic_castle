@@ -313,6 +313,16 @@ class profile::freeipa::server
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
+  exec { 'ipa_automember_ipausers':
+    command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
+
+
+
   service { 'ipa':
     ensure  => running,
     enable  => true,
