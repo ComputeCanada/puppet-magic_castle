@@ -350,6 +350,30 @@ class profile::freeipa::server
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
+  exec { 'ipa_hbacrule_notmgmt':
+    command     => 'kinit_wrapper ipa hbacrule-add ipauser_not_mgmt --servicecat=all',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+  }
+
+  exec { 'ipa_hbacrule_notmgmt_addusers':
+    command     => 'kinit_wrapper ipa hbacrule-add-user ipauser_not_mgmt --groups=ipausers',
+    refreshonly => true,
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require     => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_automember_ipausers']]
+  }
+
+  exec { 'ipa_hbacrule_notmgmt_addhosts':
+    command     => 'kinit_wrapper ipa hbacrule-add-host ipauser_not_mgmt --hostgroups=not_mgmt',
+    refreshonly => true,
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require     => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']]
+  }
+
   service { 'ipa':
     ensure  => running,
     enable  => true,
