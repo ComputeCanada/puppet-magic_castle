@@ -1,8 +1,8 @@
 archs=({{ with tree "cvmfs/client" | explode -}}
 {{range $key, $value := . -}}
 {{ $value.rsnt_arch }} {{ end -}} {{ end -}})
-if [[ " ${archs[@]} " =~ " pni " ]]; then
-    export RSNT_ARCH="pni"
+if [[ " ${archs[@]} " =~ " sse3 " ]]; then
+    export RSNT_ARCH="sse3"
 elif [[ " ${archs[@]} " =~ " avx " ]]; then
     export RSNT_ARCH="avx"
 elif [[ " ${archs[@]} " =~ " avx2 " ]]; then
