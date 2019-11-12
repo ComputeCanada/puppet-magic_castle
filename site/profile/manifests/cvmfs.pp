@@ -24,10 +24,32 @@ class profile::cvmfs::client (String $squid_ip) {
     require => Package['cvmfs']
   }
 
+  consul_key_value { "cvmfs/client/${facts['hostname']}/rsnt_arch":
+    ensure        => 'present',
+    value         => $facts['cpu_ext'],
+    require       => Tcp_conn_validator['consul'],
+    acl_api_token => lookup('profile::consul::acl_api_token')
+  }
+
   file { '/etc/profile.d/z-00-computecanada.sh':
     ensure  => 'present',
     source  => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh',
     require => File['/etc/cvmfs/default.local']
+  }
+
+  file { '/etc/consul-template/z-000-rsnt_arch.sh.tpl':
+    ensure => 'present',
+    source => 'puppet:///modules/profile/cvmfs/z-000-rsnt_arch.sh',
+  }
+
+  consul_template::watch { 'z-000-rsnt_arch.sh':
+    require     => File['/etc/consul-template/z-000-rsnt_arch.sh.tpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/consul-template/z-000-rsnt_arch.sh.tpl',
+      destination => '/etc/profile.d/z-000-rsnt_arch.sh',
+      command     => '/usr/bin/true',
+    }
   }
 
   service { 'autofs':
