@@ -10,7 +10,7 @@ class profile::consul::server {
       'node_name'        => $facts['hostname'],
       'server'           => true,
       'acl_agent_token'  => lookup('profile::consul::acl_api_token'),
-      'acl' => {
+      'acl'              => {
         'enabled'        => true,
         'default_policy' => 'deny',
         'tokens'         => {
