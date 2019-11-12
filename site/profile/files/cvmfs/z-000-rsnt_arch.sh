@@ -1,4 +1,4 @@
-archs=({{ with tree "cvmfs" | explode -}}
+archs=({{ with tree "cvmfs/client" | explode -}}
 {{range $key, $value := . -}}
 {{ $value.rsnt_arch }} {{ end -}} {{ end -}})
 if [[ " ${archs[@]} " =~ " pni " ]]; then
