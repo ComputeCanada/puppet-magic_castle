@@ -10,3 +10,9 @@ elif [[ " ${archs[@]} " =~ " avx2 " ]]; then
 elif [[ " ${archs[@]} " =~ " avx512 " ]]; then
     export RSNT_ARCH="avx512"
 fi
+
+if [[ $UID -gt 10000 ]]; then
+    if [[ -r /cvmfs/soft.computecanada.ca/config/profile/bash.sh ]]; then
+        source /cvmfs/soft.computecanada.ca/config/profile/bash.sh
+    fi
+fi

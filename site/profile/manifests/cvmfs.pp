@@ -31,23 +31,18 @@ class profile::cvmfs::client (String $squid_ip) {
     acl_api_token => lookup('profile::consul::acl_api_token')
   }
 
-  file { '/etc/profile.d/z-00-computecanada.sh':
+  file { '/etc/consul-template/z-00-computecanada.sh.ctmpl':
     ensure  => 'present',
-    source  => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh',
+    source  => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh.ctmpl',
     require => File['/etc/cvmfs/default.local']
   }
 
-  file { '/etc/consul-template/z-000-rsnt_arch.sh.tpl':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/cvmfs/z-000-rsnt_arch.sh',
-  }
-
-  consul_template::watch { 'z-000-rsnt_arch.sh':
-    require     => File['/etc/consul-template/z-000-rsnt_arch.sh.tpl'],
+  consul_template::watch { 'z-00-computecanada.sh':
+    require     => File['/etc/consul-template/z-00-computecanada.sh.ctmpl'],
     config_hash => {
       perms       => '0644',
-      source      => '/etc/consul-template/z-000-rsnt_arch.sh.tpl',
-      destination => '/etc/profile.d/z-000-rsnt_arch.sh',
+      source      => '/etc/consul-template/z-00-computecanada.sh.ctmpl',
+      destination => '/etc/profile.d/z-00-computecanada.sh',
       command     => '/usr/bin/true',
     }
   }
