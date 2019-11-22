@@ -24,7 +24,7 @@ node /^login\d+$/ {
   include profile::freeipa::client
 }
 
-node /^mgmt01$/ {
+node /^mgmt1$/ {
   class { [
     'profile::consul::server',
     'profile::metrics::exporter'
@@ -49,7 +49,7 @@ node /^mgmt01$/ {
   include profile::slurm::accounting
 }
 
-node /^mgmt0*(?:[2-9]|[1-9]\d\d*)$/ {
+node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::consul::client
   include profile::base
   include profile::rsyslog::client
