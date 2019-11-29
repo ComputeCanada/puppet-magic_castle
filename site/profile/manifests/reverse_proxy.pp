@@ -82,12 +82,34 @@ class profile::reverse_proxy(String $domain_name)
     headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
   }
 
-  # file_line { 'Strict-Transport-Security':
-  #   ensure => present,
-  #   path   => '/etc/httpd/conf.d/ssl.conf',
-  #   line   => 'Header always set Strict-Transport-Security "max-age=15768000"',
-  #   notify => Service['httpd']
-  # }
+  $domain_name_escdot = regsubst($domain_name, '\.', '\.')
+  apache::vhost { 'ipa_ssl':
+    servername                =>  "ipa.${domain_name}",
+    port                      => '443',
+    docroot                   => false,
+    manage_docroot            => false,
+    access_log                => false,
+    error_log                 => false,
+    proxy_dest                => "https://mgmt1.int.${domain_name}",
+    proxy_preserve_host       => true,
+    rewrites                  => [
+      {
+        rewrite_cond => ['%{HTTPS:Connection} Upgrade [NC]'],
+      },
+    ],
+    ssl                       => true,
+    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
+    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
+    ssl_proxyengine           => true,
+    ssl_proxy_check_peer_cn   => 'off',
+    ssl_proxy_check_peer_name => 'off',
+    headers                   => ['always set Strict-Transport-Security "max-age=15768000"'],
+    request_headers           => ["edit Referer ^https://ipa\.${domain_name_escdot} https://mgmt1.int.${domain_name}/"],
+    reverse_cookies           => {
+      domain => "mgmt1.int.${domain_name}",
+      url    => "ipa.${domain_name}"
+    },
+  }
 }
 
 # class profile::reverse_proxy::jupyterhub
