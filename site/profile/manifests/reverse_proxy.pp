@@ -108,10 +108,12 @@ class profile::reverse_proxy(String $domain_name)
       {
         'path'            => '/',
         'url'             => "https://mgmt1.int.${domain_name}",
-        'reverse_cookies' => {
-          'domain' => "mgmt1.int.${domain_name}",
-          'url'    => "ipa.${domain_name}"
-        },
+        'reverse_cookies' => [
+          {
+            'domain' => "mgmt1.int.${domain_name}",
+            'url'    => "ipa.${domain_name}"
+          },
+        ],
       }
     ],
 
