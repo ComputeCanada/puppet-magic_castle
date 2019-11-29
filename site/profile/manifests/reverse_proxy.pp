@@ -11,6 +11,7 @@ class profile::reverse_proxy(String $domain_name)
     ssl_cipher           => 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384',
     ssl_protocol         => ['all', '-SSLv3', '-TLSv1', '-TLSv1.1'],
     ssl_honorcipherorder => false,
+    ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
   }
 
   apache::mod { ['headers', 'proxy', 'proxy_http']: }
@@ -46,7 +47,6 @@ class profile::reverse_proxy(String $domain_name)
     ssl             => true,
     ssl_cert        => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
     ssl_key         => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    ssl_ca          => "/etc/letsencrypt/live/${domain_name}/chain.pem",
   }
 
   # file_line { 'Strict-Transport-Security':
