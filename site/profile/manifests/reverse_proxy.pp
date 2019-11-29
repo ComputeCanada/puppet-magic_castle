@@ -120,35 +120,6 @@ class profile::reverse_proxy(String $domain_name)
   }
 }
 
-# class profile::reverse_proxy::jupyterhub
-
-
-# login1:ipa.conf
-# <VirtualHost *:443>
-#   ServerName login1.mando.calculquebec.cloud
-
-#   # configure SSL
-#   SSLEngine on
-#   SSLProxyEngine on
-
-#   SSLProxyCheckPeerCN off
-#   SSLProxyCheckPeerName off
-
-#   # Use RewriteEngine to handle websocket connection upgrades
-#   RewriteEngine On
-#   RewriteCond %{HTTPS:Connection} Upgrade [NC]
-
-#   ProxyPassReverseCookieDomain mgmt1.int.mando.calculquebec.cloud login1.mando.calculquebec.cloud
-#   RequestHeader edit Referer ^https://login1\.mando\.calculquebec\.cloud/ https://mgmt1.int.mando.calculquebec.cloud/
-
-#   <Location "/">
-#     # preserve Host header to avoid cross-origin problems
-#     ProxyPreserveHost on
-#     # proxy to FreeIPA
-#     ProxyPass         https://mgmt1.int.mando.calculquebec.cloud/
-#     ProxyPassReverse  https://mgmt1.int.mando.calculquebec.cloud/
-#   </Location>
-# </VirtualHost>
 # mgmt1:/etc/httpd/conf.d/ipa-rewrite.conf
 # # VERSION 6 - DO NOT REMOVE THIS LINE
 
