@@ -80,7 +80,8 @@ class profile::reverse_proxy(String $domain_name)
     ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
     ssl_proxyengine           => true,
     ssl_proxy_check_peer_cn   => 'off',
-    ssl_proxy_check_peer_name => 'off'
+    ssl_proxy_check_peer_name => 'off',
+    headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
   }
 
   # file_line { 'Strict-Transport-Security':
@@ -92,30 +93,6 @@ class profile::reverse_proxy(String $domain_name)
 }
 
 # class profile::reverse_proxy::jupyterhub
-# <VirtualHost *:443>
-#   ServerName jupyter.mando.calculquebec.cloud
-
-#   # configure SSL
-#   SSLEngine on
-#   SSLProxyEngine on
-
-#   SSLProxyCheckPeerCN off
-#   SSLProxyCheckPeerName off
-
-#   # Use RewriteEngine to handle websocket connection upgrades
-#   RewriteEngine On
-#   RewriteCond %{HTTPS:Connection} Upgrade [NC]
-#   RewriteCond %{HTTPS:Upgrade} websocket [NC]
-#   RewriteRule /(.*) wss://127.0.0.1:8000/$1 [P,L]
-
-#   <Location "/">
-#     # preserve Host header to avoid cross-origin problems
-#     ProxyPreserveHost on
-#     # proxy to JupyterHub
-#     ProxyPass         https://127.0.0.1:8000/
-#     ProxyPassReverse  https://127.0.0.1:8000/
-#   </Location>
-# </VirtualHost>
 
 
 # login1:ipa.conf
