@@ -60,6 +60,29 @@ class profile::reverse_proxy(String $domain_name)
     error_log       => false,
   }
 
+  apache::vhost { 'jupyter_ssl':
+    servername                =>  "jupyter.${domain_name}",
+    port                      => '443',
+    docroot                   => false,
+    manage_docroot            => false,
+    access_log                => false,
+    error_log                 => false,
+    proxy_dest                => 'https://127.0.0.1:8000',
+    proxy_preserve_host       => true,
+    rewrites                  => [
+      {
+        rewrite_cond => ['%{HTTPS:Connection} Upgrade [NC]', '%{HTTPS:Upgrade} websocket [NC]'],
+        rewrite_rule => ['/(.*) wss://127.0.0.1:8000/$1 [P,L]'],
+      },
+    ],
+    ssl                       => true,
+    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
+    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
+    ssl_proxyengine           => true,
+    ssl_proxy_check_peer_cn   => 'off',
+    ssl_proxy_check_peer_name => 'off'
+  }
+
   # file_line { 'Strict-Transport-Security':
   #   ensure => present,
   #   path   => '/etc/httpd/conf.d/ssl.conf',
