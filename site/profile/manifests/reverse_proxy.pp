@@ -30,6 +30,7 @@ class profile::reverse_proxy(String $domain_name)
     redirect_dest   => "https://jupyter.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
+    access_log      => false,
     error_log       => false,
   }
 
@@ -40,6 +41,7 @@ class profile::reverse_proxy(String $domain_name)
     redirect_dest   => "https://jupyter.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
+    access_log      => false,
     error_log       => false,
     ssl             => true,
     ssl_cert        => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
@@ -56,18 +58,6 @@ class profile::reverse_proxy(String $domain_name)
 }
 
 # class profile::reverse_proxy::jupyterhub
-# jupyterhub.conf
-# <VirtualHost *:80>
-#   ServerName mando.calculquebec.cloud
-#   Redirect / https://jupyter.mando.calculquebec.cloud/
-# </VirtualHost>
-
-# <VirtualHost *:443>
-#   SSLEngine on
-#   ServerName mando.calculquebec.cloud
-#   Redirect / https://jupyter.mando.calculquebec.cloud/
-# </VirtualHost>
-
 # <VirtualHost *:80>
 #   ServerName jupyter.mando.calculquebec.cloud
 #   Redirect / https://jupyter.mando.calculquebec.cloud/
