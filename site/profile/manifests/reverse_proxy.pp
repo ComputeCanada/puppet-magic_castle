@@ -107,7 +107,7 @@ class profile::reverse_proxy(String $domain_name)
     proxy_pass                => [
       {
         'path'            => '/',
-        'url'             => "https://mgmt1.int.${domain_name}",
+        'url'             => "https://mgmt1.int.${domain_name}/",
         'reverse_cookies' => [
           {
             'domain' => "mgmt1.int.${domain_name}",
