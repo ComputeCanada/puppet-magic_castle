@@ -49,6 +49,17 @@ class profile::reverse_proxy(String $domain_name)
     ssl_key         => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
   }
 
+  apache::vhost { 'jupyter80_to_jupyter443':
+    servername      =>  "jupyter.${domain_name}",
+    port            => '80',
+    redirect_status => 'permanent',
+    redirect_dest   => "https://jupyter.${domain_name}/",
+    docroot         => false,
+    manage_docroot  => false,
+    access_log      => false,
+    error_log       => false,
+  }
+
   # file_line { 'Strict-Transport-Security':
   #   ensure => present,
   #   path   => '/etc/httpd/conf.d/ssl.conf',
@@ -58,10 +69,6 @@ class profile::reverse_proxy(String $domain_name)
 }
 
 # class profile::reverse_proxy::jupyterhub
-# <VirtualHost *:80>
-#   ServerName jupyter.mando.calculquebec.cloud
-#   Redirect / https://jupyter.mando.calculquebec.cloud/
-# </VirtualHost>
 # <VirtualHost *:443>
 #   ServerName jupyter.mando.calculquebec.cloud
 
