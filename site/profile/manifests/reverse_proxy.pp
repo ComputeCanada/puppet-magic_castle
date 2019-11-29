@@ -84,13 +84,12 @@ class profile::reverse_proxy(String $domain_name)
 
   $domain_name_escdot = regsubst($domain_name, '\.', '\.')
   apache::vhost { 'ipa_ssl':
-    servername                =>  "ipa.${domain_name}",
+    servername                => "ipa.${domain_name}",
     port                      => '443',
     docroot                   => false,
     manage_docroot            => false,
     access_log                => false,
     error_log                 => false,
-    proxy_dest                => "https://mgmt1.int.${domain_name}",
     proxy_preserve_host       => true,
     rewrites                  => [
       {
@@ -105,10 +104,17 @@ class profile::reverse_proxy(String $domain_name)
     ssl_proxy_check_peer_name => 'off',
     headers                   => ['always set Strict-Transport-Security "max-age=15768000"'],
     request_headers           => ["edit Referer ^https://ipa\.${domain_name_escdot} https://mgmt1.int.${domain_name}/"],
-    reverse_cookies           => {
-      domain => "mgmt1.int.${domain_name}",
-      url    => "ipa.${domain_name}"
-    },
+    proxy_pass                => [
+      {
+        path            => '/',
+        url             => "https://mgmt1.int.${domain_name}",
+        reverse_cookies => {
+          domain => "mgmt1.int.${domain_name}",
+          url    => "ipa.${domain_name}"
+        },
+      }
+    ],
+
   }
 }
 
