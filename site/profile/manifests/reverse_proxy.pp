@@ -30,14 +30,18 @@ class profile::reverse_proxy(String $domain_name)
     servername      =>  $domain_name,
     port            => '80',
     redirect_status => 'permanent',
-    redirect_dest   => "https://jupyter.${domain_name}/"
+    redirect_dest   => "https://jupyter.${domain_name}/",
+    docroot         => false,
+    manage_docroot  => false
   }
 
   apache::vhost { 'redirect ssl domain to jupyter':
     servername      =>  $domain_name,
     port            => '443',
     redirect_status => 'permanent',
-    redirect_dest   => "https://jupyter.${domain_name}/"
+    redirect_dest   => "https://jupyter.${domain_name}/",
+    docroot         => false,
+    manage_docroot  => false
   }
 
   # file_line { 'Strict-Transport-Security':
