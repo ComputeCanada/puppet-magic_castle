@@ -7,7 +7,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   class { 'apache::mod::ssl':
-    ssl_compression      => true,
+    ssl_compression      => false,
     ssl_cert             => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
     ssl_key              => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
     ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
