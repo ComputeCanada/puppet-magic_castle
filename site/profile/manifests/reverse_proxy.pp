@@ -16,7 +16,7 @@ class profile::reverse_proxy(String $domain_name)
     ssl_honorcipherorder => false,
   }
 
-  apache::mod { 'mod_proxy': }
+  apache::mod { 'proxy': }
 
   firewall { '200 nginx public':
     chain  => 'INPUT',
