@@ -20,7 +20,7 @@ node /^login\d+$/ {
   include profile::globus::base
   include profile::singularity
   include jupyterhub
-  include jupyterhub::reverse_proxy
+  include profile::reverse_proxy
   include profile::nfs::client
   include profile::freeipa::client
 }
