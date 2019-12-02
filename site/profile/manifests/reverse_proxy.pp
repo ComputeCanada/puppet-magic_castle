@@ -31,6 +31,7 @@ class profile::reverse_proxy(String $domain_name)
     manage_docroot  => false,
     access_log      => false,
     error_log       => false,
+    priority        => 99,
   }
 
   apache::vhost { 'domain_to_jupyter_ssl':
@@ -45,6 +46,7 @@ class profile::reverse_proxy(String $domain_name)
     ssl             => true,
     ssl_cert        => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
     ssl_key         => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
+    priority        => 99,
   }
 
   apache::vhost { 'jupyter80_to_jupyter443':
