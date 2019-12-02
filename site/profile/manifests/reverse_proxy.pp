@@ -84,6 +84,17 @@ class profile::reverse_proxy(String $domain_name)
     headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
   }
 
+  apache::vhost { 'ipa80_to_ipa443':
+    servername      =>  "ipa.${domain_name}",
+    port            => '80',
+    redirect_status => 'permanent',
+    redirect_dest   => "https://ipa.${domain_name}/",
+    docroot         => false,
+    manage_docroot  => false,
+    access_log      => false,
+    error_log       => false,
+  }
+
   $domain_name_escdot = regsubst("ipa.${domain_name}", '\.', '\.', 'G')
   apache::vhost { 'ipa_ssl':
     servername                => "ipa.${domain_name}",
