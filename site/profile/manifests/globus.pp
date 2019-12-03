@@ -17,7 +17,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
 
     file { '/etc/globus-connect-server.conf':
       ensure  => 'present',
-      content => epp('profile/globus/globus-connect-server.conf', { 'domain_name' => $domain_name }),
+      content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
     }
 
     firewall { '100 Globus connect server - globus.org':

@@ -26,7 +26,7 @@ Password = %(GLOBUS_PASSWORD)s
 ; The special value %(SHORT_HOSTNAME)s will substitute the non-qualified
 ; portion of an ec2 instance's public hostname, falling back to the
 ; non-qualified hostname portion of the machine's nodename
-Name = <%= $domain_name %>
+Name = <%= $hostname %>
 
 ; True or False, determining if the endpoint will be public or private.
 ; If not specified, this will default to False (non-public).
@@ -115,7 +115,7 @@ IdentityMethod = OAuth
 ; The host name (and optional port) to contact this GridFTP Server, in the form
 ; host[:port]. If not set, no gridftp server will be configured. The default
 ; pulls the server name from EC2 metadata if present, falling back to the local hostname and uses the default port 2811.
-Server = <%= $domain_name %>
+Server = <%= $hostname %>
 
 ; If this is set to True, then assume the Server name is the current machine
 ; and configure a GridFTP server on this machine, even if it the Server doesn't
@@ -146,7 +146,7 @@ ServerBehindNAT = True
 ; - Otherwise, this will not be set, and the gridftp server will tell clients
 ;   to connect to the IP address that the control connection was established
 ;   on.
-DataInterface = <%= $domain_name %>
+DataInterface = <%= $hostname %>
 
 ; Restricted path configuration.
 ; A comma separated list of full paths that clients may access.  Each path may
@@ -230,7 +230,7 @@ RestrictPaths =
 ; If not set, then no myproxy server will be configured. The special value
 ; %(HOSTNAME)s will substitute an ec2 instance's public hostname, falling back
 ; to the machine's nodename
-Server = <%= $domain_name %>
+Server = <%= $hostname %>
 
 ; If this is set to True, then assume the Server name is the current machine
 ; and configure a MyProxy server on this machine, even if it the Server doesn't
@@ -257,7 +257,7 @@ ServerBehindNAT = True
 ; If not set, then no MyProxy Oauth server will be configured. The special value
 ; %(HOSTNAME)s will substitute an ec2 instance's public hostname, falling back
 ; to the machine's nodename
-Server = <%= $domain_name %>
+Server = <%= $hostname %>
 
 ; If this is set to True, then assume the Server name is the current machine
 ; and configure a OAuth server on this machine, even if it the Server doesn't
