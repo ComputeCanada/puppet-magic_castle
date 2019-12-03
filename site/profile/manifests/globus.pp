@@ -28,7 +28,14 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       action => 'accept'
     }
 
-    firewall { '101 Globus connect server - users':
+    firewall { '101 Globus connect server - myproxy':
+      chain  => 'INPUT',
+      dport  => [7512],
+      proto  => 'tcp',
+      action => 'accept'
+    }
+
+    firewall { '102 Globus connect server - users':
       chain  => 'INPUT',
       dport  => '50000-51000',
       proto  => 'tcp',
