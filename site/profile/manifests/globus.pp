@@ -58,6 +58,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
           path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
         },
       ],
+      ssl                         => true,
       ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
       ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
     }
