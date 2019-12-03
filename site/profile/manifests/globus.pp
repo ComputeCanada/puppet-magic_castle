@@ -15,6 +15,51 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
                   Package['globus-connect-server-repo']]
     }
 
+    apache::vhost { "dtn.${domain_name}":
+      port                        => '443',
+      docroot                     => false,
+      wsgi_daemon_process         => 'myproxyoauth',
+      wsgi_daemon_process_options => {
+        user    => 'myproxyoauth',
+        group   => 'myproxyoauth',
+        threads => '1',
+      },
+      wsgi_process_group          => 'myproxyoauth',
+      wsgi_script_aliases         => { '/oauth' => '/usr/share/myproxy-oauth/wsgi.py' },
+      directories                 => [
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth',
+          requires => 'all granted',
+          # ssl_require_ssl => true,
+        },
+        {
+          path     => '/usr/share/myproxy-oauth/',
+          requires => 'all granted',
+          # ssl_require_ssl => true,
+        },
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth/static',
+          requires => 'all granted',
+          options  => ['Indexes'],
+        },
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth/templates',
+          requires => 'all granted',
+          options  => ['Indexes'],
+        },
+      ],
+      aliases                     => [
+        {
+          alias => '/oauth/templates/',
+          path  => '/usr/share/myproxy-oauth/myproxyoauth/templates/',
+        },
+        {
+          alias => '/oauth/static/',
+          path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
+        },
+      ],
+    }
+
     file { '/etc/globus-connect-server.conf':
       ensure  => 'present',
       content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
