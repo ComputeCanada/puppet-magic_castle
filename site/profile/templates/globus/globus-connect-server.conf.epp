@@ -83,7 +83,7 @@ FetchCredentialFromRelay = True
 ;         configuration file
 ;     CILogon
 ;         Use the CILogon OAuth server
-IdentityMethod = MyProxy
+IdentityMethod = OAuth
 
 ; Authorization method for mapping the grid credential to a local username,
 ; by default, this is inferred from the IdentityMethod above. If using MyProxy,
@@ -257,7 +257,7 @@ ServerBehindNAT = True
 ; If not set, then no MyProxy Oauth server will be configured. The special value
 ; %(HOSTNAME)s will substitute an ec2 instance's public hostname, falling back
 ; to the machine's nodename
-;; Server = %(HOSTNAME)s
+Server = <%= $domain_name %>
 
 ; If this is set to True, then assume the Server name is the current machine
 ; and configure a OAuth server on this machine, even if it the Server doesn't
@@ -265,7 +265,7 @@ ServerBehindNAT = True
 ; If False, globus-connect-server-setup  will only configure the OAuth
 ; server if the Server above matches the local machine's hostname. The default
 ; is False.
-;;ServerBehindNAT = True
+ServerBehindNAT = True
 
 ; A cascading stylesheet file to use with OAuth server web pages. The
 ; stylesheet will be used to style the MyProxy OAuth web interface. If not set,
