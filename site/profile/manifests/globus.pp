@@ -22,7 +22,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
 
     firewall { '100 Globus connect server - globus.org':
       chain  => 'INPUT',
-      dport  => [2811, 7512],
+      dport  => [2811],
       proto  => 'tcp',
       source => '54.237.254.192/29',
       action => 'accept'
