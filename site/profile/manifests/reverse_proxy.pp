@@ -14,7 +14,7 @@ class profile::reverse_proxy(String $domain_name)
     ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
   }
 
-  firewall { '200 nginx public':
+  firewall { '200 httpd public':
     chain  => 'INPUT',
     dport  => [80, 443],
     proto  => 'tcp',
