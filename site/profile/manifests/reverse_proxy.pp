@@ -14,6 +14,8 @@ class profile::reverse_proxy(String $domain_name)
     ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
   }
 
+  include apache::mod::proxy_wstunnel
+
   firewall { '200 httpd public':
     chain  => 'INPUT',
     dport  => [80, 443],
@@ -71,7 +73,7 @@ class profile::reverse_proxy(String $domain_name)
     proxy_preserve_host       => true,
     rewrites                  => [
       {
-        rewrite_cond => ['%{HTTPS:Connection} Upgrade [NC]', '%{HTTPS:Upgrade} websocket [NC]'],
+        rewrite_cond => ['%{HTTP:Connection} Upgrade [NC]', '%{HTTP:Upgrade} websocket [NC]'],
         rewrite_rule => ['/(.*) wss://127.0.0.1:8000/$1 [P,L]'],
       },
     ],
