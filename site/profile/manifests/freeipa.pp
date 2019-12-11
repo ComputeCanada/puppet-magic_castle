@@ -314,15 +314,6 @@ class profile::freeipa::server
     subscribe   => Exec['ipa-server-install']
   }
 
-  exec { 'ipa_add_record_A':
-    command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --a-rec ${::ipaddress_eth0}",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install']
-  }
-
   exec { 'ipa_automember_ipausers':
     command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
     refreshonly => true,

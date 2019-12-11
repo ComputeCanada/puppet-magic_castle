@@ -118,14 +118,14 @@ class profile::reverse_proxy(String $domain_name)
     ssl_proxy_check_peer_cn   => 'off',
     ssl_proxy_check_peer_name => 'off',
     headers                   => ['always set Strict-Transport-Security "max-age=15768000"'],
-    request_headers           => ["edit Referer ^https://${domain_name_escdot}/ https://ipa.int.${domain_name}/"],
+    request_headers           => ["edit Referer ^https://${domain_name_escdot}/ https://mgmt1.int.${domain_name}/"],
     proxy_pass                => [
       {
         'path'            => '/',
-        'url'             => "https://ipa.int.${domain_name}/",
+        'url'             => "https://mgmt1.int.${domain_name}/",
         'reverse_cookies' => [
           {
-            'domain' => "ipa.int.${domain_name}",
+            'domain' => "mgmt1.int.${domain_name}",
             'url'    => "ipa.${domain_name}"
           },
         ],
