@@ -333,7 +333,7 @@ class profile::freeipa::server
   }
 
   exec { 'ipa_add_service_principal':
-    command     => "kinit_wrapper HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
+    command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
