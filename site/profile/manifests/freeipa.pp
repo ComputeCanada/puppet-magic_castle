@@ -314,49 +314,6 @@ class profile::freeipa::server
     subscribe   => Exec['ipa-server-install']
   }
 
-  exec { 'ipa_add_record_CNAME':
-    command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${::hostname}",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
-  }
-
-  exec { 'ipa_add_host_ipa':
-    command     => "kinit_wrapper ipa host-add ipa.${int_domain_name} --force",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
-  }
-
-  exec { 'ipa_add_service_principal':
-    command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_record_CNAME'],
-      Exec['ipa_add_host_ipa'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
-  }
-
-  exec { 'ipa_regen_server-cert':
-    command     => "kinit_wrapper ipa-getcert resubmit -d /etc/httpd/alias -n Server-Cert -D ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_service_principal'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
-  }
-
   exec { 'ipa_automember_ipausers':
     command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
     refreshonly => true,
@@ -421,6 +378,49 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'],],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']]
+  }
+
+  exec { 'ipa_add_record_CNAME':
+    command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${::hostname}",
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
+  }
+
+  exec { 'ipa_add_host_ipa':
+    command     => "kinit_wrapper ipa host-add ipa.${int_domain_name} --force",
+    refreshonly => true,
+    require     => [File['kinit_wrapper'], ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
+  }
+
+  exec { 'ipa_add_service_principal':
+    command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+      Exec['ipa_add_record_CNAME'],
+      Exec['ipa_add_host_ipa'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
+  }
+
+  exec { 'ipa_regen_server-cert':
+    command     => "kinit_wrapper ipa-getcert resubmit -d /etc/httpd/alias -n Server-Cert -D ipa.${int_domain_name}",
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+      Exec['ipa_add_service_principal'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
   }
 
   service { 'ipa':
