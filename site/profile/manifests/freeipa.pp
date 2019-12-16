@@ -436,7 +436,13 @@ class profile::freeipa::server
   }
 
   file { '/etc/httpd/conf.d/ipa-rewrite.conf':
-    source  => 'puppet:///modules/profile/freeipa/ipa-rewrite.conf',
+    content => epp(
+      'profile/freeipa/ipa-rewrite.conf',
+      {
+        'referee' => "ipa.${domain_name}",
+        'referer' => $fqdn,
+      }
+    ),
     notify  => Service['httpd'],
     require => Exec['ipa-server-install'],
   }
