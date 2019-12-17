@@ -439,8 +439,8 @@ class profile::freeipa::server
     content => epp(
       'profile/freeipa/ipa-rewrite.conf',
       {
-        'referee' => "ipa.${domain_name}",
-        'referer' => $fqdn,
+        'referee' => $fqdn,
+        'referer' => "ipa.${domain_name}",
       }
     ),
     notify  => Service['httpd'],
