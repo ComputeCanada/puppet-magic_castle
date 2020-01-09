@@ -48,6 +48,32 @@ class profile::gpu {
       ]:
       require => Exec['dkms autoinstall']
     }
+
+    file { '/var/run/nvidia-persistenced':
+      ensure => directory,
+      owner  => 'nvidia-persistenced',
+      group  => 'nvidia-persistenced',
+      mode   => '0755',
+    }
+
+    augeas { 'nvidia-persistenced.service':
+      context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
+      changes => [
+        'set User/value nvidia-persistenced',
+        'set Group/value nvidia-persistenced',
+        'rm ExecStart/arguments',
+      ],
+    }
+
+    service { 'nvidia-persistenced':
+      ensure  => 'running',
+      enable  => true,
+      require => [
+        File['/var/run/nvidia-persistenced'],
+        Augeas['nvidia-persistenced.service'],
+      ],
+    }
+
   }
 
   file { '/usr/lib64/nvidia':
