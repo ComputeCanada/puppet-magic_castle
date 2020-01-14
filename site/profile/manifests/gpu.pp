@@ -37,7 +37,8 @@ class profile::gpu {
     exec { 'dkms autoinstall':
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
-      require => Package['dkms-nvidia']
+      timeout => 0,
+      require => Package['dkms-nvidia'],
     }
 
     kmod::load { [
