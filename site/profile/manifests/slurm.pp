@@ -341,9 +341,12 @@ class profile::slurm::controller {
     require       => Tcp_conn_validator['consul'],
     acl_api_token => lookup('profile::consul::acl_api_token')
   }
+
+  $interface = split($::interfaces, ',')[0]
+  $ipaddress = $::networking['interfaces'][$interface]['ip']
   consul_key_value { 'slurmctld/ip':
     ensure        => 'present',
-    value         => $facts['ipaddress_eth0'],
+    value         => $ipaddress,
     require       => Tcp_conn_validator['consul'],
     acl_api_token => lookup('profile::consul::acl_api_token')
   }

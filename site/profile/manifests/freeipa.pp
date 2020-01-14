@@ -268,8 +268,11 @@ class profile::freeipa::server
   $reverse_zone = profile::getreversezone()
 
   # Remove hosts entry only once before install FreeIPA
+  $interface = split($::interfaces, ',')[0]
+  $ipaddress = $::networking['interfaces'][$interface]['ip']
+
   exec { 'remove-hosts-entry':
-    command => "/usr/bin/sed -i '/${::ipaddress_eth0}/d' /etc/hosts",
+    command => "/usr/bin/sed -i '/${ipaddress}/d' /etc/hosts",
     before  => Exec['ipa-server-install'],
     unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log']
   }
@@ -286,7 +289,7 @@ class profile::freeipa::server
       --ssh-trust-dns \
       --unattended \
       --auto-forwarders \
-      --ip-address=${::ipaddress_eth0} \
+      --ip-address=${ipaddress} \
       --no-host-dns \
       --no-dnssec-validation \
       --no-ui-redirect \
