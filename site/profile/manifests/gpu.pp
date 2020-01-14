@@ -27,7 +27,7 @@ class profile::gpu {
     package { [
         'nvidia-driver',
         'nvidia-driver-cuda',
-        'dkms-nvidia',
+        'kmod-nvidia-latest-dkms',
         'nvidia-modprobe',
       ]:
       ensure  => 'installed',
@@ -38,7 +38,7 @@ class profile::gpu {
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
       timeout => 0,
-      require => Package['dkms-nvidia'],
+      require => Package['kmod-nvidia-latest-dkms'],
     }
 
     kmod::load { [
