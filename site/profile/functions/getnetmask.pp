@@ -1,7 +1,10 @@
 function profile::getnetmask() >> String {
   if $facts['gce'] {
     # GCP instances netmask is set to /32 but the network netmask is available
-    $netmask_eth0 = $gce['instance']['networkInterfaces'][0]['subnetmask']
+    $netmask = $gce['instance']['networkInterfaces'][0]['subnetmask']
+  } else {
+    $interface = split($interfaces, ',')[0]
+    $netmask = $networking['interfaces'][$interface]['netmask']
   }
-  $netmask_eth0
+  $netmask
 }

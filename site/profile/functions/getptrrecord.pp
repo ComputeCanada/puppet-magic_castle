@@ -1,5 +1,7 @@
 function profile::getptrrecord() >> String {
-  $ip_list = split($ipaddress_eth0, '[.]')
+  $interface = split($interfaces, ',')[0]
+  $ip = $networking['interfaces'][$interface]['ip']
+  $ip_list = split($ip, '[.]')
   $netmask_list = split(profile::getnetmask(), '[.]')
 
   $filtered_ip = $ip_list.filter |$i, $v| { $netmask_list[$i] == '0' }

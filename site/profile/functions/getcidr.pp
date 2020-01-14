@@ -1,4 +1,6 @@
 function profile::getcidr() >> String {
+  $interface = split($interfaces, ',')[0]
   $masklen = netmask_to_masklen(profile::getnetmask())
-  "${network_eth0}/${masklen}"
+  $network = $networking['interfaces'][$interface]['network']
+  "${network}/${masklen}"
 }
