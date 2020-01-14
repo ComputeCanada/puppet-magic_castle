@@ -65,15 +65,16 @@ END
     require => File_line['resolv_search']
   }
 
+  $interface = split($::interfaces, ',')[0]
   file_line { 'peerdns':
     ensure => present,
-    path   => '/etc/sysconfig/network-scripts/ifcfg-eth0',
+    path   => "/etc/sysconfig/network-scripts/ifcfg-${interface}",
     line   => 'PEERDNS=no'
   }
 
   file_line { 'ifcfg_dns1':
     ensure => present,
-    path   => '/etc/sysconfig/network-scripts/ifcfg-eth0',
+    path   => "/etc/sysconfig/network-scripts/ifcfg-${interface}",
     line   => "DNS1=${dns_ip}"
   }
 
