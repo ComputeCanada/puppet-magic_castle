@@ -528,7 +528,7 @@ Name=gpu
 
   exec { 'scontrol_update_state':
     command   => "scontrol update nodename=${::hostname} state=idle",
-    onlyif    => "sinfo -n ${::hostname} -o %t -h | grep -q -w down",
+    onlyif    => "sinfo -n ${::hostname} -o %t -h | grep -E -q -w 'down|drain'",
     path      => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe => Service['slurmd']
   }
