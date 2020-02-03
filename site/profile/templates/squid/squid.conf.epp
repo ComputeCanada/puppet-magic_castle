@@ -25,7 +25,7 @@ http_port 3128
 # general settings
 coredump_dir                   /var/spool/squid
 maximum_object_size_in_memory  512 KB
-maximum_object_size            4096 KB
+maximum_object_size            131072 KB
 cache_mgr                      root
 client_persistent_connections  on
 server_persistent_connections  on
