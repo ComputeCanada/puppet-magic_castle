@@ -123,6 +123,7 @@ class profile::freeipa::client(String $server_ip)
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
       /sbin/ipa-client-install \
+      --domain ${int_domain_name} \
       --mkhomedir \
       --ssh-trust-dns \
       --enable-dns-updates \
