@@ -284,7 +284,7 @@ class profile::freeipa::server
   host { $fqdn:
     ip           => $ipaddress,
     host_aliases => [$::hostname],
-    after        => Exec['remove-hosts-entry'],
+    require      => Exec['remove-hosts-entry'],
     before       => Exec['ipa-server-install'],
   }
 
