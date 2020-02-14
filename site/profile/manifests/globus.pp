@@ -118,7 +118,7 @@ class profile::globus::server_v5 {
   package { 'globus-toolkit-repo':
     ensure   => 'installed',
     provider => 'rpm',
-    name     => 'globus-toolkit-repo-6.0.14-1.noarch',
+    name     => 'globus-toolkit-repo-6.0.20-1.noarch',
     source   => 'http://downloads.globus.org/toolkit/gt6/stable/installers/repo/rpm/globus-toolkit-repo-latest.noarch.rpm'
   }
 
