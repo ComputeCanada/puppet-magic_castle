@@ -269,16 +269,24 @@ class profile::freeipa::server
   $fqdn = "${::hostname}.${int_domain_name}"
   $reverse_zone = profile::getreversezone()
 
-  # Remove hosts entry only once before install FreeIPA
   $interface = split($::interfaces, ',')[0]
   $ipaddress = $::networking['interfaces'][$interface]['ip']
 
+  # Remove host entry only once before install FreeIPA
   exec { 'remove-hosts-entry':
     command => "/usr/bin/sed -i '/${ipaddress}/d' /etc/hosts",
     before  => Exec['ipa-server-install'],
     unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log']
   }
 
+  # Make sure the FQDN is set in /etc/hosts to avoid any resolve
+  # issue when install FreeIPA server
+  host { $fqdn:
+    ip           => $ipaddress,
+    host_aliases => [$::hostname],
+    after        => Exec['remove-hosts-entry'],
+    before       => Exec['ipa-server-install'],
+  }
 
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
       /sbin/ipa-server-install \
