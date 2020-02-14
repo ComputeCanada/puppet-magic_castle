@@ -102,11 +102,6 @@ class profile::freeipa::client(String $server_ip)
     ensure => 'installed'
   }
 
-  exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname ${fqdn}",
-    unless  => "/usr/bin/test `hostname` = ${fqdn}"
-  }
-
   tcp_conn_validator { 'ipa_dns':
     host      => $server_ip,
     port      => 53,
@@ -119,6 +114,11 @@ class profile::freeipa::client(String $server_ip)
     port      => 389,
     try_sleep => 10,
     timeout   => 1200,
+  }
+
+  exec { 'set_hostname':
+    command => "/bin/hostnamectl set-hostname ${fqdn}",
+    unless  => "/usr/bin/test `hostname` = ${fqdn}"
   }
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
