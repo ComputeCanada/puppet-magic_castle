@@ -1,5 +1,4 @@
 class profile::singularity {
-  $singularity_version = '3.2'
 
   yumrepo { 'singularity-copr-repo':
     enabled             => true,
@@ -22,8 +21,10 @@ class profile::singularity {
       { '--enablerepo'  => 'singularity-copr-repo' }],
   }
 
-  file { '/opt/software/singularity':
-    ensure => 'link',
-    target => "/opt/software/singularity-${singularity_version}"
+  exec { 'singularity-symlink':
+    command => 'ln -sf /opt/software/singularity-* /opt/software/singularity',
+    creates => '/opt/software/singularity',
+    require => Package['singularity'],
+    path    => ['/usr/bin', '/bin']
   }
 }
