@@ -12,12 +12,18 @@ class profile::freeipa::base (
     enable => false
   }
 
+  service { 'network':
+    ensure => running,
+    enable => true,
+  }
+
   package { [
     'NetworkManager',
     'NetworkManager-tui',
     'NetworkManager-team'
     ]:
-    ensure => purged
+    ensure => purged,
+    notify => Service['network'],
   }
 
   service { 'systemd-logind':
