@@ -1,6 +1,11 @@
 class profile::base (String $sudoer_username = 'centos') {
   include stdlib
 
+  file { '/etc/localtime':
+    ensure => link,
+    target => '/usr/share/zoneinfo/UTC',
+  }
+
   class { '::consul_template':
     config_hash => {
       'consul' => {
