@@ -58,7 +58,7 @@ node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::metrics::exporter
 }
 
-node /^node\d+$/ {
+node /^[a-z0-9-]*node\d+$/ {
   include profile::consul::client
   include profile::base
   include profile::metrics::exporter
