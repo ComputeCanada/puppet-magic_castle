@@ -520,7 +520,7 @@ AutoDetect=nvml
                   File['/etc/slurm/plugstack.conf']],
     require   => [Package['slurm-slurmd'],
                   Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']]
+                  Consul_template::Watch['node.conf']],
   }
 
   exec { 'scontrol_update_state':
@@ -528,6 +528,15 @@ AutoDetect=nvml
     onlyif    => "sinfo -n ${::hostname} -o %t -h | grep -E -q -w 'down|drain'",
     path      => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe => Service['slurmd']
+  }
+
+  # If slurmctld server is rebooted slurmd needs to be restarted.
+  # Otherwise, slurmd keeps running, but the node is not in any partition
+  # and no job can be scheduled on it.
+  exec { 'systemctl restart slurmd':
+    onlyif  => "test $(sinfo -n ${::hostname} -o %t -h | wc -l) -eq 0",
+    path    => ['/usr/bin', '/opt/software/slurm/bin'],
+    require => Service['slurmd'],
   }
 }
 
