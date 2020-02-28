@@ -1,15 +1,35 @@
 class profile::workshop {
-  file { ['/project/6002799', '/project/6002799/photos'] :
-    ensure => directory
-  }
 
-  file { '/project/6002799/photos/KSC2018.jpg':
-    ensure => 'present',
-    source => 'https://images-assets.nasa.gov/image/KSC-20180316-PH_JBS01_0118/KSC-20180316-PH_JBS01_0118~orig.JPG'
-  }
+}
 
-  file { '/project/6002799/photos/VAFB2018.jpg':
-    ensure => 'present',
-    source => 'https://images-assets.nasa.gov/image/VAFB-20180302-PH_ANV01_0056/VAFB-20180302-PH_ANV01_0056~orig.jpg'
+class profile::workshop::mgmt {
+  $userzip_url = lookup({ name =>'profile::workshop::userzip_url', default_value => '' })
+  $userzip_path = lookup({ name => 'profile::workshop::userzip_path', default_value => '/project/userzip.zip' })
+  $nb_accounts = lookup({ name => 'profile::freeipa::guest_accounts::nb_accounts', default_value => 0 })
+  $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
+  $nb_zeros    = inline_template("<%= '0' * ('${nb_accounts}'.length - 1) %>")
+  $user_range  = "${prefix}{${nb_zeros}1..${nb_accounts}}"
+
+  if ($userzip_url != '') {
+    file { $userzip_path:
+      ensure => 'present',
+      source => $userzip_url,
+    }
+
+    exec { 'workshop_unzip_to_user_home':
+      command     => "for user in ${user_range}; do unzip \"${userzip_path}\" -d /mnt/home/\$user; done",
+      require     => [Class['profile::freeipa::guest_accounts'],],
+      subscribe   => File[$userzip_path],
+      refreshonly => true,
+      path        => ['/bin', '/usr/sbin'],
+      provider    => shell,
+    }
+    exec { 'workshop_chown_user':
+      command     => "for user in ${user_range}; do chown -R \$user:\$user /mnt/home/\$user; chmod -R u+rw /mnt/home/\$user; done",
+      subscribe   => Exec['workshop_unzip_to_user_home'],
+      refreshonly => true,
+      path        => ['/bin', '/usr/sbin'],
+      provider    => shell,
+    }
   }
 }
