@@ -17,7 +17,7 @@ class profile::workshop::mgmt {
     }
 
     exec { 'workshop_unzip_to_user_home':
-      command     => "for user in ${user_range}; do unzip \"${userzip_path}\" -d /mnt/home/\$user; done",
+      command     => "for user in ${user_range}; do unzip -f -o \"${userzip_path}\" -d /mnt/home/\$user; done",
       require     => [Class['profile::freeipa::guest_accounts'],],
       subscribe   => File[$userzip_path],
       refreshonly => true,
