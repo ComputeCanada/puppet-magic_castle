@@ -3,8 +3,9 @@ ClusterName=<%= $cluster_name %>
 AuthType=auth/munge
 CryptoType=crypto/munge
 SlurmUser=slurm
-SlurmctldHost={{ key "slurmctld/hostname" }}({{ key "slurmctld/ip" }})
-
+{{ range service "slurmctld" -}}
+SlurmctldHost={{ .Node }}({{ .Address }})
+{{ end -}}
 # SCHEDULER CONFIGURATIONS
 SchedulerType=sched/backfill
 SelectType=select/cons_tres
@@ -12,9 +13,9 @@ SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
 GresTypes=gpu
-{{ if tree "slurmd/" -}}
+{{ if service "slurmd" -}}
 include /etc/slurm/node.conf
-{{end -}}
+{{ end -}}
 
 # PARTITION CONFIGURATIONS
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
@@ -42,13 +43,15 @@ TaskPlugin=task/cgroup
 StateSaveLocation=/var/spool/slurm
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none bash"
 
-{{ if keyExists "slurmdbd/hostname" }}
 ## Accounting
-AccountingStorageHost={{ key "slurmdbd/hostname" }}
+{{ range service "slurmdbd" -}}
+AccountingStorageHost={{ .Node }}
+{{ end -}}
+{{ if service "slurmdbd" -}}
 AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 #AccountingStorageEnforce=limits
 JobAcctGatherType=jobacct_gather/cgroup
 JobAcctGatherFrequency=task=30
 JobAcctGatherParams=NoOverMemoryKill,UsePSS
-{{ end }}
+{{ end -}}
