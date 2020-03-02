@@ -92,12 +92,9 @@ class profile::slurm::base (
 
   $node_template = @(END)
 # Nodes definition
-{{with tree "slurmd/" | explode }}{{range $key, $value := . -}}
-{{ if and $value.nodename $value.cpus $value.realmemory -}}
-NodeName={{$value.nodename}} CPUs={{$value.cpus}} RealMemory={{$value.realmemory}} {{if gt (parseInt $value.gpus) 0}}Gres=gpu:{{$value.gpus}}{{end}}
-{{end -}}
-{{end -}}
-{{end -}}
+{{ range service "slurmd" -}}
+NodeName={{.Node}} CPUs={{.ServiceMeta.cpus}} RealMemory={{.ServiceMeta.realmemory}} {{if gt (parseInt .ServiceMeta.gpus) 0}}Gres=gpu:{{.ServiceMeta.gpus}}{{end}}
+{{ end -}}
 END
 
   file { '/etc/slurm/node.conf.tpl':
@@ -224,11 +221,10 @@ END
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
 class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
-  consul_key_value { 'slurmdbd/hostname':
-    ensure        => 'present',
-    value         => $facts['hostname'],
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
+  consul::service { 'slurmdbd':
+    port    => $dbd_port,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
   }
 
   $override_options = {
@@ -291,8 +287,8 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     command   => "sacctmgr add cluster ${cluster_name} -i",
     path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
-    tries     => 2,
-    try_sleep => 5,
+    tries     => 4,
+    try_sleep => 15,
     timeout   => 5,
     notify    => Service['slurmctld'],
     require   => [Service['slurmdbd'],
@@ -310,8 +306,8 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
       |EOT
     path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
-    tries     => 5,
-    try_sleep => 5,
+    tries     => 4,
+    try_sleep => 15,
     timeout   => 5,
     require   => [Service['slurmdbd'],
                   Tcp_conn_validator['slurmdbd_port'],
@@ -335,20 +331,11 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
   include profile::slurm::base
-  consul_key_value { 'slurmctld/hostname':
-    ensure        => 'present',
-    value         => $facts['hostname'],
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
-  }
 
-  $interface = split($::interfaces, ',')[0]
-  $ipaddress = $::networking['interfaces'][$interface]['ip']
-  consul_key_value { 'slurmctld/ip':
-    ensure        => 'present',
-    value         => $ipaddress,
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
+  consul::service { 'slurmctld':
+    port    => 6817,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
   }
 
   package { 'slurm-slurmctld':
@@ -393,30 +380,16 @@ class profile::slurm::controller {
 class profile::slurm::node {
   include profile::slurm::base
 
-  consul_key_value { "slurmd/${facts['hostname']}/nodename":
-    ensure        => 'present',
-    value         => $facts['hostname'],
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
-  }
-  consul_key_value { "slurmd/${facts['hostname']}/cpus":
-    ensure        => 'present',
-    value         => String($facts['processors']['count']),
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
-  }
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
-  consul_key_value { "slurmd/${facts['hostname']}/realmemory":
-    ensure        => 'present',
-    value         => String($real_memory),
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
-  }
-  consul_key_value { "slurmd/${facts['hostname']}/gpus":
-    ensure        => 'present',
-    value         => String($facts['nvidia_gpu_count']),
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
+  consul::service { 'slurmd':
+    port    => 6818,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
+    meta    => {
+      cpus       => String($facts['processors']['count']),
+      realmemory => String($real_memory),
+      gpus       => String($facts['nvidia_gpu_count']),
+    },
   }
 
   package { 'slurm-slurmd':
