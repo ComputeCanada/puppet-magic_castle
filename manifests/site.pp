@@ -26,19 +26,10 @@ node /^login\d+$/ {
 }
 
 node /^mgmt1$/ {
-  class { [
-    'profile::consul::server',
-    'profile::metrics::exporter'
-    ]:
-    stage => 'first'
-  }
-
-  class { [
-    'profile::freeipa::server',
-    'profile::nfs::server',
-    ]:
-    stage => 'second'
-  }
+  include profile::consul::server
+  include profile::metrics::exporter
+  include profile::freeipa::server
+  include profile::nfs::server
 
   include profile::metrics::server
   include profile::rsyslog::server
