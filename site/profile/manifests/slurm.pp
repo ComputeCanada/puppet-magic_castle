@@ -102,7 +102,8 @@ END
     owner   => 'slurm',
     group   => 'slurm',
     content => $node_template,
-    seltype => 'etc_t'
+    seltype => 'etc_t',
+    notify  => Service['consul-template'],
   }
 
   file { '/etc/slurm/plugstack.conf':
@@ -212,7 +213,8 @@ END
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
-    require => File['/etc/slurm']
+    require => File['/etc/slurm'],
+    notify  => Service['consul-template'],
   }
 }
 
