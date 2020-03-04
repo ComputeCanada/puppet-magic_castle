@@ -44,6 +44,7 @@ node /^mgmt1$/ {
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::consul::client
+  include profile::slurm::controller
   include profile::base
   include profile::rsyslog::client
   include profile::freeipa::client
