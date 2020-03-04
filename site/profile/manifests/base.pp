@@ -11,7 +11,7 @@ class profile::base (String $sudoer_username = 'centos') {
       'consul' => {
         'token' => lookup('profile::consul::acl_api_token')
       }
-    }
+    },
   }
 
   # Allow users to run TCP servers - activated to allow users

@@ -1,6 +1,5 @@
 class profile::consul::server {
   class { '::consul':
-    version       => '1.6.1',
     config_mode   => '0640',
     acl_api_token => lookup('profile::consul::acl_api_token'),
     config_hash   => {
@@ -31,7 +30,6 @@ class profile::consul::server {
 
 class profile::consul::client(String $server_ip) {
   class { '::consul':
-    version     => '1.6.1',
     config_mode => '0640',
     config_hash => {
       'data_dir'        => '/opt/consul',
