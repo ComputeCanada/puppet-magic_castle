@@ -13,4 +13,5 @@ hierarchy:
   - name: "Other YAML hierarchy levels"
     paths:
       - "terraform_data.yaml"
+      - "user_data.yaml"
       - "common.yaml"
