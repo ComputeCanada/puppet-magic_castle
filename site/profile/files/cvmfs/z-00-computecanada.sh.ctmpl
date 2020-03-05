@@ -1,6 +1,4 @@
-archs=({{ with tree "cvmfs/client" | explode -}}
-{{range $key, $value := . -}}
-{{ $value.rsnt_arch }} {{ end -}} {{ end -}})
+archs=({{ range service "cvmfs" }}{{.ServiceMeta.arch}} {{ end }})
 if [[ " ${archs[@]} " =~ " sse3 " ]]; then
     export RSNT_ARCH="sse3"
 elif [[ " ${archs[@]} " =~ " avx " ]]; then
