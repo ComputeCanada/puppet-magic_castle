@@ -24,17 +24,17 @@ class profile::cvmfs::client (String $squid_ip) {
     require => Package['cvmfs']
   }
 
-  consul_key_value { "cvmfs/client/${facts['hostname']}/rsnt_arch":
-    ensure        => 'present',
-    value         => $facts['cpu_ext'],
-    require       => Tcp_conn_validator['consul'],
-    acl_api_token => lookup('profile::consul::acl_api_token')
+  consul::service{ 'cvmfs':
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
+    meta    => {
+      arch => $facts['cpu_ext'],
+    },
   }
 
   file { '/etc/consul-template/z-00-computecanada.sh.ctmpl':
-    ensure  => 'present',
-    source  => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh.ctmpl',
-    require => File['/etc/cvmfs/default.local']
+    ensure => 'present',
+    source => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh.ctmpl',
   }
 
   consul_template::watch { 'z-00-computecanada.sh':
