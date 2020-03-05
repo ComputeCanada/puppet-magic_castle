@@ -1,4 +1,4 @@
-class profile::cvmfs::client (String $squid_ip) {
+class profile::cvmfs::client {
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -18,9 +18,9 @@ class profile::cvmfs::client (String $squid_ip) {
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
-  file { '/etc/cvmfs/default.local':
+  file { '/etc/cvmfs/default.local.ctmpl':
     ensure  => 'present',
-    content => epp('profile/cvmfs/default.local', { 'squid_ip' => $squid_ip }),
+    content => epp('profile/cvmfs/default.local'),
     require => Package['cvmfs']
   }
 
@@ -47,10 +47,19 @@ class profile::cvmfs::client (String $squid_ip) {
     }
   }
 
+  consul_template::watch { '/etc/cvmfs/default.local':
+    require     => File['/etc/cvmfs/default.local.ctmpl'],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/cvmfs/default.local.ctmpl',
+      destination => '/etc/cvmfs/default.local',
+      command     => 'systemctl reload autofs',
+    }
+  }
+
   service { 'autofs':
-    ensure  => running,
-    enable  => true,
-    require => File['/etc/cvmfs/default.local']
+    ensure => running,
+    enable => true,
   }
 
   # Fix issue with BASH_ENV, SSH and lmod where
