@@ -1,6 +1,6 @@
 class profile::metrics::exporter {
   include prometheus::node_exporter
-  consul::service { 'node_exporter':
+  consul::service { 'node-exporter':
     port  => 9100,
     tags  => ['monitor'],
     token => lookup('profile::consul::acl_api_token')
