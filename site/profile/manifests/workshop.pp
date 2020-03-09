@@ -18,7 +18,7 @@ class profile::workshop::mgmt {
 
     exec { 'workshop_unzip_to_user_home':
       command     => "for user in ${user_range}; do unzip -f -o \"${userzip_path}\" -d /mnt/home/\$user; done",
-      require     => [Class['profile::freeipa::guest_accounts'],],
+      require     => [Class['profile::freeipa::guest_accounts'], Mount['/mnt/home']],
       subscribe   => File[$userzip_path],
       refreshonly => true,
       path        => ['/bin', '/usr/sbin'],
@@ -26,6 +26,7 @@ class profile::workshop::mgmt {
     }
     exec { 'workshop_chown_user':
       command     => "for user in ${user_range}; do chown -R \$user:\$user /mnt/home/\$user; chmod -R u+rw /mnt/home/\$user; done",
+      require     => Mount['/mnt/home'],
       subscribe   => Exec['workshop_unzip_to_user_home'],
       refreshonly => true,
       path        => ['/bin', '/usr/sbin'],
