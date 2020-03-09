@@ -36,11 +36,6 @@ class profile::nfs::server {
                           default_value => $::domain })
   $nfs_domain  = "int.${domain_name}"
 
-  file { ['/project', '/scratch'] :
-    ensure  => directory,
-    # seltype => 'usr_t'
-  }
-
   file { '/lib/systemd/system/clean-nfs-rbind.service':
     mode    => '0644',
     owner   => 'root',
@@ -90,16 +85,65 @@ END
     notify => Service['nfs-server.service']
   }
 
+  file { ['/project', '/scratch', '/mnt/home'] :
+    ensure  => directory,
+  }
+
+  package { 'lvm2':
+    ensure => installed
+  }
+
+  $home_size = lookup('profile::nfs::server::home_size')
+  $project_size = lookup('profile::nfs::server::project_size')
+  $scratch_size = lookup('profile::nfs::server::scratch_size')
+  class { 'lvm':
+    volume_groups => {
+      'data_volume_group' => {
+        # physical_volumes => Hash(flatten(keys($::disks)[1, -1].map |$disk| {["/dev/${disk}", {'unless_vg' => 'data_volume_group'}]})),
+        physical_volumes => keys($::disks)[1, -1].map |$disk| { "/dev/${disk}" },
+        createonly       => true,
+        logical_volumes  => {
+          'datapool' => {
+            'thinpool' => true,
+            'createfs' => false,
+            'mounted'  => false,
+          },
+          'home'     => {
+            'size'              => $home_size,
+            'fs_type'           => 'xfs',
+            'mountpath'         => '/mnt/home',
+            'mountpath_require' => true,
+            'thinpool'          => 'datapool',
+          },
+          'project'  => {
+            'size'              => $project_size,
+            'fs_type'           => 'xfs',
+            'mountpath_require' => true,
+            'thinpool'          => 'datapool',
+          },
+          'scratch'  => {
+            'size'              => $scratch_size,
+            'fs_type'           => 'xfs',
+            'mountpath_require' => true,
+            'thinpool'          => 'datapool',
+          },
+        },
+      },
+    },
+  }
+
   nfs::server::export{ ['/mnt/home'] :
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
-    notify  => Service['nfs-idmap.service']
+    notify  => Service['nfs-idmap.service'],
+    require => Logical_volume['home'],
   }
 
   nfs::server::export{ ['/project', '/scratch']:
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash)",
-    notify  => Service['nfs-idmap.service']
+    notify  => Service['nfs-idmap.service'],
+    require => [Logical_volume['project'], Logical_volume['scratch']],
   }
 
   exec { 'unexportfs_exportfs':

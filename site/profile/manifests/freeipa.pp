@@ -236,7 +236,8 @@ class profile::freeipa::guest_accounts(
   exec { 'semanage_fcontext_mnt_home':
     command => 'semanage fcontext -a -e /home /mnt/home',
     unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => Mount['/mnt/home'],
   }
 
   exec{ 'ipa_add_user':
@@ -254,8 +255,13 @@ class profile::freeipa::guest_accounts(
     command => "/sbin/mkhomedir.sh  ${prefix}{01..${nb_accounts}}",
     unless  => "ls /mnt/home/${prefix}{01..${nb_accounts}} &> /dev/null",
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => [Exec['ipa_add_user'],
-                Exec['semanage_fcontext_mnt_home']],
+    require => [
+      Exec['ipa_add_user'],
+      Exec['semanage_fcontext_mnt_home'],
+      Mount['/mnt/home'],
+      Mount['/project'],
+      Mount['/scratch'],
+    ],
   }
 }
 
