@@ -251,6 +251,7 @@ class profile::freeipa::guest_accounts(
     require => [
       Exec['ipa_add_user'],
       Exec['semanage_fcontext_mnt_home'],
+      Exec['semanage_fcontext_project'],
       Exec['semanage_fcontext_scratch'],
     ],
   }
