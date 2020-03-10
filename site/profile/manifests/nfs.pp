@@ -93,10 +93,19 @@ END
     ensure => installed
   }
 
+  # Activate volume group following a rebuild of the server
+  exec { 'vgchange-data_volume_group':
+    command => 'vgchange -ay data_volume_group',
+    onlyif  => ['test ! -d /dev/data_volume_group', 'vgscan -t | grep -q "data_volume_group"'],
+    require => [Package['lvm2']],
+    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  }
+
   $home_size = lookup('profile::nfs::server::home_size')
   $project_size = lookup('profile::nfs::server::project_size')
   $scratch_size = lookup('profile::nfs::server::scratch_size')
   class { 'lvm':
+    require       => Exec['vgchange-data_volume_group'],
     volume_groups => {
       'data_volume_group' => {
         # physical_volumes => Hash(flatten(keys($::disks)[1, -1].map |$disk| {["/dev/${disk}", {'unless_vg' => 'data_volume_group'}]})),
