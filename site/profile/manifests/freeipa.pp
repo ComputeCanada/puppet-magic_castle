@@ -233,13 +233,6 @@ class profile::freeipa::guest_accounts(
     mode   => '0755'
   }
 
-  exec { 'semanage_fcontext_mnt_home':
-    command => 'semanage fcontext -a -e /home /mnt/home',
-    unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Mount['/mnt/home'],
-  }
-
   exec{ 'ipa_add_user':
     command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
     onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
@@ -258,9 +251,7 @@ class profile::freeipa::guest_accounts(
     require => [
       Exec['ipa_add_user'],
       Exec['semanage_fcontext_mnt_home'],
-      Mount['/mnt/home'],
-      Mount['/project'],
-      Mount['/scratch'],
+      Exec['semanage_fcontext_scratch'],
     ],
   }
 }
