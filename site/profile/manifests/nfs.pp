@@ -27,7 +27,7 @@ class profile::nfs::client (String $server_ip) {
   nfs::client::mount { '/scratch':
       server        => $server_ip,
       share         => 'scratch',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2'
+      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
 }
 
@@ -141,18 +141,32 @@ END
     },
   }
 
-  nfs::server::export{ ['/mnt/home'] :
+  exec { 'semanage_fcontext_mnt_home':
+    command => 'semanage fcontext -a -e /home /mnt/home',
+    unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => Mount['/mnt/home'],
+  }
+
+  exec { 'semanage_fcontext_scratch':
+    command => 'semanage fcontext -a -e /home /scratch',
+    unless  => 'grep -q "/scratch\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => Mount['/scratch'],
+  }
+
+  nfs::server::export{ ['/mnt/home', '/scratch'] :
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
-    require => Logical_volume['home'],
+    require => [Mount['/mnt/home'], Mount['/scratch']],
   }
 
-  nfs::server::export{ ['/project', '/scratch']:
+  nfs::server::export{ ['/project']:
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,no_root_squash,no_all_squash)",
     notify  => Service['nfs-idmap.service'],
-    require => [Logical_volume['project'], Logical_volume['scratch']],
+    require => [Mount['/project']],
   }
 
   exec { 'unexportfs_exportfs':

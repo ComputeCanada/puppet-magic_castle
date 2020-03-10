@@ -43,4 +43,4 @@ for USERNAME in ${USERNAMES}; do
 done
 restorecon -F -R /mnt/home
 # restorecon -F -R /project
-# restorecon -F -R /scratch
+restorecon -F -R /scratch
