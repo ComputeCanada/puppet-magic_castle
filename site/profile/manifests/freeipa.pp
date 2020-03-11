@@ -136,7 +136,8 @@ class profile::freeipa::client(String $server_ip)
       --unattended \
       --force-join \
       -p admin \
-      -w ${admin_passwd}
+      -w ${admin_passwd} \
+      || ipa-client-install --uninstall -U && false
       | IPACLIENTINSTALL
 
   exec { 'ipa-client-install':
