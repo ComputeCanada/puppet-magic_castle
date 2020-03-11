@@ -136,8 +136,7 @@ class profile::freeipa::client(String $server_ip)
       --unattended \
       --force-join \
       -p admin \
-      -w ${admin_passwd} \
-      || ipa-client-install --uninstall -U; rm -rf /etc/ipa/nssdb /etc/ipa/default.conf /etc/ca.crt; false
+      -w ${admin_passwd}
       | IPACLIENTINSTALL
 
   exec { 'ipa-client-install':
