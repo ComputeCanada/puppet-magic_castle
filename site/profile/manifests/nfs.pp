@@ -104,12 +104,23 @@ END
   $home_size = lookup('profile::nfs::server::home_size')
   $project_size = lookup('profile::nfs::server::project_size')
   $scratch_size = lookup('profile::nfs::server::scratch_size')
+
+  $devices = keys($::disks).map |$disk| { "/dev/${disk}" }
+  $parts2disks = unique(keys($::partitions).map |$part| {
+    $part ? {
+      /^.*p\d+$/ => regsubst($part, '^(.*)(p\\d+)','\\1'),
+      /^.*\d+$/  => regsubst($part, '^(.*)(\\d+)', '\\1'),
+      default    => $part
+    }
+  })
+  $exclusion = $parts2disks + ['/dev/sr0', '/dev/fd0', '/dev/scd0']
+  $pooldisks = $devices.filter |$x| { !( $x in $exclusion ) }
+
   class { 'lvm':
     require       => Exec['vgchange-data_volume_group'],
     volume_groups => {
       'data_volume_group' => {
-        # physical_volumes => Hash(flatten(keys($::disks)[1, -1].map |$disk| {["/dev/${disk}", {'unless_vg' => 'data_volume_group'}]})),
-        physical_volumes => keys($::disks)[1, -1].map |$disk| { "/dev/${disk}" },
+        physical_volumes => $pooldisks,
         createonly       => true,
         logical_volumes  => {
           'datapool' => {
