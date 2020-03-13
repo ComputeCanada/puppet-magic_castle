@@ -1,11 +1,14 @@
 class profile::gpu {
-  $cuda_ver = $facts['nvidia_cuda_version']
-  $driver_ver = $facts['nvidia_driver_version']
+  $cuda_ver = $::facts['nvidia_cuda_version']
+  $driver_ver = $::facts['nvidia_driver_version']
+  $os = "rhel${::facts['os']['release']['major']}"
+  $arch = $::facts['os']['architecture']
+  $repo_name = "cuda-repo-${os}"
   package { 'cuda-repo':
     ensure   => 'installed',
     provider => 'rpm',
-    name     => 'cuda-repo-rhel7',
-    source   => "http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-repo-rhel7-${cuda_ver}.x86_64.rpm"
+    name     => $repo_name,
+    source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
   }
 
   package { [
