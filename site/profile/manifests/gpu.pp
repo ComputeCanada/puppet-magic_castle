@@ -17,8 +17,8 @@ class profile::gpu {
     'nvidia-driver-latest-dkms-NvFBCOpenGL',
     'nvidia-driver-latest-dkms-NVML',
     'nvidia-modprobe-latest-dkms',
-    'nvidia-persistenced-latest',
-    'nvidia-xconfig-latest',
+    'nvidia-persistenced-latest-dkms',
+    'nvidia-xconfig-latest-dkms',
     'kmod-nvidia-latest-dkms',
     ]:
     ensure  => 'installed',
