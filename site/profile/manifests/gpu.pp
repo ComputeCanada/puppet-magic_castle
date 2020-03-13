@@ -9,11 +9,17 @@ class profile::gpu {
   }
 
   package { [
-    'nvidia-driver-cuda-libs',
-    'nvidia-driver-NVML',
-    'nvidia-driver-NvFBCOpenGL',
-    'nvidia-driver-libs',
-    'nvidia-driver-devel',
+    'nvidia-driver-latest-dkms',
+    'nvidia-driver-latest-dkms-cuda',
+    'nvidia-driver-latest-dkms-cuda-libs',
+    'nvidia-driver-latest-dkms-devel',
+    'nvidia-driver-latest-dkms-libs',
+    'nvidia-driver-latest-dkms-NvFBCOpenGL',
+    'nvidia-driver-latest-dkms-NVML',
+    'nvidia-modprobe-latest-dkms',
+    'nvidia-persistenced-latest',
+    'nvidia-xconfig-latest',
+    'kmod-nvidia-latest-dkms',
     ]:
     ensure  => 'installed',
     require => Package['cuda-repo']
@@ -24,21 +30,11 @@ class profile::gpu {
       ensure => 'installed'
     }
 
-    package { [
-        'nvidia-driver',
-        'nvidia-driver-cuda',
-        'kmod-nvidia-latest-dkms',
-        'nvidia-modprobe',
-      ]:
-      ensure  => 'installed',
-      require => [Package['cuda-repo'], Package['kernel-devel']]
-    }
-
     exec { 'dkms autoinstall':
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
       timeout => 0,
-      require => Package['kmod-nvidia-latest-dkms'],
+      require => [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']],
     }
 
     kmod::load { [
@@ -74,7 +70,6 @@ class profile::gpu {
         Augeas['nvidia-persistenced.service'],
       ],
     }
-
   }
 
   file { '/usr/lib64/nvidia':

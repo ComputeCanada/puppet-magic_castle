@@ -1,7 +1,7 @@
 #!/bin/sh
 PROCESSOR=$(uname -p)
 VERSION="$(source /etc/os-release; echo $VERSION_ID)"
-PACKAGE="nvidia-driver-libs"
+PACKAGE="nvidia-driver-latest-dkms-cuda"
 PACKAGE_REGEX="${PACKAGE}-\([0-9.]\{1,\}\)[-0-9]*.el${VERSION}\.${PROCESSOR}"
 DRIVER_VERSION=$(rpm -q ${PACKAGE} | sed -n "s/${PACKAGE_REGEX}/\1/p")
 if [ -z $DRIVER_VERSION ]; then
