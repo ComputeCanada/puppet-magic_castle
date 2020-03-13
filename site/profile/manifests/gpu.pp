@@ -29,9 +29,7 @@ class profile::gpu {
   }
 
   if $facts['nvidia_gpu_count'] > 0 {
-    package { 'kernel-devel':
-      ensure => 'installed'
-    }
+    ensure_packages(['kernel-devel'], {ensure => 'installed'})
 
     exec { 'dkms autoinstall':
       path    => ['/usr/bin', '/usr/sbin'],
