@@ -1,9 +1,14 @@
 #!/bin/sh
 if lspci | grep -q -i nvidia; then
-    DRIVER_VERSION=$(rpm -q nvidia-driver-libs | sed -n "s/nvidia-driver-libs-\([0-9.]\{1,\}\)[-0-9]*.el7\.x86_64/\1/p")
+    PROCESSOR=$(uname -p)
+    VERSION="$(source /etc/os-release; echo $VERSION_ID)"
+    PACKAGE="nvidia-driver-libs"
+    PACKAGE_REGEX="${PACKAGE}-\([0-9.]\{1,\}\)[-0-9]*.el${VERSION}\.${PROCESSOR}"
+    DRIVER_VERSION=$(rpm -q ${PACKAGE} | sed -n "s/${PACKAGE_REGEX}/\1/p")
     if [ -z $DRIVER_VERSION ]; then
-        DRIVER_VERSION=$(curl -s http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/ |
-sed -n "s/^.*'nvidia-driver-latest-libs-\([0-9.]\{1,\}\)[-0-9]*.el7\.x86_64\.rpm'.*$/\1/p")
+        BASE_URL="http://developer.download.nvidia.com/compute/cuda/repos"
+        CUDA_REPO_GZ=$(curl -s ${BASE_URL}/rhel${VERSION}/${PROCESSOR}/repodata/repomd.xml | sed '2 s/xmlns=".*"//g' | xmllint --xpath 'string(/repomd/data[@type="primary"]/location/@href)' -)
+        DRIVER_VERSION=$(curl -s ${BASE_URL}/rhel${VERSION}/${PROCESSOR}/${CUDA_REPO_GZ} | gunzip | sed -n "s/^.*\"${PACKAGE_REGEX}\.rpm\".*$/\1/p" | sort -V | tail -n1)
     fi
-    echo "{ 'nvidia_driver_version' : ${DRIVER_VERSION} }"
+    echo "{ 'nvidia_driver_version' : '${DRIVER_VERSION}' }"
 fi
