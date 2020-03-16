@@ -18,6 +18,12 @@ variable for each profile
 | ------------------------------ | :----- | :---------------------------------------------------------------------- | -------- |
 | `profile::consul::server_ip`   | String | IP address of the consul server                                         |          |
 
+## profile::cvmfs
+
+| Variable                                         | Type          | Description                       | Default                         |
+| ------------------------------------------------ | :------------ | :-------------------------------- | ------------------------------- |
+| `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules      | `['StdEnv/2018.3', 'gcc/7.30']` |
+
 
 ## profile::freeipa
 

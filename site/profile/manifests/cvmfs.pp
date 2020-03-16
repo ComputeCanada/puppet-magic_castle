@@ -1,4 +1,6 @@
-class profile::cvmfs::client {
+class profile::cvmfs::client(
+  Array[String] $lmod_default_modules = ['StdEnv/2018.3', 'gcc/7.3.0'],
+  ){
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -32,17 +34,22 @@ class profile::cvmfs::client {
     },
   }
 
-  file { '/etc/consul-template/z-00-computecanada.sh.ctmpl':
+  file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
     ensure => 'present',
-    source => 'puppet:///modules/profile/cvmfs/z-00-computecanada.sh.ctmpl',
+    source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
   }
 
-  consul_template::watch { 'z-00-computecanada.sh':
-    require     => File['/etc/consul-template/z-00-computecanada.sh.ctmpl'],
+  file { '/etc/profile.d/z-01-computecanada.sh':
+    ensure  => 'present',
+    content => epp('profile/cvmfs/z-01-computecanada.sh', {'lmod_default_modules' => $lmod_default_modules}),
+  }
+
+  consul_template::watch { 'z-00-rsnt_arch.sh':
+    require     => File['/etc/consul-template/z-00-rsnt_arch.sh.ctmpl'],
     config_hash => {
       perms       => '0644',
-      source      => '/etc/consul-template/z-00-computecanada.sh.ctmpl',
-      destination => '/etc/profile.d/z-00-computecanada.sh',
+      source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
+      destination => '/etc/profile.d/z-00-rsnt_arch.sh',
       command     => '/usr/bin/true',
     }
   }
