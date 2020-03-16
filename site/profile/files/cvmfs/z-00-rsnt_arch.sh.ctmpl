@@ -1,3 +1,4 @@
+#!/bin/sh
 archs=({{ range service "cvmfs" }}{{.ServiceMeta.arch}} {{ end }})
 if [[ " ${archs[@]} " =~ " sse3 " ]]; then
     export RSNT_ARCH="sse3"
@@ -7,10 +8,4 @@ elif [[ " ${archs[@]} " =~ " avx2 " ]]; then
     export RSNT_ARCH="avx2"
 elif [[ " ${archs[@]} " =~ " avx512 " ]]; then
     export RSNT_ARCH="avx512"
-fi
-
-if [[ $UID -gt 10000 ]]; then
-    if [[ -r /cvmfs/soft.computecanada.ca/config/profile/bash.sh ]]; then
-        source /cvmfs/soft.computecanada.ca/config/profile/bash.sh
-    fi
 fi
