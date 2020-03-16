@@ -1,13 +1,13 @@
 [DEFAULT]
 bantime = 3600
-ignoreip = 127.0.0.1/8 <%= $cidr %>
+ignoreip = 127.0.0.1/8 <%= $ignore_ip.join(' ') %>
 
 [sshd]
-enabled = true
+enabled = <%= $enable_sshd_jail %>
 mode = aggressive
 
 [ssh-ban-root]
-enabled = true
+enabled = <%= $enable_ssh_ban_root_jail %>
 filter = ssh-ban-root
 logpath = /var/log/secure
 maxretry = 0

@@ -1,4 +1,8 @@
-class profile::fail2ban {
+class profile::fail2ban(
+  Boolean $enable_sshd_jail = true,
+  Boolean $enable_ssh_ban_root_jail = true,
+  Array $ignore_ip = [],
+) {
   package { 'fail2ban-server':
     ensure => present
   }
@@ -12,7 +16,11 @@ class profile::fail2ban {
   $cidr = profile::getcidr()
   file { '/etc/fail2ban/jail.local':
     ensure  => present,
-    content => epp('profile/fail2ban/jail.local', {'cidr' => $cidr}),
+    content => epp('profile/fail2ban/jail.local', {
+      'ignore_ip'                => [$cidr] + $ignore_ip,
+      'enable_sshd_jail'         => $enable_sshd_jail,
+      'enable_ssh_ban_root_jail' => $enable_ssh_ban_root_jail,
+    }),
     mode    => '0644',
     require => Package['fail2ban-server'],
     notify  => Service['fail2ban'],
