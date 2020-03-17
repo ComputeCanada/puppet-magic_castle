@@ -115,7 +115,7 @@ class profile::freeipa::client(String $server_ip)
     command   => Sensitive($ipa_client_install_cmd),
     tries     => 10,
     try_sleep => 10,
-    require   => [Class['profile::freeipa::base'],
+    require   => [File['dhclient.conf'],
                   Exec['set_hostname'],
                   Tcp_conn_validator['ipa_dns'],
                   Tcp_conn_validator['ipa_ldap']],
