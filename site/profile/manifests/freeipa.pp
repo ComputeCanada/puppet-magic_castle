@@ -80,18 +80,23 @@ class profile::freeipa::client(String $server_ip)
     ensure => 'installed'
   }
 
-  tcp_conn_validator { 'ipa_dns':
-    host      => $server_ip,
-    port      => 53,
-    try_sleep => 10,
-    timeout   => 1200,
-  }
+  $ipa_records = [
+    "_kerberos-master._tcp.${int_domain_name} SRV",
+    "_kerberos-master._udp.${int_domain_name} SRV",
+    "_kerberos._tcp.${int_domain_name} SRV",
+    "_kerberos._udp.${int_domain_name} SRV",
+    "_kpasswd._tcp.${int_domain_name} SRV",
+    "_kpasswd._udp.${int_domain_name} SRV",
+    "_ldap._tcp.${int_domain_name} SRV",
+    "ipa-ca.${int_domain_name} A"
+  ]
 
-  tcp_conn_validator { 'ipa_ldap':
-    host      => $server_ip,
-    port      => 389,
-    try_sleep => 10,
-    timeout   => 1200,
+  wait_for { 'ipa_records':
+    query             => sprintf('dig +short %s | wc -l', join($ipa_records, ' ')),
+    regex             => String(length($ipa_records)),
+    polling_frequency => 10,
+    max_retries       => 60,
+    refreshonly       => true,
   }
 
   exec { 'set_hostname':
@@ -112,15 +117,13 @@ class profile::freeipa::client(String $server_ip)
       | IPACLIENTINSTALL
 
   exec { 'ipa-client-install':
-    command   => Sensitive($ipa_client_install_cmd),
-    tries     => 10,
-    try_sleep => 10,
-    require   => [File['dhclient.conf'],
-                  Exec['set_hostname'],
-                  Tcp_conn_validator['ipa_dns'],
-                  Tcp_conn_validator['ipa_ldap']],
-    creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind']
+    command => Sensitive($ipa_client_install_cmd),
+    tries   => 1,
+    require => [File['dhclient.conf'],
+                Exec['set_hostname'],
+                Wait_for['ipa_records']],
+    creates => '/etc/ipa/default.conf',
+    notify  => Service['systemd-logind']
   }
 
   $reverse_zone = profile::getreversezone()
