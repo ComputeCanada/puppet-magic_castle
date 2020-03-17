@@ -108,7 +108,6 @@ class profile::freeipa::client(String $server_ip)
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
       /sbin/ipa-client-install \
       --domain ${int_domain_name} \
-      --mkhomedir \
       --ssh-trust-dns \
       --enable-dns-updates \
       --unattended \
@@ -274,7 +273,6 @@ class profile::freeipa::server
       --hostname ${fqdn} \
       --ds-password ${admin_passwd} \
       --admin-password ${admin_passwd} \
-      --mkhomedir \
       --idstart=50000 \
       --ssh-trust-dns \
       --unattended \
