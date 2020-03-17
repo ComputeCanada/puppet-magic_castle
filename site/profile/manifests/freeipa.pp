@@ -97,6 +97,7 @@ class profile::freeipa::client(String $server_ip)
     polling_frequency => 10,
     max_retries       => 60,
     refreshonly       => true,
+    subscribe         => Package['ipa-client']
   }
 
   exec { 'set_hostname':
