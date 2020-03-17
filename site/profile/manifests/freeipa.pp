@@ -47,41 +47,13 @@ class profile::freeipa::base (
     path    => '/etc/dhcp/dhclient.conf',
     mode    => '0644',
     require => Service['NetworkManager'],
+    notify  => Service['network'],
     content => @("END")
 # Set the dhclient retry interval to 10 seconds instead of 5 minutes.
 retry 10;
 prepend domain-search "int.${domain_name}";
 prepend domain-name-servers ${dns_ip};
 END
-  }
-
-  file_line { 'resolv_search':
-    ensure  => present,
-    path    => '/etc/resolv.conf',
-    match   => 'search',
-    line    => "search int.${domain_name}",
-    require => File['dhclient.conf']
-  }
-
-  file_line { 'resolv_nameserver':
-    ensure  => present,
-    path    => '/etc/resolv.conf',
-    after   => "search int.${domain_name}",
-    line    => "nameserver ${dns_ip}",
-    require => File_line['resolv_search']
-  }
-
-  $interface = split($::interfaces, ',')[0]
-  file_line { 'peerdns':
-    ensure => present,
-    path   => "/etc/sysconfig/network-scripts/ifcfg-${interface}",
-    line   => 'PEERDNS=no'
-  }
-
-  file_line { 'ifcfg_dns1':
-    ensure => present,
-    path   => "/etc/sysconfig/network-scripts/ifcfg-${interface}",
-    line   => "DNS1=${dns_ip}"
   }
 
   file { '/etc/rsyslog.d/ignore-systemd-session-slice.conf':
@@ -143,8 +115,7 @@ class profile::freeipa::client(String $server_ip)
     command   => Sensitive($ipa_client_install_cmd),
     tries     => 10,
     try_sleep => 10,
-    require   => [File_line['resolv_nameserver'],
-                  File_line['resolv_search'],
+    require   => [Class['profile::freeipa::base'],
                   Exec['set_hostname'],
                   Tcp_conn_validator['ipa_dns'],
                   Tcp_conn_validator['ipa_ldap']],
@@ -322,7 +293,7 @@ class profile::freeipa::server
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns']],
-    before  => File_line['resolv_search'],
+    before  => File['dhclient.conf'],
     notify  => Service['systemd-logind']
   }
 
