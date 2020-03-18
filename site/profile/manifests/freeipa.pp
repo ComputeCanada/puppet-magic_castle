@@ -126,13 +126,14 @@ class profile::freeipa::client(String $server_ip)
       | IPACLIENTINSTALL
 
   exec { 'ipa-client-install':
-    command => Sensitive($ipa_client_install_cmd),
-    tries   => 1,
-    require => [File['dhclient.conf'],
-                Exec['set_hostname'],
-                Wait_for['ipa-ca_https']],
-    creates => '/etc/ipa/default.conf',
-    notify  => Service['systemd-logind']
+    command   => Sensitive($ipa_client_install_cmd),
+    tries     => 2,
+    try_sleep => 60,
+    require   => [File['dhclient.conf'],
+                  Exec['set_hostname'],
+                  Wait_for['ipa-ca_https']],
+    creates   => '/etc/ipa/default.conf',
+    notify    => Service['systemd-logind']
   }
 
   $reverse_zone = profile::getreversezone()
