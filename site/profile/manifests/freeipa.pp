@@ -100,6 +100,15 @@ class profile::freeipa::client(String $server_ip)
     subscribe         => Package['ipa-client']
   }
 
+  wait_for { 'ipa-ca_https':
+    query             => "curl --insecure -L https://ipa-ca.${int_domain_name}/",
+    exit_code         => 0,
+    polling_frequency => 10,
+    max_retries       => 60,
+    refreshonly       => true,
+    subscribe         => Wait_for['ipa_records']
+  }
+
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
     unless  => "/usr/bin/test `hostname` = ${fqdn}"
@@ -121,7 +130,7 @@ class profile::freeipa::client(String $server_ip)
     tries   => 1,
     require => [File['dhclient.conf'],
                 Exec['set_hostname'],
-                Wait_for['ipa_records']],
+                Wait_for['ipa-ca_https']],
     creates => '/etc/ipa/default.conf',
     notify  => Service['systemd-logind']
   }
