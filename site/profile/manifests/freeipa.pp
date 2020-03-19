@@ -100,10 +100,14 @@ class profile::freeipa::client(String $server_ip)
     subscribe         => Package['ipa-client']
   }
 
+  # Check if the FreeIPA HTTPD service is consistently available
+  # over a period of 2sec * 15 times = 30 seconds. If a single
+  # test of availability fails, we wait for 5 seconds, then try
+  # again.
   wait_for { 'ipa-ca_https':
-    query             => "curl --insecure -L https://ipa-ca.${int_domain_name}/",
+    query             => "for i in {1..15}; do curl --insecure -L --silent --output /dev/null https://ipa-ca.${int_domain_name}/ && sleep 2 || exit 1; done",
     exit_code         => 0,
-    polling_frequency => 10,
+    polling_frequency => 5,
     max_retries       => 60,
     refreshonly       => true,
     subscribe         => Wait_for['ipa_records']
