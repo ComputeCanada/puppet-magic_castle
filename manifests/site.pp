@@ -19,7 +19,7 @@ node /^login\d+$/ {
   include profile::slurm::submitter
   include profile::globus::base
   include profile::singularity
-  include jupyterhub
+  include profile::jupyterhub::hub
   include profile::reverse_proxy
   include profile::nfs::client
   include profile::freeipa::client
@@ -59,7 +59,7 @@ node /^[a-z0-9-]*node\d+$/ {
   include profile::cvmfs::client
   include profile::gpu
   include profile::singularity
-  include jupyterhub::node
+  include profile::jupyterhub::node
 
   include profile::nfs::client
   include profile::slurm::node
