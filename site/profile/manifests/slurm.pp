@@ -345,9 +345,7 @@ class profile::slurm::controller {
     require => Package['munge']
   }
 
-  package { 'mailx':
-    ensure => 'installed',
-  }
+  ensure_packages(['mailx'], { ensure => 'present'})
 
   consul_template::watch { 'slurm.conf':
     require     => File['/etc/slurm/slurm.conf.tpl'],
