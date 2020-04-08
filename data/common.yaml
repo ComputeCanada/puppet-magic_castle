@@ -1,6 +1,6 @@
 ---
 consul_template::version: 0.24.1
-consul::version: 1.7.1
+consul::version: 1.7.2
 jupyterhub::kernel::setup: venv
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
 jupyterhub::kernel::venv::pip_environment:
