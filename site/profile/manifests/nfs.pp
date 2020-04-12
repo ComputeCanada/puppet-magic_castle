@@ -93,64 +93,103 @@ END
     ensure => installed
   }
 
-  # Activate volume group following a rebuild of the server
-  exec { 'vgchange-data_volume_group':
-    command => 'vgchange -ay data_volume_group',
-    onlyif  => ['test ! -d /dev/data_volume_group', 'vgscan -t | grep -q "data_volume_group"'],
-    require => [Package['lvm2']],
-    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-  }
-
-  $home_size = lookup('profile::nfs::server::home_size')
-  $project_size = lookup('profile::nfs::server::project_size')
-  $scratch_size = lookup('profile::nfs::server::scratch_size')
-
-  $devices = keys($::disks).map |$disk| { "/dev/${disk}" }
-  $parts2disks = unique(keys($::partitions).map |$part| {
-    $part ? {
-      /^.*p\d+$/ => regsubst($part, '^(.*)(p\\d+)','\\1'),
-      /^.*\d+$/  => regsubst($part, '^(.*)(\\d+)', '\\1'),
-      default    => $part
-    }
-  })
-  $exclusion = $parts2disks + ['/dev/sr0', '/dev/fd0', '/dev/scd0']
-  $pooldisks = $devices.filter |$x| { !( $x in $exclusion ) }
-
-  class { 'lvm':
-    require       => Exec['vgchange-data_volume_group'],
-    volume_groups => {
-      'data_volume_group' => {
-        physical_volumes => $pooldisks,
-        createonly       => true,
-        logical_volumes  => {
-          'datapool' => {
-            'thinpool' => true,
-            'createfs' => false,
-            'mounted'  => false,
-          },
-          'home'     => {
-            'size'              => $home_size,
-            'fs_type'           => 'xfs',
-            'mountpath'         => '/mnt/home',
-            'mountpath_require' => true,
-            'thinpool'          => 'datapool',
-          },
-          'project'  => {
-            'size'              => $project_size,
-            'fs_type'           => 'xfs',
-            'mountpath_require' => true,
-            'thinpool'          => 'datapool',
-          },
-          'scratch'  => {
-            'size'              => $scratch_size,
-            'fs_type'           => 'xfs',
-            'mountpath_require' => true,
-            'thinpool'          => 'datapool',
-          },
+class { 'lvm':
+  volume_groups    => 
+{
+    'home_vg' => {
+      physical_volumes => [ '/dev/nvme1n1', ],
+      logical_volumes  => {
+        'home_lv'    => {
+           'fs_type' => 'xfs',
+           'mountpath'  => '/mnt/home',
+           'mountpath_require' => true,
         },
-      },
-    },
-  }
+     },
+  },
+
+   'project_vg' => {
+      physical_volumes => [ '/dev/nvme2n1', ],
+      logical_volumes  => {
+        'project_lv'    => {
+           'fs_type' => 'xfs',
+           'mountpath'  => '/project',
+           'mountpath_require' => true,
+        },
+     },
+  },
+
+ 'scratch_vg' => {
+      physical_volumes => [ '/dev/nvme3n1', ],
+      logical_volumes  => {
+        'scratch_lv'    => {
+           'fs_type' => 'xfs',
+           'mountpath'  => '/scratch',
+           'mountpath_require' => true,
+        },
+     },
+  },
+}
+}
+
+
+#  # Activate volume group following a rebuild of the server
+#  exec { 'vgchange-data_volume_group':
+#    command => 'vgchange -ay data_volume_group',
+#    onlyif  => ['test ! -d /dev/data_volume_group', 'vgscan -t | grep -q "data_volume_group"'],
+#    require => [Package['lvm2']],
+#    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+#  }
+#
+#  $home_size = lookup('profile::nfs::server::home_size')
+#  $project_size = lookup('profile::nfs::server::project_size')
+#  $scratch_size = lookup('profile::nfs::server::scratch_size')
+#
+#  $devices = keys($::disks).map |$disk| { "/dev/${disk}" }
+#  $parts2disks = unique(keys($::partitions).map |$part| {
+#    $part ? {
+#      /^.*p\d+$/ => regsubst($part, '^(.*)(p\\d+)','\\1'),
+#      /^.*\d+$/  => regsubst($part, '^(.*)(\\d+)', '\\1'),
+#      default    => $part
+#    }
+#  })
+#  $exclusion = $parts2disks + ['/dev/sr0', '/dev/fd0', '/dev/scd0']
+#  $pooldisks = $devices.filter |$x| { !( $x in $exclusion ) }
+#
+#  class { 'lvm':
+#    require       => Exec['vgchange-data_volume_group'],
+#    volume_groups => {
+#      'data_volume_group' => {
+#        physical_volumes => $pooldisks,
+#        createonly       => true,
+#        logical_volumes  => {
+#          'datapool' => {
+#            'thinpool' => true,
+#            'createfs' => false,
+#            'mounted'  => false,
+#          },
+#          'home'     => {
+#            'size'              => $home_size,
+#            'fs_type'           => 'xfs',
+#            'mountpath'         => '/mnt/home',
+#            'mountpath_require' => true,
+#            'thinpool'          => 'datapool',
+#          },
+#          'project'  => {
+#            'size'              => $project_size,
+#            'fs_type'           => 'xfs',
+#            'mountpath_require' => true,
+#            'thinpool'          => 'datapool',
+#          },
+#          'scratch'  => {
+#            'size'              => $scratch_size,
+#            'fs_type'           => 'xfs',
+#            'mountpath_require' => true,
+#            'thinpool'          => 'datapool',
+#          },
+#        },
+#      },
+#    },
+#  }
 
   exec { 'semanage_fcontext_mnt_home':
     command => 'semanage fcontext -a -e /home /mnt/home',
