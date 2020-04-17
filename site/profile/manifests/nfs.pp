@@ -175,21 +175,21 @@ END
 
   nfs::server::export{ '/mnt/home' :
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/mnt/home'],
   }
 
   nfs::server::export{ '/project':
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/project'],
   }
 
   nfs::server::export{ '/scratch':
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/scratch'],
   }
