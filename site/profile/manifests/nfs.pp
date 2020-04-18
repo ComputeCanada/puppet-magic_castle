@@ -17,17 +17,17 @@ class profile::nfs::client (String $server_ip) {
   nfs::client::mount { '/home':
       server        => $server_ip,
       share         => 'home',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/project':
       server        => $server_ip,
       share         => 'project',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
   nfs::client::mount { '/scratch':
       server        => $server_ip,
       share         => 'scratch',
-      options_nfsv4 => 'proto=tcp,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+      options_nfsv4 => 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   }
 }
 
@@ -214,21 +214,21 @@ class { 'lvm':
 
   nfs::server::export{ '/mnt/home' :
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/mnt/home'],
   }
 
   nfs::server::export{ '/project':
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/project'],
   }
 
   nfs::server::export{ '/scratch':
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,no_root_squash,no_all_squash,security_label)",
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
     notify  => Service['nfs-idmap.service'],
     require => Mount['/scratch'],
   }
