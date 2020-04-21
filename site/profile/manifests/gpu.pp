@@ -1,51 +1,35 @@
 class profile::gpu {
-  $cuda_ver = $::facts['nvidia_cuda_version']
+
   $driver_ver = $::facts['nvidia_driver_version']
-  $os = "rhel${::facts['os']['release']['major']}"
-  $arch = $::facts['os']['architecture']
-  $repo_name = "cuda-repo-${os}"
-  package { 'cuda-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => $repo_name,
-    source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
-  }
-
-  package { [
-    'nvidia-driver-latest-dkms',
-    'nvidia-driver-latest-dkms-cuda',
-    'nvidia-driver-latest-dkms-cuda-libs',
-    'nvidia-driver-latest-dkms-devel',
-    'nvidia-driver-latest-dkms-libs',
-    'nvidia-driver-latest-dkms-NvFBCOpenGL',
-    'nvidia-driver-latest-dkms-NVML',
-    'nvidia-modprobe-latest-dkms',
-    'nvidia-persistenced-latest-dkms',
-    'nvidia-xconfig-latest-dkms',
-    'kmod-nvidia-latest-dkms',
-    ]:
-    ensure  => 'installed',
-    require => Package['cuda-repo']
-  }
-
-  if $facts['nvidia_gpu_count'] > 0 {
-    ensure_packages(['kernel-devel'], {ensure => 'installed'})
-
-    exec { 'dkms autoinstall':
-      path    => ['/usr/bin', '/usr/sbin'],
-      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
-      timeout => 0,
-      require => [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']],
+  if ! $facts['nvidia_grid_vgpu'] {
+    $cuda_ver = $::facts['nvidia_cuda_version']
+    $os = "rhel${::facts['os']['release']['major']}"
+    $arch = $::facts['os']['architecture']
+    $repo_name = "cuda-repo-${os}"
+    package { 'cuda-repo':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => $repo_name,
+      source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
     }
 
-    kmod::load { [
-      'nvidia',
-      'nvidia_drm',
-      'nvidia_modeset',
-      'nvidia_uvm'
+    package { [
+      'nvidia-driver-latest-dkms',
+      'nvidia-driver-latest-dkms-cuda',
+      'nvidia-driver-latest-dkms-cuda-libs',
+      'nvidia-driver-latest-dkms-devel',
+      'nvidia-driver-latest-dkms-libs',
+      'nvidia-driver-latest-dkms-NvFBCOpenGL',
+      'nvidia-driver-latest-dkms-NVML',
+      'nvidia-modprobe-latest-dkms',
+      'nvidia-persistenced-latest-dkms',
+      'nvidia-xconfig-latest-dkms',
+      'kmod-nvidia-latest-dkms',
       ]:
-      require => Exec['dkms autoinstall']
+      ensure  => 'installed',
+      require => Package['cuda-repo']
     }
+    $dkms_requirements = [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']]
 
     file { '/var/run/nvidia-persistenced':
       ensure => directory,
@@ -70,6 +54,32 @@ class profile::gpu {
         File['/var/run/nvidia-persistenced'],
         Augeas['nvidia-persistenced.service'],
       ],
+    }
+  } else {
+    service { 'nvidia-gridd':
+      ensure => 'running',
+      enable => true,
+    }
+    $dkms_requirements = [Package['kernel-devel']]
+  }
+
+  if $facts['nvidia_gpu_count'] > 0 {
+    ensure_packages(['kernel-devel'], {ensure => 'installed'})
+
+    exec { 'dkms autoinstall':
+      path    => ['/usr/bin', '/usr/sbin'],
+      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      timeout => 0,
+      require => $dkms_requirements,
+    }
+
+    kmod::load { [
+      'nvidia',
+      'nvidia_drm',
+      'nvidia_modeset',
+      'nvidia_uvm'
+      ]:
+      require => Exec['dkms autoinstall']
     }
   }
 
