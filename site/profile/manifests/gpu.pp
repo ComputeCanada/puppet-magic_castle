@@ -30,31 +30,6 @@ class profile::gpu {
       require => Package['cuda-repo']
     }
     $dkms_requirements = [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']]
-
-    file { '/var/run/nvidia-persistenced':
-      ensure => directory,
-      owner  => 'nvidia-persistenced',
-      group  => 'nvidia-persistenced',
-      mode   => '0755',
-    }
-
-    augeas { 'nvidia-persistenced.service':
-      context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
-      changes => [
-        'set User/value nvidia-persistenced',
-        'set Group/value nvidia-persistenced',
-        'rm ExecStart/arguments',
-      ],
-    }
-
-    service { 'nvidia-persistenced':
-      ensure  => 'running',
-      enable  => true,
-      require => [
-        File['/var/run/nvidia-persistenced'],
-        Augeas['nvidia-persistenced.service'],
-      ],
-    }
   } else {
     service { 'nvidia-gridd':
       ensure => 'running',
@@ -80,6 +55,33 @@ class profile::gpu {
       'nvidia_uvm'
       ]:
       require => Exec['dkms autoinstall']
+    }
+
+    if ! $facts['nvidia_grid_vgpu'] {
+      file { '/var/run/nvidia-persistenced':
+        ensure => directory,
+        owner  => 'nvidia-persistenced',
+        group  => 'nvidia-persistenced',
+        mode   => '0755',
+      }
+
+      augeas { 'nvidia-persistenced.service':
+        context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
+        changes => [
+          'set User/value nvidia-persistenced',
+          'set Group/value nvidia-persistenced',
+          'rm ExecStart/arguments',
+        ],
+      }
+
+      service { 'nvidia-persistenced':
+        ensure  => 'running',
+        enable  => true,
+        require => [
+          File['/var/run/nvidia-persistenced'],
+          Augeas['nvidia-persistenced.service'],
+        ],
+      }
     }
   }
 
