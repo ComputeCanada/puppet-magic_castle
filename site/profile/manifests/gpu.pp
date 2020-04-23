@@ -1,31 +1,41 @@
 class profile::gpu {
-  $cuda_ver = $::facts['nvidia_cuda_version']
-  $driver_ver = $::facts['nvidia_driver_version']
-  $os = "rhel${::facts['os']['release']['major']}"
-  $arch = $::facts['os']['architecture']
-  $repo_name = "cuda-repo-${os}"
-  package { 'cuda-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => $repo_name,
-    source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
-  }
 
-  package { [
-    'nvidia-driver-latest-dkms',
-    'nvidia-driver-latest-dkms-cuda',
-    'nvidia-driver-latest-dkms-cuda-libs',
-    'nvidia-driver-latest-dkms-devel',
-    'nvidia-driver-latest-dkms-libs',
-    'nvidia-driver-latest-dkms-NvFBCOpenGL',
-    'nvidia-driver-latest-dkms-NVML',
-    'nvidia-modprobe-latest-dkms',
-    'nvidia-persistenced-latest-dkms',
-    'nvidia-xconfig-latest-dkms',
-    'kmod-nvidia-latest-dkms',
-    ]:
-    ensure  => 'installed',
-    require => Package['cuda-repo']
+  $driver_ver = $::facts['nvidia_driver_version']
+  if ! $facts['nvidia_grid_vgpu'] {
+    $cuda_ver = $::facts['nvidia_cuda_version']
+    $os = "rhel${::facts['os']['release']['major']}"
+    $arch = $::facts['os']['architecture']
+    $repo_name = "cuda-repo-${os}"
+    package { 'cuda-repo':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => $repo_name,
+      source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
+    }
+
+    package { [
+      'nvidia-driver-latest-dkms',
+      'nvidia-driver-latest-dkms-cuda',
+      'nvidia-driver-latest-dkms-cuda-libs',
+      'nvidia-driver-latest-dkms-devel',
+      'nvidia-driver-latest-dkms-libs',
+      'nvidia-driver-latest-dkms-NvFBCOpenGL',
+      'nvidia-driver-latest-dkms-NVML',
+      'nvidia-modprobe-latest-dkms',
+      'nvidia-persistenced-latest-dkms',
+      'nvidia-xconfig-latest-dkms',
+      'kmod-nvidia-latest-dkms',
+      ]:
+      ensure  => 'installed',
+      require => Package['cuda-repo']
+    }
+    $dkms_requirements = [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']]
+  } else {
+    service { 'nvidia-gridd':
+      ensure => 'running',
+      enable => true,
+    }
+    $dkms_requirements = [Package['kernel-devel']]
   }
 
   if $facts['nvidia_gpu_count'] > 0 {
@@ -35,7 +45,7 @@ class profile::gpu {
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
       timeout => 0,
-      require => [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']],
+      require => $dkms_requirements,
     }
 
     kmod::load { [
@@ -47,29 +57,31 @@ class profile::gpu {
       require => Exec['dkms autoinstall']
     }
 
-    file { '/var/run/nvidia-persistenced':
-      ensure => directory,
-      owner  => 'nvidia-persistenced',
-      group  => 'nvidia-persistenced',
-      mode   => '0755',
-    }
+    if ! $facts['nvidia_grid_vgpu'] {
+      file { '/var/run/nvidia-persistenced':
+        ensure => directory,
+        owner  => 'nvidia-persistenced',
+        group  => 'nvidia-persistenced',
+        mode   => '0755',
+      }
 
-    augeas { 'nvidia-persistenced.service':
-      context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
-      changes => [
-        'set User/value nvidia-persistenced',
-        'set Group/value nvidia-persistenced',
-        'rm ExecStart/arguments',
-      ],
-    }
+      augeas { 'nvidia-persistenced.service':
+        context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
+        changes => [
+          'set User/value nvidia-persistenced',
+          'set Group/value nvidia-persistenced',
+          'rm ExecStart/arguments',
+        ],
+      }
 
-    service { 'nvidia-persistenced':
-      ensure  => 'running',
-      enable  => true,
-      require => [
-        File['/var/run/nvidia-persistenced'],
-        Augeas['nvidia-persistenced.service'],
-      ],
+      service { 'nvidia-persistenced':
+        ensure  => 'running',
+        enable  => true,
+        require => [
+          File['/var/run/nvidia-persistenced'],
+          Augeas['nvidia-persistenced.service'],
+        ],
+      }
     }
   }
 
