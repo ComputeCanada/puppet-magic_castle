@@ -39,6 +39,8 @@ class profile::nfs::client (String $server_ip) {
 }
 
 class profile::nfs::server {
+  require profile::base
+
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
                           default_value => $::domain })
   $nfs_domain  = "int.${domain_name}"

@@ -29,6 +29,7 @@ node /^mgmt1$/ {
   include profile::consul::server
   include profile::metrics::exporter
   include profile::freeipa::server
+  include profile::base
   include profile::nfs::server
 
   include profile::metrics::server
@@ -36,7 +37,6 @@ node /^mgmt1$/ {
   include profile::squid::server
   include profile::slurm::controller
 
-  include profile::base
   include profile::freeipa::guest_accounts
   include profile::slurm::accounting
   include profile::workshop::mgmt
