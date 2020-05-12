@@ -163,4 +163,31 @@ class profile::base (
     notify => Service['sshd']
   }
 
+  if $::facts.dig('cloud', 'provider') == 'azure' {
+    include profile::base::azure
+  }
+
+}
+
+class profile::base::azure {
+  package { 'WALinuxAgent':
+    ensure => purged,
+  }
+
+  file { '/etc/udev/rules.d/66-azure-storage.rules':
+    ensure         => 'present',
+    source         => 'https://raw.githubusercontent.com/Azure/WALinuxAgent/v2.2.48.1/config/66-azure-storage.rules',
+    require        => Package['WALinuxAgent'],
+    owner          => 'root',
+    group          => 'root',
+    mode           => '0644',
+    checksum       => 'md5',
+    checksum_value => '51e26bfa04737fc1e1f14cbc8aeebece',
+  }
+
+  exec { 'udevadm trigger --action=change':
+    refreshonly => true,
+    subscribe   => File['/etc/udev/rules.d/66-azure-storage.rules'],
+    path        => ['/usr/bin'],
+  }
 }
