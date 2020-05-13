@@ -36,4 +36,4 @@ mod 'yelp-netstdlib', '0.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v3.0.3'
+    :ref => 'v3.3.0'
