@@ -25,7 +25,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'domain_to_jupyter_non_ssl':
-    servername      =>  $domain_name,
+    servername      => $domain_name,
     port            => '80',
     redirect_status => 'permanent',
     redirect_dest   => "https://jupyter.${domain_name}/",
@@ -37,7 +37,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'domain_to_jupyter_ssl':
-    servername      =>  $domain_name,
+    servername      => $domain_name,
     port            => '443',
     redirect_status => 'permanent',
     redirect_dest   => "https://jupyter.${domain_name}/",
@@ -52,7 +52,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'jupyter80_to_jupyter443':
-    servername      =>  "jupyter.${domain_name}",
+    servername      => "jupyter.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
     redirect_dest   => "https://jupyter.${domain_name}/",
@@ -63,7 +63,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'jupyter_ssl':
-    servername                =>  "jupyter.${domain_name}",
+    servername                => "jupyter.${domain_name}",
     port                      => '443',
     docroot                   => false,
     manage_docroot            => false,
@@ -87,7 +87,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'ipa80_to_ipa443':
-    servername      =>  "ipa.${domain_name}",
+    servername      => "ipa.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
     redirect_dest   => "https://ipa.${domain_name}/",
