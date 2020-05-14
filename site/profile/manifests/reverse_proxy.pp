@@ -4,6 +4,7 @@ class profile::reverse_proxy(String $domain_name)
 
   class { 'apache':
     default_vhost => false,
+    servername    => $domain_name,
   }
 
   class { 'apache::mod::ssl':
