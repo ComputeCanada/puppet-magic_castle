@@ -3,8 +3,9 @@
 forge "https://forgeapi.puppetlabs.com"
 
 mod 'KyleAnderson-consul',
-    :git    => 'https://github.com/cmd-ntrf/puppet-consul.git',
-    :branch => 'reload_token'
+    :git    => 'https://github.com/solarkennedy/puppet-consul.git',
+    :commit => '4dc9835cbdff6036bf371f648d3723298a88e648'
+
 mod 'camptocamp-kmod', '2.3.1'
 mod 'camptocamp-systemd', '2.6.0'
 mod 'cmdntrf-consul_template', '2.3.0'
