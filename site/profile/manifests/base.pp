@@ -6,6 +6,21 @@ class profile::base (
   include ::consul_template
   include epel
 
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    file_line { 'enable_powertools':
+      ensure => present,
+      path   => '/etc/yum.repos.d/CentOS-PowerTools.repo',
+      line   => 'enabled=1',
+      match  => '^enabled=0$',
+    }
+  }
+
+  if dig($::facts, 'os', 'release', 'major') == '7' {
+    package { 'yum-plugin-priorities':
+      ensure => 'installed'
+    }
+  }
+
   file { '/etc/localtime':
     ensure => link,
     target => '/usr/share/zoneinfo/UTC',
@@ -40,12 +55,6 @@ class profile::base (
     command => "semanage login -a -S targeted -s 'unconfined_u' -r 's0-s0:c0.c1023' ${sudoer_username}",
     unless  => "grep -q '${sudoer_username}:unconfined_u:s0-s0:c0.c1023' /etc/selinux/targeted/seusers",
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-  }
-
-  if dig($::facts, 'os', 'release', 'major') == '7' {
-    package { 'yum-plugin-priorities':
-      ensure => 'installed'
-    }
   }
 
   class { '::swap_file':
