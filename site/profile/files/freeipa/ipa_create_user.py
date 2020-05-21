@@ -8,6 +8,8 @@ from ipalib.cli import cli
 from ipapython import ipautil
 from ipaplatform.paths import paths
 
+from six import text_type
+
 
 def init_api():
     api.bootstrap_with_global_options(context="cli")
@@ -18,11 +20,11 @@ def init_api():
 
 def user_add(uid, first, last, password, shell):
     kargs = dict(
-        uid=unicode(uid),
-        givenname=unicode(first),
-        sn=unicode(last),
-        userpassword=unicode(password),
-        loginshell=unicode(shell),
+        uid=text_type(uid),
+        givenname=text_type(first),
+        sn=text_type(last),
+        userpassword=text_type(password),
+        loginshell=text_type(shell),
     )
     try:
         uidnumber = os.stat("/mnt/home/" + uid).st_uid
@@ -45,7 +47,9 @@ def group_add(name):
 
 
 def group_add_members(group, members):
-    api.Command.group_add_member(cn=unicode(group), user=list(map(unicode, members)))
+    api.Command.group_add_member(
+        cn=text_type(group), user=list(map(text_type, members))
+    )
 
 
 def kinit(username, password):
