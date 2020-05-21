@@ -27,7 +27,7 @@ class profile::base (
   }
 
   if $email {
-    ensure_packages(['mailx'], { ensure => 'present'})
+    include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
       ensure  => present,
       mode    => '0700',

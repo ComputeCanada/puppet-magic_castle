@@ -315,6 +315,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
   require profile::slurm::base
+  include profile::mail::server
 
   consul::service { 'slurmctld':
     port    => 6817,
@@ -326,8 +327,6 @@ class profile::slurm::controller {
     ensure  => 'installed',
     require => Package['munge']
   }
-
-  ensure_packages(['mailx'], { ensure => 'present'})
 
   consul_template::watch { 'slurm.conf':
     require     => File['/etc/slurm/slurm.conf.tpl'],
