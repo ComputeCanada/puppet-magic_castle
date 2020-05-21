@@ -86,12 +86,14 @@ END
     nfs_v4_idmap_domain        => $nfs_domain
   }
 
-  file_line { 'rpc_nfs_args_v4.2':
-    ensure => present,
-    path   => '/etc/sysconfig/nfs',
-    line   => 'RPCNFSDARGS="-V 4.2"',
-    match  => '^RPCNFSDARGS\=',
-    notify => Service['nfs-server.service']
+  if dig($::facts, 'os', 'release', 'major') == '7' {
+    file_line { 'rpc_nfs_args_v4.2':
+      ensure => present,
+      path   => '/etc/sysconfig/nfs',
+      line   => 'RPCNFSDARGS="-V 4.2"',
+      match  => '^RPCNFSDARGS\=',
+      notify => Service['nfs-server.service']
+    }
   }
 
   package { 'lvm2':
