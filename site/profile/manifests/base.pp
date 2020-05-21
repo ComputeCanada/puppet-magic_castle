@@ -42,8 +42,10 @@ class profile::base (
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
-  package { 'yum-plugin-priorities':
-    ensure => 'installed'
+  if dig($::facts, 'os', 'release', 'major') == '7' {
+    package { 'yum-plugin-priorities':
+      ensure => 'installed'
+    }
   }
 
   class { '::swap_file':
