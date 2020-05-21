@@ -96,7 +96,7 @@ class profile::base (
     require => Yumrepo['epel']
   }
 
-  package { 'pdsh':
+  package { 'clustershell':
     ensure  => 'installed',
     require => Yumrepo['epel']
   }
