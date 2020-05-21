@@ -4,6 +4,7 @@ class profile::base (
 ) {
   include stdlib
   include ::consul_template
+  include epel
 
   file { '/etc/localtime':
     ensure => link,
@@ -86,15 +87,6 @@ class profile::base (
     destination => '169.254.169.254',
     action      => 'drop',
     uid         => '! root'
-  }
-
-  yumrepo { 'epel':
-    baseurl        => 'http://dl.fedoraproject.org/pub/epel/$releasever/$basearch',
-    enabled        => true,
-    failovermethod => 'priority',
-    gpgcheck       => false,
-    gpgkey         => 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL',
-    descr          => 'Extra Packages for Enterprise Linux'
   }
 
   package { 'haveged':
