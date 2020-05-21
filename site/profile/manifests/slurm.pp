@@ -155,7 +155,7 @@ END
     yumrepo { 'slurm-copr-repo':
       enabled             => true,
       descr               => 'Copr repo for Slurm19 owned by cmdntrf',
-      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/epel-7-$basearch/',
+      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/epel-$releasever-$basearch/',
       skip_if_unavailable => true,
       gpgcheck            => 1,
       gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/pubkey.gpg',
@@ -165,7 +165,7 @@ END
     yumrepo { 'slurm-copr-repo':
       enabled             => true,
       descr               => 'Copr repo for Slurm19 owned by cmdntrf',
-      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-7-$basearch/',
+      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-$releasever-$basearch/',
       skip_if_unavailable => true,
       gpgcheck            => 1,
       gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/pubkey.gpg',
