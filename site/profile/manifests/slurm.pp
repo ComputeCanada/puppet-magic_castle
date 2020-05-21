@@ -7,7 +7,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Integer $slurm_version = 19)
+  Integer[19, 20] $slurm_version = 19)
 {
   group { 'slurm':
     ensure => 'present',
