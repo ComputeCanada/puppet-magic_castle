@@ -3,6 +3,15 @@ class profile::freeipa::base (
   String $dns_ip,
   String $domain_name)
 {
+
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    exec { 'enable_idm:DL1':
+      command => 'yum module enable -y idm:DL1',
+      creates => '/etc/dnf/modules.d/idm.module',
+      path    => ['/usr/bin', '/usr/sbin']
+    }
+  }
+
   package { 'systemd':
     ensure => 'latest'
   }
