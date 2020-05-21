@@ -6,7 +6,8 @@
 # @param munge_key Specifies the munge secret key that allows slurm nodes to communicate
 class profile::slurm::base (
   String $cluster_name,
-  String $munge_key)
+  String $munge_key,
+  Integer $slurm_version = 19)
 {
   group { 'slurm':
     ensure => 'present',
@@ -154,21 +155,21 @@ END
   if $facts['nvidia_gpu_count'] > 0 {
     yumrepo { 'slurm-copr-repo':
       enabled             => true,
-      descr               => 'Copr repo for Slurm19 owned by cmdntrf',
-      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/epel-$releasever-$basearch/',
+      descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
+      baseurl             => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}-nvml/epel-\$releasever-\$basearch/",
       skip_if_unavailable => true,
       gpgcheck            => 1,
-      gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19-nvml/pubkey.gpg',
+      gpgkey              => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}-nvml/pubkey.gpg",
       repo_gpgcheck       => 0,
     }
   } else {
     yumrepo { 'slurm-copr-repo':
       enabled             => true,
-      descr               => 'Copr repo for Slurm19 owned by cmdntrf',
-      baseurl             => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/epel-$releasever-$basearch/',
+      descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
+      baseurl             => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/epel-\$releasever-\$basearch/",
       skip_if_unavailable => true,
       gpgcheck            => 1,
-      gpgkey              => 'https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm19/pubkey.gpg',
+      gpgkey              => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/pubkey.gpg",
       repo_gpgcheck       => 0,
     }
   }
