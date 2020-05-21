@@ -10,6 +10,10 @@ class profile::freeipa::base (
       creates => '/etc/dnf/modules.d/idm.module',
       path    => ['/usr/bin', '/usr/sbin']
     }
+
+    package { 'network-scripts':
+      ensure => 'installed'
+    }
   }
 
   package { 'systemd':
