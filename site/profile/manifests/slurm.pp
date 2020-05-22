@@ -271,7 +271,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
     tries     => 4,
     try_sleep => 15,
-    timeout   => 5,
+    timeout   => 15,
     notify    => Service['slurmctld'],
     require   => [Service['slurmdbd'],
                   Tcp_conn_validator['slurmdbd_port'],
