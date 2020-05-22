@@ -3,15 +3,11 @@ class profile::fail2ban(
   Boolean $enable_ssh_ban_root_jail = true,
   Array $ignore_ip = [],
 ) {
-  package { 'fail2ban-server':
-    ensure  => present,
-    require => Yumrepo['epel']
-  }
+  require profile::fail2ban::install
 
   service { 'fail2ban':
-    ensure  => running,
-    enable  => true,
-    require => Package['fail2ban-server']
+    ensure => running,
+    enable => true
   }
 
   $cidr = profile::getcidr()
@@ -23,16 +19,14 @@ class profile::fail2ban(
       'enable_ssh_ban_root_jail' => $enable_ssh_ban_root_jail,
     }),
     mode    => '0644',
-    require => Package['fail2ban-server'],
     notify  => Service['fail2ban'],
   }
 
   file { '/etc/fail2ban/filter.d/ssh-ban-root.conf':
-    ensure  => present,
-    source  => 'puppet:///modules/profile/fail2ban/ssh-ban-root.conf',
-    mode    => '0644',
-    require => Package['fail2ban-server'],
-    notify  => Service['fail2ban'],
+    ensure => present,
+    source => 'puppet:///modules/profile/fail2ban/ssh-ban-root.conf',
+    mode   => '0644',
+    notify => Service['fail2ban'],
   }
 
   file_line { 'fail2ban_sshd_recv_disconnect':
@@ -41,5 +35,12 @@ class profile::fail2ban(
     line   => '            ^Received disconnect from <HOST>%(__on_port_opt)s:\s*11:( Bye Bye)?%(__suff)s$',
     after  => '^mdre-extra\ \=*',
     notify => Service['fail2ban']
+  }
+}
+
+class profile::fail2ban::install {
+  package { 'fail2ban-server':
+    ensure  => present,
+    require => Yumrepo['epel']
   }
 }
