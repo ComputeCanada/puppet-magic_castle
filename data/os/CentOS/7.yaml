@@ -1,4 +1,5 @@
 ---
+profile::freeipa::server::regen_cert_cmd: 'ipa-getcert resubmit -d /etc/httpd/alias -n Server-Cert'
 profile::gpu::packages:
     - nvidia-driver-latest-dkms
     - nvidia-driver-latest-dkms-cuda

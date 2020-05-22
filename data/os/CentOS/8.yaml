@@ -1,4 +1,5 @@
 ---
+profile::freeipa::server::regen_cert_cmd: 'ipa-getcert resubmit -f /var/lib/ipa/certs/httpd.crt'
 profile::gpu::packages:
     - cuda-compat
     - nvidia-driver
