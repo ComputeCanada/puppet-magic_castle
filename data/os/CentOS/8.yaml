@@ -1,0 +1,9 @@
+---
+profile::gpu::packages:
+    - cuda-compat
+    - nvidia-driver
+    - nvidia-driver-libs
+    - nvidia-driver-NVML
+    - nvidia-modprobe
+    - nvidia-xconfig
+    - kmod-nvidia-latest-dkms

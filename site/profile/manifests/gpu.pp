@@ -1,4 +1,4 @@
-class profile::gpu {
+class profile::gpu (Array[String] $packages) {
 
   $driver_ver = $::facts['nvidia_driver_version']
   if ! $facts['nvidia_grid_vgpu'] {
@@ -13,19 +13,7 @@ class profile::gpu {
       source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
     }
 
-    package { [
-      'nvidia-driver-latest-dkms',
-      'nvidia-driver-latest-dkms-cuda',
-      'nvidia-driver-latest-dkms-cuda-libs',
-      'nvidia-driver-latest-dkms-devel',
-      'nvidia-driver-latest-dkms-libs',
-      'nvidia-driver-latest-dkms-NvFBCOpenGL',
-      'nvidia-driver-latest-dkms-NVML',
-      'nvidia-modprobe-latest-dkms',
-      'nvidia-persistenced-latest-dkms',
-      'nvidia-xconfig-latest-dkms',
-      'kmod-nvidia-latest-dkms',
-      ]:
+    package { $packages:
       ensure  => 'installed',
       require => Package['cuda-repo']
     }
