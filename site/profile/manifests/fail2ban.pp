@@ -4,7 +4,8 @@ class profile::fail2ban(
   Array $ignore_ip = [],
 ) {
   package { 'fail2ban-server':
-    ensure => present
+    ensure  => present,
+    require => Yumrepo['epel']
   }
 
   service { 'fail2ban':
