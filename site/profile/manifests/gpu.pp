@@ -19,7 +19,7 @@ class profile::gpu (Array[String] $packages) {
 
     package { $packages:
       ensure  => 'installed',
-      require => Package['cuda-repo']
+      require => [Package['cuda-repo'], Package['dkms']]
     }
     $dkms_requirements = [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']]
   } else {
