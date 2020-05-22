@@ -13,6 +13,10 @@ class profile::gpu (Array[String] $packages) {
       source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
     }
 
+    ensure_packages(['dkms'], {
+      'require' => Yumrepo['epel']
+    })
+
     package { $packages:
       ensure  => 'installed',
       require => Package['cuda-repo']
