@@ -312,7 +312,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
-  include profile::slurm::base
+  require profile::slurm::base
 
   consul::service { 'slurmctld':
     port    => 6817,
@@ -358,7 +358,7 @@ class profile::slurm::controller {
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
-  include profile::slurm::base
+  require profile::slurm::base
 
   yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
     enabled             => true,
