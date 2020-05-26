@@ -107,16 +107,6 @@ END
     notify  => Service['consul-template'],
   }
 
-  file { '/etc/slurm/plugstack.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => @(EOT/L),
-      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
-      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
-      |EOT
-  }
-
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
 if [[ $UID -lt 10000 ]]; then
@@ -190,25 +180,6 @@ END
     ensure  => 'installed',
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']]
-  }
-
-  file { 'cc-tmpfs_mount.so':
-    ensure         => 'present',
-    source         => @(EOT/L),
-      https://gist.githubusercontent.com/\
-      cmd-ntrf/\
-      a9305513809e7c9a104f79f0f15ec067/\
-      raw/\
-      da71a07f455206e21054f019d26a277daeaa0f00/\
-      cc-tmpfs_mounts.so
-      |-EOT
-    path           => '/opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so',
-    owner          => 'slurm',
-    group          => 'slurm',
-    mode           => '0755',
-    checksum       => 'md5',
-    checksum_value => 'ff2beaa7be1ec0238fd621938f31276c',
-    require        => Package['slurm']
   }
 
   file { 'slurm.conf.tpl':
@@ -384,6 +355,31 @@ class profile::slurm::controller {
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
   include profile::slurm::base
+
+  yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
+    enabled             => true,
+    descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
+    baseurl             => "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/pubkey.gpg',
+    repo_gpgcheck       => 0,
+  }
+
+  package { 'spank-cc-tmpfs_mounts':
+    ensure  => 'installed',
+    require => Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+  }
+
+  file { '/etc/slurm/plugstack.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => @(EOT/L),
+      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
+      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
+      |EOT
+  }
 
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
   consul::service { 'slurmd':
