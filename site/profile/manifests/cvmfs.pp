@@ -1,6 +1,4 @@
-class profile::cvmfs::client(
-  Array[String] $lmod_default_modules = ['nixpkgs/16.09', 'imkl/2018.3.222', 'gcc/7.3.0', 'openmpi/3.1.2'],
-  ){
+class profile::cvmfs::client(Array[String] $lmod_default_modules){
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
