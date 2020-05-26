@@ -56,7 +56,7 @@ Before=nfs-server.service
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStop=/usr/bin/sed -i '/\/export\//d' /etc/fstab
+ExecStop=/usr/bin/sed "-i ';/export/;d' /etc/fstab"
 
 [Install]
 WantedBy=multi-user.target
