@@ -491,14 +491,28 @@ AutoDetect=nvml
     seltype => 'etc_t'
   }
 
+  wait_for { 'nodeconfig_set':
+    query             => 'cat /etc/slurm/node.conf',
+    regex             => "^NodeName=${::facts['hostname']}",
+    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
+    max_retries       => 30,
+    require           => [
+      Consul_template::Watch['slurm.conf'],
+      Consul_template::Watch['node.conf'],
+    ],
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
-    subscribe => [File['/etc/slurm/cgroup.conf'],
-                  File['/etc/slurm/plugstack.conf']],
-    require   => [Package['slurm-slurmd'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']],
+    subscribe => [
+      File['/etc/slurm/cgroup.conf'],
+      File['/etc/slurm/plugstack.conf']
+    ],
+    require   => [
+      Package['slurm-slurmd'],
+      Wait_for['nodeconfig_set'],
+    ]
   }
 
   exec { 'scontrol_update_state':
