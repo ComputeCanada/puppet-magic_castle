@@ -261,6 +261,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     regex             => '^\[[.:0-9-T]{23}\] slurmdbd version \d+.\d+.\d+ started$',
     polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
     max_retries       => 24,
+    require           => Service['slurmdbd']
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
