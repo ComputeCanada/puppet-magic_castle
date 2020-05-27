@@ -146,7 +146,10 @@ END
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
       notify  => Service[$::nfs::server_nfsv4_servicehelper],
-      require => Mount['/mnt/home'],
+      require => [
+        Mount['/mnt/home'],
+        Class['::nfs'],
+      ]
     }
   }
 
@@ -191,7 +194,10 @@ END
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
       notify  => Service[$::nfs::server_nfsv4_servicehelper],
-      require => Mount['/project'],
+      require => [
+        Mount['/project'],
+        Class['::nfs'],
+      ]
     }
   }
 
@@ -236,7 +242,10 @@ END
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
       notify  => Service[$::nfs::server_nfsv4_servicehelper],
-      require => Mount['/scratch'],
+      require => [
+        Mount['/scratch'],
+        Class['::nfs'],
+      ]
     }
   }
 
