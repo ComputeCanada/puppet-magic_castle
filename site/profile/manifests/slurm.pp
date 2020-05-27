@@ -292,6 +292,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     timeout   => 5,
     require   => [Service['slurmdbd'],
                   Wait_for['slurmdbd_started'],
+                  Exec['sacctmgr_add_cluster'],
                   Consul_template::Watch['slurm.conf'],
                   Consul_template::Watch['node.conf']]
   }
