@@ -15,10 +15,14 @@ class profile::singularity {
   # of the install.
   package { 'singularity':
     ensure          => 'installed',
-    require         => Yumrepo['singularity-copr-repo'],
+    require         => [
+      Yumrepo['singularity-copr-repo'],
+      Yumrepo['epel'],
+    ],
     install_options => [
       { '--disablerepo' => 'epel' },
-      { '--enablerepo'  => 'singularity-copr-repo' }],
+      { '--enablerepo'  => 'singularity-copr-repo' },
+    ],
   }
 
   exec { 'singularity-symlink':
