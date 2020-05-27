@@ -145,7 +145,6 @@ END
     nfs::server::export{ '/mnt/home' :
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_nfsv4_servicehelper],
       require => [
         Mount['/mnt/home'],
         Class['::nfs'],
@@ -193,7 +192,6 @@ END
     nfs::server::export{ '/project':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_nfsv4_servicehelper],
       require => [
         Mount['/project'],
         Class['::nfs'],
@@ -241,7 +239,6 @@ END
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_nfsv4_servicehelper],
       require => [
         Mount['/scratch'],
         Class['::nfs'],
