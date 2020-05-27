@@ -1,8 +1,8 @@
 #!/bin/sh
 PROCESSOR=$(uname -p)
 VERSION="$(source /etc/os-release; echo $VERSION_ID)"
-PACKAGE="nvidia-driver-latest-dkms-cuda"
-PACKAGE_REGEX="${PACKAGE}-\([0-9.]\{1,\}\)[-0-9]*.el${VERSION}\.${PROCESSOR}"
+PACKAGE="cuda-drivers"
+PACKAGE_REGEX="${PACKAGE}-\([0-9.]\{1,\}\)[-0-9]*\.${PROCESSOR}"
 DRIVER_VERSION=$(test -f /usr/sbin/dkms && /usr/sbin/dkms status | grep -m 1 -Po 'nvidia, \K(\d+.\d+[\.]\d*)')
 if [ -z $DRIVER_VERSION ]; then
     BASE_URL="http://developer.download.nvidia.com/compute/cuda/repos"
