@@ -256,12 +256,11 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     before  => Service['slurmctld']
   }
 
-  tcp_conn_validator { 'slurmdbd_port':
-    host      => $::hostname,
-    port      => $dbd_port,
-    try_sleep => 5,
-    timeout   => 60,
-    require   => Service['slurmdbd']
+  wait_for { 'slurmdbd_started':
+    query             => 'cat /var/log/slurm/slurmdbd.log',
+    regex             => '^\[[.:0-9-T]{23}\] slurmdbd version \d+.\d+.\d+ started$',
+    polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
+    max_retries       => 24,
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
@@ -274,7 +273,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     timeout   => 15,
     notify    => Service['slurmctld'],
     require   => [Service['slurmdbd'],
-                  Tcp_conn_validator['slurmdbd_port'],
+                  Wait_for['slurmdbd_started'],
                   Consul_template::Watch['slurm.conf'],
                   Consul_template::Watch['node.conf']]
   }
@@ -292,7 +291,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     try_sleep => 15,
     timeout   => 5,
     require   => [Service['slurmdbd'],
-                  Tcp_conn_validator['slurmdbd_port'],
+                  Wait_for['slurmdbd_started'],
                   Consul_template::Watch['slurm.conf'],
                   Consul_template::Watch['node.conf']]
   }
