@@ -92,7 +92,7 @@ END
       path   => '/etc/sysconfig/nfs',
       line   => 'RPCNFSDARGS="-V 4.2"',
       match  => '^RPCNFSDARGS\=',
-      notify => Service['nfs-server.service']
+      notify => Service[$::nfs::server_service_name]
     }
   }
 
@@ -145,6 +145,7 @@ END
     nfs::server::export{ '/mnt/home' :
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/mnt/home'],
         Class['::nfs'],
@@ -192,6 +193,7 @@ END
     nfs::server::export{ '/project':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/project'],
         Class['::nfs'],
@@ -239,6 +241,7 @@ END
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/scratch'],
         Class['::nfs'],
