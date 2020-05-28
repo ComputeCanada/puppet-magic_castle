@@ -366,9 +366,16 @@ class profile::slurm::node {
     repo_gpgcheck       => 0,
   }
 
+  package { ['slurm-slurmd', 'slurm-pam_slurm']:
+    ensure => 'installed'
+  }
+
   package { 'spank-cc-tmpfs_mounts':
     ensure  => 'installed',
-    require => Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+    require => [
+      Package['slurm-slurmd'],
+      Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+    ]
   }
 
   file { '/etc/slurm/plugstack.conf':
@@ -391,14 +398,6 @@ class profile::slurm::node {
       realmemory => String($real_memory),
       gpus       => String($facts['nvidia_gpu_count']),
     },
-  }
-
-  package { 'slurm-slurmd':
-    ensure => 'installed'
-  }
-
-  package { 'slurm-pam_slurm':
-    ensure => 'installed'
   }
 
   pam { 'Add pam_slurm_adopt':
