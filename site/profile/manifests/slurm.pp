@@ -170,7 +170,7 @@ END
                 Yumrepo['slurm-copr-repo']],
   }
 
-  package { 'slurm-contribs':
+  package { ['slurm-contribs', 'slurm-perlapi' ]:
     ensure  => 'installed',
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
