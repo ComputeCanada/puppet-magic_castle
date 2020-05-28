@@ -262,7 +262,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   exec { 'sacctmgr_add_cluster':
-    command   => "sacctmgr add cluster ${cluster_name} -i",
+    command   => "sacctmgr add cluster ${cluster_name} -i | grep -qP '(already exists|Adding Cluster)'",
     path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
     tries     => 4,
