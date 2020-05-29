@@ -3,6 +3,7 @@ class profile::base (
   Optional[String] $email = undef,
 ) {
   include stdlib
+  include ::consul_template
 
   file { '/etc/localtime':
     ensure => link,
@@ -18,14 +19,6 @@ class profile::base (
         'email' => $email,
       }),
     }
-  }
-
-  class { '::consul_template':
-    config_hash => {
-      'consul' => {
-        'token' => lookup('profile::consul::acl_api_token')
-      }
-    },
   }
 
   # Allow users to run TCP servers - activated to allow users
