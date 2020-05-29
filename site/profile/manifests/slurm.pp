@@ -93,8 +93,12 @@ class profile::slurm::base (
 
   $node_template = @(END)
 # Nodes definition
+{{ if service "slurmd" -}}
 {{ range service "slurmd" -}}
 NodeName={{.Node}} CPUs={{.ServiceMeta.cpus}} RealMemory={{.ServiceMeta.realmemory}} {{if gt (parseInt .ServiceMeta.gpus) 0}}Gres=gpu:{{.ServiceMeta.gpus}}{{end}}
+{{ end -}}
+{{ else }}
+NodeName=node1 State=down
 {{ end -}}
 END
 

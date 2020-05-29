@@ -13,9 +13,8 @@ SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
 GresTypes=gpu
-{{ if service "slurmd" -}}
 include /etc/slurm/node.conf
-{{ end -}}
+
 
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
