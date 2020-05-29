@@ -111,6 +111,17 @@ END
     notify  => Service['consul-template'],
   }
 
+  exec { 'init_node.conf':
+    command     => 'consul-template -template="/etc/slurm/node.conf.tpl:/etc/slurm/node.conf" -once',
+    path        => [$consul_template::bin_dir],
+    refreshonly => true,
+    require     => [
+      Class['consul_template::install'],
+      Service['consul'],
+    ],
+    subscribe   => File['/etc/slurm/node.conf.tpl']
+  }
+
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
 if [[ $UID -lt 10000 ]]; then
@@ -196,6 +207,18 @@ END
     require => File['/etc/slurm'],
     notify  => Service['consul-template'],
   }
+
+  exec { 'init_slurm.conf':
+    command     => 'consul-template -template="/etc/slurm/slurm.conf.tpl:/etc/slurm/slurm.conf" -once',
+    path        => [$consul_template::bin_dir],
+    refreshonly => true,
+    require     => [
+      Class['consul_template::install'],
+      Service['consul'],
+    ],
+    subscribe   => File['/etc/slurm/slurm.conf.tpl']
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -274,10 +297,12 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     try_sleep => 15,
     timeout   => 15,
     notify    => Service['slurmctld'],
-    require   => [Service['slurmdbd'],
-                  Wait_for['slurmdbd_started'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']]
+    require   => [
+      Service['slurmdbd'],
+      Wait_for['slurmdbd_started'],
+      Exec['init_slurm.conf'],
+      Exec['init_node.conf']
+    ]
   }
 
   $account_name = 'def-sponsor00'
@@ -292,11 +317,13 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     tries     => 4,
     try_sleep => 15,
     timeout   => 5,
-    require   => [Service['slurmdbd'],
-                  Wait_for['slurmdbd_started'],
-                  Exec['sacctmgr_add_cluster'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']]
+    require   => [
+      Service['slurmdbd'],
+      Wait_for['slurmdbd_started'],
+      Exec['sacctmgr_add_cluster'],
+      Exec['init_slurm.conf'],
+      Exec['init_node.conf']
+    ]
   }
 
   # Add guest accounts to the accounting database
@@ -351,9 +378,11 @@ class profile::slurm::controller {
   service { 'slurmctld':
     ensure  => 'running',
     enable  => true,
-    require => [Package['slurm-slurmctld'],
-                Consul_template::Watch['slurm.conf'],
-                Consul_template::Watch['node.conf']]
+    require => [
+      Package['slurm-slurmctld'],
+      Exec['init_slurm.conf'],
+      Exec['init_node.conf']
+    ]
   }
 }
 
@@ -497,8 +526,8 @@ AutoDetect=nvml
     polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
     max_retries       => 30,
     require           => [
-      Consul_template::Watch['slurm.conf'],
-      Consul_template::Watch['node.conf'],
+      Exec['init_slurm.conf'],
+      Exec['init_node.conf']
     ],
     refreshonly       => true,
     subscribe         => Package['slurm-slurmd']
