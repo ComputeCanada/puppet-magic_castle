@@ -26,6 +26,17 @@ class profile::cvmfs::client(
     require => Package['cvmfs']
   }
 
+  exec { 'init_default.local':
+    command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
+    path        => [$consul_template::bin_dir],
+    refreshonly => true,
+    require     => [
+      Class['consul_template::install'],
+      Service['consul'],
+    ],
+    subscribe   => File['/etc/cvmfs/default.local.ctmpl']
+  }
+
   consul::service{ 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
@@ -65,8 +76,9 @@ class profile::cvmfs::client(
   }
 
   service { 'autofs':
-    ensure => running,
-    enable => true,
+    ensure    => running,
+    enable    => true,
+    subscribe => Exec['init_default.local'],
   }
 
   # Fix issue with BASH_ENV, SSH and lmod where
