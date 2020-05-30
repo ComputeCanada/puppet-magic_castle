@@ -325,7 +325,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
-  require profile::slurm::base
+  contain profile::slurm::base
   include profile::mail::server
 
   consul::service { 'slurmctld':
@@ -371,7 +371,7 @@ class profile::slurm::controller {
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
-  require profile::slurm::base
+  contain profile::slurm::base
 
   yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
     enabled             => true,
@@ -384,7 +384,8 @@ class profile::slurm::node {
   }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
-    ensure => 'installed'
+    ensure  => 'installed',
+    require => Package['slurm']
   }
 
   package { 'spank-cc-tmpfs_mounts':
@@ -550,7 +551,7 @@ AutoDetect=nvml
 # and slurmctld but still need to be able to communicate with the slurm
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
-  include profile::slurm::base
+  contain profile::slurm::base
 
   # SELinux policy required to allow confined users to submit job with Slurm 19
   # and Slurm 20. Slurm commands tries to write to a socket in /var/run/munge.
