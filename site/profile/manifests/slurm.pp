@@ -111,17 +111,6 @@ END
     notify  => Service['consul-template'],
   }
 
-  exec { 'init_node.conf':
-    command     => 'consul-template -template="/etc/slurm/node.conf.tpl:/etc/slurm/node.conf" -once',
-    path        => [$consul_template::bin_dir],
-    refreshonly => true,
-    require     => [
-      Class['consul_template::install'],
-      Service['consul'],
-    ],
-    subscribe   => File['/etc/slurm/node.conf.tpl']
-  }
-
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
 if [[ $UID -lt 10000 ]]; then
@@ -208,15 +197,16 @@ END
     notify  => Service['consul-template'],
   }
 
-  exec { 'init_slurm.conf':
-    command     => 'consul-template -template="/etc/slurm/slurm.conf.tpl:/etc/slurm/slurm.conf" -once',
-    path        => [$consul_template::bin_dir],
-    refreshonly => true,
-    require     => [
-      Class['consul_template::install'],
-      Service['consul'],
+  wait_for { 'slurmctldhost_set':
+    query             => 'cat /etc/slurm/slurm.conf',
+    regex             => '^SlurmctldHost=',
+    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
+    max_retries       => 30,
+    require           => [
+      Service['consul-template']
     ],
-    subscribe   => File['/etc/slurm/slurm.conf.tpl']
+    refreshonly       => true,
+    subscribe         => File['/etc/slurm/node.conf.tpl'],
   }
 
 }
@@ -300,8 +290,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     require   => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
-      Exec['init_slurm.conf'],
-      Exec['init_node.conf']
+      Wait_for['slurmctldhost_set'],
     ]
   }
 
@@ -320,9 +309,8 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     require   => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
+      Wait_for['slurmctldhost_set'],
       Exec['sacctmgr_add_cluster'],
-      Exec['init_slurm.conf'],
-      Exec['init_node.conf']
     ]
   }
 
@@ -380,8 +368,7 @@ class profile::slurm::controller {
     enable  => true,
     require => [
       Package['slurm-slurmctld'],
-      Exec['init_slurm.conf'],
-      Exec['init_node.conf']
+      Wait_for['slurmctldhost_set'],
     ]
   }
 }
@@ -526,8 +513,7 @@ AutoDetect=nvml
     polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
     max_retries       => 30,
     require           => [
-      Exec['init_slurm.conf'],
-      Exec['init_node.conf']
+      Service['consul-template']
     ],
     refreshonly       => true,
     subscribe         => Package['slurm-slurmd']
@@ -543,6 +529,7 @@ AutoDetect=nvml
     require   => [
       Package['slurm-slurmd'],
       Wait_for['nodeconfig_set'],
+      Wait_for['slurmctldhost_set'],
     ]
   }
 
