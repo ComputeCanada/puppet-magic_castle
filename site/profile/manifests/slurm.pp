@@ -282,7 +282,6 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     tries     => 4,
     try_sleep => 15,
     timeout   => 15,
-    notify    => Service['slurmctld'],
     require   => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
