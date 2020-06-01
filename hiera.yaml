@@ -8,10 +8,12 @@ defaults:
   # datadir: data
   # data_hash: yaml_data
 hierarchy:
-  - name: "Per-node data (yaml version)"
-    path: "nodes/%{::trusted.certname}.yaml"
+  - name: "User data"
+    path: "user_data.yaml"
+  - name: "Terraform data"
+    path: "terraform_data.yaml"
+  - name: "OS version"
+    path: "os/%{facts.os.name}/%{facts.os.release.major}.yaml"
   - name: "Other YAML hierarchy levels"
     paths:
-      - "terraform_data.yaml"
-      - "user_data.yaml"
       - "common.yaml"

@@ -4,6 +4,22 @@ class profile::base (
 ) {
   include stdlib
   include ::consul_template
+  include epel
+
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    file_line { 'enable_powertools':
+      ensure => present,
+      path   => '/etc/yum.repos.d/CentOS-PowerTools.repo',
+      line   => 'enabled=1',
+      match  => '^enabled=0$',
+    }
+  }
+
+  if dig($::facts, 'os', 'release', 'major') == '7' {
+    package { 'yum-plugin-priorities':
+      ensure => 'installed'
+    }
+  }
 
   file { '/etc/localtime':
     ensure => link,
@@ -11,7 +27,7 @@ class profile::base (
   }
 
   if $email {
-    ensure_packages(['mailx'], { ensure => 'present'})
+    include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
       ensure  => present,
       mode    => '0700',
@@ -39,10 +55,6 @@ class profile::base (
     command => "semanage login -a -S targeted -s 'unconfined_u' -r 's0-s0:c0.c1023' ${sudoer_username}",
     unless  => "grep -q '${sudoer_username}:unconfined_u:s0-s0:c0.c1023' /etc/selinux/targeted/seusers",
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-  }
-
-  package { 'yum-plugin-priorities':
-    ensure => 'installed'
   }
 
   class { '::swap_file':
@@ -88,21 +100,12 @@ class profile::base (
     uid         => '! root'
   }
 
-  yumrepo { 'epel':
-    baseurl        => 'http://dl.fedoraproject.org/pub/epel/$releasever/$basearch',
-    enabled        => true,
-    failovermethod => 'priority',
-    gpgcheck       => false,
-    gpgkey         => 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL',
-    descr          => 'Extra Packages for Enterprise Linux'
-  }
-
   package { 'haveged':
     ensure  => 'installed',
     require => Yumrepo['epel']
   }
 
-  package { 'pdsh':
+  package { 'clustershell':
     ensure  => 'installed',
     require => Yumrepo['epel']
   }

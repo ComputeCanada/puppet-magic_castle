@@ -3,6 +3,19 @@ class profile::freeipa::base (
   String $dns_ip,
   String $domain_name)
 {
+
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    exec { 'enable_idm:DL1':
+      command => 'yum module enable -y idm:DL1',
+      creates => '/etc/dnf/modules.d/idm.module',
+      path    => ['/usr/bin', '/usr/sbin']
+    }
+
+    package { 'network-scripts':
+      ensure => 'installed'
+    }
+  }
+
   package { 'systemd':
     ensure => 'latest'
   }
@@ -419,8 +432,9 @@ class profile::freeipa::server
     subscribe   => Exec['ipa-server-install'],
   }
 
+  $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
   exec { 'ipa_regen_server-cert':
-    command     => "kinit_wrapper ipa-getcert resubmit -d /etc/httpd/alias -n Server-Cert -D ipa.${int_domain_name}",
+    command     => "kinit_wrapper ${regen_cert_cmd} -D ipa.${int_domain_name}",
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],

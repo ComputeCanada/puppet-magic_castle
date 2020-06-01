@@ -56,7 +56,7 @@ Before=nfs-server.service
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStop=/usr/bin/sed -i '/\/export\//d' /etc/fstab
+ExecStop=/usr/bin/sed "-i ';/export/;d' /etc/fstab"
 
 [Install]
 WantedBy=multi-user.target
@@ -86,12 +86,14 @@ END
     nfs_v4_idmap_domain        => $nfs_domain
   }
 
-  file_line { 'rpc_nfs_args_v4.2':
-    ensure => present,
-    path   => '/etc/sysconfig/nfs',
-    line   => 'RPCNFSDARGS="-V 4.2"',
-    match  => '^RPCNFSDARGS\=',
-    notify => Service['nfs-server.service']
+  if dig($::facts, 'os', 'release', 'major') == '7' {
+    file_line { 'rpc_nfs_args_v4.2':
+      ensure => present,
+      path   => '/etc/sysconfig/nfs',
+      line   => 'RPCNFSDARGS="-V 4.2"',
+      match  => '^RPCNFSDARGS\=',
+      notify => Service[$::nfs::server_service_name]
+    }
   }
 
   package { 'lvm2':
@@ -143,8 +145,11 @@ END
     nfs::server::export{ '/mnt/home' :
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service['nfs-idmap.service'],
-      require => Mount['/mnt/home'],
+      notify  => Service[$::nfs::server_service_name],
+      require => [
+        Mount['/mnt/home'],
+        Class['::nfs'],
+      ]
     }
   }
 
@@ -188,8 +193,11 @@ END
     nfs::server::export{ '/project':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service['nfs-idmap.service'],
-      require => Mount['/project'],
+      notify  => Service[$::nfs::server_service_name],
+      require => [
+        Mount['/project'],
+        Class['::nfs'],
+      ]
     }
   }
 
@@ -233,8 +241,11 @@ END
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service['nfs-idmap.service'],
-      require => Mount['/scratch'],
+      notify  => Service[$::nfs::server_service_name],
+      require => [
+        Mount['/scratch'],
+        Class['::nfs'],
+      ]
     }
   }
 

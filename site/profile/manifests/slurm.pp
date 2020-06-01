@@ -93,12 +93,8 @@ class profile::slurm::base (
 
   $node_template = @(END)
 # Nodes definition
-{{ if service "slurmd" -}}
 {{ range service "slurmd" -}}
 NodeName={{.Node}} CPUs={{.ServiceMeta.cpus}} RealMemory={{.ServiceMeta.realmemory}} {{if gt (parseInt .ServiceMeta.gpus) 0}}Gres=gpu:{{.ServiceMeta.gpus}}{{end}}
-{{ end -}}
-{{ else }}
-NodeName=node1 State=down
 {{ end -}}
 END
 
@@ -196,6 +192,19 @@ END
     require => File['/etc/slurm'],
     notify  => Service['consul-template'],
   }
+
+  wait_for { 'slurmctldhost_set':
+    query             => 'cat /etc/slurm/slurm.conf',
+    regex             => '^SlurmctldHost=',
+    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
+    max_retries       => 30,
+    require           => [
+      Service['consul-template']
+    ],
+    refreshonly       => true,
+    subscribe         => File['/etc/slurm/node.conf.tpl'],
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -256,12 +265,13 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     before  => Service['slurmctld']
   }
 
-  tcp_conn_validator { 'slurmdbd_port':
-    host      => $::hostname,
-    port      => $dbd_port,
-    try_sleep => 5,
-    timeout   => 60,
-    require   => Service['slurmdbd']
+  wait_for { 'slurmdbd_started':
+    query             => 'cat /var/log/slurm/slurmdbd.log',
+    regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+ started$',
+    polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
+    max_retries       => 24,
+    refreshonly       => true,
+    subscribe         => Service['slurmdbd']
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
@@ -271,12 +281,12 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
     tries     => 4,
     try_sleep => 15,
-    timeout   => 5,
-    notify    => Service['slurmctld'],
-    require   => [Service['slurmdbd'],
-                  Tcp_conn_validator['slurmdbd_port'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']]
+    timeout   => 15,
+    require   => [
+      Service['slurmdbd'],
+      Wait_for['slurmdbd_started'],
+      Wait_for['slurmctldhost_set'],
+    ]
   }
 
   $account_name = 'def-sponsor00'
@@ -291,10 +301,12 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     tries     => 4,
     try_sleep => 15,
     timeout   => 5,
-    require   => [Service['slurmdbd'],
-                  Tcp_conn_validator['slurmdbd_port'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']]
+    require   => [
+      Service['slurmdbd'],
+      Wait_for['slurmdbd_started'],
+      Wait_for['slurmctldhost_set'],
+      Exec['sacctmgr_add_cluster'],
+    ]
   }
 
   # Add guest accounts to the accounting database
@@ -312,7 +324,8 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller {
-  include profile::slurm::base
+  contain profile::slurm::base
+  include profile::mail::server
 
   consul::service { 'slurmctld':
     port    => 6817,
@@ -324,8 +337,6 @@ class profile::slurm::controller {
     ensure  => 'installed',
     require => Package['munge']
   }
-
-  ensure_packages(['mailx'], { ensure => 'present'})
 
   consul_template::watch { 'slurm.conf':
     require     => File['/etc/slurm/slurm.conf.tpl'],
@@ -350,15 +361,16 @@ class profile::slurm::controller {
   service { 'slurmctld':
     ensure  => 'running',
     enable  => true,
-    require => [Package['slurm-slurmctld'],
-                Consul_template::Watch['slurm.conf'],
-                Consul_template::Watch['node.conf']]
+    require => [
+      Package['slurm-slurmctld'],
+      Wait_for['slurmctldhost_set'],
+    ]
   }
 }
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
-  include profile::slurm::base
+  contain profile::slurm::base
 
   yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
     enabled             => true,
@@ -371,7 +383,8 @@ class profile::slurm::node {
   }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
-    ensure => 'installed'
+    ensure  => 'installed',
+    require => Package['slurm']
   }
 
   package { 'spank-cc-tmpfs_mounts':
@@ -490,14 +503,30 @@ AutoDetect=nvml
     seltype => 'etc_t'
   }
 
+  wait_for { 'nodeconfig_set':
+    query             => 'cat /etc/slurm/node.conf',
+    regex             => "^NodeName=${::facts['hostname']}",
+    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
+    max_retries       => 30,
+    require           => [
+      Service['consul-template']
+    ],
+    refreshonly       => true,
+    subscribe         => Package['slurm-slurmd']
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
-    subscribe => [File['/etc/slurm/cgroup.conf'],
-                  File['/etc/slurm/plugstack.conf']],
-    require   => [Package['slurm-slurmd'],
-                  Consul_template::Watch['slurm.conf'],
-                  Consul_template::Watch['node.conf']],
+    subscribe => [
+      File['/etc/slurm/cgroup.conf'],
+      File['/etc/slurm/plugstack.conf']
+    ],
+    require   => [
+      Package['slurm-slurmd'],
+      Wait_for['nodeconfig_set'],
+      Wait_for['slurmctldhost_set'],
+    ]
   }
 
   exec { 'scontrol_update_state':
@@ -521,7 +550,17 @@ AutoDetect=nvml
 # and slurmctld but still need to be able to communicate with the slurm
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
-  include profile::slurm::base
+  contain profile::slurm::base
+
+  # SELinux policy required to allow confined users to submit job with Slurm 19
+  # and Slurm 20. Slurm commands tries to write to a socket in /var/run/munge.
+  # Confined users cannot stat this file, neither write to it. The policy
+  # allows user_t to getattr and write var_run_t sock file.
+  # To get the policy, we had to disable dontaudit rules with : sudo semanage -DB
+  selinux::module { 'munge_socket':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
+  }
 
   consul_template::watch { 'slurm.conf':
     require     => File['/etc/slurm/slurm.conf.tpl'],

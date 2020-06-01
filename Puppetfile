@@ -14,6 +14,7 @@ mod 'herculesteam-augeasproviders_ssh', '3.3.0'
 mod 'herculesteam-augeasproviders_sysctl', '2.5.0'
 mod 'petems-swap_file', '4.0.2'
 mod 'puppet-archive', '4.5.0'
+mod 'puppet-epel', '3.0.1'
 mod 'puppet-healthcheck', '1.0.1'
 mod 'puppet-nodejs', '8.0.0'
 mod 'puppet-prometheus', '8.4.0'
@@ -33,7 +34,7 @@ mod 'yelp-netstdlib', '0.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v3.3.0'
+    :ref => 'v3.3.1'
 
 mod 'KyleAnderson-consul',
     :git    => 'https://github.com/solarkennedy/puppet-consul.git',
