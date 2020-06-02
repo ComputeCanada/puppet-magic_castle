@@ -1,5 +1,6 @@
 class profile::jupyterhub::hub {
-  include jupyterhub
+  contain jupyterhub
+  Yumrepo['epel'] -> Class['jupyterhub']
 }
 
 class profile::jupyterhub::node {
