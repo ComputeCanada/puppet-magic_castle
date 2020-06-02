@@ -86,11 +86,29 @@ class profile::gpu::install(Array[String] $packages) {
     }
     $dkms_requirements = [Package['kernel-devel'], Package['kmod-nvidia-latest-dkms']]
   } else {
-    service { 'nvidia-gridd':
-      ensure => 'running',
-      enable => true,
+    $os = $::facts['os']['release']['major']
+    $repo_name = 'arbutus-cloud-vgpu-repo.noarch'
+    package { 'arbutus-cloud-vgpu-repo':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => $repo_name,
+      source   => "http://repo.arbutus.cloud.computecanada.ca/pulp/repos/centos/arbutus-cloud-vgpu-repo.el${os}.noarch.rpm",
     }
-    $dkms_requirements = [Package['kernel-devel']]
+
+    package { ['nvidia-vgpu-kmod', 'nvidia-vgpu-gridd', 'nvidia-vgpu-tools']:
+      ensure  => 'installed',
+      require => [
+        Yumrepo['epel'],
+        Package['arbutus-cloud-vgpu-repo'],
+      ]
+    }
+
+    service { 'nvidia-gridd':
+      ensure  => 'running',
+      enable  => true,
+      require => Package['nvidia-vgpu-gridd']
+    }
+    $dkms_requirements = [Package['kernel-devel'], Package['nvidia-vgpu-kmod']]
   }
 
   if $facts['nvidia_gpu_count'] > 0 {
