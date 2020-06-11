@@ -163,6 +163,11 @@ class profile::base (
     include profile::base::azure
   }
 
+  # Remove scripts leftover by terraform remote-exec provisioner
+  file { glob('/tmp/terraform_*.sh'):
+    ensure => absent
+  }
+
 }
 
 class profile::base::azure {
