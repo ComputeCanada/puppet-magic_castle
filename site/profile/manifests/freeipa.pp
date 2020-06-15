@@ -300,7 +300,7 @@ class profile::freeipa::server
       --hostname ${fqdn} \
       --ds-password ${admin_passwd} \
       --admin-password ${admin_passwd} \
-      --idstart=50000 \
+      --idstart=${facts['uid_max']} \
       --ssh-trust-dns \
       --unattended \
       --auto-forwarders \
