@@ -3,7 +3,7 @@
 This repo contains the Puppet classes that are used to define the roles of the
 instances in a Magic Castle cluster. The attribution of the roles is done in
 `manifests/site.pp`. The functioning of the profile classes can be customized
-by definind values in the hieradata. The following sections list the available
+by defined values in the hieradata. The following sections list the available
 variable for each profile
 
 ## profile::base
@@ -28,11 +28,10 @@ variable for each profile
 
 ## profile::fail2ban
 
-| Variable                                      | Type          | Description                                                                       | Default  |
-| --------------------------------------------- | :------------ | :-------------------------------------------------------------------------------- | -------- |
-| `profile::fail2ban::ignore_ip`                | Array[String] | List of IP addresses that can never be banned (compatible with CIDR notation)     | `[]`     |
-| `profile::fail2ban::enable_sshd_jail`         | Boolean       | Enable sshd jail: an IP with frequent authentication failures is banned           | `true`   |
-| `profile::fail2ban::enable_ssh_ban_root_jail` | Boolean       | Enable ssh_ban_root jail: an IP trying to connect as root is banned automatically | `true`   |
+| Variable                                      | Type                       | Description                                                                    | Default   |
+| --------------------------------------------- | :------------------------- | :----------------------------------------------------------------------------- | --------- |
+| `fail2ban::ignoreip`                          | Array[String]              | List of IP addresses that can never be banned (compatible with CIDR notation)  | `[]`      |
+| `fail2ban::service_ensure`                    | Enum['running', 'stopped'] | Enable fail2ban service                                                        | `running` |
 
 
 ## profile::freeipa

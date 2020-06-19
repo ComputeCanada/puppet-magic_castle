@@ -4,6 +4,30 @@ consul::version: 1.7.4
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
+
+fail2ban::package_name: fail2ban-server
+fail2ban::jails: ['ssh-route', 'ssh-ban-root']
+fail2ban::custom_jails:
+  'ssh-route':
+    enabled: true
+    filter: 'sshd'
+    findtime: 3600
+    bantime: 86400
+    maxretry: 20
+    action: 'route'
+    logpath: '%(sshd_log)s'
+  'ssh-ban-root':
+    enabled: true
+    findtime: 3600
+    bantime: 86400
+    maxretry: 0
+    action: 'route'
+    logpath: '%(sshd_log)s'
+    journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+    filter_maxlines: 10
+    filter_includes: 'before = common.conf'
+    filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
+
 jupyterhub::kernel::setup: venv
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
 jupyterhub::kernel::venv::pip_environment:
