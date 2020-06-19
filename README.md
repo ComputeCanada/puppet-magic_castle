@@ -4,7 +4,7 @@ This repo contains the Puppet classes that are used to define the roles of the
 instances in a Magic Castle cluster. The attribution of the roles is done in
 `manifests/site.pp`. The functioning of the profile classes can be customized
 by defined values in the hieradata. The following sections list the available
-variable for each profile
+variables for each profile.
 
 ## profile::base
 
