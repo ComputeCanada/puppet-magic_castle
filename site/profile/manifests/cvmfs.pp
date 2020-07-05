@@ -1,4 +1,7 @@
-class profile::cvmfs::client(Array[String] $lmod_default_modules){
+class profile::cvmfs::client(
+  Array[String] $lmod_default_modules,
+  Array[String] $extra_repos = []
+){
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -18,10 +21,19 @@ class profile::cvmfs::client(Array[String] $lmod_default_modules){
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
-  file { '/etc/cvmfs/default.local.ctmpl':
-    ensure  => 'present',
-    content => epp('profile/cvmfs/default.local'),
-    require => Package['cvmfs']
+  if($extra_repos==[]){
+    file { '/etc/cvmfs/default.local.ctmpl':
+      ensure  => 'present',
+      content => epp('profile/cvmfs/default.local'),
+      require => Package['cvmfs']
+    }
+  }
+
+  $extra_repos.each |String $repo| {
+    file { "/etc/cvmfs/config.d/${repo}.conf":
+      ensure  => 'present',
+      content => epp("profile/cvmfs/${repo}.conf")
+    }
   }
 
   exec { 'init_default.local':
