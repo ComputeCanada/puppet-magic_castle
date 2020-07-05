@@ -21,13 +21,11 @@ class profile::cvmfs::client(
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
-  if($extra_repos==[]){
     file { '/etc/cvmfs/default.local.ctmpl':
       ensure  => 'present',
       content => epp('profile/cvmfs/default.local'),
       require => Package['cvmfs']
     }
-  }
 
   $extra_repos.each |String $repo| {
     file { "/etc/cvmfs/config.d/${repo}.conf":
