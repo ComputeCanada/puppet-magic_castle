@@ -2,7 +2,9 @@ class profile::cvmfs::client(
   Array[String] $lmod_default_modules,
   Array[String] $extra_repos = []
 ){
-  $repos = '"cvmfs-config.computecanada.ca,soft.computecanada.ca'
+
+  $repos = '"cvmfs-config.computecanada.ca,soft.computecanada.ca,'
+  $extra = $extra_repos - ['ref.mugqic']
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -38,7 +40,7 @@ class profile::cvmfs::client(
   file_line { 'extra_cvmfs_repos':
       ensure => present,
       path   => '/etc/cvmfs/default.local.ctmpl',
-      line   => "CVMFS_REPOSITORIES=${repos}${*($extra_repos - ['ref.mugqic'])}\"",
+      line   => "CVMFS_REPOSITORIES=${repos}${*$extra}\"",
       match  => '^CVMFS_REPOSITORIES=',
   }
 
