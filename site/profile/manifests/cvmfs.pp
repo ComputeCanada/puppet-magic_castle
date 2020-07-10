@@ -5,7 +5,7 @@ class profile::cvmfs::client(
 
   $repos = '"cvmfs-config.computecanada.ca,soft.computecanada.ca,'
   $extra = $extra_repos - ['ref.mugqic']
-  $extra_repos_string = *$extra
+  $extra_repos_string = join($extra,",")
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
