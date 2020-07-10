@@ -33,7 +33,7 @@ class profile::cvmfs::client(
   if 'ref.mugqic' in $extra_repos {
     file { '/etc/cvmfs/config.d/ref.mugqic.conf':
       ensure  => 'present',
-      content => epp("profile/cvmfs/ref.mugqic.conf")
+      content => epp('profile/cvmfs/ref.mugqic.conf')
     }
   }
 
