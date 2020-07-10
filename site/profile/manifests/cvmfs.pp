@@ -4,7 +4,8 @@ class profile::cvmfs::client(
 ){
 
   $repos = '"cvmfs-config.computecanada.ca,soft.computecanada.ca,'
-  $extra = *($extra_repos - ['ref.mugqic'])
+  $extra = $extra_repos - ['ref.mugqic']
+  $extra_repos_string = *$extra
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -40,7 +41,7 @@ class profile::cvmfs::client(
   file_line { 'extra_cvmfs_repos':
       ensure => present,
       path   => '/etc/cvmfs/default.local.ctmpl',
-      line   => "CVMFS_REPOSITORIES=${repos}${extra}\"",
+      line   => "CVMFS_REPOSITORIES=${repos}${extra_repos_string}\"",
       match  => '^CVMFS_REPOSITORIES=',
   }
 
