@@ -21,9 +21,10 @@ variables for each profile.
 
 ## profile::cvmfs
 
-| Variable                                         | Type          | Description                       | Default                         |
-| ------------------------------------------------ | :------------ | :-------------------------------- | ------------------------------- |
-| `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules      | `['nixpkgs/16.09', 'imkl/2018.3.222', 'gcc/7.3.0', 'openmpi/3.1.2']` |
+| Variable                                         | Type          | Description                                         | Default                         |
+| ------------------------------------------------ | :------------ | :-------------------------------------------------- | ------------------------------- |
+| `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules                        | `['nixpkgs/16.09', 'imkl/2018.3.222', 'gcc/7.3.0', 'openmpi/3.1.2']` |
+| `profile::cvmfs::client::extra_repos`            | Array[String] | List of extra CVMFS Repos to add to the system      | `[]` |
 
 
 ## profile::fail2ban

@@ -1,4 +1,0 @@
-CVMFS_REPOSITORIES=soft.mugqic
-CVMFS_ALIEN_CACHE="/scratch/cvmfs_alien_cache/soft.mugqic"
-CVMFS_QUOTA_LIMIT='-1'
-CVMFS_SHARED_CACHE='no'
