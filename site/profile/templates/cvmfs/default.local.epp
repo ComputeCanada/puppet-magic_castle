@@ -1,4 +1,4 @@
-CVMFS_REPOSITORIES="cvmfs-config.computecanada.ca,soft.computecanada.ca"
+CVMFS_REPOSITORIES="cvmfs-config.computecanada.ca,soft.computecanada.ca,<%= $extra_repos.join(',') %>"
 CVMFS_STRICT_MOUNT="yes"
 CVMFS_QUOTA_LIMIT=4450
 {{ if service "squid" -}}

@@ -3,9 +3,8 @@ class profile::cvmfs::client(
   Array[String] $extra_repos = []
 ){
 
-  $repos = '"cvmfs-config.computecanada.ca,soft.computecanada.ca,'
-  $extra = $extra_repos - ['ref.mugqic']
-  $extra_repos_string = join($extra,',')
+  $extra = $extra_repos
+
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -25,25 +24,20 @@ class profile::cvmfs::client(
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
-  file { '/etc/cvmfs/default.local.ctmpl':
-    ensure  => 'present',
-    content => epp('profile/cvmfs/default.local'),
-    require => Package['cvmfs']
-  }
-
   if 'ref.mugqic' in $extra_repos {
+    $extra = $extra_repos - ['ref.mugqic']
     file { '/etc/cvmfs/config.d/ref.mugqic.conf':
       ensure  => 'present',
       content => epp('profile/cvmfs/ref.mugqic.conf')
     }
   }
 
-  file_line { 'extra_cvmfs_repos':
-      ensure => present,
-      path   => '/etc/cvmfs/default.local.ctmpl',
-      line   => "CVMFS_REPOSITORIES=${repos}${extra_repos_string}\"",
-      match  => '^CVMFS_REPOSITORIES=',
+  file { '/etc/cvmfs/default.local.ctmpl':
+    ensure  => 'present',
+    content => epp('profile/cvmfs/default.local',{'extra_repos' => $extra}),
+    require => Package['cvmfs']
   }
+
 
   exec { 'init_default.local':
     command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
