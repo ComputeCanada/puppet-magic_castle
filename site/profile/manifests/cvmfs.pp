@@ -3,7 +3,7 @@ class profile::cvmfs::client(
   Array[String] $extra_repos = []
 ){
 
-  $extra = $extra_repos
+  $extra = $extra_repos - ['ref.mugqic']
 
   package { 'cvmfs-repo':
     ensure   => 'installed',
@@ -25,7 +25,6 @@ class profile::cvmfs::client(
   }
 
   if 'ref.mugqic' in $extra_repos {
-    $extra = $extra_repos - ['ref.mugqic']
     file { '/etc/cvmfs/config.d/ref.mugqic.conf':
       ensure  => 'present',
       content => epp('profile/cvmfs/ref.mugqic.conf')
