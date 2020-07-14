@@ -33,3 +33,65 @@ jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/softwar
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
+
+squid::acls:
+  SSL_ports:
+    type: port
+    entries:
+      - '443'
+  Safe_ports:
+    type: port
+    entries:
+      - '80'
+      - '443'
+      - '1025-65535'
+  CONNECT:
+    type: method
+    entries:
+      - CONNECT
+  CC_CVMFS:
+    type: dstdom_regex
+    entries:
+      - '^(cvmfs-.*\.computecanada\.ca)$'
+      - '^(.*-cvmfs\.openhtc\.io)$'
+      - '^(cvmfs-.*\.genap\.ca)$'
+squid::http_access:
+  'manager localhost':
+    action: allow
+  'manager':
+    action: deny
+  '!Safe_ports':
+    action: deny
+  'CONNECT !SSL_ports':
+    action: deny
+  'CLUSTER_NETWORK CC_CVMFS':
+    action: allow
+  localhost:
+    action: allow
+  all:
+    action: deny
+squid::http_ports:
+  "%{hiera('profile::squid::port')}": {}
+squid::coredump_dir: /var/spool/squid
+squid::maximum_object_size_in_memory: "512 KB"
+squid::forwarded_for: on
+squid::via: on
+squid::access_log: "/var/log/squid/access.log"
+squid::cache_mem: "256 MB"
+squid::refresh_patterns:
+  '/cvmfs/soft.computecanada.ca/.cvmfs*':
+    min:     0
+    percent: 100
+    max:     30
+  '/cvmfs/soft.computecanada.ca/data/*':
+    min:     525600
+    percent: 100
+    max:     525600
+  '.':
+    min:     0
+    percent: 20
+    max:     4320
+squid::cache_dirs:
+  '/var/spool/squid':
+    type: 'ufs'
+    options: "%{hiera('profile::squid::cache_size')} 16 256"

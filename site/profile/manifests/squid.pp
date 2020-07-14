@@ -1,22 +1,16 @@
-class profile::squid::server (Integer $port = 3128) {
-  package { 'squid':
-    ensure => 'installed'
-  }
+class profile::squid::server(
+  Integer $port = 3128,
+  Integer $cache_size = 4096,
+) {
+  class { 'squid': }
 
-  $cidr = profile::getcidr()
-  file { '/etc/squid/squid.conf':
-    ensure  => 'present',
-    content => epp('profile/squid/squid.conf', {'cidr' => $cidr, 'port' => $port})
-  }
-
-  service { 'squid':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => File['/etc/squid/squid.conf'],
+  squid::acl { 'CLUSTER_NETWORK':
+    type    => 'src',
+    entries => [profile::getcidr()]
   }
 
   consul::service { 'squid':
-    port    => $port,
+    port    => Integer(keys(lookup('squid::http_ports'))[0]),
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
   }

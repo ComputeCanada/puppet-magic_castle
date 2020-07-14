@@ -81,6 +81,7 @@ variables for each profile.
 | Variable                              | Type     | Description                                                             | Default  |
 | ------------------------------------- | :------- | :---------------------------------------------------------------------- | -------- |
 | `profile::squid::port`                | Integer  | Squid service listening port                                            | 3128     |
+| `profile::squid::cache_size`          | Integer  | Amount of disk space (MB) that can be used by Squid service             | 4096     |
 
 ## profile::workshop
 
