@@ -69,7 +69,7 @@ class profile::cvmfs::client(Array[String] $lmod_default_modules){
       perms       => '0644',
       source      => '/etc/cvmfs/default.local.ctmpl',
       destination => '/etc/cvmfs/default.local',
-      command     => 'systemctl reload autofs',
+      command     => '/usr/bin/cvmfs_config reload',
     }
   }
 
