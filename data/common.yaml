@@ -79,14 +79,6 @@ squid::via: on
 squid::access_log: "/var/log/squid/access.log"
 squid::cache_mem: "256 MB"
 squid::refresh_patterns:
-  '/cvmfs/soft.computecanada.ca/.cvmfs*':
-    min:     0
-    percent: 100
-    max:     30
-  '/cvmfs/soft.computecanada.ca/data/*':
-    min:     525600
-    percent: 100
-    max:     525600
   '.':
     min:     0
     percent: 20
