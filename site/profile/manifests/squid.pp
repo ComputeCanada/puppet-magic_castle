@@ -21,6 +21,10 @@ class profile::squid::server(
     type    => 'src',
     entries => [profile::getcidr()]
   }
+  # How can we have multiple regex entries under the same ACL name?
+  # From Squid documentation:
+  # You can put different values for the same ACL name on different lines.
+  # Squid combines them into one list.
   squid::acl { 'CVMFS':
     type    => 'dstdom_regex',
     entries => $cvmfs_acl_regex,
