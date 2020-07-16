@@ -14,7 +14,7 @@ class profile::cvmfs::client(
     ensure   => 'installed',
     provider => 'rpm',
     name     => 'computecanada-release-1.0-1.noarch',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/Packages/computecanada-release-latest.noarch.rpm'
+    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
   }
 
   package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
