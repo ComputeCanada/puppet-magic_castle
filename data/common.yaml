@@ -49,7 +49,7 @@ squid::acls:
     type: method
     entries:
       - CONNECT
-  CC_CVMFS:
+  CVMFS:
     type: dstdom_regex
     entries:
       - '^(cvmfs-.*\.computecanada\.ca)$'
@@ -64,7 +64,7 @@ squid::http_access:
     action: deny
   'CONNECT !SSL_ports':
     action: deny
-  'CLUSTER_NETWORK CC_CVMFS':
+  'CLUSTER_NETWORK CVMFS':
     action: allow
   localhost:
     action: allow
@@ -73,9 +73,6 @@ squid::http_access:
 squid::http_ports:
   "%{hiera('profile::squid::port')}": {}
 squid::coredump_dir: /var/spool/squid
-squid::maximum_object_size_in_memory: "512 KB"
-squid::forwarded_for: on
-squid::via: on
 squid::access_log: "/var/log/squid/access.log"
 squid::cache_mem: "256 MB"
 squid::refresh_patterns:
