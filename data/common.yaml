@@ -84,6 +84,13 @@ squid::cache_dirs:
   '/var/spool/squid':
     type: 'ufs'
     options: "%{hiera('profile::squid::cache_size')} 16 256"
+squid::extra_config_sections:
+  'log':
+    config_entries:
+      cache_store_log: /var/log/squid/store.log
+      cache_log: /var/log/squid/cache.log
+  'general':
+    maximum_object_size: "131072 KB"
 
 profile::cvmfs::client::repositories:
   - cvmfs-config.computecanada.ca
