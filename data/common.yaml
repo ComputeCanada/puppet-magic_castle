@@ -33,3 +33,21 @@ jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/softwar
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
+
+squid::cache_mem: "256 MB"
+squid::extra_config_sections:
+  general:
+    config_entries:
+      maximum_object_size: "131072 KB"
+
+profile::squid::server::port: 3128
+profile::squid::server::cache_size: 4096
+profile::squid::server::cvmfs_acl_regex:
+  - '^(cvmfs-.*\.computecanada\.ca)$'
+  - '^(.*-cvmfs\.openhtc\.io)$'
+  - '^(cvmfs-.*\.genap\.ca)$'
+
+profile::cvmfs::client::repositories:
+  - cvmfs-config.computecanada.ca
+  - soft.computecanada.ca
+profile::cvmfs::client::quota_limit: 4096

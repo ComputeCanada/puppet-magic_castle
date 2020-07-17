@@ -1,4 +1,8 @@
-class profile::cvmfs::client(Array[String] $lmod_default_modules){
+class profile::cvmfs::client(
+  Integer $quota_limit,
+  Array[String] $repositories,
+  Array[String] $lmod_default_modules,
+){
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -10,7 +14,7 @@ class profile::cvmfs::client(Array[String] $lmod_default_modules){
     ensure   => 'installed',
     provider => 'rpm',
     name     => 'computecanada-release-1.0-1.noarch',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/Packages/computecanada-release-latest.noarch.rpm'
+    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
   }
 
   package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
@@ -20,7 +24,10 @@ class profile::cvmfs::client(Array[String] $lmod_default_modules){
 
   file { '/etc/cvmfs/default.local.ctmpl':
     ensure  => 'present',
-    content => epp('profile/cvmfs/default.local'),
+    content => epp('profile/cvmfs/default.local', {
+      'quota_limit'  => $quota_limit,
+      'repositories' => $repositories,
+    }),
     require => Package['cvmfs']
   }
 
@@ -50,7 +57,9 @@ class profile::cvmfs::client(Array[String] $lmod_default_modules){
 
   file { '/etc/profile.d/z-01-computecanada.sh':
     ensure  => 'present',
-    content => epp('profile/cvmfs/z-01-computecanada.sh', {'lmod_default_modules' => $lmod_default_modules}),
+    content => epp('profile/cvmfs/z-01-computecanada.sh', {
+      'lmod_default_modules' => $lmod_default_modules,
+    }),
   }
 
   consul_template::watch { 'z-00-rsnt_arch.sh':

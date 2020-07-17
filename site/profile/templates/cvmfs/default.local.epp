@@ -1,8 +1,8 @@
-CVMFS_REPOSITORIES="cvmfs-config.computecanada.ca,soft.computecanada.ca"
+CVMFS_REPOSITORIES="<%= $repositories.join(',') %>"
 CVMFS_STRICT_MOUNT="yes"
-CVMFS_QUOTA_LIMIT=4450
+CVMFS_QUOTA_LIMIT=<%= $quota_limit %>
 {{ if service "squid" -}}
-CVMFS_HTTP_PROXY='{{ range $i, $s := service "squid" }}{{if $i}}|{{end}}http://{{.Address}}:{{.Port}}{{end}}'
+CVMFS_HTTP_PROXY='{{ range $i, $s := service "squid" }}{{if $i}}|{{end}}http://{{.Address}}:{{.Port}}{{end}};DIRECT'
 {{ else -}}
 CVMFS_HTTP_PROXY=DIRECT
 {{ end -}}
