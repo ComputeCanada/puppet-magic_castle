@@ -3,6 +3,9 @@ class profile::cvmfs::client(
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
 ){
+
+  $repositories_no_alien_cache = $repositories - ['ref.mugqic']
+
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -22,19 +25,26 @@ class profile::cvmfs::client(
     require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
   }
 
+  if 'ref.mugqic' in $repositories {
+    file { '/etc/cvmfs/config.d/ref.mugqic.conf':
+      ensure  => 'present',
+      content => epp('profile/cvmfs/ref.mugqic.conf')
+    }
+  }
+
   file { '/etc/cvmfs/default.local.ctmpl':
     ensure  => 'present',
     content => epp('profile/cvmfs/default.local', {
       'quota_limit'  => $quota_limit,
-      'repositories' => $repositories,
+      'repositories' => $repositories_no_alien_cache ,
     }),
     require => Package['cvmfs']
   }
 
+
   exec { 'init_default.local':
     command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
     path        => [$consul_template::bin_dir],
-    refreshonly => true,
     require     => [
       Class['consul_template::install'],
       Service['consul'],
