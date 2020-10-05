@@ -44,6 +44,7 @@ profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
+  - '^(cvmfs-.*\.computecanada\.net)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
 
