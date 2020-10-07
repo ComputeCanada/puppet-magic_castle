@@ -286,7 +286,10 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
       Wait_for['slurmctldhost_set'],
-    ]
+    ],
+    before    => [
+      Service['slurmctld']
+    ],
   }
 
   $account_name = 'def-sponsor00'
