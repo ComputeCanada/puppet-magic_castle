@@ -65,8 +65,17 @@ def main(users, sponsor):
     guest_passwd = os.environ["IPA_GUEST_PASSWD"]
     init_api()
     kinit("admin", admin_passwd)
-    for user in users:
-        user_add(user, first=user, last=user, password=guest_passwd, shell="/bin/bash")
+    added_users = set()
+    for username in users:
+        user = user_add(
+            username,
+            first=username,
+            last=username,
+            password=guest_passwd,
+            shell="/bin/bash",
+        )
+        if user is not None:
+            added_users.add(username)
     if sponsor:
         group = u"def-" + sponsor
         group_add(group)
@@ -74,8 +83,8 @@ def main(users, sponsor):
     kdestroy()
 
     # configure user password
-    for user in users:
-        kinit(user, "\n".join([guest_passwd] * 3))
+    for username in added_users:
+        kinit(username, "\n".join([guest_passwd] * 3))
         kdestroy()
 
 
