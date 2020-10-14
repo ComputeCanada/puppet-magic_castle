@@ -13,4 +13,9 @@ class profile::fail2ban {
   }
 
   Class['epel'] -> Class['fail2ban::install']
+
+  selinux::module { 'fail2ban_route':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/fail2ban/fail2ban_route.pp',
+  }
 }

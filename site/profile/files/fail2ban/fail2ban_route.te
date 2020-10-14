@@ -1,0 +1,19 @@
+module fail2ban_route 1.0;
+
+require {
+        type sysfs_t;
+        type fail2ban_t;
+        type ifconfig_exec_t;
+        class capability net_admin;
+        class netlink_route_socket nlmsg_write;
+        class file { execute execute_no_trans getattr open read };
+}
+
+#============= fail2ban_t ==============
+
+allow fail2ban_t ifconfig_exec_t:file { execute execute_no_trans getattr open read };
+allow fail2ban_t self:capability net_admin;
+
+allow fail2ban_t self:netlink_route_socket nlmsg_write;
+
+allow fail2ban_t sysfs_t:file { open read };
