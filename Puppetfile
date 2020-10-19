@@ -36,7 +36,7 @@ mod 'yelp-netstdlib', '0.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v3.4.1'
+    :ref => 'v3.4.2'
 
 mod 'KyleAnderson-consul',
     :git    => 'https://github.com/solarkennedy/puppet-consul.git',
