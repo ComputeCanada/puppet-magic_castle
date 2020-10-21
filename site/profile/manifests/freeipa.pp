@@ -88,6 +88,8 @@ class profile::freeipa::client(String $server_ip)
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
   $fqdn = "${::hostname}.${int_domain_name}"
   $realm = upcase($int_domain_name)
+  $interface = split($::interfaces, ',')[0]
+  $ipaddress = $::networking['interfaces'][$interface]['ip']
 
   package { 'ipa-client':
     ensure => 'installed'
@@ -134,8 +136,9 @@ class profile::freeipa::client(String $server_ip)
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
       /sbin/ipa-client-install \
       --domain ${int_domain_name} \
+      --hostname ${fqdn} \
+      --ip-address ${ipaddress} \
       --ssh-trust-dns \
-      --enable-dns-updates \
       --unattended \
       --force-join \
       -p admin \
@@ -155,8 +158,6 @@ class profile::freeipa::client(String $server_ip)
 
   $reverse_zone = profile::getreversezone()
   $ptr_record = profile::getptrrecord()
-  $interface = split($::interfaces, ',')[0]
-  $ipaddress = $::networking['interfaces'][$interface]['ip']
 
   exec { 'ipa_dnsrecord-del_ptr':
     command     => "kinit_wrapper ipa dnsrecord-del ${reverse_zone} ${ptr_record} --del-all",
