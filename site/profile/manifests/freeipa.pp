@@ -603,6 +603,13 @@ class profile::freeipa::mokey
     ),
   }
 
+  file_line { 'ipa_default_server':
+    ensure => present,
+    path   => '/etc/ipa/default.conf',
+    after  => "domain = ${int_domain_name}",
+    line   => "server = ipa.${int_domain_name}",
+  }
+
   service { 'mokey':
     ensure  => running,
     enable  => true,
@@ -610,6 +617,7 @@ class profile::freeipa::mokey
       Package['mokey'],
       File['/etc/mokey/mokey.yaml'],
       Exec['ipa_getkeytab_mokeyapp'],
+      File_line['ipa_default_server'],
     ]
   }
 }
