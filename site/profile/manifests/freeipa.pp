@@ -592,9 +592,9 @@ class profile::freeipa::mokey
         "set dsn 'mokey:${password}@/mokey?parseTime=true'",
         'set keytab /etc/mokey/keytab/mokeyapp.keytab',
         'set ktuser mokeyapp',
-        'set auth_key ',
-        'set enc_key ',
-        'set bind 0.0.0.0'
+        'set bind 0.0.0.0',
+        #'set auth_key ',
+        #'set enc_key ',
     ]
   }
 
