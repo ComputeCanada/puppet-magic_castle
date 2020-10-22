@@ -490,4 +490,15 @@ class profile::freeipa::mokey
     host     => 'localhost',
     grant    => ['ALL'],
   }
+
+  exec { 'mysql_mokey_schema':
+    command     => 'mysql -u root -p mokey < /usr/share/mokey/ddl/schema.sql',
+    refreshonly => true,
+    require     => [
+      Package['mokey'],
+    ],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Mysql::Db['mokey'],
+  }
+
 }
