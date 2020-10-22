@@ -484,6 +484,8 @@ class profile::freeipa::mokey
 
   $password = lookup('profile::freeipa::base::admin_passwd')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
 
   mysql::db { 'mokey':
     ensure   => present,
@@ -559,7 +561,7 @@ class profile::freeipa::mokey
   }
 
   exec { 'ipa_getkeytab_mokeyapp':
-    command     => 'kinit_wrapper ipa-getkeytab -s ipa -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab',
+    command     => "kinit_wrapper ipa-getkeytab -s ipa.${int_domain_name} -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab",
     #refreshonly => true,
     require     => [
       File['kinit_wrapper'],
