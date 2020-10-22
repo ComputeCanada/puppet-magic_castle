@@ -444,6 +444,7 @@ class profile::freeipa::server
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-server-install'],
+    notify      => Service['httpd'],
   }
 
   service { 'ipa':
