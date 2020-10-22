@@ -6,4 +6,4 @@ if [ -z "${IPA_ADMIN_PASSWD}" ]; then
 else
     echo $IPA_ADMIN_PASSWD | kinit admin &> /dev/null
 fi
-$*
+$1 "${@:2}"

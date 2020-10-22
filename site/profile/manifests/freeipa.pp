@@ -504,8 +504,8 @@ class profile::freeipa::mokey
   }
 
   exec { 'ipa_mokey_role_add':
-    command     => 'kinit_wrapper ipa role-add Mokey_User_Manager --desc="Mokey User management"',
-#    refreshonly => true,
+    command     => 'kinit_wrapper ipa role-add "Mokey User Manager" --desc="Mokey User management"',
+    refreshonly => true,
     require     => [
       File['kinit_wrapper'],
     ],
