@@ -538,9 +538,32 @@ class profile::freeipa::mokey
 
   exec { 'ipa_mokey_role_add_member':
     command     => 'kinit_wrapper ipa role-add-member "Mokey User Manager" --users=mokeyapp',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => [
+      Exec['ipa_mokey_role_add'],
+      Exec['ipa_mokey_user_add'],
+    ]
+  }
+
+  file { '/etc/mokey/keytab':
+    ensure  => 'directory',
+    seltype => 'etc_t',
+    group   => 'mokey',
+    mode    => '0640',
+    require => Package['mokey'],
+  }
+
+  exec { 'ipa_getkeytab_mokeyapp':
+    command     => 'kinit_wrapper ipa-getkeytab -s ipa -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab',
     #refreshonly => true,
     require     => [
       File['kinit_wrapper'],
+      File['/etc/mokey/keytab']
     ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
