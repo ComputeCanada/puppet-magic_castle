@@ -492,13 +492,13 @@ class profile::freeipa::mokey
   }
 
   exec { 'mysql_mokey_schema':
-    command   => Sensitive("mysql -u mokey -p${password} < /usr/share/mokey/ddl/schema.sql"),
-#    refreshonly => true,
-    require   => [
+    command     => Sensitive("mysql -u mokey -p${password} mokey < /usr/share/mokey/ddl/schema.sql"),
+    refreshonly => true,
+    require     => [
       Package['mokey'],
     ],
-    path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe => Mysql::Db['mokey'],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Mysql::Db['mokey'],
   }
 
 }
