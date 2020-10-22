@@ -482,4 +482,12 @@ class profile::freeipa::mokey
     source   => 'https://github.com/ubccr/mokey/releases/download/v0.5.4/mokey-0.5.4-1.el7.x86_64.rpm'
   }
 
+  $password = lookup('profile::freeipa::base::admin_passwd')
+  mysql::db { 'mokey':
+    ensure   => present,
+    user     => 'mokey',
+    password => $password,
+    host     => 'localhost',
+    grant    => ['ALL'],
+  }
 }
