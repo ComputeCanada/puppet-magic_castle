@@ -471,3 +471,15 @@ class profile::freeipa::server
   }
 
 }
+
+class profile::freeipa::mokey
+{
+
+  package { 'mokey':
+    ensure   => 'installed',
+    name     => 'mokey-0.5.4-1.el7.x86_64',
+    provider => 'rpm',
+    source   => 'https://github.com/ubccr/mokey/releases/download/v0.5.4/mokey-0.5.4-1.el7.x86_64.rpm'
+  }
+
+}
