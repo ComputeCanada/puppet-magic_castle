@@ -575,4 +575,14 @@ class profile::freeipa::mokey
     ]
   }
 
+  file { '/etc/mokey/keytab/mokeyapp.keytab':
+    group   => 'mokey',
+    mode    => '0640',
+    require => [
+      Package['mokey'],
+      Exec['ipa_mokey_user_add'],
+      Exec['ipa_getkeytab_mokeyapp'],
+    ]
+  }
+
 }
