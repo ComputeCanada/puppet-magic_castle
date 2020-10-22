@@ -603,4 +603,13 @@ class profile::freeipa::mokey
     ),
   }
 
+  service { 'mokey':
+    ensure  => running,
+    enable  => true,
+    require => [
+      Package['mokey'],
+      File['/etc/mokey/mokey.yaml'],
+      Exec['ipa_getkeytab_mokeyapp'],
+    ]
+  }
 }
