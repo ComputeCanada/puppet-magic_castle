@@ -561,8 +561,8 @@ class profile::freeipa::mokey
   }
 
   exec { 'ipa_getkeytab_mokeyapp':
-    command     => "kinit_wrapper ipa-getkeytab -s ipa.${int_domain_name} -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab",
-    #refreshonly => true,
+    command     => "kinit_wrapper ipa-getkeytab -s ${::hostname}.${int_domain_name} -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab",
+    refreshonly => true,
     require     => [
       File['kinit_wrapper'],
       File['/etc/mokey/keytab']
