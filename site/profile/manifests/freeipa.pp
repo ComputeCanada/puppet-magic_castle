@@ -585,4 +585,17 @@ class profile::freeipa::mokey
     ]
   }
 
+  augeas { 'mokey.yaml':
+    incl    => '/etc/mokey/mokey.yml',
+    lens    => 'Colonvars.lns',
+    changes => [
+        "set dsn 'mokey:${password}@/mokey?parseTime=true'",
+        'set keytab /etc/mokey/keytab/mokeyapp.keytab',
+        'set ktuser mokeyapp',
+        'set auth_key ',
+        'set enc_key ',
+        'set bind 0.0.0.0'
+    ]
+  }
+
 }
