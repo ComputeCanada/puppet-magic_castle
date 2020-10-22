@@ -527,13 +527,27 @@ class profile::freeipa::mokey
 
   exec { 'ipa_mokey_user_add':
     command     => 'kinit_wrapper ipa user-add mokeyapp --first Mokey --last App',
-    #refreshonly => true,
+    refreshonly => true,
     require     => [
       File['kinit_wrapper'],
     ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa_mokey_role_add'],
+  }
+
+  exec { 'ipa_mokey_role_add_member':
+    command     => 'kinit_wrapper ipa role-add-member "Mokey User Manager" --users=mokeyapp',
+    #refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => [
+      Exec['ipa_mokey_role_add'],
+      Exec['ipa_mokey_user_add'],
+    ]
   }
 
 }
