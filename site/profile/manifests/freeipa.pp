@@ -585,17 +585,22 @@ class profile::freeipa::mokey
     ]
   }
 
-  augeas { 'mokey.yaml':
-    incl    => '/etc/mokey/mokey.yml',
-    lens    => 'Colonvars.lns',
-    changes => [
-        "set dsn 'mokey:${password}@/mokey?parseTime=true'",
-        'set keytab /etc/mokey/keytab/mokeyapp.keytab',
-        'set ktuser mokeyapp',
-        'set bind 0.0.0.0',
-        #'set auth_key ',
-        #'set enc_key ',
-    ]
+  file { '/etc/mokey/mokey.yaml':
+    group   => 'mokey',
+    mode    => '0640',
+    require => [
+      Package['mokey'],
+    ],
+    content => epp(
+      'profile/freeipa/mokey.yaml',
+      {
+        'user'     => 'mokey',
+        'password' => $password,
+        'dbname'   => 'mokey',
+        'auth_key' => $password,
+        'enc_key'  => $password,
+      }
+    ),
   }
 
 }
