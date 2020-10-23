@@ -58,3 +58,4 @@ profile::mfa::node::provider: 'none'
 profile::mfa::login::provider: 'none'
 
 profile::freeipa::mokey::version: 0.5.4
+profile::freeipa::mokey::port: 12345

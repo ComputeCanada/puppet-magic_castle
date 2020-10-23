@@ -474,7 +474,10 @@ class profile::freeipa::server
 
 }
 
-class profile::freeipa::mokey(String $version)
+class profile::freeipa::mokey(
+  String $version,
+  Integer $port,
+)
 {
 
   # TODO: Replace el7 by CentOS major release number
@@ -603,6 +606,7 @@ class profile::freeipa::mokey(String $version)
         'dbname'   => 'mokey',
         'auth_key' => $password,
         'enc_key'  => $password,
+        'port'     => $port,
       }
     ),
   }

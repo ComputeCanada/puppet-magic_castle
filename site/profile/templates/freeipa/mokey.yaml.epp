@@ -12,7 +12,7 @@ driver: "mysql"
 #------------------------------------------------------------------------------
 # Secure webserver port to listen on
 #------------------------------------------------------------------------------
-port: 12345
+port: <%= $port %>
 
 #------------------------------------------------------------------------------
 # Insecure redirect host and port. If set will redirect http to https
@@ -61,11 +61,6 @@ templates: /usr/share/mokey/templates
 # Custom URL context path
 #------------------------------------------------------------------------------
 # path_prefix: "/mokey"
-
-#------------------------------------------------------------------------------
-# FreeIPA server hostname (defaults to /etc/ipa/default.conf)
-#------------------------------------------------------------------------------
-# ipahost: "ipa.example.edu"
 
 #------------------------------------------------------------------------------
 # Keytab file and username for mokey to user for operations requiring elevated
