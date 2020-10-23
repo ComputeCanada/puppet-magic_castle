@@ -477,6 +477,7 @@ class profile::freeipa::server
 class profile::freeipa::mokey(
   String $version,
   Integer $port,
+  Boolean $enable_user_signup,
 )
 {
 
@@ -567,6 +568,7 @@ class profile::freeipa::mokey(
     require => Package['mokey'],
   }
 
+  # TODO: Fix server hostname to ipa.${int_domain_name}
   exec { 'ipa_getkeytab_mokeyapp':
     command     => "kinit_wrapper ipa-getkeytab -s ${::hostname}.${int_domain_name} -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab",
     refreshonly => true,
@@ -601,12 +603,13 @@ class profile::freeipa::mokey(
     content => epp(
       'profile/freeipa/mokey.yaml',
       {
-        'user'     => 'mokey',
-        'password' => $mokey_password,
-        'dbname'   => 'mokey',
-        'port'     => $port,
-        'auth_key' => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'  => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'user'               => 'mokey',
+        'password'           => $mokey_password,
+        'dbname'             => 'mokey',
+        'port'               => $port,
+        'auth_key'           => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'            => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'enable_user_signup' => $enable_user_signup,
       }
     ),
   }

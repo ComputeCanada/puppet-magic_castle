@@ -59,3 +59,4 @@ profile::mfa::login::provider: 'none'
 
 profile::freeipa::mokey::version: 0.5.4
 profile::freeipa::mokey::port: 12345
+profile::freeipa::mokey::enable_user_signup: true

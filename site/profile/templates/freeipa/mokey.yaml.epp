@@ -168,7 +168,7 @@ pgp_sign: false
 #------------------------------------------------------------------------------
 # New User Account Signup
 #------------------------------------------------------------------------------
-# enable_user_signup: true
+enable_user_signup: <%= $enable_user_signup %>
 # default_shell: "/bin/bash"
 # default_homedir: "/home"
 #
