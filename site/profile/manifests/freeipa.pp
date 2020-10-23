@@ -631,6 +631,7 @@ class profile::freeipa::mokey(
     ],
     subscribe => [
       File['/etc/mokey/mokey.yaml'],
+      Mysql::Db['mokey'],
     ]
   }
 }
