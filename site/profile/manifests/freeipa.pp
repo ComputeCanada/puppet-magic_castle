@@ -489,21 +489,21 @@ class profile::freeipa::mokey(
     source   => "https://github.com/ubccr/mokey/releases/download/v${version}/mokey-${version}-1.el7.x86_64.rpm"
   }
 
-  $password = lookup('profile::freeipa::base::admin_passwd')
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $ipa_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $mokey_password = lookup('profile::freeipa::mokey::passwd')
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
 
   mysql::db { 'mokey':
     ensure   => present,
     user     => 'mokey',
-    password => $password,
+    password => $mokey_password,
     host     => 'localhost',
     grant    => ['ALL'],
   }
 
   exec { 'mysql_mokey_schema':
-    command     => Sensitive("mysql -u mokey -p${password} mokey < /usr/share/mokey/ddl/schema.sql"),
+    command     => Sensitive("mysql -u mokey -p${mokey_password} mokey < /usr/share/mokey/ddl/schema.sql"),
     refreshonly => true,
     require     => [
       Package['mokey'],
@@ -518,7 +518,7 @@ class profile::freeipa::mokey(
     require     => [
       File['kinit_wrapper'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-server-install'],
   }
@@ -529,7 +529,7 @@ class profile::freeipa::mokey(
     require     => [
       File['kinit_wrapper'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa_mokey_role_add'],
   }
@@ -540,7 +540,7 @@ class profile::freeipa::mokey(
     require     => [
       File['kinit_wrapper'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa_mokey_role_add'],
   }
@@ -551,7 +551,7 @@ class profile::freeipa::mokey(
     require     => [
       File['kinit_wrapper'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
       Exec['ipa_mokey_role_add'],
@@ -574,7 +574,7 @@ class profile::freeipa::mokey(
       File['kinit_wrapper'],
       File['/etc/mokey/keytab']
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
       Exec['ipa_mokey_role_add'],
@@ -602,11 +602,11 @@ class profile::freeipa::mokey(
       'profile/freeipa/mokey.yaml',
       {
         'user'     => 'mokey',
-        'password' => $password,
+        'password' => $mokey_password,
         'dbname'   => 'mokey',
-        'auth_key' => $password,
-        'enc_key'  => $password,
         'port'     => $port,
+        'auth_key' => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'  => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
       }
     ),
   }
@@ -619,13 +619,15 @@ class profile::freeipa::mokey(
   }
 
   service { 'mokey':
-    ensure  => running,
-    enable  => true,
-    require => [
+    ensure    => running,
+    enable    => true,
+    require   => [
       Package['mokey'],
-      File['/etc/mokey/mokey.yaml'],
       Exec['ipa_getkeytab_mokeyapp'],
       File_line['ipa_default_server'],
+    ],
+    subscribe => [
+      File['/etc/mokey/mokey.yaml'],
     ]
   }
 }
