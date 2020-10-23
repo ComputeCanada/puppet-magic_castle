@@ -39,6 +39,7 @@ node /^mgmt1$/ {
   include profile::slurm::controller
 
   include profile::freeipa::guest_accounts
+  include profile::freeipa::mokey
   include profile::slurm::accounting
   include profile::workshop::mgmt
   include profile::mfa::mgmt
