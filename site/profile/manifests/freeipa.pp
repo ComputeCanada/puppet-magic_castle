@@ -570,7 +570,7 @@ class profile::freeipa::mokey(
 
   # TODO: Fix server hostname to ipa.${int_domain_name}
   exec { 'ipa_getkeytab_mokeyapp':
-    command     => "kinit_wrapper ipa-getkeytab -s ${::hostname}.${int_domain_name} -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab",
+    command     => 'kinit_wrapper ipa-getkeytab -s $(grep -m1 -oP \'(host|server) = \K.+\' /etc/ipa/default.conf) -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab',
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
