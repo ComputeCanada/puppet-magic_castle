@@ -87,6 +87,38 @@ class profile::reverse_proxy(String $domain_name)
     headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
   }
 
+  $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
+  $portal_port = lookup('profile::freeipa::mokey::port')
+
+  apache::vhost { 'my80_to_my443':
+    servername      => "portal.${domain_name}",
+    port            => '80',
+    redirect_status => 'permanent',
+    redirect_dest   => "https://my.${domain_name}/",
+    docroot         => false,
+    manage_docroot  => false,
+    access_log      => false,
+    error_log       => false,
+  }
+
+  apache::vhost { 'my_ssl':
+    servername                => "my.${domain_name}",
+    port                      => '443',
+    docroot                   => false,
+    manage_docroot            => false,
+    access_log                => false,
+    error_log                 => false,
+    proxy_dest                => "http://${ipa_server_ip}:${portal_port}",
+    proxy_preserve_host       => true,
+    ssl                       => true,
+    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
+    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
+    ssl_proxyengine           => true,
+    ssl_proxy_check_peer_cn   => 'off',
+    ssl_proxy_check_peer_name => 'off',
+    headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
+  }
+
   apache::vhost { 'ipa80_to_ipa443':
     servername      => "ipa.${domain_name}",
     port            => '80',
