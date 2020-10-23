@@ -56,3 +56,5 @@ profile::cvmfs::client::quota_limit: 4096
 profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'
 profile::mfa::login::provider: 'none'
+
+profile::freeipa::mokey::version: 0.5.4

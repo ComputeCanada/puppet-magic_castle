@@ -474,14 +474,16 @@ class profile::freeipa::server
 
 }
 
-class profile::freeipa::mokey
+class profile::freeipa::mokey(String $version)
 {
 
+  # TODO: Replace el7 by CentOS major release number
+  # TODO: Generate a COPR repo to build Mokey for CentOS 7 and 8
   package { 'mokey':
     ensure   => 'installed',
-    name     => 'mokey-0.5.4-1.el7.x86_64',
+    name     => "mokey-${version}-1.el7.x86_64",
     provider => 'rpm',
-    source   => 'https://github.com/ubccr/mokey/releases/download/v0.5.4/mokey-0.5.4-1.el7.x86_64.rpm'
+    source   => "https://github.com/ubccr/mokey/releases/download/v${version}/mokey-${version}-1.el7.x86_64.rpm"
   }
 
   $password = lookup('profile::freeipa::base::admin_passwd')
