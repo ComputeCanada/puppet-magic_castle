@@ -327,6 +327,14 @@ class profile::freeipa::server
     notify  => Service['systemd-logind']
   }
 
+  file_line { 'ipa_server_fileline':
+    ensure  => present,
+    path    => '/etc/ipa/default.conf',
+    after   => "domain = ${int_domain_name}",
+    line    => "server = ${::hostname}.${int_domain_name}",
+    require => Exec['ipa-server-install'],
+  }
+
   exec { 'ipa_config-mod_auth-otp':
     command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
     refreshonly => true,
@@ -614,20 +622,12 @@ class profile::freeipa::mokey(
     ),
   }
 
-  file_line { 'ipa_default_server':
-    ensure => present,
-    path   => '/etc/ipa/default.conf',
-    after  => "domain = ${int_domain_name}",
-    line   => "server = ipa.${int_domain_name}",
-  }
-
   service { 'mokey':
     ensure    => running,
     enable    => true,
     require   => [
       Package['mokey'],
       Exec['ipa_getkeytab_mokeyapp'],
-      File_line['ipa_default_server'],
     ],
     subscribe => [
       File['/etc/mokey/mokey.yaml'],
