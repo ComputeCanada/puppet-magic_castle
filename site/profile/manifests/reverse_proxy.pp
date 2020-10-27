@@ -91,7 +91,7 @@ class profile::reverse_proxy(String $domain_name)
   $portal_port = lookup('profile::freeipa::mokey::port')
 
   apache::vhost { 'my80_to_my443':
-    servername      => "portal.${domain_name}",
+    servername      => "my.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
     redirect_dest   => "https://my.${domain_name}/",
