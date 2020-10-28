@@ -485,6 +485,7 @@ class profile::freeipa::server
       File['/sbin/mkhomedir.sh'],
       File['mkhomedir_slapd.service'],
       Exec['semanage_fcontext_mnt_home'],
+      Exec['semanage_fcontext_scratch'],
       Service['ipa'],
     ]
   }
