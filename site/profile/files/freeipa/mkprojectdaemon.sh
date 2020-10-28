@@ -24,7 +24,7 @@ while read GROUP; do
     USERNAMES=$(ldapsearch -Q -s one -b "cn=users,cn=accounts,${BASEDN}" "memberOf=*${GROUP}*" uid | grep -oP 'uid: \K(.*)' | tail -n +${group_memory[$GROUP]})
     kdestroy
 
-    for USERNAME in $USERNAME; do
+    for USERNAME in $USERNAMES; do
         USER_HOME="/mnt/home/$USERNAME"
 
         PRO_USER="/project/$GROUP/$USERNAME"
