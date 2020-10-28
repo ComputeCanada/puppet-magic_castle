@@ -481,13 +481,39 @@ class profile::freeipa::server
     ensure  => running,
     enable  => true,
     require => [
+      File['/sbin/mkhomedir.sh'],
       File['mkhomedir_slapd.service'],
       Exec['semanage_fcontext_mnt_home'],
-      Exec['semanage_fcontext_project'],
-      Exec['semanage_fcontext_scratch'],
       Service['ipa'],
     ]
   }
+
+
+  file { 'mkprojectdir_slapd.service':
+    ensure => 'present',
+    path   => '/lib/systemd/system/mkprojectdir_slapd.service',
+    source => 'puppet:///modules/profile/freeipa/mkprojectdir_slapd.service'
+  }
+
+  file { 'mkprojectdaemon.sh':
+    ensure => 'present',
+    path   => '/sbin/mkprojectdaemon.sh',
+    source => 'puppet:///modules/profile/freeipa/mkprojectdaemon.sh',
+    mode   => '0755',
+    owner  => 'root'
+  }
+
+  service { 'mkprojectdir_slapd':
+    ensure  => running,
+    enable  => true,
+    require => [
+      File['mkprojectdaemon.sh'],
+      File['mkprojectdir_slapd.service'],
+      Exec['semanage_fcontext_project'],
+      Service['ipa'],
+    ]
+  }
+
 }
 
 class profile::freeipa::mokey(

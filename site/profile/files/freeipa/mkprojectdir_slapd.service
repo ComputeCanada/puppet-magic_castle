@@ -1,0 +1,10 @@
+[Unit]
+Description=Create /project directories for IPA users
+BindsTo=ipa.service
+
+[Service]
+Type=simple
+ExecStart=/sbin/mkprojectdaemon.sh
+
+[Install]
+WantedBy=multi-user.target
