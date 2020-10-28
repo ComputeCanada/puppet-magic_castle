@@ -33,10 +33,16 @@ def user_add(uid, first, last, password, shell):
     else:
         kargs["uidnumber"] = uidnumber
 
-    try:
-        return api.Command.user_add(**kargs)
-    except errors.DuplicateEntry:
-        return
+    # Try up to 5 times to add user to the database
+    for _ in range(5):
+        try:
+            return api.Command.user_add(**kargs)
+        except errors.DuplicateEntry:
+            return
+        except errors.DatabaseError:
+            continue
+    else:
+        raise Exception("Could not add user: {uid}".format(**kargs))
 
 
 def group_add(name):
