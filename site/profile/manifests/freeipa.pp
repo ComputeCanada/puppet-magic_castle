@@ -474,7 +474,7 @@ class profile::freeipa::server
   file { 'mkhomedir_slapd.service':
     ensure => 'present',
     path   => '/lib/systemd/system/mkhomedir_slapd.service',
-    source => 'puppet:///modules/freeipa/mkhomedir_slapd.service'
+    source => 'puppet:///modules/profile/freeipa/mkhomedir_slapd.service'
   }
 
   service { 'mkhomedir_slapd':
