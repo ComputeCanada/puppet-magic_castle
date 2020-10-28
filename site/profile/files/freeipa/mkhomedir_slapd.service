@@ -1,0 +1,10 @@
+[Unit]
+Description=Create home directory for new IPA users
+BindsTo=ipa.service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c "tail -f /var/log/dirsrv/slapd-*/access | grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)'| xargs -I {} /sbin/mkhomedir.sh {}"
+
+[Install]
+WantedBy=multi-user.target
