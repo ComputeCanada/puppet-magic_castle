@@ -236,6 +236,7 @@ class profile::freeipa::guest_accounts(
       File['kinit_wrapper'],
       Service['ipa'],
       Service['mkhomedir_slapd'],
+      Service['mkprojectdir_slapd'],
     ]
   }
 }
