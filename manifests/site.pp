@@ -38,11 +38,13 @@ node /^mgmt1$/ {
   include profile::squid::server
   include profile::slurm::controller
 
-  include profile::freeipa::guest_accounts
   include profile::freeipa::mokey
   include profile::slurm::accounting
   include profile::workshop::mgmt
   include profile::mfa::mgmt
+
+  include profile::accounts
+  include profile::accounts::guests
 }
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {

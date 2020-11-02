@@ -218,29 +218,6 @@ class profile::freeipa::client(String $server_ip)
 
 }
 
-class profile::freeipa::guest_accounts(
-  String $guest_passwd,
-  Integer $nb_accounts,
-  String $prefix = 'user')
-{
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-
-  exec{ 'ipa_add_user':
-    command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
-    onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
-                    "IPA_GUEST_PASSWD=${guest_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require     => [
-      File['/sbin/ipa_create_user.py'],
-      File['kinit_wrapper'],
-      Service['ipa'],
-      Service['mkhomedir_slapd'],
-      Service['mkprojectdir_slapd'],
-    ]
-  }
-}
-
 class profile::freeipa::server
 {
   class { 'profile::freeipa::base':
@@ -460,60 +437,6 @@ class profile::freeipa::server
     ),
     notify  => Service['httpd'],
     require => Exec['ipa-server-install'],
-  }
-
-  file { '/sbin/ipa_create_user.py':
-    source => 'puppet:///modules/profile/freeipa/ipa_create_user.py',
-    mode   => '0755'
-  }
-
-  file { '/sbin/mkhomedir.sh':
-    source => 'puppet:///modules/profile/freeipa/mkhomedir.sh',
-    mode   => '0755'
-  }
-
-  file { 'mkhomedir_slapd.service':
-    ensure => 'present',
-    path   => '/lib/systemd/system/mkhomedir_slapd.service',
-    source => 'puppet:///modules/profile/freeipa/mkhomedir_slapd.service'
-  }
-
-  service { 'mkhomedir_slapd':
-    ensure  => running,
-    enable  => true,
-    require => [
-      File['/sbin/mkhomedir.sh'],
-      File['mkhomedir_slapd.service'],
-      Exec['semanage_fcontext_mnt_home'],
-      Exec['semanage_fcontext_scratch'],
-      Service['ipa'],
-    ]
-  }
-
-
-  file { 'mkprojectdir_slapd.service':
-    ensure => 'present',
-    path   => '/lib/systemd/system/mkprojectdir_slapd.service',
-    source => 'puppet:///modules/profile/freeipa/mkprojectdir_slapd.service'
-  }
-
-  file { 'mkprojectdaemon.sh':
-    ensure => 'present',
-    path   => '/sbin/mkprojectdaemon.sh',
-    source => 'puppet:///modules/profile/freeipa/mkprojectdaemon.sh',
-    mode   => '0755',
-    owner  => 'root'
-  }
-
-  service { 'mkprojectdir_slapd':
-    ensure  => running,
-    enable  => true,
-    require => [
-      File['mkprojectdaemon.sh'],
-      File['mkprojectdir_slapd.service'],
-      Exec['semanage_fcontext_project'],
-      Service['ipa'],
-    ]
   }
 
 }

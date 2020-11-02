@@ -11,6 +11,7 @@ while read GROUP; do
     if [[ -z ${group_memory[$GROUP]} ]]; then
         group_memory[$GROUP]=1
         if [[ ! -d /project/$GROUP ]]; then
+            sacctmgr add account $GROUP -i Description='Cloud Cluster Account' Organization='Compute Canada'
             GID=$(getent group $GROUP | cut -d: -f3)
             mkdir -p "/project/$GID"
             chown root:"$GROUP" "/project/$GID"
@@ -40,4 +41,5 @@ while read GROUP; do
         group_memory[$GROUP]=$((${group_memory[$GROUP]}+1))
     done
 
+    sacctmgr add user ${USERNAMES[@]} Account=${GROUP} -i
 done
