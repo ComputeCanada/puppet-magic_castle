@@ -11,6 +11,7 @@ while read GROUP; do
 
     if [[ -z ${group_memory[$GROUP]} ]]; then
         group_memory[$GROUP]=1
+        /opt/software/slurm/bin/sacctmgr add account $GROUP -i Description='Cloud Cluster Account' Organization='Compute Canada'
         if [[ ! -d /project/$GROUP ]]; then
             GID=$(getent group $GROUP | cut -d: -f3)
             mkdir -p "/project/$GID"
@@ -45,7 +46,6 @@ while read GROUP; do
         group_memory[$GROUP]=$((${group_memory[$GROUP]}+1))
     done
 
-    /opt/software/slurm/bin/sacctmgr add account $GROUP -i Description='Cloud Cluster Account' Organization='Compute Canada'
     /opt/software/slurm/bin/sacctmgr add user ${USERNAMES[@]} Account=${GROUP} -i
 
 done
