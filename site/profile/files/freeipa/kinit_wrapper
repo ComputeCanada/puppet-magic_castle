@@ -1,6 +1,8 @@
 #!/bin/bash
 trap kdestroy EXIT
 
+export KRB5CCNAME=$(mktemp)
+
 if [ -z "${IPA_ADMIN_PASSWD}" ]; then
     kinit admin
 else

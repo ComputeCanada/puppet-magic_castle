@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BASEDN="$(grep -oP 'basedn = \K(.*)' /etc/ipa/default.conf)"
+export KRB5CCNAME="/root/mkprojectdaemon.krb5"
 
 declare -A group_memory
 
@@ -11,7 +12,6 @@ while read GROUP; do
     if [[ -z ${group_memory[$GROUP]} ]]; then
         group_memory[$GROUP]=1
         if [[ ! -d /project/$GROUP ]]; then
-            /opt/software/slurm/bin/sacctmgr add account $GROUP -i Description='Cloud Cluster Account' Organization='Compute Canada'
             GID=$(getent group $GROUP | cut -d: -f3)
             mkdir -p "/project/$GID"
             chown root:"$GROUP" "/project/$GID"
@@ -41,5 +41,7 @@ while read GROUP; do
         group_memory[$GROUP]=$((${group_memory[$GROUP]}+1))
     done
 
+    /opt/software/slurm/bin/sacctmgr add account $GROUP -i Description='Cloud Cluster Account' Organization='Compute Canada'
     /opt/software/slurm/bin/sacctmgr add user ${USERNAMES[@]} Account=${GROUP} -i
+
 done
