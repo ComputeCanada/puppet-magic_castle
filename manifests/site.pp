@@ -40,7 +40,7 @@ node /^mgmt1$/ {
   include profile::freeipa::guest_accounts
   include profile::slurm::accounting
   include profile::workshop::mgmt
-}
+  include iu-duounix
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::consul::client
