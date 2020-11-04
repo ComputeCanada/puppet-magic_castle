@@ -67,5 +67,6 @@ class profile::accounts::guests(
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
                     "IPA_GUEST_PASSWD=${passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    timeout     => $nb_accounts * 10,
   }
 }
