@@ -13,6 +13,9 @@ from ipaplatform.paths import paths
 from six import text_type
 
 
+logging.basicConfig(level=logging.INFO,)
+
+
 def init_api():
     api.bootstrap_with_global_options(context="cli")
     api.add_plugin(cli)
@@ -38,7 +41,11 @@ def user_add(uid, first, last, password, shell):
     # Try up to 5 times to add user to the database
     for i in range(5):
         try:
-            logging.info("ipa_create_user.py - adding user {uid}".format(uid=uid))
+            logging.info(
+                "ipa_create_user.py - adding user {uid} (Try {i} / 5)".format(
+                    uid=uid, i=i
+                )
+            )
             return api.Command.user_add(**kargs)
         except errors.DuplicateEntry:
             return
