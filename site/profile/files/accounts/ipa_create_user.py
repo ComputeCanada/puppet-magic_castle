@@ -13,7 +13,10 @@ from ipaplatform.paths import paths
 from six import text_type
 
 
-logging.basicConfig(level=logging.INFO,)
+iau_logger = logging.getLogger("IPA_CREATE_USER.py")
+iau_logger.setLevel(logging.INFO)
+handler = logging.handlers.RotatingFileHandler("/var/log/ipa_user_add.log")
+iau_logger.addHandler(handler)
 
 
 def init_api():
@@ -41,7 +44,7 @@ def user_add(uid, first, last, password, shell):
     # Try up to 5 times to add user to the database
     for i in range(5):
         try:
-            logging.info(
+            iau_logger.info(
                 "ipa_create_user.py - adding user {uid} (Try {i} / 5)".format(
                     uid=uid, i=i
                 )
@@ -50,7 +53,7 @@ def user_add(uid, first, last, password, shell):
         except errors.DuplicateEntry:
             return
         except errors.DatabaseError:
-            logging.warning(
+            iau_logger.warning(
                 "ipa_create_user.py - Database error while trying to create user: {uid} (Try {i} / 5)".format(
                     uid=uid, i=i,
                 )
