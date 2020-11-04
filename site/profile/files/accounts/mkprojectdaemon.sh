@@ -31,9 +31,9 @@ while read GROUP; do
     fi
 
     # Skip ldapsearch if we have already processed more usernames than the number of lines found so far in log
-    if [[ ${group_memory_users[$GROUP]} -ge ${group_memory_calls[$GROUP]} ]];
+    if [[ ${group_memory_users[$GROUP]} -ge ${group_memory_calls[$GROUP]} ]]; then
         continue
-    then
+    fi
 
     kinit -k -t /etc/mokey/keytab/mokeyapp.keytab mokeyapp
     USERNAMES=$(ldapsearch -Q -s one -b "cn=users,cn=accounts,${BASEDN}" "memberOf=*${GROUP}*" uid | grep -oP 'uid: \K(.*)' | tail -n +$((${group_memory_users[$GROUP]}+1)))
