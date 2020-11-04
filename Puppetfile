@@ -42,6 +42,6 @@ mod 'KyleAnderson-consul',
     :git    => 'https://github.com/solarkennedy/puppet-consul.git',
     :commit => '4dc9835cbdff6036bf371f648d3723298a88e648'
 
-mod 'iu-duounix',
+mod 'iu-duo_unix',
     :git => 'https://github.com/indiana-university/puppet-duo_unix.git',
     :ref => 'v2.0.0'
