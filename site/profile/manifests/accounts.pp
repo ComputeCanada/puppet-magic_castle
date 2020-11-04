@@ -1,5 +1,6 @@
 class profile::accounts {
   require profile::freeipa::server
+  require profile::freeipa::mokey
   require profile::nfs::server
   require profile::slurm::accounting
 
