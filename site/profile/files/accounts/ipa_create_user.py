@@ -38,6 +38,7 @@ def user_add(uid, first, last, password, shell):
     # Try up to 5 times to add user to the database
     for i in range(5):
         try:
+            logging.info("ipa_create_user.py - adding user {uid}".format(uid=uid))
             return api.Command.user_add(**kargs)
         except errors.DuplicateEntry:
             return
