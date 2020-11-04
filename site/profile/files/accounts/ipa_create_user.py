@@ -1,6 +1,6 @@
 #!/usr/libexec/platform-python
 import argparse
-import logger
+import logging
 import os
 import sys
 import time
@@ -42,7 +42,7 @@ def user_add(uid, first, last, password, shell):
         except errors.DuplicateEntry:
             return
         except errors.DatabaseError:
-            logger.warning(
+            logging.warning(
                 "ipa_create_user.py - Database error while trying to create user: {uid} (Try {i} / 5)".format(
                     uid=uid, i=i,
                 )
