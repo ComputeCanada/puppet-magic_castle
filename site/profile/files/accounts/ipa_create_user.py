@@ -1,7 +1,9 @@
 #!/usr/libexec/platform-python
 import argparse
+import logger
 import os
 import sys
+import time
 
 from ipalib import api, errors
 from ipalib.cli import cli
@@ -34,12 +36,18 @@ def user_add(uid, first, last, password, shell):
         kargs["uidnumber"] = uidnumber
 
     # Try up to 5 times to add user to the database
-    for _ in range(5):
+    for i in range(5):
         try:
             return api.Command.user_add(**kargs)
         except errors.DuplicateEntry:
             return
         except errors.DatabaseError:
+            logger.warning(
+                "ipa_create_user.py - Database error while trying to create user: {uid} (Try {i} / 5)".format(
+                    uid=uid, i=i,
+                )
+            )
+            time.sleep(0.2)
             continue
     else:
         raise Exception("Could not add user: {uid}".format(**kargs))
