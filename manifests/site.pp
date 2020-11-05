@@ -41,6 +41,7 @@ node /^mgmt1$/ {
   include profile::slurm::accounting
   include profile::workshop::mgmt
   include iu-duo_unix
+}
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::consul::client
