@@ -21,8 +21,8 @@ formatter = logging.Formatter(
     datefmt="%Y-%m-%d,%H:%M:%S",
 )
 handler = logging.handlers.RotatingFileHandler("/var/log/ipa_user_add.log")
+handler.setFormatter(fmt=formatter)
 iau_logger.addHandler(handler)
-iau_logger.setFormatter(formatter)
 
 
 def init_api():
