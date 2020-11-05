@@ -13,6 +13,8 @@ from ipaplatform.paths import paths
 
 from six import text_type
 
+# TODO: get this value from /etc/logins.def
+UID_MAX = 60000
 
 iau_logger = logging.getLogger("IPA_CREATE_USER.py")
 iau_logger.setLevel(logging.INFO,)
@@ -45,7 +47,8 @@ def user_add(uid, first, last, password, shell):
     except:
         pass
     else:
-        kargs["uidnumber"] = uidnumber
+        if uidnumber > UID_MAX:
+            kargs["uidnumber"] = uidnumber
 
     # Try up to 5 times to add user to the database
     for i in range(1, 6):
