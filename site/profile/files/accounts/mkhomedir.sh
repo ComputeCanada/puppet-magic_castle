@@ -12,7 +12,9 @@ for USERNAME in ${USERNAMES}; do
     if [[ ! -d "$USER_HOME" ]] ; then
         cp -r /etc/skel $USER_HOME
         chmod 700 $USER_HOME
-        id $USERNAME
+
+        while ! id $USERNAME; do sleep 0.5; done
+
         chown -R $USERNAME:$USERNAME $USER_HOME
 
         restorecon -F -R $USER_HOME
