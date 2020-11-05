@@ -40,7 +40,7 @@ node /^mgmt1$/ {
   include profile::freeipa::guest_accounts
   include profile::slurm::accounting
   include profile::workshop::mgmt
-  include iu-duo_unix
+  include duo_unix
 }
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
@@ -50,7 +50,7 @@ node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::rsyslog::client
   include profile::freeipa::client
   include profile::metrics::exporter
-  include iu-duo_unix
+  include duo_unix
 }
 
 node /^[a-z0-9-]*node\d+$/ {
