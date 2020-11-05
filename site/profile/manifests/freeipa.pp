@@ -442,19 +442,27 @@ class profile::freeipa::server
 }
 
 class profile::freeipa::mokey(
-  String $version,
   Integer $port,
   Boolean $enable_user_signup,
+  Boolean $require_verify_admin,
 )
 {
+  yumrepo { 'mokey-copr-repo':
+    enabled             => true,
+    descr               => 'Copr repo for mokey owned by cmdntrf',
+    baseurl             => "https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/pubkey.gpg',
+    repo_gpgcheck       => 0,
+  }
 
-  # TODO: Replace el7 by CentOS major release number
-  # TODO: Generate a COPR repo to build Mokey for CentOS 7 and 8
+
   package { 'mokey':
-    ensure   => 'installed',
-    name     => "mokey-${version}-1.el7.x86_64",
-    provider => 'rpm',
-    source   => "https://github.com/ubccr/mokey/releases/download/v${version}/mokey-${version}-1.el7.x86_64.rpm"
+    ensure  => 'installed',
+    require => [
+      Yumrepo['mokey-copr-repo'],
+    ],
   }
 
   $ipa_passwd = lookup('profile::freeipa::base::admin_passwd')
@@ -570,13 +578,14 @@ class profile::freeipa::mokey(
     content => epp(
       'profile/freeipa/mokey.yaml',
       {
-        'user'               => 'mokey',
-        'password'           => $mokey_password,
-        'dbname'             => 'mokey',
-        'port'               => $port,
-        'auth_key'           => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'            => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
-        'enable_user_signup' => $enable_user_signup,
+        'user'                 => 'mokey',
+        'password'             => $mokey_password,
+        'dbname'               => 'mokey',
+        'port'                 => $port,
+        'auth_key'             => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'enable_user_signup'   => $enable_user_signup,
+        'require_verify_admin' => $require_verify_admin,
       }
     ),
   }

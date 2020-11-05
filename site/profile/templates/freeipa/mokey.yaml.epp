@@ -179,6 +179,13 @@ enable_user_signup: <%= $enable_user_signup %>
 # require_verify_email: false
 
 #------------------------------------------------------------------------------
+# Require FreeIPA admin to activate the account. With this option enabled new
+# accounts are disabled by default until a FreeIPA admin activates them.
+# This option is mutually exclusive with require_verify_email.
+#------------------------------------------------------------------------------
+require_verify_admin: <%= $require_verify_admin %>
+
+#------------------------------------------------------------------------------
 # Developer mode
 #------------------------------------------------------------------------------
 develop: false

@@ -57,6 +57,6 @@ profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'
 profile::mfa::login::provider: 'none'
 
-profile::freeipa::mokey::version: 0.5.4
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
+profile::freeipa::mokey::require_verify_admin: true
