@@ -15,7 +15,11 @@ from six import text_type
 
 
 iau_logger = logging.getLogger("IPA_CREATE_USER.py")
-iau_logger.setLevel(logging.INFO)
+iau_logger.setLevel(
+    logging.INFO,
+    format="%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s",
+    datefmt="%Y-%m-%d,%H:%M:%S",
+)
 handler = logging.handlers.RotatingFileHandler("/var/log/ipa_user_add.log")
 iau_logger.addHandler(handler)
 
@@ -43,20 +47,19 @@ def user_add(uid, first, last, password, shell):
         kargs["uidnumber"] = uidnumber
 
     # Try up to 5 times to add user to the database
-    for i in range(5):
+    for i in range(1, 6):
         try:
-            iau_logger.info(
-                "ipa_create_user.py - adding user {uid} (Try {i} / 5)".format(
-                    uid=uid, i=i
-                )
-            )
+            iau_logger.info("adding user {uid} (Try {i} / 5)".format(uid=uid, i=i))
             return api.Command.user_add(**kargs)
         except errors.DuplicateEntry:
-            return
-        except errors.DatabaseError:
             iau_logger.warning(
-                "ipa_create_user.py - Database error while trying to create user: {uid} (Try {i} / 5)".format(
-                    uid=uid, i=i,
+                "User {uid} already in database (Try {i} / 5)".format(uid=uid, i=i,)
+            )
+            return
+        except errors.DatabaseError as err:
+            iau_logger.error(
+                "Database error while trying to create user: {uid} (Try {i} / 5). Exception: {err}".format(
+                    uid=uid, i=i, err=err
                 )
             )
             time.sleep(0.2)
