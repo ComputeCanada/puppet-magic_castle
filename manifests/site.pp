@@ -66,5 +66,5 @@ node /^[a-z0-9-]*node\d+$/ {
   include profile::nfs::client
   include profile::slurm::node
   include profile::freeipa::client
-  include iu-duo_unix
+  include duo_unix
 }
