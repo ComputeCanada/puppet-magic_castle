@@ -9,21 +9,15 @@ fi
 
 for USERNAME in ${USERNAMES}; do
     USER_HOME="/mnt/home/$USERNAME"
-    if [[ ! -d "$USER_HOME" ]] ; then
-        cp -r /etc/skel $USER_HOME
-        chmod 700 $USER_HOME
+    rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=D700,F700 /etc/skel/ $USER_HOME
+    restorecon -F -R $USER_HOME
 
-        while ! id $USERNAME; do sleep 0.5; done
-
-        chown -R $USERNAME:$USERNAME $USER_HOME
-
-        restorecon -F -R $USER_HOME
-        # Scratch space
-        SCR_USER="/scratch/$USERNAME"
-        mkdir -p $SCR_USER
-        ln -sfT $SCR_USER "$USER_HOME/scratch"
-        chown -h $USERNAME:$USERNAME $SCR_USER "$USER_HOME/scratch"
-        chmod 750 $SCR_USER
-        restorecon -F -R $SCR_USER
+    USER_SCRATCH="/scratch/$USERNAME"
+    if [[ ! -d "$USER_SCRATCH" ]]; then
+        mkdir -p $USER_SCRATCH
+        ln -sfT $USER_SCRATCH "$USER_HOME/scratch"
+        chown -h $USERNAME:$USERNAME $USER_SCRATCH "$USER_HOME/scratch"
+        chmod 750 $USER_SCRATCH
+        restorecon -F -R $USER_SCRATCH
     fi
 done
