@@ -1,5 +1,6 @@
 #!/usr/libexec/platform-python
 import argparse
+import grp
 import logging
 import logging.handlers
 import os
@@ -67,6 +68,19 @@ def user_add(uid, first, last, password, shell):
                 )
             )
             time.sleep(0.2)
+            # look if the private group has already been created
+            # and if it has been, recover the gid number.
+            try:
+                groupinfo = grp.getgrnam(uid)
+            except KeyError:
+                pass
+            else:
+                iau_logger.info(
+                    "Recovered user {uid}'s gidnumber as {gid}".format(
+                        uid=uid, gid=groupinfo.gr_gid
+                    )
+                )
+                kargs["gidnumber"] = groupinfo.gr_gid
             continue
     else:
         raise Exception("Could not add user: {uid}".format(**kargs))
