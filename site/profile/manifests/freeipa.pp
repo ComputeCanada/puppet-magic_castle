@@ -457,7 +457,6 @@ class profile::freeipa::mokey(
     repo_gpgcheck       => 0,
   }
 
-
   package { 'mokey':
     ensure  => 'installed',
     require => [
@@ -586,6 +585,8 @@ class profile::freeipa::mokey(
         'enc_key'              => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
+        'email_link_base'      => "https://my.${domain_name}/",
+        'email_from'           => "mokey@${domain_name}",
       }
     ),
   }

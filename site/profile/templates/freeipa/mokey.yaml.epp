@@ -113,22 +113,22 @@ smtp_tls: "off"
 #------------------------------------------------------------------------------
 # From address used when sending emails
 #------------------------------------------------------------------------------
-email_from: "helpdesk@example.edu"
+email_from: <%= $email_from %>
 
 #------------------------------------------------------------------------------
 # Email signature used when sending emails
 #------------------------------------------------------------------------------
-email_sig: "Mr. System Administrator"
+email_sig: ""
 
 #------------------------------------------------------------------------------
 # Base URL of mokey server. Used for links in emails
 #------------------------------------------------------------------------------
-email_link_base: "http://localhost:8080"
+email_link_base: <%= $email_link_base %>
 
 #------------------------------------------------------------------------------
 # Subject prefix used when sending emails
 #------------------------------------------------------------------------------
-email_prefix: "mokey"
+email_prefix: "magic castle"
 
 #------------------------------------------------------------------------------
 # Max age (in seconds) of setup account email tokens.
