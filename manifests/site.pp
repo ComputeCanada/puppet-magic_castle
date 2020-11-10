@@ -22,6 +22,7 @@ node /^login\d+$/ {
   include profile::jupyterhub::hub
   include profile::reverse_proxy
   include profile::nfs::client
+  include profile::freeipa::client
   include profile::mfa::duo::login
 }
 
