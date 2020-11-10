@@ -31,7 +31,7 @@ mod 'puppetlabs-inifile', '4.3.1'
 mod 'puppetlabs-lvm', '1.4.0'
 mod 'puppetlabs-mount_core', '1.0.4'
 mod 'puppetlabs-mysql', '10.8.0'
-mod 'puppetlabs-stdlib', '6.5.0'
+mod 'puppetlabs-stdlib', '5.2.0'
 mod 'puppetlabs-transition', '0.1.3'
 mod 'yelp-netstdlib', '0.0.1'
 
