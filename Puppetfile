@@ -12,6 +12,7 @@ mod 'herculesteam-augeasproviders_pam', '2.2.1'
 mod 'herculesteam-augeasproviders_shellvar', '4.0.0'
 mod 'herculesteam-augeasproviders_ssh', '3.3.0'
 mod 'herculesteam-augeasproviders_sysctl', '2.5.0'
+mod 'iu-duo_unix', '2.0.0'
 mod 'petems-swap_file', '4.0.2'
 mod 'puppet-archive', '4.5.0'
 mod 'puppet-epel', '3.0.1'
@@ -41,7 +42,3 @@ mod 'computecanada-jupyterhub',
 mod 'KyleAnderson-consul',
     :git    => 'https://github.com/solarkennedy/puppet-consul.git',
     :commit => '4dc9835cbdff6036bf371f648d3723298a88e648'
-
-mod 'iu-duo_unix',
-    :git => 'https://github.com/indiana-university/puppet-duo_unix.git',
-    :ref => 'v2.0.0'
