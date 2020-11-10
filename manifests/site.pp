@@ -22,10 +22,7 @@ node /^login\d+$/ {
   include profile::jupyterhub::hub
   include profile::reverse_proxy
   include profile::nfs::client
-  include profile::freeipa::client
-  if $duo_unix::login {
-    include duo_unix
-  }
+  include profile::mfa::duo::login
 }
 
 node /^mgmt1$/ {
@@ -43,9 +40,7 @@ node /^mgmt1$/ {
   include profile::freeipa::guest_accounts
   include profile::slurm::accounting
   include profile::workshop::mgmt
-  if $duo_unix::mgmt {
-    include duo_unix
-  }
+  include profile::mfa::duo::mgmt
 }
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
@@ -55,9 +50,7 @@ node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::rsyslog::client
   include profile::freeipa::client
   include profile::metrics::exporter
-  if $duo_unix::mgmt {
-    include duo_unix
-  }
+  include profile::mfa::duo::mgmt
 }
 
 node /^[a-z0-9-]*node\d+$/ {
@@ -73,8 +66,6 @@ node /^[a-z0-9-]*node\d+$/ {
   include profile::nfs::client
   include profile::slurm::node
   include profile::freeipa::client
-  if $duo_unix::node {
-    include duo_unix
-  }
+  include profile::mfa::duo::node
 
 }

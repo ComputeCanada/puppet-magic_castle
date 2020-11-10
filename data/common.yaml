@@ -53,5 +53,6 @@ profile::cvmfs::client::repositories:
   - soft.computecanada.ca
 profile::cvmfs::client::quota_limit: 4096
 
-duo_unix::usage: login
-duo_unux::motd: no
+profile::mfa::duo::mgmt: false
+profile::mfa::duo::node: false
+profile::mfa::duo::login: false
