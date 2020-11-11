@@ -68,7 +68,7 @@ class profile::reverse_proxy(
     error_log       => false,
   }
 
-  $jupyterhub_bind_url_array = split($jupyterhub::bind_url, /:/)
+  $jupyterhub_bind_host_port = join(split($jupyterhub::bind_url, /:/)[1,-1], ':')
   apache::vhost { 'jupyterhub_ssl':
     servername                => "${jupyterhub_subdomain}.${domain_name}",
     port                      => '443',
@@ -81,7 +81,7 @@ class profile::reverse_proxy(
     rewrites                  => [
       {
         rewrite_cond => ['%{HTTP:Connection} Upgrade [NC]', '%{HTTP:Upgrade} websocket [NC]'],
-        rewrite_rule => ["/(.*) wss:${jupyterhub_bind_url_array[1]}/\$1 [P,L]"],
+        rewrite_rule => ["/(.*) wss:${jupyterhub_bind_host_port}/\$1 [P,L]"],
       },
     ],
     ssl                       => true,
