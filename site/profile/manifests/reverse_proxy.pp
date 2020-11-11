@@ -68,8 +68,7 @@ class profile::reverse_proxy(
     error_log       => false,
   }
 
-  $jupyterhub_bind_url = lookup('jupyterhub::bind_url')
-  $jupyterhub_bind_url_array = split($jupyterhub_bind_url, /:/)
+  $jupyterhub_bind_url_array = split($jupyterhub::bind_url, /:/)
   apache::vhost { 'jupyterhub_ssl':
     servername                => "${jupyterhub_subdomain}.${domain_name}",
     port                      => '443',
@@ -77,7 +76,7 @@ class profile::reverse_proxy(
     manage_docroot            => false,
     access_log                => false,
     error_log                 => false,
-    proxy_dest                => $jupyterhub_bind_url,
+    proxy_dest                => $jupyterhub::bind_url,
     proxy_preserve_host       => true,
     rewrites                  => [
       {
