@@ -81,7 +81,7 @@ class profile::reverse_proxy(
     rewrites                  => [
       {
         rewrite_cond => ['%{HTTP:Connection} Upgrade [NC]', '%{HTTP:Upgrade} websocket [NC]'],
-        rewrite_rule => ["/(.*) wss://127.0.0.1:${jupyterhub_port}/${1} [P,L]"],
+        rewrite_rule => ["/(.*) wss://127.0.0.1:${jupyterhub_port}/\$1 [P,L]"],
       },
     ],
     ssl                       => true,
