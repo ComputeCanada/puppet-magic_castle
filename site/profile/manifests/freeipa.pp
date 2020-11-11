@@ -568,7 +568,6 @@ class profile::freeipa::mokey(
     ]
   }
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
   $mokey_subdomain = lookup('profile::reverse_proxy::mokey_subdomain')
   $mokey_hostname = "${mokey_subdomain}.${domain_name}"
   file { '/etc/mokey/mokey.yaml':
