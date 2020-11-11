@@ -60,3 +60,7 @@ profile::mfa::login::provider: 'none'
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
+
+profile::reverse_proxy::jupyterhub_subdomain: jupyter
+profile::reverse_proxy::ipa_subdomain: ipa
+profile::reverse_proxy::mokey_subdomain: my

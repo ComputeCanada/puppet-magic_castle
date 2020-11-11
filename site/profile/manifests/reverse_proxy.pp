@@ -1,4 +1,9 @@
-class profile::reverse_proxy(String $domain_name)
+class profile::reverse_proxy(
+  String $domain_name,
+  String $jupyterhub_subdomain,
+  String $ipa_subdomain,
+  String $mokey_subdomain,
+  )
 {
   selinux::boolean { 'httpd_can_network_connect': }
 
@@ -29,7 +34,7 @@ class profile::reverse_proxy(String $domain_name)
     servername      => $domain_name,
     port            => '80',
     redirect_status => 'permanent',
-    redirect_dest   => "https://jupyter.${domain_name}/",
+    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
     access_log      => false,
@@ -41,7 +46,7 @@ class profile::reverse_proxy(String $domain_name)
     servername      => $domain_name,
     port            => '443',
     redirect_status => 'permanent',
-    redirect_dest   => "https://jupyter.${domain_name}/",
+    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
     access_log      => false,
@@ -52,30 +57,31 @@ class profile::reverse_proxy(String $domain_name)
     priority        => 99,
   }
 
-  apache::vhost { 'jupyter80_to_jupyter443':
-    servername      => "jupyter.${domain_name}",
+  apache::vhost { 'jupyterhub80_to_jupyterhub443':
+    servername      => "${jupyterhub_subdomain}.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
-    redirect_dest   => "https://jupyter.${domain_name}/",
+    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
     access_log      => false,
     error_log       => false,
   }
 
-  apache::vhost { 'jupyter_ssl':
-    servername                => "jupyter.${domain_name}",
+  $jupyterhub_port = 8000
+  apache::vhost { 'jupyterhub_ssl':
+    servername                => "${jupyterhub_subdomain}.${domain_name}",
     port                      => '443',
     docroot                   => false,
     manage_docroot            => false,
     access_log                => false,
     error_log                 => false,
-    proxy_dest                => 'https://127.0.0.1:8000',
+    proxy_dest                => "https://127.0.0.1:${jupyterhub_port}",
     proxy_preserve_host       => true,
     rewrites                  => [
       {
         rewrite_cond => ['%{HTTP:Connection} Upgrade [NC]', '%{HTTP:Upgrade} websocket [NC]'],
-        rewrite_rule => ['/(.*) wss://127.0.0.1:8000/$1 [P,L]'],
+        rewrite_rule => ["/(.*) wss://127.0.0.1:${jupyterhub_port}/${1} [P,L]"],
       },
     ],
     ssl                       => true,
@@ -88,27 +94,27 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
-  $portal_port = lookup('profile::freeipa::mokey::port')
+  $mokey_port = lookup('profile::freeipa::mokey::port')
 
-  apache::vhost { 'my80_to_my443':
-    servername      => "my.${domain_name}",
+  apache::vhost { 'mokey80_to_mokey443':
+    servername      => "${mokey_subdomain}.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
-    redirect_dest   => "https://my.${domain_name}/",
+    redirect_dest   => "https://${mokey_subdomain}.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
     access_log      => false,
     error_log       => false,
   }
 
-  apache::vhost { 'my_ssl':
-    servername                => "my.${domain_name}",
+  apache::vhost { 'mokey_ssl':
+    servername                => "${mokey_subdomain}.${domain_name}",
     port                      => '443',
     docroot                   => false,
     manage_docroot            => false,
     access_log                => false,
     error_log                 => false,
-    proxy_dest                => "http://${ipa_server_ip}:${portal_port}",
+    proxy_dest                => "http://${ipa_server_ip}:${mokey_port}",
     proxy_preserve_host       => true,
     ssl                       => true,
     ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
@@ -120,10 +126,10 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'ipa80_to_ipa443':
-    servername      => "ipa.${domain_name}",
+    servername      => "${ipa_subdomain}.${domain_name}",
     port            => '80',
     redirect_status => 'permanent',
-    redirect_dest   => "https://ipa.${domain_name}/",
+    redirect_dest   => "https://${ipa_subdomain}.${domain_name}/",
     docroot         => false,
     manage_docroot  => false,
     access_log      => false,
@@ -131,7 +137,7 @@ class profile::reverse_proxy(String $domain_name)
   }
 
   apache::vhost { 'ipa_ssl':
-    servername                => "ipa.${domain_name}",
+    servername                => "${ipa_subdomain}.${domain_name}",
     port                      => '443',
     docroot                   => false,
     manage_docroot            => false,
@@ -153,11 +159,11 @@ class profile::reverse_proxy(String $domain_name)
     proxy_pass                => [
       {
         'path'            => '/',
-        'url'             => "https://ipa.int.${domain_name}/",
+        'url'             => "https://${ipa_subdomain}.int.${domain_name}/",
         'reverse_cookies' => [
           {
-            'domain' => "ipa.int.${domain_name}",
-            'url'    => "ipa.${domain_name}"
+            'domain' => "${ipa_subdomain}.int.${domain_name}",
+            'url'    => "${ipa_subdomain}.${domain_name}"
           },
         ],
       }
