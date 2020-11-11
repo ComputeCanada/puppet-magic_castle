@@ -1,0 +1,41 @@
+{% extends "templates/login.html" %}
+{% block footer %}
+<div class="container-fluid navbar-default login_footer">
+<a class="navbar-brand" href="https://www.github.com/computecanada/magic_castle">
+Powered by Magic Castle
+</a>
+</div>
+{% endblock %}
+
+{% block stylesheet %}
+{{ super() }}
+<style>
+.login_footer {
+    bottom: 0;
+    position: fixed;
+    width: 100%;
+}
+.auth-form-footer {
+    padding: 10px 20px;
+    border-radius: 0 0 3px 3px;
+    font-size: 14px;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block script %}
+<script>
+$(".auth-form-body").after(`
+<div class="auth-form-footer">
+  <div style="width: 45%; float:left">
+    <a href="https://<%= $mokey_hostname %>/auth/signup" target="_new">Create Account</a>
+  </div>
+  |
+  <div style="width: 45%; float:right">
+    <a href="https://<%= $mokey_hostname %>/auth/forgotpw" target="_new">Reset Password</a>
+  </div>
+</div>`
+);
+</script>
+{% endblock %}
