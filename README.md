@@ -6,6 +6,16 @@ instances in a Magic Castle cluster. The attribution of the roles is done in
 by defined values in the hieradata. The following sections list the available
 variables for each profile.
 
+## profile::accounts
+
+| Variable                                  | Type    | Description                                                                     | Default       |
+| ----------------------------------------- | :-----  | :------------------------------------------------------------------------------ | ------------- |
+| `profile::accounts::guests::passwd`       | String  | Password set for all guest accounts                                             |               |
+| `profile::accounts::guests::nb_accounts`  | Integer | Number of guests account that needs to be created                               |               |
+| `profile::accounts::guests::prefix`       | String  | Prefix used to identified guest accounts followed by their index i.e: `user12`  | `'user'`      |
+| `profile::accounts::guests::sponsor`      | String  | Name for the sponsor group and sponsor Slurm account                            | `'sponsor00'` |
+
+
 ## profile::base
 
 | Variable                         | Type   | Description                                                             | Default  |
@@ -44,10 +54,6 @@ variables for each profile.
 | `profile::freeipa::base::dns_ip`                 | String  | FreeIPA DNS server IP Address. Used by the client to join find the server           |          |
 | `profile::freeipa::base::domain_name`            | String  | FreeIPA primary domain                                                              |          |
 | `profile::freeipa::client::server_ip`            | String  | FreeIPA server ip address                                                           |          |
-| `profile::freeipa::guest_accounts::guest_passwd` | String  | Password set for all guest accounts                                                 |          |
-| `profile::freeipa::guest_accounts::nb_accounts`  | Integer | Number of guests account that needs to be created                                   |          |
-| `profile::freeipa::guest_accounts::prefix`       | String  | Prefix used to identified guest accounts followed by their index i.e: `user12`      | `'user'` |
-
 
 ## profile::globus
 
