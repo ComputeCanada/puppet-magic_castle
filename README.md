@@ -15,7 +15,6 @@ variables for each profile.
 | `profile::accounts::guests::prefix`       | String  | Prefix used to identified guest accounts followed by their index i.e: `user12`  | `'user'`      |
 | `profile::accounts::guests::sponsor`      | String  | Name for the sponsor group and sponsor Slurm account                            | `'sponsor00'` |
 
-
 ## profile::base
 
 | Variable                         | Type   | Description                                                             | Default  |
@@ -54,6 +53,9 @@ variables for each profile.
 | `profile::freeipa::base::dns_ip`                 | String  | FreeIPA DNS server IP Address. Used by the client to join find the server           |          |
 | `profile::freeipa::base::domain_name`            | String  | FreeIPA primary domain                                                              |          |
 | `profile::freeipa::client::server_ip`            | String  | FreeIPA server ip address                                                           |          |
+| `profile::freeipa::mokey::port`                  | Integer | Mokey internal web server port                                                      | `12345`  |
+| `profile::freeipa::mokey::enable_user_signup`    | Boolean | Allow users to create an account on the cluster                                     | `true`   |
+| `profile::freeipa::mokey::require_verify_admin`  | Boolean | Require a FreeIPA to enable Mokey created account before usage                      | `true`   |
 
 ## profile::globus
 
@@ -71,9 +73,12 @@ variables for each profile.
 
 ## profile::reverse_proxy
 
-| Variable                              | Type   | Description                                                             | Default  |
-| ------------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::reverse_proxy::domain_name` | String | Domain name corresponding to the main DNS record A registered           |          |
+| Variable                                       | Type   | Description                                                             | Default   |
+| ---------------------------------------------- | :----- | :---------------------------------------------------------------------- | --------- |
+| `profile::reverse_proxy::domain_name`          | String | Domain name corresponding to the main DNS record A registered           |           |
+| `profile::reverse_proxy::jupyterhub_subdomain` | String | Subdomain name used to create the vhost for JupyterHub                  | `jupyter` |
+| `profile::reverse_proxy::ipa_subdomain`        | String | Subdomain name used to create the vhost for FreeIPA                     | `ipa`     |
+| `profile::reverse_proxy::mokey_subdomain`      | String | Subdomain name used to create the vhost for Mokey                       | `mokey`   |
 
 ## profile::slurm
 
