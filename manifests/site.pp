@@ -23,7 +23,7 @@ node /^login\d+$/ {
   include profile::reverse_proxy
   include profile::nfs::client
   include profile::freeipa::client
-  include profile::mfa::duo::login
+  include profile::mfa::login
 }
 
 node /^mgmt1$/ {
@@ -41,7 +41,7 @@ node /^mgmt1$/ {
   include profile::freeipa::guest_accounts
   include profile::slurm::accounting
   include profile::workshop::mgmt
-  include profile::mfa::duo::mgmt
+  include profile::mfa::mgmt
 }
 
 node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
@@ -51,7 +51,7 @@ node /^mgmt(?:[2-9]|[1-9]\d\d*)$/ {
   include profile::rsyslog::client
   include profile::freeipa::client
   include profile::metrics::exporter
-  include profile::mfa::duo::mgmt
+  include profile::mfa::mgmt
 }
 
 node /^[a-z0-9-]*node\d+$/ {
@@ -67,6 +67,6 @@ node /^[a-z0-9-]*node\d+$/ {
   include profile::nfs::client
   include profile::slurm::node
   include profile::freeipa::client
-  include profile::mfa::duo::node
+  include profile::mfa::node
 
 }

@@ -95,11 +95,11 @@ variables for each profile.
 
 ## profile::mfa
 
-| Variable                              | Type           | Description                                                                 | Default  |
-| ------------------------------------- | :------------- | :-------------------------------------------------------------------------- | -------- |
-| `profile::mfa::duo:mgmt`              | Boolean        | Enable MFA on mgmt nodes                                                    | false    |
-| `profile::mfa::duo:login`             | Boolean        | Enable MFA on login nodes                                                   | false    |
-| `profile::mfa::duo:node`              | Boolean        | Enable MFA on compute nodes                                                 | false    |
+| Variable                              | Type                | Description                                                                 | Default  |
+| ------------------------------------- | :------------------ | :-------------------------------------------------------------------------- | -------- |
+| `profile::mfa::mgmt`                  | Enum['none', 'duo'] | Choose MFA provider on mgmt nodes                                           | false    |
+| `profile::mfa::login`                 | Enum['none', 'duo'] | Choose MFA provider on login nodes                                          | false    |
+| `profile::mfa::node`                  | Enum['none', 'duo'] | Choose MFA provider on compute nodes                                        | false    |
 
 ## duo_unix
 
