@@ -1,6 +1,6 @@
 class profile::base (
   String $sudoer_username = 'centos',
-  Optional[String] $email = undef,
+  Optional[String] $admin_email = undef,
 ) {
   include stdlib
   include ::consul_template
@@ -26,13 +26,13 @@ class profile::base (
     target => '/usr/share/zoneinfo/UTC',
   }
 
-  if $email {
+  if $admin_email {
     include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
       ensure  => present,
       mode    => '0700',
       content => epp('profile/base/postrun', {
-        'email' => $email,
+        'email' => $admin_email,
       }),
     }
   }

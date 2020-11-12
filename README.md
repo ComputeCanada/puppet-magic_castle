@@ -17,10 +17,10 @@ variables for each profile.
 
 ## profile::base
 
-| Variable                         | Type   | Description                                                             | Default  |
-| -------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::base::email`           | String | Email address that will receive puppet logs for runs with changes       | `undef`  |
-| `profile::base::sudoer_username` | String | Name of the user with sudo rights. Used to config SELinux user mapping  | `'centos'` |
+| Variable                         | Type   | Description                                                                             | Default    |
+| -------------------------------- | :----- | :-------------------------------------------------------------------------------------- | ---------- |
+| `profile::base::admin_email`     | String | Email of the cluster administrator, use to send log and report cluster related issues   | `undef`    |
+| `profile::base::sudoer_username` | String | Name of the user with sudo rights. Used to config SELinux user mapping                  | `'centos'` |
 
 ## profile::consul
 

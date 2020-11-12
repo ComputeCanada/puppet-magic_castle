@@ -588,7 +588,7 @@ class profile::freeipa::mokey(
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://${mokey_hostname}/",
-        'email_from'           => "mokey@${domain_name}",
+        'email_from'           => "admin@${domain_name}",
       }
     ),
   }
