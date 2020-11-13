@@ -92,3 +92,21 @@ variables for each profile.
 | --------------------------------- | :----- | :------------------------------------------------------------------------------ | ------------------------ |
 | `profile::workshop::userzip_url`  | String | URL pointing to a zip that needs to be extracted in each guest account's home   | `''`                     |
 | `profile::workshop::userzip_path` | String | Path on the nfs server where to save the userzip archive                        | `'/project/userzip.zip'` |
+
+## profile::mfa
+
+| Variable                              | Type                | Description                                                                 | Default  |
+| ------------------------------------- | :------------------ | :-------------------------------------------------------------------------- | -------- |
+| `profile::mfa::mgmt`                  | Enum['none', 'duo'] | Choose MFA provider on mgmt nodes                                           | false    |
+| `profile::mfa::login`                 | Enum['none', 'duo'] | Choose MFA provider on login nodes                                          | false    |
+| `profile::mfa::node`                  | Enum['none', 'duo'] | Choose MFA provider on compute nodes                                        | false    |
+
+## duo_unix
+
+| Variable                          | Type   | Description                                                                     | Default                  |
+| --------------------------------- | :----- | :------------------------------------------------------------------------------ | ------------------------ |
+| `duo_unix::usage`                 | String | Either login or pam                                                             | `login`                  |
+| `duo_unix::ikey`                  | String | Duo integration key                                                             | `''`                     |
+| `duo_unix::skey`                  | String | Duo secret key                                                                  | `''`                     |
+| `duo_unix::host`                  | String | Duo api host                                                                    | `''`                     |
+| `duo_unux::motd`                  | String | Enable motd                                                                     | `no`                     |
