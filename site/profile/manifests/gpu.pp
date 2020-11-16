@@ -103,6 +103,18 @@ class profile::gpu::install(Array[String] $packages) {
       ]
     }
 
+    # The device files/dev/nvidia* are normally created by nvidia-modprobe
+    # If the permissions of nvidia-modprobe exclude setuid, some device files
+    # will be missing.
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
+    file { '/usr/bin/nvidia-modprobe':
+      ensure  => present,
+      mode    => '4755',
+      owner   => 'root',
+      group   => 'root',
+      require => Package['nvidia-vgpu-tools'],
+    }
+
     service { 'nvidia-gridd':
       ensure  => 'running',
       enable  => true,
