@@ -10,3 +10,4 @@ RewriteRule ^/$ /ipa/ui [L,NC,R=301]
 RewriteRule ^/ipa/ui/js/freeipa/plugins.js$    /ipa/wsgi/plugins.py [PT]
 
 RequestHeader edit Referer ^https://<%= regsubst("${referer}", '\.', '\.', 'G') %> https://<%= $referee %>
+RequestHeader edit Referer ^https://<%= regsubst("${referer_int}", '\.', '\.', 'G') %> https://<%= $referee %>

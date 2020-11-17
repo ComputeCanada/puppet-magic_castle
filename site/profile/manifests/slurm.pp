@@ -291,38 +291,6 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
       Service['slurmctld']
     ],
   }
-
-  $account_name = 'def-sponsor00'
-  # Create account for every user
-  exec { 'slurm_create_account':
-    command   => @("EOT"/L),
-      sacctmgr add account ${account_name} \
-      -i Description='Cloud Cluster Account' Organization='Compute Canada'
-      |EOT
-    path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless    => "test `sacctmgr show account Names=${account_name} -n | wc -l` == 1",
-    tries     => 4,
-    try_sleep => 15,
-    timeout   => 5,
-    require   => [
-      Service['slurmdbd'],
-      Wait_for['slurmdbd_started'],
-      Wait_for['slurmctldhost_set'],
-      Exec['sacctmgr_add_cluster'],
-    ]
-  }
-
-  # Add guest accounts to the accounting database
-  $nb_accounts = lookup({ name => 'profile::freeipa::guest_accounts::nb_accounts', default_value => 0 })
-  $prefix      = lookup({ name => 'profile::freeipa::guest_accounts::prefix', default_value => 'user' })
-  $nb_zeros    = inline_template("<%= '0' * ('${nb_accounts}'.length - 1) %>")
-  $user_range  = "${prefix}[${nb_zeros}1-${nb_accounts}]"
-  exec{ 'slurm_add_user':
-    command => "sacctmgr add user ${user_range} Account=${account_name} -i",
-    path    => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless  => "test `sacctmgr show user Names=${user_range} -n | wc -l` == ${nb_accounts}",
-    require => Exec['slurm_create_account']
-  }
 }
 
 # Slurm controller class. This where slurmctld is ran.

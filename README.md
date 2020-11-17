@@ -6,12 +6,21 @@ instances in a Magic Castle cluster. The attribution of the roles is done in
 by defined values in the hieradata. The following sections list the available
 variables for each profile.
 
+## profile::accounts
+
+| Variable                                  | Type       | Description                                                                         | Default       |
+| ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
+| `profile::accounts::guests::passwd`       | String[8]  | Password set for all guest accounts (min length: 8)                                 |               |
+| `profile::accounts::guests::nb_accounts`  | Integer[0] | Number of guests account that needs to be created (min value: 0)                    |               |
+| `profile::accounts::guests::prefix`       | String[1]  | Prefix for guest account usernames followed an index i.e: `user12` (min length: 1)  | `'user'`      |
+| `profile::accounts::guests::sponsor`      | String[3]  | Name for the sponsor group and sponsor Slurm account  (min length: 3)               | `'sponsor00'` |
+
 ## profile::base
 
-| Variable                         | Type   | Description                                                             | Default  |
-| -------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::base::email`           | String | Email address that will receive puppet logs for runs with changes       | `undef`  |
-| `profile::base::sudoer_username` | String | Name of the user with sudo rights. Used to config SELinux user mapping  | `'centos'` |
+| Variable                         | Type   | Description                                                                             | Default    |
+| -------------------------------- | :----- | :-------------------------------------------------------------------------------------- | ---------- |
+| `profile::base::admin_email`     | String | Email of the cluster administrator, use to send log and report cluster related issues   | `undef`    |
+| `profile::base::sudoer_username` | String | Name of the user with sudo rights. Used to config SELinux user mapping                  | `'centos'` |
 
 ## profile::consul
 
@@ -44,10 +53,9 @@ variables for each profile.
 | `profile::freeipa::base::dns_ip`                 | String  | FreeIPA DNS server IP Address. Used by the client to join find the server           |          |
 | `profile::freeipa::base::domain_name`            | String  | FreeIPA primary domain                                                              |          |
 | `profile::freeipa::client::server_ip`            | String  | FreeIPA server ip address                                                           |          |
-| `profile::freeipa::guest_accounts::guest_passwd` | String  | Password set for all guest accounts                                                 |          |
-| `profile::freeipa::guest_accounts::nb_accounts`  | Integer | Number of guests account that needs to be created                                   |          |
-| `profile::freeipa::guest_accounts::prefix`       | String  | Prefix used to identified guest accounts followed by their index i.e: `user12`      | `'user'` |
-
+| `profile::freeipa::mokey::port`                  | Integer | Mokey internal web server port                                                      | `12345`  |
+| `profile::freeipa::mokey::enable_user_signup`    | Boolean | Allow users to create an account on the cluster                                     | `true`   |
+| `profile::freeipa::mokey::require_verify_admin`  | Boolean | Require a FreeIPA to enable Mokey created account before usage                      | `true`   |
 
 ## profile::globus
 
@@ -65,9 +73,12 @@ variables for each profile.
 
 ## profile::reverse_proxy
 
-| Variable                              | Type   | Description                                                             | Default  |
-| ------------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::reverse_proxy::domain_name` | String | Domain name corresponding to the main DNS record A registered           |          |
+| Variable                                       | Type   | Description                                                             | Default   |
+| ---------------------------------------------- | :----- | :---------------------------------------------------------------------- | --------- |
+| `profile::reverse_proxy::domain_name`          | String | Domain name corresponding to the main DNS record A registered           |           |
+| `profile::reverse_proxy::jupyterhub_subdomain` | String | Subdomain name used to create the vhost for JupyterHub                  | `jupyter` |
+| `profile::reverse_proxy::ipa_subdomain`        | String | Subdomain name used to create the vhost for FreeIPA                     | `ipa`     |
+| `profile::reverse_proxy::mokey_subdomain`      | String | Subdomain name used to create the vhost for Mokey                       | `mokey`   |
 
 ## profile::slurm
 

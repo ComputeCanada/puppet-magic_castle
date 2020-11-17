@@ -218,47 +218,6 @@ class profile::freeipa::client(String $server_ip)
 
 }
 
-class profile::freeipa::guest_accounts(
-  String $guest_passwd,
-  Integer $nb_accounts,
-  String $prefix = 'user')
-{
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-
-  file { '/sbin/ipa_create_user.py':
-    source => 'puppet:///modules/profile/freeipa/ipa_create_user.py',
-    mode   => '0755'
-  }
-
-  file { '/sbin/mkhomedir.sh':
-    source => 'puppet:///modules/profile/freeipa/mkhomedir.sh',
-    mode   => '0755'
-  }
-
-  exec{ 'ipa_add_user':
-    command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=sponsor00",
-    onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
-                    "IPA_GUEST_PASSWD=${guest_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require     => [File['/sbin/ipa_create_user.py'],
-                    File['kinit_wrapper'],
-                    Exec['ipa-server-install']]
-  }
-
-  exec{ 'mkhomedir':
-    command => "/sbin/mkhomedir.sh  ${prefix}{01..${nb_accounts}}",
-    unless  => "ls /mnt/home/${prefix}{01..${nb_accounts}} &> /dev/null",
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => [
-      Exec['ipa_add_user'],
-      Exec['semanage_fcontext_mnt_home'],
-      Exec['semanage_fcontext_project'],
-      Exec['semanage_fcontext_scratch'],
-    ],
-  }
-}
-
 class profile::freeipa::server
 {
   class { 'profile::freeipa::base':
@@ -325,6 +284,14 @@ class profile::freeipa::server
     require => [Package['ipa-server-dns']],
     before  => File['dhclient.conf'],
     notify  => Service['systemd-logind']
+  }
+
+  file_line { 'ipa_server_fileline':
+    ensure  => present,
+    path    => '/etc/ipa/default.conf',
+    after   => "domain = ${int_domain_name}",
+    line    => "server = ${::hostname}.${int_domain_name}",
+    require => Exec['ipa-server-install'],
   }
 
   exec { 'ipa_config-mod_auth-otp':
@@ -444,6 +411,7 @@ class profile::freeipa::server
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-server-install'],
+    notify      => Service['httpd'],
   }
 
   service { 'ipa':
@@ -462,12 +430,179 @@ class profile::freeipa::server
     content => epp(
       'profile/freeipa/ipa-rewrite.conf',
       {
-        'referee' => $fqdn,
-        'referer' => "ipa.${domain_name}",
+        'referee'     => $fqdn,
+        'referer'     => "ipa.${domain_name}",
+        'referer_int' => "ipa.${int_domain_name}",
       }
     ),
     notify  => Service['httpd'],
     require => Exec['ipa-server-install'],
   }
 
+}
+
+class profile::freeipa::mokey(
+  Integer $port,
+  Boolean $enable_user_signup,
+  Boolean $require_verify_admin,
+)
+{
+  yumrepo { 'mokey-copr-repo':
+    enabled             => true,
+    descr               => 'Copr repo for mokey owned by cmdntrf',
+    baseurl             => "https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/pubkey.gpg',
+    repo_gpgcheck       => 0,
+  }
+
+  package { 'mokey':
+    ensure  => 'installed',
+    require => [
+      Yumrepo['mokey-copr-repo'],
+    ],
+  }
+
+  $ipa_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $mokey_password = lookup('profile::freeipa::mokey::passwd')
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+
+  mysql::db { 'mokey':
+    ensure   => present,
+    user     => 'mokey',
+    password => $mokey_password,
+    host     => 'localhost',
+    grant    => ['ALL'],
+  }
+
+  exec { 'mysql_mokey_schema':
+    command     => Sensitive("mysql -u mokey -p${mokey_password} mokey < /usr/share/mokey/ddl/schema.sql"),
+    refreshonly => true,
+    require     => [
+      Package['mokey'],
+    ],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Mysql::Db['mokey'],
+  }
+
+  exec { 'ipa_mokey_role_add':
+    command     => 'kinit_wrapper ipa role-add "Mokey User Manager" --desc="Mokey User management"',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
+  }
+
+  exec { 'ipa_mokey_role_add_privilege':
+    command     => 'kinit_wrapper ipa role-add-privilege "Mokey User Manager" --privilege="User Administrators"',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa_mokey_role_add'],
+  }
+
+  exec { 'ipa_mokey_user_add':
+    command     => 'kinit_wrapper ipa user-add mokeyapp --first Mokey --last App',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa_mokey_role_add'],
+  }
+
+  exec { 'ipa_mokey_role_add_member':
+    command     => 'kinit_wrapper ipa role-add-member "Mokey User Manager" --users=mokeyapp',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => [
+      Exec['ipa_mokey_role_add'],
+      Exec['ipa_mokey_user_add'],
+    ]
+  }
+
+  file { '/etc/mokey/keytab':
+    ensure  => 'directory',
+    seltype => 'etc_t',
+    group   => 'mokey',
+    mode    => '0640',
+    require => Package['mokey'],
+  }
+
+  # TODO: Fix server hostname to ipa.${int_domain_name}
+  exec { 'ipa_getkeytab_mokeyapp':
+    command     => 'kinit_wrapper ipa-getkeytab -s $(grep -m1 -oP \'(host|server) = \K.+\' /etc/ipa/default.conf) -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+      File['/etc/mokey/keytab']
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => [
+      Exec['ipa_mokey_role_add'],
+      Exec['ipa_mokey_user_add'],
+    ]
+  }
+
+  file { '/etc/mokey/keytab/mokeyapp.keytab':
+    group   => 'mokey',
+    mode    => '0640',
+    require => [
+      Package['mokey'],
+      Exec['ipa_mokey_user_add'],
+      Exec['ipa_getkeytab_mokeyapp'],
+    ]
+  }
+
+  $mokey_subdomain = lookup('profile::reverse_proxy::mokey_subdomain')
+  $mokey_hostname = "${mokey_subdomain}.${domain_name}"
+  file { '/etc/mokey/mokey.yaml':
+    group   => 'mokey',
+    mode    => '0640',
+    require => [
+      Package['mokey'],
+    ],
+    content => epp(
+      'profile/freeipa/mokey.yaml',
+      {
+        'user'                 => 'mokey',
+        'password'             => $mokey_password,
+        'dbname'               => 'mokey',
+        'port'                 => $port,
+        'auth_key'             => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'enable_user_signup'   => $enable_user_signup,
+        'require_verify_admin' => $require_verify_admin,
+        'email_link_base'      => "https://${mokey_hostname}/",
+        'email_from'           => "admin@${domain_name}",
+      }
+    ),
+  }
+
+  service { 'mokey':
+    ensure    => running,
+    enable    => true,
+    require   => [
+      Package['mokey'],
+      Exec['ipa_getkeytab_mokeyapp'],
+    ],
+    subscribe => [
+      File['/etc/mokey/mokey.yaml'],
+      Mysql::Db['mokey'],
+    ]
+  }
 }

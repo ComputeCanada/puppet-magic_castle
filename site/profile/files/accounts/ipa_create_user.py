@@ -1,7 +1,11 @@
 #!/usr/libexec/platform-python
 import argparse
+import grp
+import logging
+import logging.handlers
 import os
 import sys
+import time
 
 from ipalib import api, errors
 from ipalib.cli import cli
@@ -9,6 +13,19 @@ from ipapython import ipautil
 from ipaplatform.paths import paths
 
 from six import text_type
+
+# TODO: get this value from /etc/logins.def
+UID_MAX = 60000
+
+iau_logger = logging.getLogger("IPA_CREATE_USER.py")
+iau_logger.setLevel(logging.INFO,)
+formatter = logging.Formatter(
+    fmt="%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s",
+    datefmt="%Y-%m-%d,%H:%M:%S",
+)
+handler = logging.handlers.RotatingFileHandler("/var/log/ipa_user_add.log")
+handler.setFormatter(fmt=formatter)
+iau_logger.addHandler(handler)
 
 
 def init_api():
@@ -31,12 +48,29 @@ def user_add(uid, first, last, password, shell):
     except:
         pass
     else:
-        kargs["uidnumber"] = uidnumber
+        if uidnumber > UID_MAX:
+            kargs["uidnumber"] = uidnumber
 
-    try:
-        return api.Command.user_add(**kargs)
-    except errors.DuplicateEntry:
-        return
+    # Try up to 5 times to add user to the database
+    for i in range(1, 6):
+        try:
+            iau_logger.info("adding user {uid} (Try {i} / 5)".format(uid=uid, i=i))
+            return api.Command.user_add(**kargs)
+        except errors.DuplicateEntry:
+            iau_logger.warning(
+                "User {uid} already in database (Try {i} / 5)".format(uid=uid, i=i,)
+            )
+            return
+        except errors.DatabaseError as err:
+            iau_logger.error(
+                "Database error while trying to create user: {uid} (Try {i} / 5). Exception: {err}".format(
+                    uid=uid, i=i, err=err
+                )
+            )
+            # Give time to slapd to cleanup
+            time.sleep(1.0)
+    else:
+        raise Exception("Could not add user: {uid}".format(**kargs))
 
 
 def group_add(name):
