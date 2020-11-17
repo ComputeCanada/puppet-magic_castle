@@ -1,13 +1,7 @@
 #!/bin/bash
-
-USERNAMES=${@}
-
-if [ -z "${USERNAMES}" ]; then
-    echo "$0 username1 [username2 ...]"
-    exit
-fi
-
-for USERNAME in ${USERNAMES}; do
+tail -f /var/log/dirsrv/slapd-*/access |
+grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
+while read USERNAME; do
     USER_HOME="/mnt/home/$USERNAME"
     rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=D700,F700 /etc/skel/ $USER_HOME
     restorecon -F -R $USER_HOME

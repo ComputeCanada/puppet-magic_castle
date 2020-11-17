@@ -1,13 +1,13 @@
 [Unit]
-Description=Create /project directories for IPA users
+Description=Create home directory for new IPA users
 BindsTo=ipa.service
 
 [Service]
 Type=simple
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=mkprojectdir_slapd
-ExecStart=/sbin/mkprojectdaemon.sh
+SyslogIdentifier=mkhome
+ExecStart=/sbin/mkhome.sh
 
 [Install]
 WantedBy=multi-user.target

@@ -9,46 +9,47 @@ class profile::accounts {
     mode   => '0755'
   }
 
-  file { '/sbin/mkhomedir.sh':
-    source => 'puppet:///modules/profile/accounts/mkhomedir.sh',
-    mode   => '0755'
-  }
-
-  file { 'mkhomedir_slapd.service':
+  file { '/sbin/mkhome.sh':
     ensure => 'present',
-    path   => '/lib/systemd/system/mkhomedir_slapd.service',
-    source => 'puppet:///modules/profile/accounts/mkhomedir_slapd.service'
+    source => 'puppet:///modules/profile/accounts/mkhome.sh',
+    mode   => '0755',
+    owner  => 'root',
   }
 
-  service { 'mkhomedir_slapd':
+  file { 'mkhome.service':
+    ensure => 'present',
+    path   => '/lib/systemd/system/mkhome.service',
+    source => 'puppet:///modules/profile/accounts/mkhome.service'
+  }
+
+  service { 'mkhome':
     ensure  => running,
     enable  => true,
     require => [
-      File['/sbin/mkhomedir.sh'],
-      File['mkhomedir_slapd.service'],
+      File['/sbin/mkhome.sh'],
+      File['mkhome.service'],
     ]
   }
 
-  file { 'mkprojectdir_slapd.service':
+  file { 'mkproject.service':
     ensure => 'present',
-    path   => '/lib/systemd/system/mkprojectdir_slapd.service',
-    source => 'puppet:///modules/profile/accounts/mkprojectdir_slapd.service'
+    path   => '/lib/systemd/system/mkproject.service',
+    source => 'puppet:///modules/profile/accounts/mkproject.service'
   }
 
-  file { 'mkprojectdaemon.sh':
+  file { '/sbin/mkproject.sh':
     ensure => 'present',
-    path   => '/sbin/mkprojectdaemon.sh',
-    source => 'puppet:///modules/profile/accounts/mkprojectdaemon.sh',
+    source => 'puppet:///modules/profile/accounts/mkproject.sh',
     mode   => '0755',
-    owner  => 'root'
+    owner  => 'root',
   }
 
-  service { 'mkprojectdir_slapd':
+  service { 'mkproject':
     ensure  => running,
     enable  => true,
     require => [
-      File['mkprojectdaemon.sh'],
-      File['mkprojectdir_slapd.service'],
+      File['/sbin/mkproject.sh'],
+      File['mkproject.service'],
     ]
   }
 }

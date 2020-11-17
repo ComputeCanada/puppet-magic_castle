@@ -1,0 +1,13 @@
+[Unit]
+Description=Create /project directories for IPA users
+BindsTo=ipa.service
+
+[Service]
+Type=simple
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=mkproject
+ExecStart=/sbin/mkproject.sh
+
+[Install]
+WantedBy=multi-user.target
