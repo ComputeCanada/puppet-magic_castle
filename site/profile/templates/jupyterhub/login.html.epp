@@ -25,6 +25,7 @@ Powered by Magic Castle
 {% endblock %}
 
 {% block script %}
+<% if $enable_user_signup { -%>
 <script>
 $(".auth-form-body").after(`
 <div class="auth-form-footer">
@@ -38,4 +39,5 @@ $(".auth-form-body").after(`
 </div>`
 );
 </script>
+<% } -%>
 {% endblock %}
