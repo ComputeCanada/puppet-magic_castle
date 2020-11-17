@@ -54,21 +54,23 @@ class profile::accounts {
 }
 
 class profile::accounts::guests(
-  String $passwd,
-  Integer $nb_accounts,
-  String $prefix = 'user',
-  String $sponsor = 'sponsor00'
+  String[8] $passwd,
+  Integer[0] $nb_accounts,
+  String[1] $prefix = 'user',
+  String[3] $sponsor = 'sponsor00'
   )
 {
   require profile::accounts
 
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
-  exec{ 'ipa_add_user':
-    command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=${$sponsor}",
-    onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
-                    "IPA_GUEST_PASSWD=${passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    timeout     => $nb_accounts * 10,
+  if $nb_accounts > 0 {
+    exec{ 'ipa_add_user':
+      command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=${$sponsor}",
+      onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
+      environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
+                      "IPA_GUEST_PASSWD=${passwd}"],
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      timeout     => $nb_accounts * 10,
+    }
   }
 }

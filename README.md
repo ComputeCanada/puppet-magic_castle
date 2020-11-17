@@ -8,12 +8,12 @@ variables for each profile.
 
 ## profile::accounts
 
-| Variable                                  | Type    | Description                                                                     | Default       |
-| ----------------------------------------- | :-----  | :------------------------------------------------------------------------------ | ------------- |
-| `profile::accounts::guests::passwd`       | String  | Password set for all guest accounts                                             |               |
-| `profile::accounts::guests::nb_accounts`  | Integer | Number of guests account that needs to be created                               |               |
-| `profile::accounts::guests::prefix`       | String  | Prefix used to identified guest accounts followed by their index i.e: `user12`  | `'user'`      |
-| `profile::accounts::guests::sponsor`      | String  | Name for the sponsor group and sponsor Slurm account                            | `'sponsor00'` |
+| Variable                                  | Type       | Description                                                                         | Default       |
+| ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
+| `profile::accounts::guests::passwd`       | String[8]  | Password set for all guest accounts (min length: 8)                                 |               |
+| `profile::accounts::guests::nb_accounts`  | Integer[0] | Number of guests account that needs to be created (min value: 0)                    |               |
+| `profile::accounts::guests::prefix`       | String[1]  | Prefix for guest account usernames followed an index i.e: `user12` (min length: 1)  | `'user'`      |
+| `profile::accounts::guests::sponsor`      | String[3]  | Name for the sponsor group and sponsor Slurm account  (min length: 3)               | `'sponsor00'` |
 
 ## profile::base
 
