@@ -91,18 +91,11 @@ class profile::slurm::base (
     mode   => '0755'
   }
 
-  $node_template = @(END)
-# Nodes definition
-{{ range service "slurmd" -}}
-NodeName={{.Node}} CPUs={{.ServiceMeta.cpus}} RealMemory={{.ServiceMeta.realmemory}} {{if gt (parseInt .ServiceMeta.gpus) 0}}Gres=gpu:{{.ServiceMeta.gpus}}{{end}}
-{{ end -}}
-END
-
   file { '/etc/slurm/node.conf.tpl':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => $node_template,
+    source  => 'puppet:///modules/profile/slurm/node.conf.tpl',
     seltype => 'etc_t',
     notify  => Service['consul-template'],
   }
