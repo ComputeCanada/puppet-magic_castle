@@ -7,39 +7,29 @@ class profile::cvmfs::client(
     ensure   => 'installed',
     provider => 'rpm',
     name     => 'cvmfs-release-2-6.noarch',
-    source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm'
+    source   => 'http://cvmrepo.web.cern.ch/cvmrepo/yum/cvmfs-release-latest.noarch.rpm'
   }
 
-  package { 'cc-cvmfs-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => 'computecanada-release-1.0-1.noarch',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
-  }
-
-  package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
+  package { ['cvmfs', 'cvmfs-fuse3', 'cvmfs-config-default', 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
+    require => [Package['cvmfs-repo']]
   }
 
-  file { '/etc/cvmfs/default.local.ctmpl':
+  file { '/etc/cvmfs/default.local':
+    $str = 'CVMFS_QUOTA_LIMIT=10000
+        CVMFS_HTTP_PROXY="DIRECT"
+        CVMFS_REPOSITORIES="cvmfs-config.eessi-hpc.org,pilot.eessi-hpc.org"
+        '
     ensure  => 'present',
-    content => epp('profile/cvmfs/default.local', {
-      'quota_limit'  => $quota_limit,
-      'repositories' => $repositories,
-    }),
-    require => Package['cvmfs']
+    content => $str,
+    require => Package['cvmfs'],
+    mode   => '0644',
+    notify => Exec[update_cvmfs],
   }
 
-  exec { 'init_default.local':
-    command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
-    path        => [$consul_template::bin_dir],
-    refreshonly => true,
-    require     => [
-      Class['consul_template::install'],
-      Service['consul'],
-    ],
-    subscribe   => File['/etc/cvmfs/default.local.ctmpl']
+  exec { "update_cvmfs":
+    command     => "usr/bin/cvmfs_config reload",
+    refreshonly => true
   }
 
   consul::service{ 'cvmfs':
@@ -50,42 +40,20 @@ class profile::cvmfs::client(
     },
   }
 
-  file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
-  }
-
-  file { '/etc/profile.d/z-01-computecanada.sh':
+  file { '/etc/profile.d/z-01-eessi.sh':
     ensure  => 'present',
-    content => epp('profile/cvmfs/z-01-computecanada.sh', {
-      'lmod_default_modules' => $lmod_default_modules,
-    }),
+    content => 'source /cvmfs/pilot.eessi-hpc.org/2020.10/init/bash',
   }
 
-  consul_template::watch { 'z-00-rsnt_arch.sh':
-    require     => File['/etc/consul-template/z-00-rsnt_arch.sh.ctmpl'],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
-      destination => '/etc/profile.d/z-00-rsnt_arch.sh',
-      command     => '/usr/bin/true',
-    }
-  }
-
-  consul_template::watch { '/etc/cvmfs/default.local':
-    require     => File['/etc/cvmfs/default.local.ctmpl'],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/cvmfs/default.local.ctmpl',
-      destination => '/etc/cvmfs/default.local',
-      command     => '/usr/bin/cvmfs_config reload',
-    }
-  }
+  ensure_packages(['archspec'], {
+         ensure   => present,
+         provider => 'pip',
+         require  => [ Package['python-pip'], ],
+  })
 
   service { 'autofs':
     ensure    => running,
     enable    => true,
-    subscribe => Exec['init_default.local'],
   }
 
   # Fix issue with BASH_ENV, SSH and lmod where
