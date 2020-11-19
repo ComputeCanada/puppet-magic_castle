@@ -10,9 +10,16 @@ class profile::cvmfs::client(
     source   => 'http://cvmrepo.web.cern.ch/cvmrepo/yum/cvmfs-release-latest.noarch.rpm'
   }
 
-  package { ['cvmfs', 'cvmfs-fuse3', 'cvmfs-config-default', 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm']:
+  package { 'cvmfs-eessi':
+    ensure   => 'installed',
+    provider => 'rpm',
+    name     => 'cvmfs-config-eessi',
+    source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm'
+  }
+
+  package { ['cvmfs', 'cvmfs-fuse3', 'cvmfs-config-default']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo']]
+    require => [Package['cvmfs-repo'], Package['cvmfs-eessi']]
   }
 
 
@@ -26,7 +33,7 @@ class profile::cvmfs::client(
     content => $str,
     require => Package['cvmfs'],
     mode   => '0644',
-    notify => Exec[update_cvmfs],
+    notify => Exec["update_cvmfs"],
   }
 
   exec { "update_cvmfs":
@@ -45,6 +52,10 @@ class profile::cvmfs::client(
   file { '/etc/profile.d/z-01-eessi.sh':
     ensure  => 'present',
     content => 'source /cvmfs/pilot.eessi-hpc.org/2020.10/init/bash',
+  }
+
+  package { ['python-pip']:
+    ensure  => 'installed',
   }
 
   ensure_packages(['archspec'], {
