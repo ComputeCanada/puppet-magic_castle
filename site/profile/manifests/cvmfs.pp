@@ -15,11 +15,13 @@ class profile::cvmfs::client(
     require => [Package['cvmfs-repo']]
   }
 
-  file { '/etc/cvmfs/default.local':
-    $str = 'CVMFS_QUOTA_LIMIT=10000
+
+  $str = 'CVMFS_QUOTA_LIMIT=10000
         CVMFS_HTTP_PROXY="DIRECT"
         CVMFS_REPOSITORIES="cvmfs-config.eessi-hpc.org,pilot.eessi-hpc.org"
         '
+
+  file { '/etc/cvmfs/default.local':
     ensure  => 'present',
     content => $str,
     require => Package['cvmfs'],
