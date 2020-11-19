@@ -39,11 +39,9 @@ jupyterhub::jupyterhub_config_hash:
     ui_args:
       notebook:
         name: Jupyter Notebook
-        modules: ['ipython-kernel/3.7']
       lab:
         name: JupyterLab
         args: ['--SingleUserNotebookApp.default_url=/lab']
-        modules: ['ipython-kernel/3.7']
       terminal:
         name: Terminal
         args: ['--SingleUserNotebookApp.default_url=/terminals/1']
