@@ -34,6 +34,36 @@ jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
 
+jupyterhub::jupyterhub_config_hash:
+SlurmFormSpawner:
+  ui_args:
+    notebook:
+      name: Jupyter Notebook
+      modules: ['ipython-kernel/3.7']
+    lab:
+      name: JupyterLab
+      args: ['--SingleUserNotebookApp.default_url=/lab']
+      modules: ['ipython-kernel/3.7']
+    terminal:
+      name: Terminal
+      args: ['--SingleUserNotebookApp.default_url=/terminals/1']
+    rstudio:
+      name: RStudio
+      args: ['--SingleUserNotebookApp.default_url=/rstudio']
+      modules: ['gcc/7.3.0', 'rstudio-server']
+    code-server:
+      name: VS Code
+      args: ['--SingleUserNotebookApp.default_url=/code-server']
+      modules: ['code-server']
+    desktop:
+      name: Desktop
+      args: ['--SingleUserNotebookApp.default_url=/Desktop']
+
+SbatchForm:
+  ui:
+    choices: ['notebook', 'lab', 'terminal', 'code-server', 'rstudio', 'desktop']
+    def: 'lab'
+
 squid::cache_mem: "256 MB"
 squid::extra_config_sections:
   general:
