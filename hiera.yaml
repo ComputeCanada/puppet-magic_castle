@@ -15,7 +15,7 @@ hierarchy:
   - name: "OS version"
     path: "os/%{facts.os.name}/%{facts.os.release.major}.yaml"
   - name: "Software stack"
-    path: "stack/eessi.yaml"
+    path: "stack/computecanada.yaml"
   - name: "Other YAML hierarchy levels"
     paths:
       - "common.yaml"

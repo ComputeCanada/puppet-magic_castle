@@ -28,34 +28,6 @@ fail2ban::custom_jails:
     filter_includes: 'before = common.conf'
     filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
-jupyterhub::jupyterhub_config_hash:
-  SlurmFormSpawner:
-    ui_args:
-      notebook:
-        name: Jupyter Notebook
-      lab:
-        name: JupyterLab
-        args: ['--SingleUserNotebookApp.default_url=/lab']
-      terminal:
-        name: Terminal
-        args: ['--SingleUserNotebookApp.default_url=/terminals/1']
-      rstudio:
-        name: RStudio
-        args: ['--SingleUserNotebookApp.default_url=/rstudio']
-        modules: ['gcc/7.3.0', 'rstudio-server']
-      code-server:
-        name: VS Code
-        args: ['--SingleUserNotebookApp.default_url=/code-server']
-        modules: ['code-server']
-      desktop:
-        name: Desktop
-        args: ['--SingleUserNotebookApp.default_url=/Desktop']
-
-  SbatchForm:
-    ui:
-      choices: ['notebook', 'lab', 'terminal', 'code-server', 'rstudio', 'desktop']
-      def: 'lab'
-
 squid::cache_mem: "256 MB"
 squid::extra_config_sections:
   general:
