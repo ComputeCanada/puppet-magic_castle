@@ -28,12 +28,6 @@ fail2ban::custom_jails:
     filter_includes: 'before = common.conf'
     filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
-jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/software/x86_64/intel/skylake_avx512/software/Python/3.8.2-GCCcore-9.3.0/bin/python
-jupyterhub::kernel::venv::pip_environment:
-  PYTHONPATH: ""
-  PIP_CONFIG_FILE: ""
-
 squid::cache_mem: "256 MB"
 squid::extra_config_sections:
   general:
@@ -47,15 +41,6 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.net)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
-
-profile::cvmfs::client::repositories:
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
-  - cvmfs-config.eessi-hpc.org
-  - pilot.eessi-hpc.org
-
-profile::cvmfs::client::quota_limit: 4096
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/2020.10/init/bash"
 
 profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'

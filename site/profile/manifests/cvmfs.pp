@@ -1,5 +1,6 @@
 class profile::cvmfs::client(
   Integer $quota_limit,
+  String $stack,
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
@@ -25,9 +26,15 @@ class profile::cvmfs::client(
     source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm'
   }
 
-  package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
+  package { 'computecanada-cvmfs':
+    ensure   => 'installed',
+    name     => 'cvmfs-config-computecanada',
+    require => [Package['cc-cvmfs-repo']]
+  }
+
+  package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo'], Package['eessi-cvmfs']]
+    require => [Package['cvmfs-repo'], Package["$stack-cvmfs"]]
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':

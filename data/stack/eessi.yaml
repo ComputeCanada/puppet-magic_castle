@@ -1,0 +1,13 @@
+jupyterhub::kernel::setup: venv
+jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/software/x86_64/intel/skylake_avx512/software/Python/3.8.2-GCCcore-9.3.0/bin/python
+jupyterhub::kernel::venv::pip_environment:
+  PYTHONPATH: ""
+  PIP_CONFIG_FILE: ""
+
+profile::cvmfs::client::repositories:
+  - cvmfs-config.eessi-hpc.org
+  - pilot.eessi-hpc.org
+
+profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/2020.10/init/bash"
+profile::cvmfs::client::stack: "eessi"
