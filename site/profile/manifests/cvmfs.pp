@@ -17,7 +17,7 @@ class profile::cvmfs::client(
     source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
   }
 
-  package { 'eessi-cvmfs-repo':
+  package { 'eessi-cvmfs':
     ensure   => 'installed',
     provider => 'rpm',
     name     => 'cvmfs-config-eessi-0.2.3-1.noarch',
@@ -26,7 +26,7 @@ class profile::cvmfs::client(
 
   package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo'], Package['eessi-cvmfs-repo']]
+    require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo'], Package['eessi-cvmfs']]
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
