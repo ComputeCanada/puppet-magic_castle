@@ -1,5 +1,6 @@
 class profile::cvmfs::client(
   Integer $quota_limit,
+  String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
 ){
@@ -62,10 +63,11 @@ class profile::cvmfs::client(
     source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
   }
 
-  file { '/etc/profile.d/z-01-computecanada.sh':
+  file { '/etc/profile.d/z-01-site.sh':
     ensure  => 'present',
-    content => epp('profile/cvmfs/z-01-computecanada.sh', {
+    content => epp('profile/cvmfs/z-01-site.sh', {
       'lmod_default_modules' => $lmod_default_modules,
+      'initial_profile' => $initial_profile,
     }),
   }
 

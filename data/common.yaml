@@ -55,6 +55,7 @@ profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
 
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/2020.10/init/bash"
 
 profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'

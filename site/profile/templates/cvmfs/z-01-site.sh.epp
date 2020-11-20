@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [[ $UID -gt 10000 ]]; then
+    export LMOD_SYSTEM_DEFAULT_MODULES="<%= $lmod_default_modules.join(' ') %>"
+    if [[ -r <%= $initial_profile %>  ]]; then
+        source <%= $initial_profile %>
+    fi
+fi
