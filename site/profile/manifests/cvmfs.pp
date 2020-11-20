@@ -67,7 +67,7 @@ class profile::cvmfs::client(
     ensure  => 'present',
     content => epp('profile/cvmfs/z-01-site.sh', {
       'lmod_default_modules' => $lmod_default_modules,
-      'initial_profile' => $initial_profile,
+      'initial_profile'      => $initial_profile,
     }),
   }
 
