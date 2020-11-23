@@ -42,4 +42,3 @@ profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/2020.10/ini
 profile::cvmfs::client::stack: "eessi"
 
 profile::slurm::base::force_slurm_in_path: true
-

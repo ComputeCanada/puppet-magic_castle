@@ -131,7 +131,7 @@ END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => "$slurm_path_mask$slurm_path"
+    content => "${slurm_path_mask}${slurm_path}"
   }
 
   file { '/etc/munge/munge.key':
