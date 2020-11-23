@@ -1,0 +1,16 @@
+---
+profile::freeipa::server::regen_cert_cmd: 'ipa-getcert resubmit -d /etc/httpd/alias -n Server-Cert'
+profile::gpu::install::packages:
+    - nvidia-driver-latest-dkms
+    - nvidia-driver-latest-dkms-cuda
+    - nvidia-driver-latest-dkms-cuda-libs
+    - nvidia-driver-latest-dkms-devel
+    - nvidia-driver-latest-dkms-libs
+    - nvidia-driver-latest-dkms-NvFBCOpenGL
+    - nvidia-driver-latest-dkms-NVML
+    - nvidia-modprobe-latest-dkms
+    - nvidia-persistenced-latest-dkms
+    - nvidia-xconfig-latest-dkms
+    - kmod-nvidia-latest-dkms
+profile::cvmfs::client::lmod_default_modules:
+    - GCC
