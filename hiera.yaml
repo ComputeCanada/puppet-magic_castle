@@ -15,7 +15,7 @@ hierarchy:
   - name: "OS version"
     path: "os/%{facts.os.name}/%{facts.os.release.major}.yaml"
   - name: "Software stack"
-    path: "software_stack/%{facts.software_stack}/software_stack.yaml"
+    path: "software_stack/%{facts.software_stack}.yaml"
   - name: "Other YAML hierarchy levels"
     paths:
       - "common.yaml"
