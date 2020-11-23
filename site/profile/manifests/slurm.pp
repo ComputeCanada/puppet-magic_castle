@@ -110,9 +110,9 @@ END
   }
 
   if $force_slurm_in_path {
-    $slurm_path_mask = 'SLURM_PATH_MASK=true\n'
+    $slurm_path_mask = 'SLURM_PATH_MASK=true'
   } else {
-    $slurm_path_mask = 'SLURM_PATH_MASK=$($(test $UID -lt 60000) echo $?)\n'
+    $slurm_path_mask = 'SLURM_PATH_MASK=$($(test $UID -lt 60000) echo $?)'
   }
 
   $slurm_path = @(END)
@@ -131,7 +131,7 @@ END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => "${slurm_path_mask}${slurm_path}"
+    content => "${slurm_path_mask}\n${slurm_path}"
   }
 
   file { '/etc/munge/munge.key':
