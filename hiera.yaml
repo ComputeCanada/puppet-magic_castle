@@ -13,9 +13,9 @@ hierarchy:
   - name: "Terraform data"
     path: "terraform_data.yaml"
   - name: "OS version"
-    path: "eessi/os/%{facts.os.name}/%{facts.os.release.major}.yaml"
+    path: "computecanada/os/%{facts.os.name}/%{facts.os.release.major}.yaml"
   - name: "Software stack"
-    path: "eessi/software.yaml"
+    path: "computecanada/software.yaml"
   - name: "Other YAML hierarchy levels"
     paths:
       - "common.yaml"
