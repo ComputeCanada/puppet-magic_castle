@@ -1,6 +1,5 @@
 class profile::cvmfs::client(
   Integer $quota_limit,
-  String $stack,
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
@@ -12,14 +11,14 @@ class profile::cvmfs::client(
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm'
   }
 
-  if $stack == 'eessi' {
+  if $::software_stack == 'eessi' {
     package { 'stack':
       ensure   => 'installed',
       provider => 'rpm',
       name     => 'cvmfs-config-eessi-0.2.3-1.noarch',
       source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm'
     }
-  } elsif $stack == 'computecanada' {
+  } elsif $::software_stack == 'computecanada' {
     package { 'cc-cvmfs-repo':
       ensure   => 'installed',
       provider => 'rpm',
