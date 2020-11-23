@@ -117,7 +117,7 @@ END
 
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
-if [ $slurm_path_mask = 0 ]; then
+if [ "$slurm_path_mask" -eq "0" ]; then
   export SLURM_HOME=/opt/software/slurm
 
   export PATH=$SLURM_HOME/bin:$PATH
