@@ -110,14 +110,14 @@ END
   }
 
   if $force_slurm_in_path {
-    $slurm_path_mask = 'SLURM_PATH_MASK=true'
+    $slurm_path_mask = 'slurm_path_mask=0'
   } else {
-    $slurm_path_mask = 'SLURM_PATH_MASK=$($(test $UID -lt 60000) echo $?)'
+    $slurm_path_mask = 'slurm_path_mask=$($(test $UID -lt 60000) echo $?)'
   }
 
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
-if [[ $SLURM_PATH_MASK ]]; then
+if [ $slurm_path_mask = 0 ]; then
   export SLURM_HOME=/opt/software/slurm
 
   export PATH=$SLURM_HOME/bin:$PATH
