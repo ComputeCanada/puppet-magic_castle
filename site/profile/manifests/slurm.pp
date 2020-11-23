@@ -7,7 +7,9 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Integer[19, 20] $slurm_version = 19)
+  Integer[19, 20] $slurm_version = 19,
+  Boolean $force_slurm_in_path = false
+)
 {
   group { 'slurm':
     ensure => 'present',
@@ -107,9 +109,15 @@ END
     notify  => Service['consul-template'],
   }
 
+  if $force_slurm_in_path {
+    $slurm_path_mask = 'SLURM_PATH_MASK=true\n'
+  } else {
+    $slurm_path_mask = 'SLURM_PATH_MASK=$($(test $UID -lt 60000) echo $?)\n'
+  }
+
   $slurm_path = @(END)
 # Add Slurm custom paths for local users
-if [[ $UID -lt 10000 ]]; then
+if [[ $SLURM_PATH_MASK ]]; then
   export SLURM_HOME=/opt/software/slurm
 
   export PATH=$SLURM_HOME/bin:$PATH
@@ -123,7 +131,7 @@ END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => $slurm_path
+    content => "$slurm_path_mask$slurm_path"
   }
 
   file { '/etc/munge/munge.key':
