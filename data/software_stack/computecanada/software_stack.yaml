@@ -1,0 +1,42 @@
+jupyterhub::kernel::setup: venv
+jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
+jupyterhub::kernel::venv::pip_environment:
+  PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
+  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
+
+jupyterhub::jupyterhub_config_hash:
+  SlurmFormSpawner:
+    ui_args:
+      notebook:
+        name: Jupyter Notebook
+      lab:
+        name: JupyterLab
+        args: ['--SingleUserNotebookApp.default_url=/lab']
+      terminal:
+        name: Terminal
+        args: ['--SingleUserNotebookApp.default_url=/terminals/1']
+      rstudio:
+        name: RStudio
+        args: ['--SingleUserNotebookApp.default_url=/rstudio']
+        modules: ['gcc/7.3.0', 'rstudio-server']
+      code-server:
+        name: VS Code
+        args: ['--SingleUserNotebookApp.default_url=/code-server']
+        modules: ['code-server']
+      desktop:
+        name: Desktop
+        args: ['--SingleUserNotebookApp.default_url=/Desktop']
+
+  SbatchForm:
+    ui:
+      choices: ['notebook', 'lab', 'terminal', 'code-server', 'rstudio', 'desktop']
+      def: 'lab'
+
+
+profile::cvmfs::client::repositories:
+  - cvmfs-config.computecanada.ca
+  - soft.computecanada.ca
+
+profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
+profile::cvmfs::client::stack: "computecanada"
