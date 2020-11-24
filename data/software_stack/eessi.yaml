@@ -1,5 +1,5 @@
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: "/cvmfs/pilot.eessi-hpc.org/2020.10/compat/%{facts.os.architecture}/usr/bin/python3"
+jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/software/x86_64/intel/skylake_avx512/software/Python/3.8.2-GCCcore-9.3.0/bin/python
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
