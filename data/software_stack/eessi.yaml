@@ -1,5 +1,5 @@
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/software/x86_64/intel/skylake_avx512/software/Python/3.8.2-GCCcore-9.3.0/bin/python
+jupyterhub::kernel::venv::python: "$(base='/cvmfs/pilot.eessi-hpc.org/2020.10' subdir=$(${base}/compat/$(uname -m)/usr/bin/python3 ${base}/init/eessi_software_subdir_for_host.py ${base}); echo $(ls ${base}/software/$subdir/software/Python/3*/bin/python))"
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
