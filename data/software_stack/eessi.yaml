@@ -1,5 +1,5 @@
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/init/eessi_pilot_python3
+jupyterhub::kernel::venv::python: /usr/bin/eessi_pilot_python3
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
@@ -18,7 +18,7 @@ jupyterhub::jupyterhub_config_hash:
       rstudio:
         name: RStudio
         args: ['--SingleUserNotebookApp.default_url=/rstudio']
-        modules: ['gcc/7.3.0', 'rstudio-server']
+        modules: ['rstudio']
       code-server:
         name: VS Code
         args: ['--SingleUserNotebookApp.default_url=/code-server']
