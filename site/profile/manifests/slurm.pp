@@ -110,12 +110,12 @@ END
   }
 
   $slurm_path = @(END)
-<% if $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
+<% if ! $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
   export SLURM_HOME=/opt/software/slurm
   export PATH=$SLURM_HOME/bin:$PATH
   export MANPATH=$SLURM_HOME/share/man:$MANPATH
   export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-<% if $force_slurm_in_path { %>fi<% } %>
+<% if ! $force_slurm_in_path { %>fi<% } %>
 END
 
   file { '/etc/profile.d/z-00-slurm.sh':
