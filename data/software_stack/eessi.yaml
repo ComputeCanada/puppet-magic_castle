@@ -1,5 +1,5 @@
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/2020.10/init/eessi_pilot_python3
+jupyterhub::kernel::venv::python: /usr/bin/eessi_pilot_python3
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
@@ -38,7 +38,7 @@ profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
 
 profile::cvmfs::client::quota_limit: 4096
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/2020.10/init/bash"
+profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/bash"
 profile::cvmfs::client::stack: "eessi"
 
 profile::slurm::base::force_slurm_in_path: true
