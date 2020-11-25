@@ -1,5 +1,5 @@
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /usr/bin/eessi_pilot_python3
+jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/latest/init/eessi_pilot_python3
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
