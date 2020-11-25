@@ -28,6 +28,8 @@ fail2ban::custom_jails:
     filter_includes: 'before = common.conf'
     filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
+jupyterhub::kernel::setup: venv
+
 squid::cache_mem: "256 MB"
 squid::extra_config_sections:
   general:
@@ -36,6 +38,8 @@ squid::extra_config_sections:
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
+
+profile::cvmfs::client::quota_limit: 4096
 
 profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'

@@ -109,29 +109,18 @@ END
     notify  => Service['consul-template'],
   }
 
-  if $force_slurm_in_path {
-    $slurm_path_mask = 'slurm_path_mask=0'
-  } else {
-    $slurm_path_mask = 'slurm_path_mask=$($(test $UID -lt 60000) echo $?)'
-  }
-
   $slurm_path = @(END)
-# Add Slurm custom paths for local users
-if [ "$slurm_path_mask" -eq "0" ]; then
+<% if $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
   export SLURM_HOME=/opt/software/slurm
-
   export PATH=$SLURM_HOME/bin:$PATH
   export MANPATH=$SLURM_HOME/share/man:$MANPATH
   export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-fi
-if [[ $UID -eq 0 ]]; then
-   export PATH=$SLURM_HOME/sbin:$PATH
-fi
+<% if $force_slurm_in_path { %>fi<% } %>
 END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => "${slurm_path_mask}\n${slurm_path}"
+    content => inline_epp($slurm_path, {'force_slurm_in_path' => $force_slurm_in_path, 'uid_max' => $::uid_max}),
   }
 
   file { '/etc/munge/munge.key':
