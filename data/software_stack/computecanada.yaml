@@ -37,7 +37,6 @@ profile::cvmfs::client::repositories:
   - soft.computecanada.ca
 
 profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-profile::cvmfs::client::stack: "computecanada"
 
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
