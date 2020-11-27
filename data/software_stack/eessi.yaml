@@ -1,4 +1,4 @@
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/eessi_pilot_python3
+jupyterhub::kernel::venv::python: /opt/init/Magic_Castle/eessi_pilot_python3
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
@@ -15,7 +15,7 @@ profile::cvmfs::client::repositories:
   - cvmfs-config.eessi-hpc.org
   - pilot.eessi-hpc.org
 
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/bash"
+profile::cvmfs::client::initial_profile: "/opt/init/Magic_Castle/bash"
 
 profile::slurm::base::force_slurm_in_path: true
 
