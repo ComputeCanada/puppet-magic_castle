@@ -7,7 +7,7 @@ jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
     ui_args:
       rstudio:
-        modules: ['rstudio']
+        modules: ['RStudio-Server']
       code-server:
         modules: ['code-server']
 
