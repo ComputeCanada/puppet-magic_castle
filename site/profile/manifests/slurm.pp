@@ -95,7 +95,7 @@ class profile::slurm::base (
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    source  => 'puppet:///modules/profile/slurm/node.conf.tpl',
+    content => '{{ service "slurmd" | toJSON | plugin "/usr/local/bin/consul2slurm" }}',
     seltype => 'etc_t',
     notify  => Service['consul-template'],
   }
