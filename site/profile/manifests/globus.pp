@@ -1,8 +1,8 @@
 class profile::globus::base (String $globus_user = '', String $globus_password = '')
 {
   package { 'globus-connect-server-repo':
-    ensure   => 'installed',
-    name     => 'globus-toolkit-repo-6.0.21-1.noarch',
+    ensure   => 'latest',
+    name     => 'globus-toolkit-repo',
     provider => 'rpm',
     source   => 'https://downloads.globus.org/toolkit/globus-connect-server/globus-connect-server-repo-latest.noarch.rpm'
   }
