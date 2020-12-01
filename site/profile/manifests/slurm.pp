@@ -95,7 +95,7 @@ class profile::slurm::base (
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => '{{ service "slurmd" | toJSON | plugin "/usr/local/bin/consul2slurm" }}',
+    content => "{{ service \"slurmd\" | toJSON | plugin \"/usr/local/bin/consul2slurm\" }}\n",
     seltype => 'etc_t',
     notify  => Service['consul-template'],
   }
