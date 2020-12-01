@@ -169,12 +169,11 @@ class profile::base (
   }
 
   package { 'mc-plugins':
-    ensure   => 'installed',
-    name     => 'mc-plugins-1.0.2-1.x86_64',
+    ensure   => 'latest',
+    name     => 'mc-plugins',
     provider => 'rpm',
-    source   => 'https://github.com/cmd-ntrf/mc-plugins/releases/download/v1.0.2/mc-plugins-1.0.2-1.x86_64.rpm',
+    source   => "https://github.com/cmd-ntrf/mc-plugins/releases/download/v1.0.2/mc-plugins-1.0.2-1.${::facts['os']['architecture']}.rpm",
   }
-
 }
 
 class profile::base::azure {
