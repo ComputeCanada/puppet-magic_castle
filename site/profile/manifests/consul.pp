@@ -1,9 +1,13 @@
 class profile::consul::server {
+  $interface = split($::interfaces, ',')[0]
+  $ipaddress = $::networking['interfaces'][$interface]['ip']
+
   class { '::consul':
     config_mode   => '0640',
     acl_api_token => lookup('profile::consul::acl_api_token'),
     config_hash   => {
       'bootstrap_expect' => 1,
+      'bind_addr'        => $ipaddress,
       'data_dir'         => '/opt/consul',
       'log_level'        => 'INFO',
       'node_name'        => $facts['hostname'],
@@ -29,9 +33,13 @@ class profile::consul::server {
 }
 
 class profile::consul::client(String $server_ip) {
+  $interface = split($::interfaces, ',')[0]
+  $ipaddress = $::networking['interfaces'][$interface]['ip']
+
   class { '::consul':
     config_mode => '0640',
     config_hash => {
+      'bind_addr'       => $ipaddress,
       'data_dir'        => '/opt/consul',
       'log_level'       => 'INFO',
       'node_name'       => $facts['hostname'],
