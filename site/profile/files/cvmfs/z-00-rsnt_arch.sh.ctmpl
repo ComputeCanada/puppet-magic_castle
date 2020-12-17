@@ -1,11 +1,20 @@
 #!/bin/sh
-archs=({{ range service "cvmfs" }}{{.ServiceMeta.arch}} {{ end }})
-if [[ " ${archs[@]} " =~ " sse3 " ]]; then
-    export RSNT_ARCH="sse3"
-elif [[ " ${archs[@]} " =~ " avx " ]]; then
-    export RSNT_ARCH="avx"
-elif [[ " ${archs[@]} " =~ " avx2 " ]]; then
-    export RSNT_ARCH="avx2"
-elif [[ " ${archs[@]} " =~ " avx512 " ]]; then
-    export RSNT_ARCH="avx512"
-fi
+{{ scratch.Set "sse3"   1 -}}
+{{ scratch.Set "avx"    2 -}}
+{{ scratch.Set "avx2"   3 -}}
+{{ scratch.Set "avx512" 4 -}}
+
+{{ scratch.MapSet "arch_index_map" "1" "sse3"   -}}
+{{ scratch.MapSet "arch_index_map" "2" "avx"    -}}
+{{ scratch.MapSet "arch_index_map" "3" "avx2"   -}}
+{{ scratch.MapSet "arch_index_map" "4" "avx512" -}}
+
+{{ scratch.Set "arch_index" 5 -}}
+
+{{ range service "cvmfs" -}}
+{{ scratch.Set "arch_index" ( minimum (scratch.Get "arch_index") (scratch.Get .ServiceMeta.arch) ) -}}
+{{ end -}}
+
+{{ if lt (scratch.Get "arch_index") 5 -}}
+export RSNT_ARCH="{{index (scratch.Get "arch_index_map") (scratch.Get "arch_index" | print)}}"
+{{ end -}}
