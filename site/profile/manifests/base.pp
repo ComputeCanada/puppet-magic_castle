@@ -168,6 +168,13 @@ class profile::base (
     ensure => absent
   }
 
+  $mc_plugins_version = '1.0.3'
+  package { 'magic_castle-plugins':
+    ensure   => 'latest',
+    name     => 'magic_castle-plugins',
+    provider => 'rpm',
+    source   => "https://github.com/computecanada/magic_castle-plugins/releases/download/v${mc_plugins_version}/magic_castle-plugins-${mc_plugins_version}-1.${::facts['os']['architecture']}.rpm",
+  }
 }
 
 class profile::base::azure {
