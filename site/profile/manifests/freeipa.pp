@@ -133,8 +133,14 @@ class profile::freeipa::client(String $server_ip)
     unless  => "/usr/bin/test `hostname` = ${fqdn}"
   }
 
+  file { '/sbin/mc-ipa-client-install':
+    ensure => 'present',
+    mode   => '0755',
+    source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
+  }
+
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
-      /sbin/ipa-client-install \
+      /sbin/mc-ipa-client-install \
       --domain ${int_domain_name} \
       --hostname ${fqdn} \
       --ip-address ${ipaddress} \
@@ -149,11 +155,14 @@ class profile::freeipa::client(String $server_ip)
     command   => Sensitive($ipa_client_install_cmd),
     tries     => 2,
     try_sleep => 60,
-    require   => [File['dhclient.conf'],
-                  Exec['set_hostname'],
-                  Wait_for['ipa-ca_https']],
+    require   => [
+      File['/sbin/mc-ipa-client-install'],
+      File['dhclient.conf'],
+      Exec['set_hostname'],
+      Wait_for['ipa-ca_https'],
+    ],
     creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind']
+    notify    => Service['systemd-logind'],
   }
 
   $reverse_zone = profile::getreversezone()

@@ -1,0 +1,14 @@
+#!/bin/bash
+# keep previous installation logs
+mv /var/log/ipaclient-install.log{,.$(ls /var/log/ipaclient-install.log* | wc -l)}
+if /sbin/ipa-client-install "${@}"; then
+  if grep -q "nsupdate failed" /var/log/ipaclient-install.log; then
+    /sbin/ipa-client-install --uninstall -U
+    exit 1
+  else
+    exit 0
+  fi
+else
+  /sbin/ipa-client-install --uninstall -U
+  exit $?
+fi
