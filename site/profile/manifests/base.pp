@@ -168,11 +168,12 @@ class profile::base (
     ensure => absent
   }
 
-  package { 'mc-plugins':
+  $mc_plugins_version = '1.0.3'
+  package { 'magic_castle-plugins':
     ensure   => 'latest',
-    name     => 'mc-plugins',
+    name     => 'magic_castle-plugins',
     provider => 'rpm',
-    source   => "https://github.com/cmd-ntrf/mc-plugins/releases/download/v1.0.2/mc-plugins-1.0.2-1.${::facts['os']['architecture']}.rpm",
+    source   => "https://github.com/computecanada/magic_castle-plugins/releases/download/v${mc_plugins_version}/magic_castle-plugins-${mc_plugins_version}-1.${::facts['os']['architecture']}.rpm",
   }
 }
 
