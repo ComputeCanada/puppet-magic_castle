@@ -14,7 +14,7 @@ class profile::nfs::client (String $server_ip) {
   $nfs_scratch = ! empty(lookup('profile::nfs::server::scratch_devices', undef, undef, []))
 
   # Retrieve all folder exported with NFS in a single mount
-  $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
+  $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,bg'
   if $nfs_home {
     nfs::client::mount { '/home':
         server        => $server_ip,
@@ -144,7 +144,7 @@ END
 
     nfs::server::export{ '/mnt/home' :
       ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      clients => "${cidr}(rw,async,root_squash,no_all_squash)",
       notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/mnt/home'],
@@ -192,7 +192,7 @@ END
     }
     nfs::server::export{ '/project':
       ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      clients => "${cidr}(rw,async,root_squash,no_all_squash)",
       notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/project'],
@@ -240,7 +240,7 @@ END
     }
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+      clients => "${cidr}(rw,async,root_squash,no_all_squash)",
       notify  => Service[$::nfs::server_service_name],
       require => [
         Mount['/scratch'],
