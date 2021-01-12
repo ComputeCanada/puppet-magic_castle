@@ -12,6 +12,8 @@ hierarchy:
     path: "user_data.yaml"
   - name: "Terraform data"
     path: "terraform_data.yaml"
+  - name: "Software stack"
+    path: "software_stack/%{facts.software_stack}.yaml"
   - name: "OS version"
     path: "os/%{facts.os.name}/%{facts.os.release.major}.yaml"
   - name: "Other YAML hierarchy levels"

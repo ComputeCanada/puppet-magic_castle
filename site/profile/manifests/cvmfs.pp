@@ -1,5 +1,6 @@
 class profile::cvmfs::client(
   Integer $quota_limit,
+  String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
 ){
@@ -10,16 +11,31 @@ class profile::cvmfs::client(
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm'
   }
 
-  package { 'cc-cvmfs-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => 'computecanada-release-1.0-1.noarch',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
+  if $::software_stack == 'eessi' {
+    package { 'stack':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => 'cvmfs-config-eessi-0.2.3-1.noarch',
+      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm'
+    }
+  } elsif $::software_stack == 'computecanada' {
+    package { 'cc-cvmfs-repo':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => 'computecanada-release-1.0-1.noarch',
+      source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
+    }
+
+    package { 'stack':
+      ensure  => 'installed',
+      name    => 'cvmfs-config-computecanada',
+      require => [Package['cc-cvmfs-repo']]
+    }
   }
 
-  package { ['cvmfs', 'cvmfs-config-computecanada', 'cvmfs-config-default', 'cvmfs-auto-setup']:
+  package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['cc-cvmfs-repo']]
+    require => [Package['cvmfs-repo'], Package['stack']]
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
@@ -55,10 +71,11 @@ class profile::cvmfs::client(
     source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
   }
 
-  file { '/etc/profile.d/z-01-computecanada.sh':
+  file { '/etc/profile.d/z-01-site.sh':
     ensure  => 'present',
-    content => epp('profile/cvmfs/z-01-computecanada.sh', {
+    content => epp('profile/cvmfs/z-01-site.sh', {
       'lmod_default_modules' => $lmod_default_modules,
+      'initial_profile'      => $initial_profile,
     }),
   }
 

@@ -7,7 +7,9 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Integer[19, 20] $slurm_version = 19)
+  Integer[19, 20] $slurm_version = 19,
+  Boolean $force_slurm_in_path = false
+)
 {
   group { 'slurm':
     ensure => 'present',
@@ -101,22 +103,17 @@ class profile::slurm::base (
   }
 
   $slurm_path = @(END)
-# Add Slurm custom paths for local users
-if [[ $UID -lt 10000 ]]; then
+<% if ! $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
   export SLURM_HOME=/opt/software/slurm
-
   export PATH=$SLURM_HOME/bin:$PATH
   export MANPATH=$SLURM_HOME/share/man:$MANPATH
   export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-fi
-if [[ $UID -eq 0 ]]; then
-   export PATH=$SLURM_HOME/sbin:$PATH
-fi
+<% if ! $force_slurm_in_path { %>fi<% } %>
 END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => $slurm_path
+    content => inline_epp($slurm_path, {'force_slurm_in_path' => $force_slurm_in_path, 'uid_max' => $::uid_max}),
   }
 
   file { '/etc/munge/munge.key':

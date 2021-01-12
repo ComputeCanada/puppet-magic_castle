@@ -1,0 +1,24 @@
+jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
+jupyterhub::kernel::venv::pip_environment:
+  PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
+  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
+
+jupyterhub::jupyterhub_config_hash:
+  SlurmFormSpawner:
+    ui_args:
+      rstudio:
+        modules: ['gcc/7.3.0', 'rstudio-server']
+      code-server:
+        modules: ['code-server']
+
+profile::cvmfs::client::repositories:
+  - cvmfs-config.computecanada.ca
+  - soft.computecanada.ca
+
+profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
+
+profile::squid::server::cvmfs_acl_regex:
+  - '^(cvmfs-.*\.computecanada\.ca)$'
+  - '^(cvmfs-.*\.computecanada\.net)$'
+  - '^(.*-cvmfs\.openhtc\.io)$'
+  - '^(cvmfs-.*\.genap\.ca)$'

@@ -1,4 +1,8 @@
 ---
+lookup_options:
+  jupyterhub::jupyterhub_config_hash:
+    merge: 'deep'
+
 consul_template::version: 0.25.0
 consul::version: 1.7.4
 consul_template::config_hash:
@@ -29,11 +33,6 @@ fail2ban::custom_jails:
     filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
 jupyterhub::kernel::setup: venv
-jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
-jupyterhub::kernel::venv::pip_environment:
-  PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
-  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
-
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
     ui_args:
@@ -48,11 +47,9 @@ jupyterhub::jupyterhub_config_hash:
       rstudio:
         name: RStudio
         args: ['--SingleUserNotebookApp.default_url=/rstudio']
-        modules: ['gcc/7.3.0', 'rstudio-server']
       code-server:
         name: VS Code
         args: ['--SingleUserNotebookApp.default_url=/code-server']
-        modules: ['code-server']
       desktop:
         name: Desktop
         args: ['--SingleUserNotebookApp.default_url=/Desktop']
@@ -70,15 +67,7 @@ squid::extra_config_sections:
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
-profile::squid::server::cvmfs_acl_regex:
-  - '^(cvmfs-.*\.computecanada\.ca)$'
-  - '^(cvmfs-.*\.computecanada\.net)$'
-  - '^(.*-cvmfs\.openhtc\.io)$'
-  - '^(cvmfs-.*\.genap\.ca)$'
 
-profile::cvmfs::client::repositories:
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
 profile::cvmfs::client::quota_limit: 4096
 
 profile::mfa::mgmt::provider: 'none'
