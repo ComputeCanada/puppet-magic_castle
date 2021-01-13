@@ -9,7 +9,7 @@ class profile::base (
   if dig($::facts, 'os', 'release', 'major') == '8' {
     file_line { 'enable_powertools':
       ensure => present,
-      path   => '/etc/yum.repos.d/CentOS-PowerTools.repo',
+      path   => '/etc/yum.repos.d/CentOS-Linux-PowerTools.repo',
       line   => 'enabled=1',
       match  => '^enabled=0$',
     }
