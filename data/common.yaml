@@ -43,7 +43,7 @@ jupyterhub::jupyterhub_config_hash:
         args: ['--SingleUserNotebookApp.default_url=/lab']
       terminal:
         name: Terminal
-        args: ['--SingleUserNotebookApp.default_url=/terminals/1']
+        args: ['--SingleUserNotebookApp.default_url=/terminals/new/1']
       rstudio:
         name: RStudio
         args: ['--SingleUserNotebookApp.default_url=/rstudio']
