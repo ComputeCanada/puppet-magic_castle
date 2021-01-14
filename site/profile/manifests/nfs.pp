@@ -86,14 +86,19 @@ END
     nfs_v4_idmap_domain        => $nfs_domain
   }
 
-  if dig($::facts, 'os', 'release', 'major') == '7' {
-    file_line { 'rpc_nfs_args_v4.2':
-      ensure => present,
-      path   => '/etc/sysconfig/nfs',
-      line   => 'RPCNFSDARGS="-V 4.2"',
-      match  => '^RPCNFSDARGS\=',
-      notify => Service[$::nfs::server_service_name]
-    }
+  file { '/etc/nfs.conf':
+    ensure => present,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0644',
+    source => 'puppet:///modules/profile/nfs/nfs.conf',
+    notify => Service[$::nfs::server_service_name],
+  }
+
+  service { ['rpc-statd', 'rpcbind', 'rpcbind.socket']:
+    ensure => stopped,
+    enable => mask,
+    notify => Service[$::nfs::server_service_name],
   }
 
   package { 'lvm2':
