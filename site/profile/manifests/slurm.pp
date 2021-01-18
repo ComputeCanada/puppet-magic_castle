@@ -494,6 +494,21 @@ AutoDetect=nvml
     ]
   }
 
+  logrotate::rule { 'slurmd':
+    path         => '/var/log/slurm/slurmd.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'root',
+    create_group => 'root',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
+  }
+
   exec { 'scontrol_update_state':
     command   => "scontrol update nodename=${::hostname} state=idle",
     onlyif    => "sinfo -n ${::hostname} -o %t -h | grep -E -q -w 'down|drain'",
