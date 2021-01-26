@@ -9,6 +9,8 @@ consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
 
+epel::epel_exclude: 'slurm*'
+
 fail2ban::package_name: fail2ban-server
 fail2ban::jails: ['ssh-route', 'ssh-ban-root']
 fail2ban::custom_jails:
