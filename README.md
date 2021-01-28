@@ -120,4 +120,5 @@ variables for each profile.
 | `duo_unix::ikey`                  | String | Duo integration key                                                             | `''`                     |
 | `duo_unix::skey`                  | String | Duo secret key                                                                  | `''`                     |
 | `duo_unix::host`                  | String | Duo api host                                                                    | `''`                     |
-| `duo_unux::motd`                  | String | Enable motd                                                                     | `no`                     |
+| `duo_unix::motd`                  | String | Enable motd                                                                     | `no`                     |
+| `duo_unix::failmode`              | String | Failure mode, secure or safe                                                    | `safe`                   |
