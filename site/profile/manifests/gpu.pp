@@ -16,6 +16,8 @@ class profile::gpu {
 }
 
 class profile::gpu::install {
+  ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
+
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
   } else {
@@ -153,4 +155,28 @@ class profile::gpu::install::vgpu::rpm(
       owner  => 'root',
       group  => 'root',
     }
+}
+
+class profile::gpu::install::vgpu::bin(
+  String $source,
+  String $gridd_source,
+)
+{
+  exec { 'vgpu-driver-install-bin':
+    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau; rm /tmp/NVIDIA-driver.run",
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    creates => [
+      '/usr/bin/nvidia-smi',
+      '/usr/bin/nvidia-modprobe',
+    ],
+    timeout => 300,
+  }
+
+  file { '/etc/nvidia/gridd.conf':
+    ensure => present,
+    mode   => '0644',
+    owner  => 'root',
+    group  => 'root',
+    source => $gridd_source,
+  }
 }
