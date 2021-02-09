@@ -18,16 +18,8 @@ class profile::gpu {
 class profile::gpu::install {
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
-    $dkms_requirements = [
-      Package['kernel-devel'],
-      Package['kmod-nvidia-latest-dkms']
-    ]
   } else {
     require profile::gpu::install::vgpu
-    $dkms_requirements = [
-      Package['kernel-devel'],
-      Package['nvidia-vgpu-kmod']
-    ]
   }
 
   ensure_packages(['kernel-devel'], {ensure => 'installed'})
@@ -36,7 +28,7 @@ class profile::gpu::install {
     path    => ['/usr/bin', '/usr/sbin'],
     onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
     timeout => 0,
-    require => $dkms_requirements,
+    require => Package['kernel-devel'],
   }
 
   kmod::load { [
@@ -118,33 +110,37 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
   }
 }
 
-class profile::gpu::install::vgpu {
-  $os = $::facts['os']['release']['major']
-  $repo_name = 'arbutus-cloud-vgpu-repo.noarch'
-  package { 'arbutus-cloud-vgpu-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => $repo_name,
-    source   => "http://repo.arbutus.cloud.computecanada.ca/pulp/repos/centos/arbutus-cloud-vgpu-repo.el${os}.noarch.rpm",
-  }
+class profile::gpu::install::vgpu(
+  Enum['rpm', 'installer'] $source_type,
+  String $source,
+  List[String] $packages = [],
+)
+{
+  if $source_type == 'rpm' {
+    package { 'vgpu-repo':
+      ensure   => 'installed',
+      provider => 'rpm',
+      name     => 'vgpu-repo.noarch',
+      source   => $source,
+    }
 
-  package { ['nvidia-vgpu-kmod', 'nvidia-vgpu-gridd', 'nvidia-vgpu-tools']:
-    ensure  => 'installed',
-    require => [
-      Yumrepo['epel'],
-      Package['arbutus-cloud-vgpu-repo'],
-    ]
-  }
+    package { $packages:
+      ensure  => 'installed',
+      require => [
+        Yumrepo['epel'],
+        Package['vgpu-repo'],
+      ]
+    }
 
-  # The device files/dev/nvidia* are normally created by nvidia-modprobe
-  # If the permissions of nvidia-modprobe exclude setuid, some device files
-  # will be missing.
-  # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
-  file { '/usr/bin/nvidia-modprobe':
-    ensure  => present,
-    mode    => '4755',
-    owner   => 'root',
-    group   => 'root',
-    require => Package['nvidia-vgpu-tools'],
+    # The device files/dev/nvidia* are normally created by nvidia-modprobe
+    # If the permissions of nvidia-modprobe exclude setuid, some device files
+    # will be missing.
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
+    -> file { '/usr/bin/nvidia-modprobe':
+      ensure => present,
+      mode   => '4755',
+      owner  => 'root',
+      group  => 'root',
+    }
   }
 }
