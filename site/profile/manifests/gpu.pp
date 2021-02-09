@@ -113,7 +113,7 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
 class profile::gpu::install::vgpu(
   Enum['rpm', 'installer'] $source_type,
   String $source,
-  List[String] $packages = [],
+  Array[String] $packages = [],
 )
 {
   if $source_type == 'rpm' {
