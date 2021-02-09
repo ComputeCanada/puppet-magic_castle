@@ -23,12 +23,18 @@ class profile::gpu::install {
   }
 
   ensure_packages(['kernel-devel'], {ensure => 'installed'})
+  ensure_packages(['dkms'], {
+    'require' => Yumrepo['epel']
+  })
 
   exec { 'dkms autoinstall':
     path    => ['/usr/bin', '/usr/sbin'],
     onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
     timeout => 0,
-    require => Package['kernel-devel'],
+    require => [
+      Package['kernel-devel'],
+      Package['dkms']
+    ]
   }
 
   kmod::load { [
@@ -83,10 +89,6 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
     name     => $repo_name,
     source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
   }
-
-  ensure_packages(['dkms'], {
-    'require' => Yumrepo['epel']
-  })
 
   package { $packages:
     ensure  => 'installed',
