@@ -1,5 +1,5 @@
 #!/bin/bash
-tail -f /var/log/dirsrv/slapd-*/access |
+tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
 while read USERNAME; do
     USER_HOME="/mnt/home/$USERNAME"

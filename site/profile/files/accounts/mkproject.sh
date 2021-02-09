@@ -8,7 +8,7 @@ declare -A group_memory_users
 
 PROJECT_PREFIX="ctb|def|rpp|rrg"
 
-tail -f /var/log/dirsrv/slapd-*/access |
+tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP "MOD dn=\"cn=\K((${PROJECT_PREFIX})-[a-z0-9A-Z_-]*)(?=,cn=groups)" |
 while read GROUP; do
     if [[ -z ${group_memory_calls[$GROUP]} ]]; then
