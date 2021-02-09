@@ -1,0 +1,3 @@
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::bin::source: https://hpsrepo.fz-juelich.de/jusuf/nvidia/NVIDIA-Driver.latest
+profile::gpu::install::vgpu::bin::gridd_conf: https://hpsrepo.fz-juelich.de/jusuf/nvidia/gridd.conf
