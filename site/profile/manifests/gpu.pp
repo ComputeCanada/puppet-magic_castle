@@ -111,12 +111,21 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
 }
 
 class profile::gpu::install::vgpu(
-  Enum['rpm', 'installer'] $source_type,
-  String $source,
-  Array[String] $packages = [],
+  Enum['rpm', 'bin', 'none'] $installer = 'none',
 )
 {
-  if $source_type == 'rpm' {
+  if $installer == 'rpm' {
+    include profile::gpu::install::vgpu::rpm
+  } elsif $installer == 'bin' {
+    # install from binary installer
+  }
+}
+
+class profile::gpu::install::vgpu::rpm(
+  String $source,
+  Array[String] $packages,
+)
+{
     package { 'vgpu-repo':
       ensure   => 'installed',
       provider => 'rpm',
@@ -142,5 +151,4 @@ class profile::gpu::install::vgpu(
       owner  => 'root',
       group  => 'root',
     }
-  }
 }
