@@ -171,7 +171,7 @@ class profile::gpu::install::vgpu::bin(
 )
 {
   exec { 'vgpu-driver-install-bin':
-    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau; rm /tmp/NVIDIA-driver.run",
+    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run",
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     creates => [
       '/usr/bin/nvidia-smi',
