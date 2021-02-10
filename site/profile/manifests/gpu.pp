@@ -15,19 +15,21 @@ class profile::gpu {
   }
 }
 
-class profile::gpu::install {
+class profile::gpu::install::deps {
   ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
+  ensure_packages(['kernel-devel'], {ensure => 'installed'})
+  ensure_packages(['dkms'], {
+    'require' => Yumrepo['epel']
+  })
+}
+
+class profile::gpu::install {
 
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
   } else {
     require profile::gpu::install::vgpu
   }
-
-  ensure_packages(['kernel-devel'], {ensure => 'installed'})
-  ensure_packages(['dkms'], {
-    'require' => Yumrepo['epel']
-  })
 
   exec { 'dkms autoinstall':
     path    => ['/usr/bin', '/usr/sbin'],
@@ -81,6 +83,8 @@ class profile::gpu::install {
 }
 
 class profile::gpu::install::passthrough(Array[String] $packages) {
+  require profile::gpu::install::deps
+
   $cuda_ver = $::facts['nvidia_cuda_version']
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -118,6 +122,8 @@ class profile::gpu::install::vgpu(
   Enum['rpm', 'bin', 'none'] $installer = 'none',
 )
 {
+  require profile::gpu::install::deps
+
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
   } elsif $installer == 'bin' {
