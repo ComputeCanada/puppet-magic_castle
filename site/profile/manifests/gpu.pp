@@ -122,6 +122,7 @@ class profile::gpu::install::vgpu(
     include profile::gpu::install::vgpu::rpm
   } elsif $installer == 'bin' {
     # install from binary installer
+    include profile::gpu::install::vgpu::bin
   }
 }
 
