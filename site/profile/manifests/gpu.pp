@@ -15,15 +15,12 @@ class profile::gpu {
   }
 }
 
-class profile::gpu::install::deps {
+class profile::gpu::install {
   ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
   ensure_packages(['kernel-devel'], {ensure => 'installed'})
   ensure_packages(['dkms'], {
     'require' => Yumrepo['epel']
   })
-}
-
-class profile::gpu::install {
 
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
@@ -83,7 +80,6 @@ class profile::gpu::install {
 }
 
 class profile::gpu::install::passthrough(Array[String] $packages) {
-  require profile::gpu::install::deps
 
   $cuda_ver = $::facts['nvidia_cuda_version']
   $os = "rhel${::facts['os']['release']['major']}"
@@ -122,8 +118,6 @@ class profile::gpu::install::vgpu(
   Enum['rpm', 'bin', 'none'] $installer = 'none',
 )
 {
-  require profile::gpu::install::deps
-
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
   } elsif $installer == 'bin' {
@@ -178,6 +172,10 @@ class profile::gpu::install::vgpu::bin(
       '/usr/bin/nvidia-modprobe',
     ],
     timeout => 300,
+    require => [
+      Package['kernel-devel'],
+      Package['dkms'],
+    ]
   }
 
   file { '/etc/nvidia/gridd.conf':
