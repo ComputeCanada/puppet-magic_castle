@@ -141,10 +141,9 @@ END
       mountpath_require => true,
     }
 
-    exec { 'semanage_fcontext_mnt_home':
-      command => 'semanage fcontext -a -e /home /mnt/home',
-      unless  => 'grep -q "/mnt/home\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
-      path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    selinux::fcontext::equivalence { '/mnt/home':
+      ensure  => 'present',
+      target  => '/home',
       require => Mount['/mnt/home'],
     }
 
@@ -191,12 +190,12 @@ END
       mountpath_require => true,
     }
 
-    exec { 'semanage_fcontext_project':
-      command => 'semanage fcontext -a -e /home /project',
-      unless  => 'grep -q "/project\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
-      path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    selinux::fcontext::equivalence { '/project':
+      ensure  => 'present',
+      target  => '/home',
       require => Mount['/project'],
     }
+
     nfs::server::export{ '/project':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
@@ -240,12 +239,12 @@ END
       mountpath_require => true,
     }
 
-    exec { 'semanage_fcontext_scratch':
-      command => 'semanage fcontext -a -e /home /scratch',
-      unless  => 'grep -q "/scratch\s*/home" /etc/selinux/targeted/contexts/files/file_contexts.subs*',
-      path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    selinux::fcontext::equivalence { '/scratch':
+      ensure  => 'present',
+      target  => '/home',
       require => Mount['/scratch'],
     }
+
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
       clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
