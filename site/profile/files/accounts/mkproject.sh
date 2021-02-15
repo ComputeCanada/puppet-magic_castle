@@ -26,7 +26,7 @@ while read GROUP; do
             chown root:"$GROUP" "/project/$GID"
             chmod 2770 "/project/$GID"
             ln -sfT "/project/$GID" "/project/$GROUP"
-            restorecon -F -R /project/$GROUP
+            restorecon -F -R /project/$GID /project/$GROUP
         fi
     fi
 

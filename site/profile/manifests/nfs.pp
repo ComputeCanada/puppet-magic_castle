@@ -112,6 +112,7 @@ END
   if ! empty($home_devices) {
     file { ['/mnt/home'] :
       ensure  => directory,
+      seltype => 'home_root_t',
     }
     $home_pool = glob($home_devices)
     exec { 'vgchange-home_vg':
@@ -161,6 +162,7 @@ END
   if ! empty($project_devices) {
     file { ['/project'] :
       ensure  => directory,
+      seltype => 'home_root_t',
     }
     $project_pool = glob($project_devices)
     exec { 'vgchange-project_vg':
@@ -209,6 +211,7 @@ END
   if ! empty($scratch_devices) {
     file { ['/scratch'] :
       ensure  => directory,
+      seltype => 'home_root_t',
     }
     $scratch_pool = glob($scratch_devices)
     exec { 'vgchange-scratch_vg':
