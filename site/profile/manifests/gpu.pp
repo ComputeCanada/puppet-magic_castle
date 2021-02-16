@@ -28,14 +28,21 @@ class profile::gpu::install {
     require profile::gpu::install::vgpu
   }
 
-  exec { 'dkms autoinstall':
-    path    => ['/usr/bin', '/usr/sbin'],
-    onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
-    timeout => 0,
-    require => [
-      Package['kernel-devel'],
-      Package['dkms']
-    ]
+  # Binary installer do not build drivers with DKMS
+  $installer = lookup('profile::gpu::install::vgpu::installer')
+  if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
+    exec { 'dkms autoinstall':
+      path    => ['/usr/bin', '/usr/sbin'],
+      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      timeout => 0,
+      require => [
+        Package['kernel-devel'],
+        Package['dkms']
+      ]
+    }
+    $kmod_require = [Exec['dkms autoinstall']]
+  } else {
+    $kmod_require = []
   }
 
   kmod::load { [
@@ -44,7 +51,7 @@ class profile::gpu::install {
     'nvidia_modeset',
     'nvidia_uvm'
     ]:
-    require => Exec['dkms autoinstall']
+    require => $kmod_require
   }
 
   file { '/usr/lib64/nvidia':
