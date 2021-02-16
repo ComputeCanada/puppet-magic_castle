@@ -145,7 +145,10 @@ END
       ensure  => 'present',
       target  => '/home',
       require => Mount['/mnt/home'],
+      notify  => Selinux::Exec_restorecon['/mnt/home']
     }
+
+    selinux::exec_restorecon { '/mnt/home': }
 
     nfs::server::export{ '/mnt/home' :
       ensure  => 'mounted',
@@ -246,7 +249,10 @@ END
       ensure  => 'present',
       target  => '/home',
       require => Mount['/scratch'],
+      notify  => Selinux::Exec_restorecon['/scratch']
     }
+
+    selinux::exec_restorecon { '/scratch': }
 
     nfs::server::export{ '/scratch':
       ensure  => 'mounted',
