@@ -194,7 +194,10 @@ END
       ensure  => 'present',
       target  => '/home',
       require => Mount['/project'],
+      notify  => Selinux::Exec_restorecon['/project']
     }
+
+    selinux::exec_restorecon { '/project': }
 
     nfs::server::export{ '/project':
       ensure  => 'mounted',
