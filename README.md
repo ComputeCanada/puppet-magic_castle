@@ -86,6 +86,7 @@ variables for each profile.
 | ------------------------------------- | :------ | :---------------------------------------------------------------------- | -------- |
 | `profile::slurm::base::cluster_name`  | String  | Name of the cluster                                                     |          |
 | `profile::slurm::base::munge_key`     | String  | Base64 encoded Munge key                                                |          |
+| `profile::slurm::base::slurm_version`  | Enum[19, 20]  | Slurm Major version to install                                                      | 19       |
 | `profile::slurm::accounting:password` | String  | Password used by for SlurmDBD to connect to MariaDB                     |          |
 | `profile::slurm::accounting:dbd_port` | Integer | SlurmDBD service listening port                                         |          |
 
