@@ -175,7 +175,11 @@ END
   file { 'slurm.conf.tpl':
     ensure  => 'present',
     path    => '/etc/slurm/slurm.conf.tpl',
-    content => epp('profile/slurm/slurm.conf', {'cluster_name' => $cluster_name}),
+    content => epp('profile/slurm/slurm.conf',
+      {
+        'cluster_name'  => $cluster_name,
+        'slurm_version' => $slurm_version,
+      }),
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
