@@ -15,7 +15,9 @@ class profile::gpu {
   }
 }
 
-class profile::gpu::install {
+class profile::gpu::install (
+  String $lib_symlink_path = undef
+) {
   ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
   ensure_packages(['kernel-devel'], {ensure => 'installed'})
   ensure_packages(['dkms'], {
@@ -53,84 +55,86 @@ class profile::gpu::install {
     ]:
     require => $kmod_require
   }
-
-  file { '/usr/lib64/nvidia':
-    ensure => directory
-  }
-
-  $nvidia_libs = [
-    'libcuda.so.1',
-    'libcuda.so',
-    'libEGL_nvidia.so.0',
-    'libGLESv1_CM_nvidia.so.1',
-    'libGLESv2_nvidia.so.2',
-    'libGLX_indirect.so.0',
-    'libGLX_nvidia.so.0',
-    'libnvcuvid.so.1',
-    'libnvcuvid.so',
-    'libnvidia-cfg.so.1',
-    'libnvidia-cfg.so',
-    'libnvidia-encode.so.1',
-    'libnvidia-encode.so',
-    'libnvidia-fbc.so.1',
-    'libnvidia-fbc.so',
-    'libnvidia-ifr.so.1',
-    'libnvidia-ifr.so',
-    'libnvidia-ml.so.1',
-    'libnvidia-ml.so',
-    'libnvidia-opencl.so.1',
-    'libnvidia-opticalflow.so.1',
-    'libnvidia-ptxjitcompiler.so.1',
-    'libnvidia-ptxjitcompiler.so',
-    'libnvoptix.so.1',
-  ]
-
-  $nvidia_libs.each |String $lib| {
-    file { "/usr/lib64/nvidia/${lib}":
-      ensure  => link,
-      target  => "/usr/lib64/${lib}",
-      seltype => 'lib_t'
+  if $lib_symlink_path {
+    $lib_symlink_path_split = split($lib_symlink_path, '/')
+    $lib_symlink_path_split[1,-1].each |Integer $index, String $value| {
+      ensure_resource('file', join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory'})
     }
-  }
 
-  # WARNING : since the fact is computed before Puppet agent run,
-  # on a clean host, the  symbolic links to the NVIDIA libraries
-  # that include the version number will be created on the
-  # second Puppet run only.
-  $driver_vers = $::facts['nvidia_driver_version']
-  if $driver_vers != '' {
-    $nvidia_libs_vers = [
-      "libcuda.so.${driver_vers}",
-      "libEGL_nvidia.so.${driver_vers}",
-      "libGLESv1_CM_nvidia.so.${driver_vers}",
-      "libGLESv2_nvidia.so.${driver_vers}",
-      "libGLX_nvidia.so.${driver_vers}",
-      "libnvcuvid.so.${driver_vers}",
-      "libnvidia-cbl.so.${driver_vers}",
-      "libnvidia-cfg.so.${driver_vers}",
-      "libnvidia-compiler.so.${driver_vers}",
-      "libnvidia-eglcore.so.${driver_vers}",
-      "libnvidia-encode.so.${driver_vers}",
-      "libnvidia-fatbinaryloader.so.${driver_vers}",
-      "libnvidia-fbc.so.${driver_vers}",
-      "libnvidia-glcore.so.${driver_vers}",
-      "libnvidia-glsi.so.${driver_vers}",
-      "libnvidia-glvkspirv.so.${driver_vers}",
-      "libnvidia-ifr.so.${driver_vers}",
-      "libnvidia-ml.so.${driver_vers}",
-      "libnvidia-opencl.so.${driver_vers}",
-      "libnvidia-opticalflow.so.${driver_vers}",
-      "libnvidia-ptxjitcompiler.so.${driver_vers}",
-      "libnvidia-rtcore.so.${driver_vers}",
-      "libnvidia-tls.so.${driver_vers}",
-      "libnvoptix.so.${driver_vers}"
+    $nvidia_libs = [
+      'libcuda.so.1',
+      'libcuda.so',
+      'libEGL_nvidia.so.0',
+      'libGLESv1_CM_nvidia.so.1',
+      'libGLESv2_nvidia.so.2',
+      'libGLX_indirect.so.0',
+      'libGLX_nvidia.so.0',
+      'libnvcuvid.so.1',
+      'libnvcuvid.so',
+      'libnvidia-cfg.so.1',
+      'libnvidia-cfg.so',
+      'libnvidia-encode.so.1',
+      'libnvidia-encode.so',
+      'libnvidia-fbc.so.1',
+      'libnvidia-fbc.so',
+      'libnvidia-ifr.so.1',
+      'libnvidia-ifr.so',
+      'libnvidia-ml.so.1',
+      'libnvidia-ml.so',
+      'libnvidia-opencl.so.1',
+      'libnvidia-opticalflow.so.1',
+      'libnvidia-ptxjitcompiler.so.1',
+      'libnvidia-ptxjitcompiler.so',
+      'libnvoptix.so.1',
     ]
 
-    $nvidia_libs_vers.each |String $lib| {
+    $nvidia_libs.each |String $lib| {
       file { "/usr/lib64/nvidia/${lib}":
         ensure  => link,
         target  => "/usr/lib64/${lib}",
         seltype => 'lib_t'
+      }
+    }
+
+    # WARNING : since the fact is computed before Puppet agent run,
+    # on a clean host, the  symbolic links to the NVIDIA libraries
+    # that include the version number will be created on the
+    # second Puppet run only.
+    $driver_vers = $::facts['nvidia_driver_version']
+    if $driver_vers != '' {
+      $nvidia_libs_vers = [
+        "libcuda.so.${driver_vers}",
+        "libEGL_nvidia.so.${driver_vers}",
+        "libGLESv1_CM_nvidia.so.${driver_vers}",
+        "libGLESv2_nvidia.so.${driver_vers}",
+        "libGLX_nvidia.so.${driver_vers}",
+        "libnvcuvid.so.${driver_vers}",
+        "libnvidia-cbl.so.${driver_vers}",
+        "libnvidia-cfg.so.${driver_vers}",
+        "libnvidia-compiler.so.${driver_vers}",
+        "libnvidia-eglcore.so.${driver_vers}",
+        "libnvidia-encode.so.${driver_vers}",
+        "libnvidia-fatbinaryloader.so.${driver_vers}",
+        "libnvidia-fbc.so.${driver_vers}",
+        "libnvidia-glcore.so.${driver_vers}",
+        "libnvidia-glsi.so.${driver_vers}",
+        "libnvidia-glvkspirv.so.${driver_vers}",
+        "libnvidia-ifr.so.${driver_vers}",
+        "libnvidia-ml.so.${driver_vers}",
+        "libnvidia-opencl.so.${driver_vers}",
+        "libnvidia-opticalflow.so.${driver_vers}",
+        "libnvidia-ptxjitcompiler.so.${driver_vers}",
+        "libnvidia-rtcore.so.${driver_vers}",
+        "libnvidia-tls.so.${driver_vers}",
+        "libnvoptix.so.${driver_vers}"
+      ]
+
+      $nvidia_libs_vers.each |String $lib| {
+        file { "/usr/lib64/nvidia/${lib}":
+          ensure  => link,
+          target  => "/usr/lib64/${lib}",
+          seltype => 'lib_t'
+        }
       }
     }
   }
