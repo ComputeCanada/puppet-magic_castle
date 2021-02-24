@@ -66,8 +66,8 @@ class profile::accounts::guests(
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
   if $nb_accounts > 0 {
     exec{ 'ipa_add_user':
-      command     => "kinit_wrapper ipa_create_user.py ${prefix}{01..${nb_accounts}} --sponsor=${$sponsor}",
-      onlyif      => "test `stat -c '%U' /mnt/home/${prefix}{01..${nb_accounts}} | grep ${prefix} | wc -l` != ${nb_accounts}",
+      command     => "kinit_wrapper ipa_create_user.py $(seq -w ${nb_accounts} | sed 's/^/${prefix}/') --sponsor=${$sponsor}",
+      onlyif      => "test $(stat -c '%U' $(seq -w ${nb_accounts} | sed 's/^/\/mnt\/home\/${prefix}/') | grep ${prefix} | wc -l) != ${nb_accounts}",
       environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
                       "IPA_GUEST_PASSWD=${passwd}"],
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
