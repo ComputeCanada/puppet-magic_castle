@@ -22,3 +22,5 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.net)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
+
+profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'

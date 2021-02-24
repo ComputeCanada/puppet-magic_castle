@@ -24,3 +24,5 @@ profile::cvmfs::client::lmod_default_modules:
 
 profile::squid::server::cvmfs_acl_regex:
   - '^(.*\.eessi-hpc\.org)$'
+
+profile::gpu::install::lib_symlink_path: '/opt/eessi/lib'

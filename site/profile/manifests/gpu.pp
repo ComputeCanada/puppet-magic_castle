@@ -15,28 +15,36 @@ class profile::gpu {
   }
 }
 
-class profile::gpu::install {
+class profile::gpu::install (
+  String $lib_symlink_path = undef
+) {
+  ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
+  ensure_packages(['kernel-devel'], {ensure => 'installed'})
+  ensure_packages(['dkms'], {
+    'require' => Yumrepo['epel']
+  })
+
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
-    $dkms_requirements = [
-      Package['kernel-devel'],
-      Package['kmod-nvidia-latest-dkms']
-    ]
   } else {
     require profile::gpu::install::vgpu
-    $dkms_requirements = [
-      Package['kernel-devel'],
-      Package['nvidia-vgpu-kmod']
-    ]
   }
 
-  ensure_packages(['kernel-devel'], {ensure => 'installed'})
-
-  exec { 'dkms autoinstall':
-    path    => ['/usr/bin', '/usr/sbin'],
-    onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
-    timeout => 0,
-    require => $dkms_requirements,
+  # Binary installer do not build drivers with DKMS
+  $installer = lookup('profile::gpu::install::vgpu::installer')
+  if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
+    exec { 'dkms autoinstall':
+      path    => ['/usr/bin', '/usr/sbin'],
+      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      timeout => 0,
+      require => [
+        Package['kernel-devel'],
+        Package['dkms']
+      ]
+    }
+    $kmod_require = [Exec['dkms autoinstall']]
+  } else {
+    $kmod_require = []
   }
 
   kmod::load { [
@@ -45,42 +53,95 @@ class profile::gpu::install {
     'nvidia_modeset',
     'nvidia_uvm'
     ]:
-    require => Exec['dkms autoinstall']
+    require => $kmod_require
   }
+  if $lib_symlink_path {
+    $lib_symlink_path_split = split($lib_symlink_path, '/')
+    $lib_symlink_path_split[1,-1].each |Integer $index, String $value| {
+      ensure_resource('file', join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory'})
+    }
 
-  file { '/usr/lib64/nvidia':
-    ensure => directory
-  }
+    $nvidia_libs = [
+      'libcuda.so.1',
+      'libcuda.so',
+      'libEGL_nvidia.so.0',
+      'libGLESv1_CM_nvidia.so.1',
+      'libGLESv2_nvidia.so.2',
+      'libGLX_indirect.so.0',
+      'libGLX_nvidia.so.0',
+      'libnvcuvid.so.1',
+      'libnvcuvid.so',
+      'libnvidia-cfg.so.1',
+      'libnvidia-cfg.so',
+      'libnvidia-encode.so.1',
+      'libnvidia-encode.so',
+      'libnvidia-fbc.so.1',
+      'libnvidia-fbc.so',
+      'libnvidia-ifr.so.1',
+      'libnvidia-ifr.so',
+      'libnvidia-ml.so.1',
+      'libnvidia-ml.so',
+      'libnvidia-opencl.so.1',
+      'libnvidia-opticalflow.so.1',
+      'libnvidia-ptxjitcompiler.so.1',
+      'libnvidia-ptxjitcompiler.so',
+      'libnvoptix.so.1',
+    ]
 
-  $driver_ver = $::facts['nvidia_driver_version']
-  $nvidia_libs = [
-    "libnvidia-ml.so.${driver_ver}", 'libnvidia-ml.so.1', 'libnvidia-fbc.so.1',
-    "libnvidia-fbc.so.${driver_ver}", 'libnvidia-ifr.so.1', "libnvidia-ifr.so.${driver_ver}",
-    'libcuda.so', 'libcuda.so.1', "libcuda.so.${driver_ver}", "libnvcuvid.so.${driver_ver}",
-    'libnvcuvid.so.1', "libnvidia-compiler.so.${driver_ver}", 'libnvidia-encode.so.1',
-    "libnvidia-encode.so.${driver_ver}", "libnvidia-fatbinaryloader.so.${driver_ver}",
-    'libnvidia-opencl.so.1', "libnvidia-opencl.so.${driver_ver}", 'libnvidia-opticalflow.so.1',
-    "libnvidia-opticalflow.so.${driver_ver}", 'libnvidia-ptxjitcompiler.so.1', "libnvidia-ptxjitcompiler.so.${driver_ver}",
-    'libnvcuvid.so', 'libnvidia-cfg.so', 'libnvidia-encode.so',
-    'libnvidia-fbc.so', 'libnvidia-ifr.so', 'libnvidia-ml.so',
-    'libnvidia-ptxjitcompiler.so', 'libEGL_nvidia.so.0', "libEGL_nvidia.so.${driver_ver}",
-    'libGLESv1_CM_nvidia.so.1', "libGLESv1_CM_nvidia.so.${driver_ver}", 'libGLESv2_nvidia.so.2',
-    "libGLESv2_nvidia.so.${driver_ver}", 'libGLX_indirect.so.0', 'libGLX_nvidia.so.0',
-    "libGLX_nvidia.so.${driver_ver}", "libnvidia-cbl.so.${driver_ver}", 'libnvidia-cfg.so.1',
-    "libnvidia-cfg.so.${driver_ver}", "libnvidia-eglcore.so.${driver_ver}", "libnvidia-glcore.so.${driver_ver}",
-    "libnvidia-glsi.so.${driver_ver}", "libnvidia-glvkspirv.so.${driver_ver}", "libnvidia-rtcore.so.${driver_ver}",
-    "libnvidia-tls.so.${driver_ver}", 'libnvoptix.so.1', "libnvoptix.so.${driver_ver}"]
+    $nvidia_libs.each |String $lib| {
+      file { "/usr/lib64/nvidia/${lib}":
+        ensure  => link,
+        target  => "/usr/lib64/${lib}",
+        seltype => 'lib_t'
+      }
+    }
 
-  $nvidia_libs.each |String $lib| {
-    file { "/usr/lib64/nvidia/${lib}":
-      ensure  => link,
-      target  => "/usr/lib64/${lib}",
-      seltype => 'lib_t'
+    # WARNING : since the fact is computed before Puppet agent run,
+    # on a clean host, the  symbolic links to the NVIDIA libraries
+    # that include the version number will be created on the
+    # second Puppet run only.
+    $driver_vers = $::facts['nvidia_driver_version']
+    if $driver_vers != '' {
+      $nvidia_libs_vers = [
+        "libcuda.so.${driver_vers}",
+        "libEGL_nvidia.so.${driver_vers}",
+        "libGLESv1_CM_nvidia.so.${driver_vers}",
+        "libGLESv2_nvidia.so.${driver_vers}",
+        "libGLX_nvidia.so.${driver_vers}",
+        "libnvcuvid.so.${driver_vers}",
+        "libnvidia-cbl.so.${driver_vers}",
+        "libnvidia-cfg.so.${driver_vers}",
+        "libnvidia-compiler.so.${driver_vers}",
+        "libnvidia-eglcore.so.${driver_vers}",
+        "libnvidia-encode.so.${driver_vers}",
+        "libnvidia-fatbinaryloader.so.${driver_vers}",
+        "libnvidia-fbc.so.${driver_vers}",
+        "libnvidia-glcore.so.${driver_vers}",
+        "libnvidia-glsi.so.${driver_vers}",
+        "libnvidia-glvkspirv.so.${driver_vers}",
+        "libnvidia-ifr.so.${driver_vers}",
+        "libnvidia-ml.so.${driver_vers}",
+        "libnvidia-opencl.so.${driver_vers}",
+        "libnvidia-opticalflow.so.${driver_vers}",
+        "libnvidia-ptxjitcompiler.so.${driver_vers}",
+        "libnvidia-rtcore.so.${driver_vers}",
+        "libnvidia-tls.so.${driver_vers}",
+        "libnvoptix.so.${driver_vers}"
+      ]
+
+      $nvidia_libs_vers.each |String $lib| {
+        file { "/usr/lib64/nvidia/${lib}":
+          ensure  => link,
+          target  => "/usr/lib64/${lib}",
+          seltype => 'lib_t'
+        }
+      }
     }
   }
 }
 
 class profile::gpu::install::passthrough(Array[String] $packages) {
+
   $cuda_ver = $::facts['nvidia_cuda_version']
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -91,10 +152,6 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
     name     => $repo_name,
     source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
   }
-
-  ensure_packages(['dkms'], {
-    'require' => Yumrepo['epel']
-  })
 
   package { $packages:
     ensure  => 'installed',
@@ -118,33 +175,75 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
   }
 }
 
-class profile::gpu::install::vgpu {
-  $os = $::facts['os']['release']['major']
-  $repo_name = 'arbutus-cloud-vgpu-repo.noarch'
-  package { 'arbutus-cloud-vgpu-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => $repo_name,
-    source   => "http://repo.arbutus.cloud.computecanada.ca/pulp/repos/centos/arbutus-cloud-vgpu-repo.el${os}.noarch.rpm",
+class profile::gpu::install::vgpu(
+  Enum['rpm', 'bin', 'none'] $installer = 'none',
+)
+{
+  if $installer == 'rpm' {
+    include profile::gpu::install::vgpu::rpm
+  } elsif $installer == 'bin' {
+    # install from binary installer
+    include profile::gpu::install::vgpu::bin
   }
+}
 
-  package { ['nvidia-vgpu-kmod', 'nvidia-vgpu-gridd', 'nvidia-vgpu-tools']:
-    ensure  => 'installed',
+class profile::gpu::install::vgpu::rpm(
+  String $source,
+  Array[String] $packages,
+)
+{
+    $source_pkg_name = split(split($source, '[/]')[-1], '[.]')[0]
+    package { 'vgpu-repo':
+      ensure   => 'latest',
+      provider => 'rpm',
+      name     => $source_pkg_name,
+      source   => $source,
+    }
+
+    package { $packages:
+      ensure  => 'installed',
+      require => [
+        Yumrepo['epel'],
+        Package['vgpu-repo'],
+      ]
+    }
+
+    # The device files/dev/nvidia* are normally created by nvidia-modprobe
+    # If the permissions of nvidia-modprobe exclude setuid, some device files
+    # will be missing.
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
+    -> file { '/usr/bin/nvidia-modprobe':
+      ensure => present,
+      mode   => '4755',
+      owner  => 'root',
+      group  => 'root',
+    }
+}
+
+class profile::gpu::install::vgpu::bin(
+  String $source,
+  String $gridd_source,
+)
+{
+  exec { 'vgpu-driver-install-bin':
+    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run",
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    creates => [
+      '/usr/bin/nvidia-smi',
+      '/usr/bin/nvidia-modprobe',
+    ],
+    timeout => 300,
     require => [
-      Yumrepo['epel'],
-      Package['arbutus-cloud-vgpu-repo'],
+      Package['kernel-devel'],
+      Package['dkms'],
     ]
   }
 
-  # The device files/dev/nvidia* are normally created by nvidia-modprobe
-  # If the permissions of nvidia-modprobe exclude setuid, some device files
-  # will be missing.
-  # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
-  file { '/usr/bin/nvidia-modprobe':
-    ensure  => present,
-    mode    => '4755',
-    owner   => 'root',
-    group   => 'root',
-    require => Package['nvidia-vgpu-tools'],
+  file { '/etc/nvidia/gridd.conf':
+    ensure => present,
+    mode   => '0644',
+    owner  => 'root',
+    group  => 'root',
+    source => $gridd_source,
   }
 }
