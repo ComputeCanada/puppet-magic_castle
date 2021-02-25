@@ -285,6 +285,22 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
       Service['slurmctld']
     ],
   }
+
+  logrotate::rule { 'slurmdbd':
+    path         => '/var/log/slurm/slurmdbd.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'slurm',
+    create_group => 'slurm',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmdbd',
+  }
+
 }
 
 # Slurm controller class. This where slurmctld is ran.
@@ -330,6 +346,21 @@ class profile::slurm::controller {
       Package['slurm-slurmctld'],
       Wait_for['slurmctldhost_set'],
     ]
+  }
+
+  logrotate::rule { 'slurmctld':
+    path         => '/var/log/slurm/slurmctld.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'slurm',
+    create_group => 'slurm',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmctld',
   }
 }
 
@@ -492,6 +523,21 @@ AutoDetect=nvml
       Wait_for['nodeconfig_set'],
       Wait_for['slurmctldhost_set'],
     ]
+  }
+
+  logrotate::rule { 'slurmd':
+    path         => '/var/log/slurm/slurmd.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'root',
+    create_group => 'root',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
   }
 
   exec { 'scontrol_update_state':
