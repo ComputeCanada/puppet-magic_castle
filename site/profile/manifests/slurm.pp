@@ -285,6 +285,22 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
       Service['slurmctld']
     ],
   }
+
+  logrotate::rule { 'slurmdbd':
+    path         => '/var/log/slurm/slurmdbd.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'slurm',
+    create_group => 'slurm',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmdbd',
+  }
+
 }
 
 # Slurm controller class. This where slurmctld is ran.
