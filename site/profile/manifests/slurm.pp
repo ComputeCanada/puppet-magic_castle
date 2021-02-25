@@ -331,6 +331,21 @@ class profile::slurm::controller {
       Wait_for['slurmctldhost_set'],
     ]
   }
+
+  logrotate::rule { 'slurmctld':
+    path         => '/var/log/slurm/slurmctld.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'slurm',
+    create_group => 'slurm',
+    postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmctld',
+  }
 }
 
 # Slurm node class. This is where slurmd is ran.
