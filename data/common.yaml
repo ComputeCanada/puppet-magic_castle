@@ -83,3 +83,6 @@ profile::freeipa::mokey::require_verify_admin: true
 profile::reverse_proxy::jupyterhub_subdomain: jupyter
 profile::reverse_proxy::ipa_subdomain: ipa
 profile::reverse_proxy::mokey_subdomain: mokey
+
+prometheus::storage_retention: '48h'
+prometheus::storage_retention_size: '5GB'
