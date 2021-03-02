@@ -452,7 +452,7 @@ class profile::slurm::node {
 
   file { '/localscratch':
     ensure  => 'directory',
-    seltype => 'default_t'
+    seltype => 'tmp_t'
   }
 
   file { '/var/spool/slurmd':
