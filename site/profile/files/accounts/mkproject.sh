@@ -1,21 +1,16 @@
 #!/bin/bash
 
 BASEDN="$(grep -oP 'basedn = \K(.*)' /etc/ipa/default.conf)"
-export KRB5CCNAME="/root/mkprojectdaemon.krb5"
 
-declare -A group_memory_calls
 declare -A group_memory_users
 
 PROJECT_PREFIX="ctb|def|rpp|rrg"
 
 tail -F /var/log/dirsrv/slapd-*/access |
-grep --line-buffered -oP "MOD dn=\"cn=\K((${PROJECT_PREFIX})-[a-z0-9A-Z_-]*)(?=,cn=groups)" |
-while read GROUP; do
-    if [[ -z ${group_memory_calls[$GROUP]} ]]; then
-        group_memory_calls[$GROUP]=1
-    else
-        group_memory_calls[$GROUP]=$((${group_memory_calls[$GROUP]}+1))
-    fi
+grep --line-buffered -P "MOD dn=\"cn=\K((${PROJECT_PREFIX})-[a-z0-9A-Z_-]*)(?=,cn=groups)" |
+while read LINE; do
+    GROUP=$(echo $LINE | grep -oP "MOD dn=\"cn=\K((${PROJECT_PREFIX})-[a-z0-9A-Z_-]*)(?=,cn=groups)")
+    USERNAME=$(grep -B 5 -F "$LINE" /var/log/dirsrv/slapd-*/access | grep -oP "SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)")
 
     if [[ -z ${group_memory_users[$GROUP]} ]]; then
         group_memory_users[$GROUP]=0
@@ -30,35 +25,24 @@ while read GROUP; do
         fi
     fi
 
-    # Skip ldapsearch if we have already processed more usernames than the number of lines found so far in log
-    if [[ ${group_memory_users[$GROUP]} -ge ${group_memory_calls[$GROUP]} ]]; then
+    if [[ -z "$USERNAME" ]]; then
         continue
     fi
 
-    kinit -k -t /etc/mokey/keytab/mokeyapp.keytab mokeyapp
-    USERNAMES=$(ldapsearch -Q -s one -b "cn=users,cn=accounts,${BASEDN}" "memberOf=*${GROUP}*" uid | grep -oP 'uid: \K(.*)' | tail -n +$((${group_memory_users[$GROUP]}+1)))
-    kdestroy
+    USER_HOME="/mnt/home/$USERNAME"
 
-    if [[ -z "$USERNAMES" ]]; then
-        continue
-    fi
+    PRO_USER="/project/$GROUP/$USERNAME"
+    mkdir -p $PRO_USER
+    mkdir -p "$USER_HOME/projects"
+    ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
 
-    for USERNAME in $USERNAMES; do
-        USER_HOME="/mnt/home/$USERNAME"
+    chgrp $USERNAME "$USER_HOME/projects"
+    chown $USERNAME $PRO_USER
+    chmod 0755 "$USER_HOME/projects"
+    chmod 2700 $PRO_USER
+    restorecon -F -R /project/$GROUP/$USERNAME
+    group_memory_users[$GROUP]=$((${group_memory_users[$GROUP]}+1))
 
-        PRO_USER="/project/$GROUP/$USERNAME"
-        mkdir -p $PRO_USER
-        mkdir -p "$USER_HOME/projects"
-        ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
-
-        chgrp $USERNAME "$USER_HOME/projects"
-        chown $USERNAME $PRO_USER
-        chmod 0755 "$USER_HOME/projects"
-        chmod 2700 $PRO_USER
-        restorecon -F -R /project/$GROUP/$USERNAME
-        group_memory_users[$GROUP]=$((${group_memory_users[$GROUP]}+1))
-    done
-
-    /opt/software/slurm/bin/sacctmgr add user ${USERNAMES[@]} Account=${GROUP} -i
+    /opt/software/slurm/bin/sacctmgr add user ${USERNAME} Account=${GROUP} -i
 
 done

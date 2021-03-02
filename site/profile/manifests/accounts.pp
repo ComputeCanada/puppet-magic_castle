@@ -23,9 +23,9 @@ class profile::accounts {
   }
 
   service { 'mkhome':
-    ensure  => running,
-    enable  => true,
-    require => [
+    ensure    => running,
+    enable    => true,
+    subscribe => [
       File['/sbin/mkhome.sh'],
       File['mkhome.service'],
     ]
@@ -45,9 +45,9 @@ class profile::accounts {
   }
 
   service { 'mkproject':
-    ensure  => running,
-    enable  => true,
-    require => [
+    ensure    => running,
+    enable    => true,
+    subscribe => [
       File['/sbin/mkproject.sh'],
       File['mkproject.service'],
     ]
