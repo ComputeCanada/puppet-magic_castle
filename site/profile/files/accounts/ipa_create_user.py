@@ -14,7 +14,7 @@ from ipaplatform.paths import paths
 
 from six import text_type
 
-# TODO: get this value from /etc/logins.def
+# TODO: get this value from /etc/login.defs
 UID_MAX = 60000
 
 iau_logger = logging.getLogger("IPA_CREATE_USER.py")
