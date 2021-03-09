@@ -61,8 +61,8 @@ variables for each profile.
 
 | Variable                           | Type   | Description                                                             | Default  |
 | ---------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::globus::globus_user`     | String | Username under which the globus endpoint will be registered.            | `undef`  |
-| `profile::globus::globus_password` | String | Password associated with the globus username.                           | `undef`  |
+| `profile::globus::base::globus_user`     | String | Username under which the globus endpoint will be registered.            | `undef`  |
+| `profile::globus::base::globus_password` | String | Password associated with the globus username.                           | `undef`  |
 
 ## profile::nfs
 
