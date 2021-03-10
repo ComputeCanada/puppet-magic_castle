@@ -12,8 +12,9 @@ jobs:
           ruby-version: '2.6'
       - name: Test with Rake
         env:
-          PUPPET_VERSION: '~> 6.18.0'
+          PUPPET_VERSION: '6.18.0'
         run: |
           gem install bundler
+          gem install puppet -v ${PUPPET_VERSION}
           bundle exec rake test
           local-tests/puppet-missing-files
