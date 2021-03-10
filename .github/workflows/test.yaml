@@ -10,18 +10,10 @@ jobs:
       - uses: actions/setup-ruby@v1
         with:
           ruby-version: '2.5'
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Test with Rake
         env:
           PUPPET_VERSION: '6.18.0'
         run: |
-          gem install bundler
-          gem install puppet -v ${PUPPET_VERSION}
-          gem install puppet-lint
-          gem install rspec
-          gem install rspec-puppet
-          gem install puppet-syntax
-          gem install pathspec -v 0.2.1
-          gem install puppetlabs_spec_helper
-          gem install rspec-puppet-facts
           bundle exec rake test
           local-tests/puppet-missing-files
