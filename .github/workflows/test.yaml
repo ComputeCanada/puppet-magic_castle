@@ -12,8 +12,6 @@ jobs:
           ruby-version: '2.5'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Test with Rake
-        env:
-          PUPPET_VERSION: '6.18.0'
         run: |
           bundle exec rake test
           local-tests/puppet-missing-files
