@@ -17,5 +17,6 @@ jobs:
           gem install bundler
           gem install puppet -v ${PUPPET_VERSION}
           gem install puppet-lint
+          gem install rspec
           bundle exec rake test
           local-tests/puppet-missing-files
