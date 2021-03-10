@@ -48,7 +48,12 @@ while read CONN OP GROUP; do
 
         # We clean the SSSD cache before recovering the group GID.
         # This is in case the group existed before with a different gid.
-        GID=$(sss_cache -g $GROUP && sleep 5 && getent group $GROUP | cut -d: -f3)
+        GID=""
+        sss_cache -g $GROUP
+        while [ -z "$GID" ]; do
+            sleep 5
+            GID=$(getent group $GROUP | cut -d: -f3)
+        done
 
         # Then we create the project folder
         mkdir -p "/project/$GID"
