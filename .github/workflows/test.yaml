@@ -11,6 +11,8 @@ jobs:
         with:
           ruby-version: '2.6'
       - name: Test with Rake
+        env:
+          PUPPET_VERSION: '~> 6.8'
         run: |
           gem install bundler
           bundle exec rake test
