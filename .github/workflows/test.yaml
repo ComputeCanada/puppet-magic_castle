@@ -1,4 +1,4 @@
-name: Rails Unit Tests
+name: Validate Puppet code
 
 on: [push, pull_request]
 
