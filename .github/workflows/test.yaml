@@ -19,5 +19,6 @@ jobs:
           gem install puppet-lint
           gem install rspec
           gem install rspec-puppet
+          gem install puppet-syntax
           bundle exec rake test
           local-tests/puppet-missing-files
