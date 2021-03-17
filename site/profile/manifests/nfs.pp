@@ -114,7 +114,15 @@ END
       ensure  => directory,
       seltype => 'home_root_t',
     }
-    $home_pool = glob($home_devices)
+
+    $home_pool = $::facts['disk_links'].filter |$key, $values| {
+      $home_devices.any|$regex| {
+        $key =~ Regexp($regex)
+      }
+    }.map |$key, $values| {
+      $values
+    }
+
     exec { 'vgchange-home_vg':
       command => 'vgchange -ay home_vg',
       onlyif  => ['test ! -d /dev/home_vg', 'vgscan -t | grep -q "home_vg"'],
