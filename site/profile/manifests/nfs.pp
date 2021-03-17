@@ -174,7 +174,15 @@ END
       ensure  => directory,
       seltype => 'home_root_t',
     }
-    $project_pool = glob($project_devices)
+
+    $project_pool = $::facts['disk_links'].filter |$key, $values| {
+      $project_devices.any|$regex| {
+        $key =~ Regexp($regex)
+      }
+    }.map |$key, $values| {
+      $values
+    }
+
     exec { 'vgchange-project_vg':
       command => 'vgchange -ay project_vg',
       onlyif  => ['test ! -d /dev/project_vg', 'vgscan -t | grep -q "project_vg"'],
@@ -226,7 +234,15 @@ END
       ensure  => directory,
       seltype => 'home_root_t',
     }
-    $scratch_pool = glob($scratch_devices)
+
+    $scratch_pool = $::facts['disk_links'].filter |$key, $values| {
+      $scratch_devices.any|$regex| {
+        $key =~ Regexp($regex)
+      }
+    }.map |$key, $values| {
+      $values
+    }
+
     exec { 'vgchange-scratch_vg':
       command => 'vgchange -ay scratch_vg',
       onlyif  => ['test ! -d /dev/scratch_vg', 'vgscan -t | grep -q "scratch_vg"'],
