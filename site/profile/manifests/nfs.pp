@@ -111,7 +111,7 @@ END
 
   $home_dev_regex = regsubst($home_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
   $project_dev_regex = regsubst($project_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
-  $scratch_dev_regex = regsubst($project_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
+  $scratch_dev_regex = regsubst($scratch_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
 
   if ! empty($home_dev_regex) {
     file { ['/mnt/home'] :
