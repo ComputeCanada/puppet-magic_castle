@@ -105,18 +105,22 @@ END
     ensure => installed
   }
 
-  $home_devices    = lookup('profile::nfs::server::home_devices', undef, undef, [])
-  $project_devices = lookup('profile::nfs::server::project_devices', undef, undef, [])
-  $scratch_devices = lookup('profile::nfs::server::scratch_devices', undef, undef, [])
+  $home_dev_glob    = lookup('profile::nfs::server::home_devices', undef, undef, [])
+  $project_dev_glob = lookup('profile::nfs::server::project_devices', undef, undef, [])
+  $scratch_dev_glob = lookup('profile::nfs::server::scratch_devices', undef, undef, [])
 
-  if ! empty($home_devices) {
+  $home_dev_regex = regsubst($home_dev_glob, ['?', '*'], {'?' => '.', '*' => '.*' })
+  $project_dev_regex = regsubst($project_dev_glob, ['?', '*'], {'?' => '.', '*' => '.*' })
+  $scratch_dev_regex = regsubst($project_dev_glob, ['?', '*'], {'?' => '.', '*' => '.*' })
+
+  if ! empty($home_dev_regex) {
     file { ['/mnt/home'] :
       ensure  => directory,
       seltype => 'home_root_t',
     }
 
     $home_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $home_devices.any|$regex| {
+      $home_dev_regex.any|$regex| {
         $key =~ Regexp($regex)
       }
     }.map |$key, $values| {
@@ -169,14 +173,14 @@ END
     }
   }
 
-  if ! empty($project_devices) {
+  if ! empty($project_dev_regex) {
     file { ['/project'] :
       ensure  => directory,
       seltype => 'home_root_t',
     }
 
     $project_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $project_devices.any|$regex| {
+      $project_dev_regex.any|$regex| {
         $key =~ Regexp($regex)
       }
     }.map |$key, $values| {
@@ -229,14 +233,14 @@ END
     }
   }
 
-  if ! empty($scratch_devices) {
+  if ! empty($scratch_dev_regex) {
     file { ['/scratch'] :
       ensure  => directory,
       seltype => 'home_root_t',
     }
 
     $scratch_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $scratch_devices.any|$regex| {
+      $scratch_dev_regex.any|$regex| {
         $key =~ Regexp($regex)
       }
     }.map |$key, $values| {
