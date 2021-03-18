@@ -15,8 +15,8 @@ class profile::cvmfs::client(
     package { 'stack':
       ensure   => 'installed',
       provider => 'rpm',
-      name     => 'cvmfs-config-eessi-0.2.3-1.noarch',
-      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.2.3/cvmfs-config-eessi-0.2.3-1.noarch.rpm'
+      name     => 'cvmfs-config-eessi-0.3.0-1.noarch',
+      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/v0.3.0/cvmfs-config-eessi-0.3.0-1.noarch.rpm'
     }
   } elsif $::software_stack == 'computecanada' {
     package { 'cc-cvmfs-repo':
