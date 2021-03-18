@@ -115,7 +115,7 @@ END
       seltype => 'home_root_t',
     }
 
-    $home_pool = $::facts['disk_links'].filter |$key, $values| {
+    $home_pool = $::facts['/dev/disk'].filter |$key, $values| {
       $home_devices.any|$regex| {
         $key =~ Regexp($regex)
       }
@@ -175,7 +175,7 @@ END
       seltype => 'home_root_t',
     }
 
-    $project_pool = $::facts['disk_links'].filter |$key, $values| {
+    $project_pool = $::facts['/dev/disk'].filter |$key, $values| {
       $project_devices.any|$regex| {
         $key =~ Regexp($regex)
       }
@@ -235,7 +235,7 @@ END
       seltype => 'home_root_t',
     }
 
-    $scratch_pool = $::facts['disk_links'].filter |$key, $values| {
+    $scratch_pool = $::facts['/dev/disk'].filter |$key, $values| {
       $scratch_devices.any|$regex| {
         $key =~ Regexp($regex)
       }
