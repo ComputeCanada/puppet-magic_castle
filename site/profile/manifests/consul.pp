@@ -1,4 +1,5 @@
 class profile::consul::server {
+  tag 'consul'
   $interface = split($::interfaces, ',')[0]
   $ipaddress = $::networking['interfaces'][$interface]['ip']
 
@@ -33,6 +34,7 @@ class profile::consul::server {
 }
 
 class profile::consul::client(String $server_ip) {
+  tag 'consul'
   $interface = split($::interfaces, ',')[0]
   $ipaddress = $::networking['interfaces'][$interface]['ip']
 
