@@ -103,7 +103,7 @@ profile::slurm::base::munge_key: "%{alias('terraform.data.munge_key')}"
 profile::slurm::accounting::password: "%{alias('terraform.data.freeipa_passwd')}"
 
 profile::freeipa::client::server_ip: "%{alias('terraform.instances.mgmt1.local_ip')}"
-profile::consul::client::server_ip: "%{alias('terraform.instances.mgmt1.local_ip')}"
+profile::consul::client::server_ip: "%{alias('terraform.data.puppetmaster_ip')}"
 profile::nfs::client::server_ip: "%{alias('terraform.instances.mgmt1.local_ip')}"
 
 profile::nfs::server::home_devices: "%{alias('terraform.data.home_dev')}"
