@@ -1,7 +1,7 @@
 stage { ['first', 'second'] : }
 Stage['first'] -> Stage['second'] -> Stage['main']
 
-node puppet {
+node /^puppet\d+$/ {
   include profile::consul::server
 }
 
