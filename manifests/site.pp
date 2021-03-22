@@ -1,8 +1,11 @@
 stage { ['first', 'second'] : }
 Stage['first'] -> Stage['second'] -> Stage['main']
 
+node puppet {
+  include profile::consul::server
+}
+
 node default {
-  include profile::consul::client
   include profile::base
   include profile::rsyslog::client
   include profile::freeipa::client
@@ -27,7 +30,7 @@ node /^login\d+$/ {
 }
 
 node /^mgmt1$/ {
-  include profile::consul::server
+  include profile::consul::client
   include profile::metrics::exporter
   include profile::freeipa::server
   include profile::base
