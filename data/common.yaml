@@ -106,8 +106,8 @@ profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::client::server_ip: "%{alias('terraform.tag_ip.puppet.0')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 
-profile::nfs::server::home_devices: "%{alias('terraform.data.home_dev')}"
-profile::nfs::server::project_devices: "%{alias('terraform.data.project_dev')}"
-profile::nfs::server::scratch_devices: "%{alias('terraform.data.scratch_dev')}"
+profile::nfs::server::home_devices: "%{alias('terraform.storage.nfs.home')}"
+profile::nfs::server::project_devices: "%{alias('terraform.storage.nfs.project')}"
+profile::nfs::server::scratch_devices: "%{alias('terraform.storage.nfs.scratch')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
