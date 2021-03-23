@@ -3,8 +3,8 @@ lookup_options:
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
 
-consul_template::version: 0.25.0
-consul::version: 1.7.4
+consul_template::version: 0.25.2
+consul::version: 1.9.4
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
