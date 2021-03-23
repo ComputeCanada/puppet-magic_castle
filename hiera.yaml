@@ -21,4 +21,3 @@ hierarchy:
   - name: "Other YAML hierarchy levels"
     paths:
       - "common.yaml"
-      - "terraform_state.yaml"
