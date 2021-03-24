@@ -89,7 +89,7 @@ prometheus::storage_retention_size: '5GB'
 
 profile::base::sudoer_username: "%{alias('terraform.data.sudoer_username')}"
 
-profile::consul::acl_api_token: "%{alias('terraform.data.consul_token'))"
+profile::consul::acl_api_token: "%{alias('terraform.data.consul_token')}"
 
 profile::freeipa::base::admin_passwd: "%{alias('terraform.data.freeipa_passwd')}"
 profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
