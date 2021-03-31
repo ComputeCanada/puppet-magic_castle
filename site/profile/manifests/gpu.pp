@@ -31,7 +31,7 @@ class profile::gpu::install (
   }
 
   # Binary installer do not build drivers with DKMS
-  $installer = lookup('profile::gpu::install::vgpu::installer')
+  $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
     exec { 'dkms autoinstall':
       path    => ['/usr/bin', '/usr/sbin'],
@@ -155,7 +155,7 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
 
   package { $packages:
     ensure  => 'installed',
-    require => [Package['cuda-repo'], Package['dkms']]
+    require => Package['cuda-repo'],
   }
 
   -> file { '/var/run/nvidia-persistenced':
