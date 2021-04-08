@@ -89,7 +89,7 @@ class profile::gpu::install (
     ]
 
     $nvidia_libs.each |String $lib| {
-      file { "/usr/lib64/nvidia/${lib}":
+      file { "${lib_symlink_path}/${lib}":
         ensure  => link,
         target  => "/usr/lib64/${lib}",
         seltype => 'lib_t'
@@ -130,7 +130,7 @@ class profile::gpu::install (
       ]
 
       $nvidia_libs_vers.each |String $lib| {
-        file { "/usr/lib64/nvidia/${lib}":
+        file { "${lib_symlink_path}/${lib}":
           ensure  => link,
           target  => "/usr/lib64/${lib}",
           seltype => 'lib_t'
