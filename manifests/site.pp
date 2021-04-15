@@ -18,7 +18,6 @@ node default {
     include profile::cvmfs::client
     include profile::slurm::submitter
     include profile::singularity
-    include profile::mfa::login
   }
 
   if 'mgmt' in $instance_tags {
@@ -32,7 +31,6 @@ node default {
     include profile::freeipa::mokey
     include profile::slurm::accounting
     include profile::workshop::mgmt
-    include profile::mfa::mgmt
 
     include profile::accounts
     include profile::accounts::guests
@@ -48,7 +46,6 @@ node default {
     include profile::jupyterhub::node
 
     include profile::slurm::node
-    include profile::mfa::node
   }
 
   if 'nfs' in $instance_tags {
@@ -61,5 +58,9 @@ node default {
     include profile::jupyterhub::hub
     include profile::reverse_proxy
     include profile::globus::base
+  }
+
+  if 'mfa' in $instance_tags {
+    include profile::mfa
   }
 }
