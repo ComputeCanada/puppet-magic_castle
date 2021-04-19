@@ -107,19 +107,17 @@ variables for each profile.
 
 ## profile::mfa
 
-| Variable                              | Type                | Description                                                                 | Default  |
-| ------------------------------------- | :------------------ | :-------------------------------------------------------------------------- | -------- |
-| `profile::mfa::mgmt`                  | Enum['none', 'duo'] | Choose MFA provider on mgmt nodes                                           | false    |
-| `profile::mfa::login`                 | Enum['none', 'duo'] | Choose MFA provider on login nodes                                          | false    |
-| `profile::mfa::node`                  | Enum['none', 'duo'] | Choose MFA provider on compute nodes                                        | false    |
+| Variable                 | Type                | Description                        | Default |
+| ------------------------ | :------------------ | :--------------------------------- | ------- |
+| `profile::mfa::provider` | Enum['none', 'duo'] | MFA provider for node tagged 'mfa' | 'none'  |
 
 ## duo_unix
 
-| Variable                          | Type   | Description                                                                     | Default                  |
-| --------------------------------- | :----- | :------------------------------------------------------------------------------ | ------------------------ |
-| `duo_unix::usage`                 | String | Either login or pam                                                             | `login`                  |
-| `duo_unix::ikey`                  | String | Duo integration key                                                             | `''`                     |
-| `duo_unix::skey`                  | String | Duo secret key                                                                  | `''`                     |
-| `duo_unix::host`                  | String | Duo api host                                                                    | `''`                     |
-| `duo_unix::motd`                  | String | Enable motd                                                                     | `no`                     |
-| `duo_unix::failmode`              | String | Failure mode, secure or safe                                                    | `safe`                   |
+| Variable             | Type   | Description                  | Default                  |
+| -------------------- | :----- | :--------------------------- | ------------------------ |
+| `duo_unix::usage`    | String | Either login or pam          | `login`                  |
+| `duo_unix::ikey`     | String | Duo integration              | `''`                     |
+| `duo_unix::skey`     | String | Duo secret key               | `''`                     |
+| `duo_unix::host`     | String | Duo api host                 | `''`                     |
+| `duo_unix::motd`     | String | Enable motd                  | `no`                     |
+| `duo_unix::failmode` | String | Failure mode, secure or safe | `safe`                   |
