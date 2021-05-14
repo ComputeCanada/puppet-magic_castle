@@ -44,6 +44,7 @@ class profile::cvmfs::client(
       'quota_limit'  => $quota_limit,
       'repositories' => $repositories,
     }),
+    notify  => Service['consul-template'],
     require => Package['cvmfs']
   }
 
@@ -58,6 +59,7 @@ class profile::cvmfs::client(
   file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
     ensure => 'present',
     source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
+    notify => Service['consul-template'],
   }
 
   file { '/etc/profile.d/z-01-site.sh':
