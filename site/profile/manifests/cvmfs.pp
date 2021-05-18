@@ -44,18 +44,8 @@ class profile::cvmfs::client(
       'quota_limit'  => $quota_limit,
       'repositories' => $repositories,
     }),
+    notify  => Service['consul-template'],
     require => Package['cvmfs']
-  }
-
-  exec { 'init_default.local':
-    command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
-    path        => [$consul_template::bin_dir],
-    refreshonly => true,
-    require     => [
-      Class['consul_template::install'],
-      Service['consul'],
-    ],
-    subscribe   => File['/etc/cvmfs/default.local.ctmpl']
   }
 
   consul::service{ 'cvmfs':
@@ -69,6 +59,7 @@ class profile::cvmfs::client(
   file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
     ensure => 'present',
     source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
+    notify => Service['consul-template'],
   }
 
   file { '/etc/profile.d/z-01-site.sh':
@@ -100,9 +91,20 @@ class profile::cvmfs::client(
   }
 
   service { 'autofs':
-    ensure    => running,
-    enable    => true,
-    subscribe => Exec['init_default.local'],
+    ensure => running,
+    enable => true,
+  }
+
+  # Make sure CVMFS repos are mounted when requiring this class
+  exec { 'init_default.local':
+    command => 'consul-template -config /etc/consul-template/config -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
+    path    => ['/bin', '/usr/bin', $consul_template::bin_dir],
+    unless  => 'test -f /etc/cvmfs/default.local',
+    require => [
+      Consul_template::Watch['/etc/cvmfs/default.local'],
+      Service['consul'],
+      Service['autofs'],
+    ],
   }
 
   # Fix issue with BASH_ENV, SSH and lmod where
