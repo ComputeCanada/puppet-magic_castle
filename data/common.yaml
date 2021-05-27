@@ -4,7 +4,7 @@ lookup_options:
     merge: 'deep'
 
 consul_template::version: 0.25.2
-consul::version: 1.9.4
+consul::version: 1.9.5
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
