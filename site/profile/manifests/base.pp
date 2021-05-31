@@ -1,4 +1,5 @@
 class profile::base (
+  Array[String] $public_keys,
   String $sudoer_username = 'centos',
   Optional[String] $admin_email = undef,
 ) {
@@ -48,6 +49,27 @@ class profile::base (
   class { 'selinux':
     mode => 'enforcing',
     type => 'targeted',
+  }
+
+  # Configure sudoer account and ssh keys
+  user { $sudoer_username:
+    ensure         => present,
+    home           => "/${sudoer_username}",
+    purge_ssh_keys => true,
+  }
+  $public_keys.each | Integer $index, String $sshkey | {
+    $split = split($sshkey, ' ')
+    if length($split) > 2 {
+      $name = String($split[2], '%t')
+    } else {
+      $name = "${sudoer_username}_sshkey_${index}"
+    }
+    ssh_authorized_key { $name:
+      ensure => present,
+      user   => $sudoer_username,
+      type   => $split[0],
+      key    => $split[1],
+    }
   }
 
   # Configure sudoer_username user selinux mapping
