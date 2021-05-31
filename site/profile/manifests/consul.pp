@@ -30,6 +30,8 @@ class profile::consul::server {
     timeout   => 60,
     require   => Service['consul']
   }
+
+  include profile::consul::puppet_watch
 }
 
 class profile::consul::client(String $server_ip) {
@@ -63,5 +65,53 @@ class profile::consul::client(String $server_ip) {
     timeout   => 60,
     require   => [Service['consul'],
                   Tcp_conn_validator['consul-server']]
+  }
+
+  include profile::consul::puppet_watch
+}
+
+class profile::consul::puppet_watch {
+  # jq can be used to easily retrieve the token from
+  # consul config file like this:
+  # jq -r .acl_agent_token /etc/consul/config.json
+  include epel
+  ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
+
+  file { '/etc/sudoers.d/99-consul':
+    ensure  => present,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0440',
+    content =>  @("END")
+consul ALL=(root) NOPASSWD: /usr/bin/systemctl reload puppet
+END
+  }
+
+  file { '/usr/bin/puppet_event_handler.sh':
+    ensure  => present,
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    content => @(END)
+#!/bin/bash
+INPUT=$(cat -)
+logger ${INPUT}
+
+# No event, dry run of handler
+if [[ "${INPUT}" == "[]" ]]; then
+  exit 0;
+fi
+
+while [ -f /opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock ]; do sleep 30; done
+sudo systemctl reload puppet
+END
+  }
+
+  consul::watch { 'puppet_event':
+    ensure     => present,
+    type       => 'event',
+    event_name => 'puppet',
+    args       => ['/usr/bin/puppet_event_handler.sh'],
+    token      => lookup('profile::consul::acl_api_token'),
   }
 }
