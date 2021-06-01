@@ -39,4 +39,4 @@ mod 'KyleAnderson-consul', '6.1.0'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v3.8.2'
+    :ref => 'v3.8.4'
