@@ -113,37 +113,3 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
     }
   }
 }
-
-class profile::globus::server_v5 {
-  package { 'globus-toolkit-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => 'globus-toolkit-repo-6.0.20-1.noarch',
-    source   => 'http://downloads.globus.org/toolkit/gt6/stable/installers/repo/rpm/globus-toolkit-repo-latest.noarch.rpm'
-  }
-
-  yumrepo { 'globus-connect-server-5-stable-el7.repo':
-    ensure  => present,
-    name    => 'Globus-Connect-Server-5-Stable',
-    enabled => 1,
-    require => Package['globus-toolkit-repo']
-  }
-
-  yumrepo { 'globus-toolkit-6-stable-el7.repo':
-    ensure  => present,
-    name    => 'Globus-Toolkit-6-Stable',
-    enabled => 1,
-    require => Package['globus-toolkit-repo']
-  }
-
-  package { 'globus-connect-server51':
-    ensure  => 'installed',
-    require => [Yumrepo['globus-connect-server-5-stable-el7.repo'],
-                Yumrepo['globus-toolkit-6-stable-el7.repo']]
-  }
-  package { 'globus-connect-server-manager51-selinux':
-    ensure  => 'installed',
-    require => [Yumrepo['globus-connect-server-5-stable-el7.repo'],
-                Yumrepo['globus-toolkit-6-stable-el7.repo']]
-  }
-}
