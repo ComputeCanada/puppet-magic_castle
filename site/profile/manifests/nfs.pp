@@ -28,12 +28,20 @@ class profile::nfs::client (String $server_ip) {
         share         => 'project',
         options_nfsv4 => $options_nfsv4
     }
+    selinux::fcontext { '/project':
+      pathspec => '/project(/.*)?',
+      seltype  => 'user_home_t',
+    }
   }
   if $nfs_scratch {
     nfs::client::mount { '/scratch':
         server        => $server_ip,
         share         => 'scratch',
         options_nfsv4 => $options_nfsv4
+    }
+    selinux::fcontext { '/scratch':
+      pathspec => '/scratch(/.*)?',
+      seltype  => 'user_home_t',
     }
   }
 }
@@ -213,11 +221,11 @@ END
       mountpath_require => true,
     }
 
-    selinux::fcontext::equivalence { '/project':
-      ensure  => 'present',
-      target  => '/home',
-      require => Mount['/project'],
-      notify  => Selinux::Exec_restorecon['/project']
+    selinux::fcontext { '/project':
+      pathspec => '/project(/.*)?',
+      seltype  => 'user_home_t',
+      require  => Mount['/project'],
+      notify   => Selinux::Exec_restorecon['/project'],
     }
 
     selinux::exec_restorecon { '/project': }
@@ -273,11 +281,11 @@ END
       mountpath_require => true,
     }
 
-    selinux::fcontext::equivalence { '/scratch':
-      ensure  => 'present',
-      target  => '/home',
-      require => Mount['/scratch'],
-      notify  => Selinux::Exec_restorecon['/scratch']
+    selinux::fcontext { '/scratch':
+      pathspec => '/scratch(/.*)?',
+      seltype  => 'user_home_t',
+      require  => Mount['/scratch'],
+      notify   => Selinux::Exec_restorecon['/scratch'],
     }
 
     selinux::exec_restorecon { '/scratch': }

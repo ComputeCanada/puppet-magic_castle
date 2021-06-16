@@ -455,6 +455,11 @@ class profile::slurm::node {
     seltype => 'tmp_t'
   }
 
+  selinux::fcontext { '/localscratch':
+    pathspec => '/localscratch(/.*)?',
+    seltype  => 'user_tmp_t',
+  }
+
   file { '/var/spool/slurmd':
     ensure => 'directory',
     owner  => 'slurm',
