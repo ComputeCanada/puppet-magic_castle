@@ -8,7 +8,8 @@ class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
   Enum['19.05', '20.11'] $slurm_version = '20.11',
-  Boolean $force_slurm_in_path = false
+  Boolean $force_slurm_in_path = false,
+  Boolean $enable_x11_forwarding = true,
 )
 {
   group { 'slurm':
@@ -177,8 +178,9 @@ END
     path    => '/etc/slurm/slurm.conf.tpl',
     content => epp('profile/slurm/slurm.conf',
       {
-        'cluster_name'  => $cluster_name,
-        'slurm_version' => $slurm_version,
+        'cluster_name'          => $cluster_name,
+        'slurm_version'         => $slurm_version,
+        'enable_x11_forwarding' => $enable_x11_forwarding,
       }),
     group   => 'slurm',
     owner   => 'slurm',
