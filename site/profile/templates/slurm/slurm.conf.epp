@@ -36,7 +36,12 @@ SlurmdPidFile=/var/run/slurmd.pid
 
 # JOBS AND TASKS/RESOURCES CONTROL
 TmpFS=/localscratch
-PrologFlags=contain
+<% if $enable_x11_forwarding { -%>
+PrologFlags=alloc,contain,x11
+X11Parameters=home_xauthority
+<% } else { -%>
+PrologFlags=alloc,contain
+<% } -%>
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
