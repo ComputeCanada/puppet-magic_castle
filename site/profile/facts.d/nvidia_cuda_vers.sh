@@ -1,6 +1,6 @@
 #!/bin/sh
 PROCESSOR=$(uname -p)
-VERSION="$(source /etc/os-release; echo $VERSION_ID)"
+VERSION="$(grep -oP 'VERSION_ID="\K[^"]' /etc/os-release)"
 PACKAGE="cuda-repo-rhel${VERSION}"
 PACKAGE_REGEX="${PACKAGE}-\(.*\)\.${PROCESSOR}"
 CUDA_VERSION=$(rpm -q ${PACKAGE} | sed -n "s/${PACKAGE_REGEX}/\1/p")

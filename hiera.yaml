@@ -17,7 +17,7 @@ hierarchy:
   - name: "Cloud provider"
     path: "cloud/%{facts.cloud.provider}/%{facts.cloud.region}.yaml"
   - name: "OS version"
-    path: "os/%{facts.os.name}/%{facts.os.release.major}.yaml"
+    path: "os/%{facts.os.family}/%{facts.os.release.major}.yaml"
   - name: "Other YAML hierarchy levels"
     paths:
       - "common.yaml"

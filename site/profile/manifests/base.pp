@@ -8,11 +8,10 @@ class profile::base (
   include epel
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
-    file_line { 'enable_powertools':
-      ensure => present,
-      path   => '/etc/yum.repos.d/CentOS-Linux-PowerTools.repo',
-      line   => 'enabled=1',
-      match  => '^enabled=0$',
+    exec { 'enable_powertools':
+      command => 'dnf config-manager --set-enabled powertools',
+      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      path    => ['/usr/bin']
     }
   }
 
