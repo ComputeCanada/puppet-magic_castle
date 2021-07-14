@@ -11,6 +11,7 @@ consul_template::config_hash:
 
 epel::epel_exclude: 'slurm*'
 
+fail2ban::config_file_template: "fail2ban/CentOS/%{facts.os.release.major}/etc/fail2ban/jail.conf.epp"
 fail2ban::package_name: fail2ban-server
 fail2ban::jails: ['ssh-route', 'ssh-ban-root']
 fail2ban::custom_jails:
