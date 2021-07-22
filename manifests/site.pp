@@ -17,7 +17,7 @@ node default {
     include profile::fail2ban
     include profile::cvmfs::client
     include profile::slurm::submitter
-    include profile::singularity
+    # include profile::singularity
   }
 
   if 'mgmt' in $instance_tags {
@@ -40,12 +40,17 @@ node default {
   }
 
   if 'node' in $instance_tags {
-    include profile::cvmfs::client
     include profile::gpu
-    include profile::singularity
-    include profile::jupyterhub::node
-
+    if 'jupyter' in $instance_tags {
+      include profile::jupyterhub::node
+    }
+    # include profile::jupyterhub::node
+    # include profile::singularity
     include profile::slurm::node
+  }
+
+  if 'cvmfs' in $instance_tags {
+    include profile::cvmfs::client
   }
 
   if 'nfs' in $instance_tags {
@@ -55,12 +60,22 @@ node default {
   }
 
   if 'proxy' in $instance_tags {
-    include profile::jupyterhub::hub
+    if 'jupyter' in $instance_tags {
+      include profile::jupyterhub::hub
+    }
+    # include profile::jupyterhub::hub
     include profile::reverse_proxy
-    include profile::globus::base
+    if 'globus' in $instance_tags {
+      include profile::globus::base
+    }
   }
 
   if 'mfa' in $instance_tags {
     include profile::mfa
   }
+
+  if 'singularity' in $instance_tags {
+    include profile::singularity
+  }
+
 }
