@@ -111,7 +111,7 @@ def main(users, sponsor):
         if user is not None:
             added_users.add(username)
     if sponsor:
-        group = u"def-" + sponsor
+        group = sponsor
         group_add(group)
         group_add_members(group, users)
     kdestroy()
