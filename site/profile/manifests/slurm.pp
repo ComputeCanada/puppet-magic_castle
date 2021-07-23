@@ -643,6 +643,11 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
   }
 
+  limits::limits{ 'default/memlock':
+    user => 'user',
+    both => 'unlimited',
+  }
+
   file { '/localscratch':
     ensure  => 'directory',
     seltype => 'tmp_t'
