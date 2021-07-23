@@ -643,8 +643,48 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
   }
 
-  limits::limits{ 'default/memlock':
-    user => 'user',
+
+  # Implementation of user limits as recommended in
+  # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
+  # + some common values found on Compute Canada clusters
+  limits::limits{'default/core':
+    user => '*',
+    soft => '0',
+    hard => 'unlimited'
+  }
+
+  limits::limits{'default/nproc':
+    user => '*',
+    soft => '4096',
+  }
+
+  limits::limits{'default/nproc':
+    user => 'root',
+    soft => 'unlimited',
+  }
+
+  limits::limits{'default/memlock':
+    user => '*',
+    both => 'unlimited',
+  }
+
+  limits::limits{'default/stack':
+    user => '*',
+    both => 'unlimited',
+  }
+
+  limits::limits{'default/nofile':
+    user => '*',
+    both => '1048576',
+  }
+
+  limits::limits{'default/cpu':
+    user => '*',
+    both => 'unlimited',
+  }
+
+  limits::limits{'default/rtprio':
+    user => '*',
     both => 'unlimited',
   }
 
