@@ -48,6 +48,7 @@ PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
 TaskPlugin=task/cgroup
+PropagateResourceLimits=NONE
 
 StateSaveLocation=/var/spool/slurm
 <% if $slurm_version == '19.05' { -%>
