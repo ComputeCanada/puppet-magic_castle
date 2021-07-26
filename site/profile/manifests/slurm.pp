@@ -218,6 +218,22 @@ END
     source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
   }
 
+  $instances = lookup('terraform.instances')
+  $draft_template = @(EOT/L)
+<% $instances.each |$name, $attr| { -%>
+<% if $attr['id'] == "" and 'node' in $attr['tags'] { -%>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> State=CLOUD
+<% } -%>
+<% } -%>
+|EOT
+
+  file { '/etc/slurm/draft.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => inline_epp($draft_template, { 'instances' => $instances }),
+    seltype => 'etc_t',
+  }
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.

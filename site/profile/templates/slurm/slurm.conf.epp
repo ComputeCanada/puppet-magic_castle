@@ -18,6 +18,7 @@ include /etc/slurm/node.conf
 {{ else }}
 NodeName=node1 State=down
 {{ end -}}
+include /etc/slurm/draft.conf
 
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
