@@ -20,6 +20,18 @@ NodeName=node1 State=down
 {{ end -}}
 include /etc/slurm/draft.conf
 
+TreeWidth=<%= $nb_nodes %>
+ResumeProgram=/usr/bin/slurm_resume
+SuspendProgram=/usr/bin/slurm_resume
+ResumeTimeout=1800
+SuspendTime=3600
+SuspendRate=1
+ResumeRate=12
+
+SchedulerParameters=salloc_wait_nodes
+SlurmctldParameters=idle_on_node_suspend,cloud_dns
+CommunicationParameters=NoAddrCache
+
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES

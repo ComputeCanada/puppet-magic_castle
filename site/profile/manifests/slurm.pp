@@ -180,6 +180,7 @@ END
                 Yumrepo['slurm-copr-repo']]
   }
 
+  $instances = lookup('terraform.instances')
   file { 'slurm.conf.tpl':
     ensure  => 'present',
     path    => '/etc/slurm/slurm.conf.tpl',
@@ -188,6 +189,7 @@ END
         'cluster_name'          => $cluster_name,
         'slurm_version'         => $slurm_version,
         'enable_x11_forwarding' => $enable_x11_forwarding,
+        'nb_nodes'              => length($instances),
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -218,7 +220,6 @@ END
     source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
   }
 
-  $instances = lookup('terraform.instances')
   $draft_template = @(EOT/L)
 <% $instances.each |$name, $attr| { -%>
 <% if $attr['id'] == "" and 'node' in $attr['tags'] { -%>
@@ -234,6 +235,17 @@ NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['s
     content => inline_epp($draft_template, { 'instances' => $instances }),
     seltype => 'etc_t',
   }
+
+  file { '/usr/bin/slurm_resume':
+    ensure  => 'present',
+    mode    => '0755',
+    seltype => 'bin_t',
+    content => @(EOT/L)
+#!/bin/bash
+echo $@ >> /tmp/slurm_resume.txt
+|EOT
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
