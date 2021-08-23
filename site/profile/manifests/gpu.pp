@@ -155,7 +155,10 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
 
   package { $packages:
     ensure  => 'installed',
-    require => Package['cuda-repo'],
+    require => [
+      Package['cuda-repo'],
+      Yumrepo['epel'],
+    ],
   }
 
   -> file { '/var/run/nvidia-persistenced':
