@@ -150,7 +150,7 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
     ensure   => 'installed',
     provider => 'rpm',
     name     => $repo_name,
-    source   => "http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
+    source   => "https://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/${repo_name}-${cuda_ver}.${arch}.rpm"
   }
 
   package { $packages:
