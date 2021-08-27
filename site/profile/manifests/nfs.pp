@@ -9,30 +9,12 @@ class profile::nfs::client (String $server_ip) {
     nfs_v4_idmap_domain => $nfs_domain
   }
 
-  $nfs_home    = ! empty(lookup('profile::nfs::server::devices.home', undef, undef, []))
-  $nfs_project = ! empty(lookup('profile::nfs::server::devices.project', undef, undef, []))
-  $nfs_scratch = ! empty(lookup('profile::nfs::server::devices.scratch', undef, undef, []))
-
-  # Retrieve all folder exported with NFS in a single mount
+  $nfs_export_list = keys(lookup('profile::nfs::server::devices', undef, undef, {}))
   $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
-  if $nfs_home {
-    nfs::client::mount { '/home':
+  $nfs_export_list.each | String $name | {
+    nfs::client::mount { "/${name}":
         server        => $server_ip,
-        share         => 'home',
-        options_nfsv4 => $options_nfsv4
-    }
-  }
-  if $nfs_project {
-    nfs::client::mount { '/project':
-        server        => $server_ip,
-        share         => 'project',
-        options_nfsv4 => $options_nfsv4
-    }
-  }
-  if $nfs_scratch {
-    nfs::client::mount { '/scratch':
-        server        => $server_ip,
-        share         => 'scratch',
+        share         => $name,
         options_nfsv4 => $options_nfsv4
     }
   }
