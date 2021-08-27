@@ -9,9 +9,9 @@ class profile::nfs::client (String $server_ip) {
     nfs_v4_idmap_domain => $nfs_domain
   }
 
-  $nfs_home    = ! empty(lookup('profile::nfs::server::home_devices', undef, undef, []))
-  $nfs_project = ! empty(lookup('profile::nfs::server::project_devices', undef, undef, []))
-  $nfs_scratch = ! empty(lookup('profile::nfs::server::scratch_devices', undef, undef, []))
+  $nfs_home    = ! empty(lookup('profile::nfs::server::devices.home', undef, undef, []))
+  $nfs_project = ! empty(lookup('profile::nfs::server::devices.project', undef, undef, []))
+  $nfs_scratch = ! empty(lookup('profile::nfs::server::devices.scratch', undef, undef, []))
 
   # Retrieve all folder exported with NFS in a single mount
   $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
@@ -38,7 +38,9 @@ class profile::nfs::client (String $server_ip) {
   }
 }
 
-class profile::nfs::server {
+class profile::nfs::server (
+  Hash[String, Array[String]] $devices,
+) {
   require profile::base
 
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
@@ -105,9 +107,9 @@ END
     ensure => installed
   }
 
-  $home_dev_glob    = lookup('profile::nfs::server::home_devices', undef, undef, [])
-  $project_dev_glob = lookup('profile::nfs::server::project_devices', undef, undef, [])
-  $scratch_dev_glob = lookup('profile::nfs::server::scratch_devices', undef, undef, [])
+  $home_dev_glob    = lookup('profile::nfs::server::devices.home', undef, undef, [])
+  $project_dev_glob = lookup('profile::nfs::server::devices.project', undef, undef, [])
+  $scratch_dev_glob = lookup('profile::nfs::server::devices.scratch', undef, undef, [])
 
   $home_dev_regex = regsubst($home_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
   $project_dev_regex = regsubst($project_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })

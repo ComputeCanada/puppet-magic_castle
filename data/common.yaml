@@ -108,8 +108,6 @@ profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::client::server_ip: "%{alias('terraform.tag_ip.puppet.0')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 
-profile::nfs::server::home_devices: "%{alias('terraform.volumes.nfs.home')}"
-profile::nfs::server::project_devices: "%{alias('terraform.volumes.nfs.project')}"
-profile::nfs::server::scratch_devices: "%{alias('terraform.volumes.nfs.scratch')}"
+profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
