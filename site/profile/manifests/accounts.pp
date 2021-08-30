@@ -44,13 +44,15 @@ class profile::accounts {
     owner  => 'root',
   }
 
-  service { 'mkproject':
-    ensure    => running,
-    enable    => true,
-    subscribe => [
-      File['/sbin/mkproject.sh'],
-      File['mkproject.service'],
-    ]
+  if defined(File['/mnt/project']) {
+    service { 'mkproject':
+      ensure    => running,
+      enable    => true,
+      subscribe => [
+        File['/sbin/mkproject.sh'],
+        File['mkproject.service'],
+      ]
+    }
   }
 }
 
