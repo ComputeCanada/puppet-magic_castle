@@ -9,10 +9,16 @@ class profile::accounts {
     mode   => '0755'
   }
 
+  $nfs_devices = lookup('profile::nfs::server::devices', undef, undef, {})
+  $with_home = 'home' in $nfs_devices
+  $with_project = 'project' in $nfs_devices
+  $with_scratch = 'scratch' in $nfs_devices
+
   file { '/sbin/mkhome.sh':
     ensure  => 'present',
     content => epp('profile/accounts/mkhome.sh', {
-      with_scratch => defined(File['/mnt/scratch']),
+      with_home    => $with_home,
+      with_scratch => $with_scratch,
     }),
     mode    => '0755',
     owner   => 'root',
@@ -42,7 +48,7 @@ class profile::accounts {
   file { '/sbin/mkproject.sh':
     ensure  => 'present',
     content => epp('profile/accounts/mkproject.sh', {
-      with_folder => defined(File['/mnt/project']),
+      with_folder => $with_project,
     }),
     mode    => '0755',
     owner   => 'root',

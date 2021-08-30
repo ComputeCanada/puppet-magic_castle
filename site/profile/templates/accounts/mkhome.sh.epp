@@ -2,9 +2,11 @@
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
 while read USERNAME; do
+<% if $with_home { -%>
     USER_HOME="/mnt/home/$USERNAME"
     rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=D700,F700 /etc/skel/ $USER_HOME
     restorecon -F -R $USER_HOME
+<% } -%>
 
 <% if $with_scratch { -%>
     USER_SCRATCH="/scratch/$USERNAME"
