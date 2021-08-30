@@ -10,10 +10,12 @@ class profile::accounts {
   }
 
   file { '/sbin/mkhome.sh':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/accounts/mkhome.sh',
-    mode   => '0755',
-    owner  => 'root',
+    ensure  => 'present',
+    content => epp('profile/accounts/mkhome.sh', {
+      with_scratch => defined(File['/mnt/scratch']),
+    }),
+    mode    => '0755',
+    owner   => 'root',
   }
 
   file { 'mkhome.service':

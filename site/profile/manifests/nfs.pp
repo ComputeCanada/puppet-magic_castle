@@ -107,7 +107,7 @@ define profile::nfs::server::export_volume (
   String $seltype = 'home_root_t',
 ) {
 
-  $regexes =  regsubst($glob, /[?*]/, {'?' => '.', '*' => '.*' })
+  $regexes = regsubst($glob, /[?*]/, {'?' => '.', '*' => '.*' })
 
   file { ["/mnt/${name}"] :
     ensure  => directory,

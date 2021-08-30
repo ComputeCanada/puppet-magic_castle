@@ -6,6 +6,7 @@ while read USERNAME; do
     rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=D700,F700 /etc/skel/ $USER_HOME
     restorecon -F -R $USER_HOME
 
+<% if $with_scratch { -%>
     USER_SCRATCH="/scratch/$USERNAME"
     SERVER_SCRATCH="/mnt/$USER_SCRATCH"
     if [[ ! -d "$MOUNT_SCRATCH" ]]; then
@@ -15,4 +16,5 @@ while read USERNAME; do
         chmod 750 $SERVER_SCRATCH
         restorecon -F -R $SERVER_SCRATCH
     fi
+<% } -%>
 done
