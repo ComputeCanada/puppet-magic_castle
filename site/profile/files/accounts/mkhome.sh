@@ -7,11 +7,12 @@ while read USERNAME; do
     restorecon -F -R $USER_HOME
 
     USER_SCRATCH="/scratch/$USERNAME"
-    if [[ ! -d "$USER_SCRATCH" ]]; then
-        mkdir -p $USER_SCRATCH
+    SERVER_SCRATCH="/mnt/$USER_SCRATCH"
+    if [[ ! -d "$MOUNT_SCRATCH" ]]; then
+        mkdir -p $SERVER_SCRATCH
         ln -sfT $USER_SCRATCH "$USER_HOME/scratch"
-        chown -h $USERNAME:$USERNAME $USER_SCRATCH "$USER_HOME/scratch"
-        chmod 750 $USER_SCRATCH
-        restorecon -F -R $USER_SCRATCH
+        chown -h $USERNAME:$USERNAME $SERVER_SCRATCH "$USER_HOME/scratch"
+        chmod 750 $SERVER_SCRATCH
+        restorecon -F -R $SERVER_SCRATCH
     fi
 done
