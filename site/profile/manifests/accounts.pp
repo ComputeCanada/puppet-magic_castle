@@ -40,21 +40,21 @@ class profile::accounts {
   }
 
   file { '/sbin/mkproject.sh':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/accounts/mkproject.sh',
-    mode   => '0755',
-    owner  => 'root',
+    ensure  => 'present',
+    content => epp('profile/accounts/mkproject.sh', {
+      with_folder => defined(File['/mnt/project']),
+    }),
+    mode    => '0755',
+    owner   => 'root',
   }
 
-  if defined(File['/mnt/project']) {
-    service { 'mkproject':
-      ensure    => running,
-      enable    => true,
-      subscribe => [
-        File['/sbin/mkproject.sh'],
-        File['mkproject.service'],
-      ]
-    }
+  service { 'mkproject':
+    ensure    => running,
+    enable    => true,
+    subscribe => [
+      File['/sbin/mkproject.sh'],
+      File['mkproject.service'],
+    ]
   }
 }
 

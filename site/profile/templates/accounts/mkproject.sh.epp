@@ -45,7 +45,7 @@ while read CONN OP GROUP; do
         # A new group has been created
         # We create the associated account in slurm
         /opt/software/slurm/bin/sacctmgr add account $GROUP -i
-
+<% if $with_folder { %>
         # We clean the SSSD cache before recovering the group GID.
         # This is in case the group existed before with a different gid.
         GID=""
@@ -61,7 +61,7 @@ while read CONN OP GROUP; do
         chmod 2770 "/mnt/project/$GID"
         ln -sfT "/project/$GID" "/mnt/project/$GROUP"
         restorecon -F -R /project/$GID /project/$GROUP
-
+<% } %>
     elif [[ "$OP" == "MOD" ]]; then
         # A group has been modified
         # We grep the log for all operations related to request $CONN that contain a uid
@@ -87,6 +87,7 @@ while read CONN OP GROUP; do
                 chmod 2700 "${PRO_USER}"
                 restorecon -F -R "/mnt/project/${GROUP}/${USERNAME}"
             done
+<% } -%>
             /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
         else
             # If group has been modified but no uid were found in the log, it means
@@ -97,10 +98,12 @@ while read CONN OP GROUP; do
             USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
             if [[ ! -z "$USERNAMES" ]]; then
                 /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+<% if $with_folder { -%>
                 for USERNAME in $USERNAMES; do
                     USER_HOME="/mnt/home/$USERNAME"
                     rm "$USER_HOME/projects/$GROUP"
                 done
+<% } -%>
             fi
         fi
     elif [[ "$OP" == "DEL" ]]; then
@@ -110,10 +113,12 @@ while read CONN OP GROUP; do
         USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+<% if $with_folder { -%>
             for USERNAME in $USERNAMES; do
                 USER_HOME="/mnt/home/$USERNAME"
                 rm "$USER_HOME/projects/$GROUP"
             done
+<% } -%>
         fi
     fi
 
