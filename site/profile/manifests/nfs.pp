@@ -283,3 +283,68 @@ END
     unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports'
   }
 }
+
+define profile::nfs::server::export_volume (
+  String $vol_name,
+  Array[String] $regexes,
+  String $seltype = 'home_root_t',
+) {
+
+  file { ["/mnt/${vol_name}"] :
+    ensure  => directory,
+    seltype => $seltype,
+  }
+
+  $pool = $::facts['/dev/disk'].filter |$key, $values| {
+    $regexes.any|$regex| {
+      $key =~ Regexp($regex)
+    }
+  }.map |$key, $values| {
+    $values
+  }
+
+  exec { "vgchange-${vol_name}_vg":
+    command => "vgchange -ay ${vol_name}_vg",
+    onlyif  => ["test ! -d /dev/${vol_name}_vg", "vgscan -t | grep -q '${vol_name}_vg'"],
+    require => [Package['lvm2']],
+    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  }
+
+  physical_volume { $pool:
+    ensure => present,
+  }
+
+  volume_group { "${vol_name}_vg":
+    ensure           => present,
+    physical_volumes => $pool,
+    createonly       => true,
+    followsymlinks   => true,
+  }
+
+  lvm::logical_volume { $vol_name:
+    ensure            => present,
+    volume_group      => "${vol_name}_vg",
+    fs_type           => 'xfs',
+    mountpath         => "/mnt/${vol_name}",
+    mountpath_require => true,
+  }
+
+  selinux::fcontext::equivalence { "/mnt/${vol_name}":
+    ensure  => 'present',
+    target  => '/home',
+    require => Mount["/mnt/${vol_name}"],
+    notify  => Selinux::Exec_restorecon[$vol_name]
+  }
+
+  selinux::exec_restorecon { "/mnt/${vol_name}": }
+
+  nfs::server::export{ "/mnt/${vol_name}":
+    ensure  => 'mounted',
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+    notify  => Service[$::nfs::server_service_name],
+    require => [
+      Mount["/mnt/${vol_name}"],
+      Class['::nfs'],
+    ]
+  }
+}
