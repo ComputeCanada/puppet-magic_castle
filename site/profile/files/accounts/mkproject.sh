@@ -70,20 +70,22 @@ while read CONN OP GROUP; do
         # The operation that add users to a group would have operations with a uid.
         # If we found none, $USERNAMES will be empty, and it means we don't have
         # anything to add to Slurm and /project
-        if [[ ! -z "$USERNAMES" ]]; then
+        if [[ ! -z "${USERNAMES}" ]]; then
+            MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
+<% if $with_folder { -%>
             for USERNAME in $USERNAMES; do
-                USER_HOME="/mnt/home/$USERNAME"
+                USER_HOME="/mnt/home/${USERNAME}"
 
-                PRO_USER="/mnt/project/$GROUP/$USERNAME"
-                mkdir -p $PRO_USER
-                mkdir -p "$USER_HOME/projects"
-                ln -sfT "/project/$GROUP" "$USER_HOME/projects/$GROUP"
+                PRO_USER="${MNT_PROJECT}/${USERNAME}"
+                mkdir -p ${PRO_USER}
+                mkdir -p "${USER_HOME}/projects"
+                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
 
-                chgrp $USERNAME "$USER_HOME/projects"
-                chown $USERNAME $PRO_USER
-                chmod 0755 "$USER_HOME/projects"
-                chmod 2700 $PRO_USER
-                restorecon -F -R /mnt/project/$GROUP/$USERNAME
+                chgrp "${USERNAME}" "${USER_HOME}/projects"
+                chown "${USERNAME}" "${PRO_USER}"
+                chmod 0755 "${USER_HOME}/projects"
+                chmod 2700 "${PRO_USER}"
+                restorecon -F -R "/mnt/project/${GROUP}/${USERNAME}"
             done
             /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
         else
