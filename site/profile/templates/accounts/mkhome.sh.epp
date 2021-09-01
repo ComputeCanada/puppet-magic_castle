@@ -4,6 +4,7 @@ grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
 while read USERNAME; do
 <% if $with_home { -%>
     USER_HOME="/mnt/home/$USERNAME"
+    sss_cache -u $USERNAME
     rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=D700,F700 /etc/skel/ $USER_HOME
     restorecon -F -R $USER_HOME
 <% } -%>
