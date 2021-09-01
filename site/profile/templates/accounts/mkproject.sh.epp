@@ -56,11 +56,13 @@ while read CONN OP GROUP; do
         done
 
         # Then we create the project folder
-        mkdir -p "/mnt/project/$GID"
-        chown root:"$GROUP" "/mnt/project/$GID"
-        chmod 2770 "/mnt/project/$GID"
-        ln -sfT "/project/$GID" "/mnt/project/$GROUP"
-        restorecon -F -R /project/$GID /project/$GROUP
+        MNT_PROJECT_GID="/mnt/project/$GID"
+        MNT_PROJECT_GROUP="/mnt/project/$GROUP"
+        mkdir -p ${MNT_PROJECT_GID}
+        chown root:"$GROUP" ${MNT_PROJECT_GID}
+        chmod 2770 ${MNT_PROJECT_GID}
+        ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
+        restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
 <% } %>
     elif [[ "$OP" == "MOD" ]]; then
         # A group has been modified
@@ -85,7 +87,7 @@ while read CONN OP GROUP; do
                 chown "${USERNAME}" "${PRO_USER}"
                 chmod 0755 "${USER_HOME}/projects"
                 chmod 2700 "${PRO_USER}"
-                restorecon -F -R "/mnt/project/${GROUP}/${USERNAME}"
+                restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
             done
 <% } -%>
             /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
