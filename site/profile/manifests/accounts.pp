@@ -30,13 +30,15 @@ class profile::accounts {
     source => 'puppet:///modules/profile/accounts/mkhome.service'
   }
 
-  service { 'mkhome':
-    ensure    => running,
-    enable    => true,
-    subscribe => [
-      File['/sbin/mkhome.sh'],
-      File['mkhome.service'],
-    ]
+  if $with_home or $with_scratch {
+    service { 'mkhome':
+      ensure    => running,
+      enable    => true,
+      subscribe => [
+        File['/sbin/mkhome.sh'],
+        File['mkhome.service'],
+      ]
+    }
   }
 
   file { 'mkproject.service':
