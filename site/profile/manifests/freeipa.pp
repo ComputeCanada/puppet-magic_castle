@@ -311,6 +311,16 @@ class profile::freeipa::server
     subscribe   => Exec['ipa-server-install']
   }
 
+  # Configure the password expiration of the admin account to almost never expire
+  exec { 'ipa_admin_passwd_exp':
+    command     => 'kinit_wrapper ipa user-mod admin --setattr=krbPasswordExpiration=$(date --date="100 years" +"%Y-%m-%dZ")',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'],],
+    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-server-install'],
+  }
+
   exec { 'ipa_automember_ipausers':
     command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
     refreshonly => true,
