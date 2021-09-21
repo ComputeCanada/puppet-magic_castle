@@ -9,11 +9,19 @@ class profile::accounts {
     mode   => '0755'
   }
 
+  $nfs_devices = lookup('profile::nfs::server::devices', undef, undef, {})
+  $with_home = 'home' in $nfs_devices
+  $with_project = 'project' in $nfs_devices
+  $with_scratch = 'scratch' in $nfs_devices
+
   file { '/sbin/mkhome.sh':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/accounts/mkhome.sh',
-    mode   => '0755',
-    owner  => 'root',
+    ensure  => 'present',
+    content => epp('profile/accounts/mkhome.sh', {
+      with_home    => $with_home,
+      with_scratch => $with_scratch,
+    }),
+    mode    => '0755',
+    owner   => 'root',
   }
 
   file { 'mkhome.service':
@@ -22,13 +30,15 @@ class profile::accounts {
     source => 'puppet:///modules/profile/accounts/mkhome.service'
   }
 
-  service { 'mkhome':
-    ensure    => running,
-    enable    => true,
-    subscribe => [
-      File['/sbin/mkhome.sh'],
-      File['mkhome.service'],
-    ]
+  if $with_home or $with_scratch {
+    service { 'mkhome':
+      ensure    => running,
+      enable    => true,
+      subscribe => [
+        File['/sbin/mkhome.sh'],
+        File['mkhome.service'],
+      ]
+    }
   }
 
   file { 'mkproject.service':
@@ -38,10 +48,12 @@ class profile::accounts {
   }
 
   file { '/sbin/mkproject.sh':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/accounts/mkproject.sh',
-    mode   => '0755',
-    owner  => 'root',
+    ensure  => 'present',
+    content => epp('profile/accounts/mkproject.sh', {
+      with_folder => $with_project,
+    }),
+    mode    => '0755',
+    owner   => 'root',
   }
 
   service { 'mkproject':
@@ -67,7 +79,7 @@ class profile::accounts::guests(
   if $nb_accounts > 0 {
     exec{ 'ipa_add_user':
       command     => "kinit_wrapper ipa_create_user.py $(seq -w ${nb_accounts} | sed 's/^/${prefix}/') --sponsor=${$sponsor}",
-      onlyif      => "test $(stat -c '%U' $(seq -w ${nb_accounts} | sed 's/^/\\/mnt\\/home\\/${prefix}/') | grep ${prefix} | wc -l) != ${nb_accounts}",
+      unless      => "getent passwd $(seq -w ${nb_accounts} | sed 's/^/${prefix}/')",
       environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
                       "IPA_GUEST_PASSWD=${passwd}"],
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],

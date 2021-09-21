@@ -9,36 +9,20 @@ class profile::nfs::client (String $server_ip) {
     nfs_v4_idmap_domain => $nfs_domain
   }
 
-  $nfs_home    = ! empty(lookup('profile::nfs::server::home_devices', undef, undef, []))
-  $nfs_project = ! empty(lookup('profile::nfs::server::project_devices', undef, undef, []))
-  $nfs_scratch = ! empty(lookup('profile::nfs::server::scratch_devices', undef, undef, []))
-
-  # Retrieve all folder exported with NFS in a single mount
+  $nfs_export_list = keys(lookup('profile::nfs::server::devices', undef, undef, {}))
   $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
-  if $nfs_home {
-    nfs::client::mount { '/home':
+  $nfs_export_list.each | String $name | {
+    nfs::client::mount { "/${name}":
         server        => $server_ip,
-        share         => 'home',
-        options_nfsv4 => $options_nfsv4
-    }
-  }
-  if $nfs_project {
-    nfs::client::mount { '/project':
-        server        => $server_ip,
-        share         => 'project',
-        options_nfsv4 => $options_nfsv4
-    }
-  }
-  if $nfs_scratch {
-    nfs::client::mount { '/scratch':
-        server        => $server_ip,
-        share         => 'scratch',
+        share         => $name,
         options_nfsv4 => $options_nfsv4
     }
   }
 }
 
-class profile::nfs::server {
+class profile::nfs::server (
+  Hash[String, Array[String]] $devices,
+) {
   require profile::base
 
   $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
@@ -105,191 +89,9 @@ END
     ensure => installed
   }
 
-  $home_dev_glob    = lookup('profile::nfs::server::home_devices', undef, undef, [])
-  $project_dev_glob = lookup('profile::nfs::server::project_devices', undef, undef, [])
-  $scratch_dev_glob = lookup('profile::nfs::server::scratch_devices', undef, undef, [])
-
-  $home_dev_regex = regsubst($home_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
-  $project_dev_regex = regsubst($project_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
-  $scratch_dev_regex = regsubst($scratch_dev_glob, /[?*]/, {'?' => '.', '*' => '.*' })
-
-  if ! empty($home_dev_regex) {
-    file { ['/mnt/home'] :
-      ensure  => directory,
-      seltype => 'home_root_t',
-    }
-
-    $home_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $home_dev_regex.any|$regex| {
-        $key =~ Regexp($regex)
-      }
-    }.map |$key, $values| {
-      $values
-    }
-
-    exec { 'vgchange-home_vg':
-      command => 'vgchange -ay home_vg',
-      onlyif  => ['test ! -d /dev/home_vg', 'vgscan -t | grep -q "home_vg"'],
-      require => [Package['lvm2']],
-      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-    }
-
-    physical_volume { $home_pool:
-      ensure => present,
-    }
-
-    volume_group { 'home_vg':
-      ensure           => present,
-      physical_volumes => $home_pool,
-      createonly       => true,
-      followsymlinks   => true,
-    }
-
-    lvm::logical_volume { 'home':
-      ensure            => present,
-      volume_group      => 'home_vg',
-      fs_type           => 'xfs',
-      mountpath         => '/mnt/home',
-      mountpath_require => true,
-    }
-
-    selinux::fcontext::equivalence { '/mnt/home':
-      ensure  => 'present',
-      target  => '/home',
-      require => Mount['/mnt/home'],
-      notify  => Selinux::Exec_restorecon['/mnt/home']
-    }
-
-    selinux::exec_restorecon { '/mnt/home': }
-
-    nfs::server::export{ '/mnt/home' :
-      ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_service_name],
-      require => [
-        Mount['/mnt/home'],
-        Class['::nfs'],
-      ]
-    }
-  }
-
-  if ! empty($project_dev_regex) {
-    file { ['/project'] :
-      ensure  => directory,
-      seltype => 'home_root_t',
-    }
-
-    $project_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $project_dev_regex.any|$regex| {
-        $key =~ Regexp($regex)
-      }
-    }.map |$key, $values| {
-      $values
-    }
-
-    exec { 'vgchange-project_vg':
-      command => 'vgchange -ay project_vg',
-      onlyif  => ['test ! -d /dev/project_vg', 'vgscan -t | grep -q "project_vg"'],
-      require => [Package['lvm2']],
-      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-    }
-
-    physical_volume { $project_pool:
-      ensure => present,
-    }
-
-    volume_group { 'project_vg':
-      ensure           => present,
-      physical_volumes => $project_pool,
-      createonly       => true,
-      followsymlinks   => true,
-    }
-
-    lvm::logical_volume { 'project':
-      ensure            => present,
-      volume_group      => 'project_vg',
-      fs_type           => 'xfs',
-      mountpath         => '/project',
-      mountpath_require => true,
-    }
-
-    selinux::fcontext::equivalence { '/project':
-      ensure  => 'present',
-      target  => '/home',
-      require => Mount['/project'],
-      notify  => Selinux::Exec_restorecon['/project']
-    }
-
-    selinux::exec_restorecon { '/project': }
-
-    nfs::server::export{ '/project':
-      ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_service_name],
-      require => [
-        Mount['/project'],
-        Class['::nfs'],
-      ]
-    }
-  }
-
-  if ! empty($scratch_dev_regex) {
-    file { ['/scratch'] :
-      ensure  => directory,
-      seltype => 'home_root_t',
-    }
-
-    $scratch_pool = $::facts['/dev/disk'].filter |$key, $values| {
-      $scratch_dev_regex.any|$regex| {
-        $key =~ Regexp($regex)
-      }
-    }.map |$key, $values| {
-      $values
-    }
-
-    exec { 'vgchange-scratch_vg':
-      command => 'vgchange -ay scratch_vg',
-      onlyif  => ['test ! -d /dev/scratch_vg', 'vgscan -t | grep -q "scratch_vg"'],
-      require => [Package['lvm2']],
-      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-    }
-
-    physical_volume { $scratch_pool:
-      ensure => present,
-    }
-
-    volume_group { 'scratch_vg':
-      ensure           => present,
-      physical_volumes => $scratch_pool,
-      createonly       => true,
-      followsymlinks   => true,
-    }
-
-    lvm::logical_volume { 'scratch':
-      ensure            => present,
-      volume_group      => 'scratch_vg',
-      fs_type           => 'xfs',
-      mountpath         => '/scratch',
-      mountpath_require => true,
-    }
-
-    selinux::fcontext::equivalence { '/scratch':
-      ensure  => 'present',
-      target  => '/home',
-      require => Mount['/scratch'],
-      notify  => Selinux::Exec_restorecon['/scratch']
-    }
-
-    selinux::exec_restorecon { '/scratch': }
-
-    nfs::server::export{ '/scratch':
-      ensure  => 'mounted',
-      clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-      notify  => Service[$::nfs::server_service_name],
-      require => [
-        Mount['/scratch'],
-        Class['::nfs'],
-      ]
+  $devices.each | String $key, $glob | {
+    profile::nfs::server::export_volume { $key:
+      glob => $glob,
     }
   }
 
@@ -297,5 +99,71 @@ END
     command => 'exportfs -ua; cat /proc/fs/nfs/exports; exportfs -a',
     path    => ['/usr/sbin', '/usr/bin'],
     unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports'
+  }
+}
+
+define profile::nfs::server::export_volume (
+  Array[String] $glob,
+  String $seltype = 'home_root_t',
+) {
+
+  $regexes = regsubst($glob, /[?*]/, {'?' => '.', '*' => '.*' })
+
+  file { ["/mnt/${name}"] :
+    ensure  => directory,
+    seltype => $seltype,
+  }
+
+  $pool = $::facts['/dev/disk'].filter |$key, $values| {
+    $regexes.any|$regex| {
+      $key =~ Regexp($regex)
+    }
+  }.map |$key, $values| {
+    $values
+  }
+
+  exec { "vgchange-${name}_vg":
+    command => "vgchange -ay ${name}_vg",
+    onlyif  => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
+    require => [Package['lvm2']],
+    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  }
+
+  physical_volume { $pool:
+    ensure => present,
+  }
+
+  volume_group { "${name}_vg":
+    ensure           => present,
+    physical_volumes => $pool,
+    createonly       => true,
+    followsymlinks   => true,
+  }
+
+  lvm::logical_volume { $name:
+    ensure            => present,
+    volume_group      => "${name}_vg",
+    fs_type           => 'xfs',
+    mountpath         => "/mnt/${name}",
+    mountpath_require => true,
+  }
+
+  selinux::fcontext::equivalence { "/mnt/${name}":
+    ensure  => 'present',
+    target  => '/home',
+    require => Mount["/mnt/${name}"],
+    notify  => Selinux::Exec_restorecon["/mnt/${name}"]
+  }
+
+  selinux::exec_restorecon { "/mnt/${name}": }
+
+  nfs::server::export{ "/mnt/${name}":
+    ensure  => 'mounted',
+    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+    notify  => Service[$::nfs::server_service_name],
+    require => [
+      Mount["/mnt/${name}"],
+      Class['::nfs'],
+    ]
   }
 }
