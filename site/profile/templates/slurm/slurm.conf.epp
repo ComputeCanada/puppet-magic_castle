@@ -53,7 +53,7 @@ PropagateResourceLimits=NONE
 StateSaveLocation=/var/spool/slurm
 <% if $slurm_version == '19.05' { -%>
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none bash"
-<% } elsif $slurm_version == '20.11' { -%>
+<% } elsif $slurm_version == '20.11' or $slurm_version == '21.08' { -%>
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step
 <% } -%>
