@@ -310,6 +310,12 @@ class profile::slurm::controller {
   contain profile::slurm::base
   include profile::mail::server
 
+  file { '/usr/sbin/slurm_mail':
+    ensure => 'present',
+    source => 'puppet:///modules/profile/slurm/slurm_mail',
+    mode   => '0755',
+  }
+
   consul::service { 'slurmctld':
     port    => 6817,
     require => Tcp_conn_validator['consul'],

@@ -49,6 +49,7 @@ MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
 TaskPlugin=task/cgroup
 PropagateResourceLimits=NONE
+MailProg=/usr/sbin/slurm_mail
 
 StateSaveLocation=/var/spool/slurm
 <% if $slurm_version == '19.05' { -%>

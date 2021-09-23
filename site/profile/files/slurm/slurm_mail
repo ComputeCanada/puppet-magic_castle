@@ -1,0 +1,8 @@
+#!/bin/bash
+
+email=${@: -1}
+subject=${@: 2:$#-2}
+cat << EOF | /usr/sbin/sendmail $email
+To: ${email}
+Subject: ${subject}
+EOF
