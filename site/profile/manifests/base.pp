@@ -28,7 +28,6 @@ class profile::base (
   }
 
   if $admin_email {
-    include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
       mode    => '0700',
       content => epp('profile/base/postrun',

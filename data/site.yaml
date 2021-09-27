@@ -17,6 +17,7 @@ magic_castle::site::all:
   - profile::rsyslog::client
   - profile::volumes
   - swap_file
+  - profile::mail
 
 magic_castle::site::tags:
   dtn:
