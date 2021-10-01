@@ -262,13 +262,14 @@ class profile::freeipa::server
     before       => Exec['ipa-server-install'],
   }
 
+  $idstart = Integer($facts['uid_max']) + 1
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
       /sbin/ipa-server-install \
       --setup-dns \
       --hostname ${fqdn} \
       --ds-password ${admin_passwd} \
       --admin-password ${admin_passwd} \
-      --idstart=${facts['uid_max']} \
+      --idstart=${idstart} \
       --ssh-trust-dns \
       --unattended \
       --auto-forwarders \
