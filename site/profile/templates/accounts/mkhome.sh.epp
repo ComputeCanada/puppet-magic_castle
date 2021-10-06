@@ -16,8 +16,8 @@ while read USERNAME; do
     if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
         mkdir -p ${MNT_USER_SCRATCH}
 <% if $with_home { -%>
-        ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch"
-        chown -h ${USERNAME}:${USERNAME} "${USER_HOME}/scratch"
+        ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
+        chown -h ${USERNAME}:${USERNAME} "${MNT_USER_HOME}/scratch"
 <% } -%>
         chown -h ${USERNAME}:${USERNAME} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
