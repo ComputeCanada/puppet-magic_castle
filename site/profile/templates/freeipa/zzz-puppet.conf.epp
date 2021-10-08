@@ -1,0 +1,10 @@
+# File managed by puppet
+[main]
+dns=default
+
+[global-dns]
+searches=<%= $int_domain_name %>
+
+[global-dns-domain-*]
+servers=<%= join($nameservers, ',') -%>
+
