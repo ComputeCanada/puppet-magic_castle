@@ -1,6 +1,5 @@
 class profile::freeipa::base (
   String $admin_passwd,
-  String $dns_ip,
   String $domain_name)
 {
 
@@ -16,13 +15,14 @@ class profile::freeipa::base (
     ensure => 'latest'
   }
 
-  service { 'NetworkManager':
-    ensure => running,
-    enable => true
-  }
-
   package { 'NetworkManager':
     ensure => present,
+  }
+
+  service { 'NetworkManager':
+    ensure  => running,
+    enable  => true,
+    require => Package['NetworkManager'],
   }
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
@@ -43,31 +43,6 @@ class profile::freeipa::base (
     mode   => '0755'
   }
 
-  file_line { 'NetworkManager_dns':
-    ensure => present,
-    path   => '/etc/NetworkManager/NetworkManager.conf',
-    line   => 'dns=none',
-    after  => '^\[main\]$',
-    notify => Service['NetworkManager'],
-  }
-
-  file_line { 'resolv.conf_search':
-    ensure => present,
-    path   => '/etc/resolv.conf',
-    line   => "search int.${domain_name}",
-    match  => '^search\ ',
-    notify => Service['NetworkManager'],
-  }
-
-  file_line { 'resolv.conf_nameserver':
-    ensure  => present,
-    path    => '/etc/resolv.conf',
-    line    => "nameserver ${dns_ip}",
-    after   => "search int.${domain_name}",
-    notify  => Service['NetworkManager'],
-    require => File_line['resolv.conf_search']
-  }
-
   file { '/etc/rsyslog.d/ignore-systemd-session-slice.conf':
     ensure => present,
     source => 'puppet:///modules/profile/freeipa/ignore-systemd-session-slice.conf',
@@ -78,10 +53,7 @@ class profile::freeipa::base (
 
 class profile::freeipa::client(String $server_ip)
 {
-  class { 'profile::freeipa::base':
-    dns_ip => $server_ip
-  }
-
+  include profile::freeipa::base
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
@@ -89,6 +61,17 @@ class profile::freeipa::client(String $server_ip)
   $realm = upcase($int_domain_name)
   $interface = split($::interfaces, ',')[0]
   $ipaddress = $::networking['interfaces'][$interface]['ip']
+
+  file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
+    mode    => '0644',
+    content => epp(
+      'profile/freeipa/zzz-puppet.conf',
+      {
+        'int_domain_name' => $int_domain_name,
+        'nameservers'     => union([$server_ip], $::nameservers),
+      }),
+    notify  => Service['NetworkManager'],
+  }
 
   package { 'ipa-client':
     ensure => 'installed'
@@ -156,7 +139,7 @@ class profile::freeipa::client(String $server_ip)
     try_sleep => 60,
     require   => [
       File['/sbin/mc-ipa-client-install'],
-      File_line['resolv.conf_nameserver'],
+      File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
       Wait_for['ipa-ca_https'],
     ],
@@ -228,9 +211,8 @@ class profile::freeipa::client(String $server_ip)
 
 class profile::freeipa::server
 {
-  class { 'profile::freeipa::base':
-    dns_ip => '127.0.0.1'
-  }
+  include profile::freeipa::base
+
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
 
@@ -291,7 +273,6 @@ class profile::freeipa::server
     creates => '/etc/ipa/default.conf',
     timeout => 0,
     require => [Package['ipa-server-dns']],
-    before  => File_line['resolv.conf_nameserver'],
     notify  => Service['systemd-logind']
   }
 
