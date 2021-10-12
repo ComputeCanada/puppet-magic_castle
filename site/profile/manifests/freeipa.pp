@@ -444,6 +444,7 @@ class profile::freeipa::server
     ),
     notify  => Service['httpd'],
     require => Exec['ipa-server-install'],
+    seltype => 'httpd_config_t',
   }
 
 }
