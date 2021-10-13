@@ -4,7 +4,7 @@ forge "https://forgeapi.puppetlabs.com"
 
 mod 'camptocamp-kmod', '2.5.0'
 mod 'camptocamp-systemd', '2.10.0'
-mod 'cmdntrf-consul_template', '2.3.0'
+mod 'cmdntrf-consul_template', '2.3.3'
 mod 'derdanne-nfs', '2.1.6'
 mod 'heini-wait_for', '2.2.0'
 mod 'herculesteam-augeasproviders_core', '2.6.0'
