@@ -59,7 +59,7 @@ jupyterhub::jupyterhub_config_hash:
 
   SbatchForm:
     ui:
-      choices: ['notebook', 'lab', 'terminal', 'code-server', 'rstudio', 'desktop']
+      choices: ['notebook', 'lab', 'terminal', 'code-server', 'desktop']
       def: 'lab'
 
 squid::cache_mem: "256 MB"

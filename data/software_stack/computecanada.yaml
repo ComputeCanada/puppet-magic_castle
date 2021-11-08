@@ -1,7 +1,7 @@
-jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/python/3.7.4/bin/python
+jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Core/python/3.9/bin/python
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
-  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf"
+  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-avx2-gentoo.conf"
 
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
