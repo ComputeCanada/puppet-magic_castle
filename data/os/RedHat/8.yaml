@@ -9,6 +9,7 @@ profile::gpu::install::passthrough::packages:
     - nvidia-modprobe
     - nvidia-xconfig
     - kmod-nvidia-latest-dkms
+    - nvidia-persistenced
 profile::cvmfs::client::lmod_default_modules:
     - gentoo/2020
     - imkl/2020.1.217
