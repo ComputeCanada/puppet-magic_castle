@@ -2,7 +2,9 @@ CgroupMountpoint="/sys/fs/cgroup"
 CgroupAutomount=no
 AllowedDevicesFile="/etc/slurm/cgroup_allowed_devices_file.conf"
 ConstrainCores=yes
+<% if $slurm_version == '19.05' or $slurm_version == '20.11' { -%>
 TaskAffinity=yes
+<% } -%>
 ConstrainRAMSpace=yes
 ConstrainKmemSpace=no
 ConstrainSwapSpace=yes
