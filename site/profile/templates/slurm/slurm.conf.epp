@@ -47,7 +47,11 @@ Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
+<% if $slurm_version == '19.05' or  $slurm_version == '20.11' { -%>
 TaskPlugin=task/cgroup
+<% } elsif $slurm_version == '21.08' { -%>
+TaskPlugin=task/affinity,task/cgroup
+<% } -%>
 PropagateResourceLimits=NONE
 MailProg=/usr/sbin/slurm_mail
 
