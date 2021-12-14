@@ -63,6 +63,10 @@ InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHEL
 LaunchParameters=use_interactive_step
 <% } -%>
 
+<% if $slurm_version == '21.08' { -%>
+JobSubmitPlugins=lua
+<% } -%>
+
 ## Accounting
 {{ range service "slurmdbd" -}}
 AccountingStorageHost={{ .Node }}

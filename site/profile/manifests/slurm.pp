@@ -462,6 +462,11 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/pam_slurm_adopt.pp',
   }
 
+  selinux::module { 'slurmd':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
+  }
+
   file { '/localscratch':
     ensure  => 'directory',
     seltype => 'tmp_t'
