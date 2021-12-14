@@ -12,7 +12,6 @@ jupyterhub::jupyterhub_config_hash:
         modules: ['code-server']
 
 profile::cvmfs::client::repositories:
-  - cvmfs-config.eessi-hpc.org
   - pilot.eessi-hpc.org
 
 profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/bash"
@@ -23,6 +22,6 @@ profile::cvmfs::client::lmod_default_modules:
     - GCC
 
 profile::squid::server::cvmfs_acl_regex:
-  - '^(.*\.eessi-hpc\.org)$'
+  - '^(.*\.cvmfs\.eessi-infra\.org)$'
 
 profile::gpu::install::lib_symlink_path: '/opt/eessi/lib'
