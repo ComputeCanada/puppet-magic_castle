@@ -320,6 +320,16 @@ class profile::slurm::controller {
     mode   => '0755',
   }
 
+  $slurm_version = lookup('profile::slurm::base::slurm_version')
+  if $slurm_version == '21.08' {
+    file { '/etc/slurm/job_submit.lua':
+      ensure => 'present',
+      owner  => 'slurm',
+      group  => 'slurm',
+      source => 'puppet:///modules/profile/slurm/job_submit.lua'
+    }
+  }
+
   consul::service { 'slurmctld':
     port    => 6817,
     require => Tcp_conn_validator['consul'],
