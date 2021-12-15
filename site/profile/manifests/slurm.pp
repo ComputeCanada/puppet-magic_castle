@@ -73,10 +73,14 @@ class profile::slurm::base (
   }
 
   file { '/etc/slurm/cgroup.conf':
-    ensure => 'present',
-    owner  => 'slurm',
-    group  => 'slurm',
-    source => 'puppet:///modules/profile/slurm/cgroup.conf'
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/cgroup.conf',
+      {
+        'slurm_version' => $slurm_version,
+      }
+    ),
   }
 
   file { '/etc/slurm/cgroup_allowed_devices_file.conf':
