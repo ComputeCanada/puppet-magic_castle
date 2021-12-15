@@ -76,6 +76,8 @@ while read CONN OP GROUP; do
             MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
 <% if $with_folder { -%>
             for USERNAME in $USERNAMES; do
+                while ! id $USERNAME; do sss_cache -u $USERNAME; sleep 5; done
+
                 USER_HOME="/mnt/home/${USERNAME}"
 
                 PRO_USER="${MNT_PROJECT}/${USERNAME}"
