@@ -24,6 +24,11 @@ class profile::gpu::install (
     'require' => Yumrepo['epel']
   })
 
+  selinux::module { 'nvidia-gpu':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
+  }
+
   if ! $facts['nvidia_grid_vgpu'] {
     require profile::gpu::install::passthrough
   } else {

@@ -1,0 +1,16 @@
+module nvidia-gpu 1.0;
+
+require {
+        type device_t;
+        type user_t;
+        class capability mknod;
+        class chr_file { create getattr ioctl open read setattr write };
+        class dir { add_name remove_name write };
+}
+
+#============= user_t ==============
+
+allow user_t device_t:chr_file { create getattr ioctl open read setattr write };
+allow user_t device_t:dir { add_name remove_name write };
+
+allow user_t self:capability mknod;
