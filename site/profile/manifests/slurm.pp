@@ -310,7 +310,9 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 }
 
 # Slurm controller class. This where slurmctld is ran.
-class profile::slurm::controller {
+class profile::slurm::controller (
+  String $selinux_context = 'user_u:user_r:user_t:s0',
+) {
   contain profile::slurm::base
   include profile::mail::server
 
@@ -323,10 +325,14 @@ class profile::slurm::controller {
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if $slurm_version == '21.08' {
     file { '/etc/slurm/job_submit.lua':
-      ensure => 'present',
-      owner  => 'slurm',
-      group  => 'slurm',
-      source => 'puppet:///modules/profile/slurm/job_submit.lua'
+      ensure  => 'present',
+      owner   => 'slurm',
+      group   => 'slurm',
+      content => epp('profile/slurm/job_submit.lua',
+        {
+          'selinux_context' => $selinux_context,
+        }
+      ),
     }
   }
 
