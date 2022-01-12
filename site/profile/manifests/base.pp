@@ -9,8 +9,8 @@ class profile::base (
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_powertools':
-      command => 'dnf config-manager --set-enabled powertools',
-      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      command => 'dnf config-manager --set-enabled PowerTools',
+      unless  => 'dnf config-manager --dump PowerTools | grep -q \'enabled = 1\'',
       path    => ['/usr/bin']
     }
   }
