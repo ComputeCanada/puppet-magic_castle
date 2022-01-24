@@ -25,12 +25,6 @@ class profile::freeipa::base (
     require => Package['NetworkManager'],
   }
 
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    package { 'dhclient':
-      ensure => absent,
-    }
-  }
-
   service { 'systemd-logind':
     ensure => running,
     enable => true
