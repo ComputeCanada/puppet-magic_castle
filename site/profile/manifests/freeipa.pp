@@ -276,6 +276,18 @@ class profile::freeipa::server
     notify  => Service['systemd-logind']
   }
 
+  file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
+    mode    => '0644',
+    content => epp(
+      'profile/freeipa/zzz-puppet.conf',
+      {
+        'int_domain_name' => $int_domain_name,
+        'nameservers'     => ['127.0.0.1'],
+      }),
+    notify  => Service['NetworkManager'],
+    require => Exec['ipa-server-install'],
+  }
+
   file_line { 'ipa_server_fileline':
     ensure  => present,
     path    => '/etc/ipa/default.conf',
