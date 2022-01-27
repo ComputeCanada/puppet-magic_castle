@@ -7,7 +7,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['19.05', '20.11', '21.08'] $slurm_version = '21.08',
+  Enum['19.05', '20.11', '21.08'] $slurm_version,
   Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
 )
