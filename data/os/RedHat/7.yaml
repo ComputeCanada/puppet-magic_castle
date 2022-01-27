@@ -12,8 +12,4 @@ profile::gpu::install::passthrough::packages:
     - nvidia-persistenced-latest-dkms
     - nvidia-xconfig-latest-dkms
     - kmod-nvidia-latest-dkms
-profile::cvmfs::client::lmod_default_modules:
-    - gentoo/2020
-    - imkl/2020.1.217
-    - gcc/9.3.0
-    - openmpi/4.0.3
+

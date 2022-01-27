@@ -7,7 +7,7 @@ jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
     ui_args:
       rstudio:
-        modules: ['gcc/7.3.0', 'rstudio-server']
+        modules: ['gcc/9.3.0', 'rstudio-server']
       code-server:
         modules: ['code-server']
 
@@ -24,3 +24,9 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.genap\.ca)$'
 
 profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
+
+profile::cvmfs::client::lmod_default_modules:
+    - gentoo/2020
+    - imkl/2020.1.217
+    - gcc/9.3.0
+    - openmpi/4.0.3
