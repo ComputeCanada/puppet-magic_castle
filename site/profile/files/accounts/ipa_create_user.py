@@ -17,13 +17,13 @@ from six import text_type
 # TODO: get this value from /etc/login.defs
 UID_MAX = 60000
 
-iau_logger = logging.getLogger("IPA_CREATE_USER.py")
+iau_logger = logging.getLogger("IPA_CREATE_USER.PY")
 iau_logger.setLevel(logging.INFO,)
 formatter = logging.Formatter(
     fmt="%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s",
     datefmt="%Y-%m-%d,%H:%M:%S",
 )
-handler = logging.handlers.RotatingFileHandler("/var/log/ipa_user_add.log")
+handler = logging.StreamHandler()
 handler.setFormatter(fmt=formatter)
 iau_logger.addHandler(handler)
 
