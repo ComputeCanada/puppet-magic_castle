@@ -94,7 +94,7 @@ def kdestroy():
     ipautil.run([paths.KDESTROY])
 
 
-def main(users, sponsor):
+def main(users, groups):
     admin_passwd = os.environ["IPA_ADMIN_PASSWD"]
     guest_passwd = os.environ["IPA_GUEST_PASSWD"]
     init_api()
@@ -110,8 +110,8 @@ def main(users, sponsor):
         )
         if user is not None:
             added_users.add(username)
-    if sponsor:
-        group = u"def-" + sponsor
+    for group in groups:
+        group = text_type(group)
         group_add(group)
         group_add_members(group, users)
     kdestroy()
@@ -124,9 +124,9 @@ def main(users, sponsor):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Add a batch of generic users with the same sponsor"
+        description="Add a batch of generic users with common groups"
     )
     parser.add_argument("users", nargs="+", help="list of usernames to create")
-    parser.add_argument("--sponsor", help="name of the sponsor if any")
+    parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
     args = parser.parse_args()
-    main(args.users, args.sponsor)
+    main(users=args.users, groups=args.group)

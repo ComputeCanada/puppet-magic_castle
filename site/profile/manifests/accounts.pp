@@ -70,15 +70,16 @@ class profile::accounts::guests(
   String[8] $passwd,
   Integer[0] $nb_accounts,
   String[1] $prefix = 'user',
-  String[3] $sponsor = 'sponsor00'
+  Array[String] $groups = ['def-sponsor00']
   )
 {
   require profile::accounts
 
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
   if $nb_accounts > 0 {
+    $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
     exec{ 'ipa_add_user':
-      command     => "kinit_wrapper ipa_create_user.py $(seq -w ${nb_accounts} | sed 's/^/${prefix}/') --sponsor=${$sponsor}",
+      command     => "kinit_wrapper ipa_create_user.py $(seq -w ${nb_accounts} | sed 's/^/${prefix}/') ${group_string}",
       unless      => "getent passwd $(seq -w ${nb_accounts} | sed 's/^/${prefix}/')",
       environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
                       "IPA_GUEST_PASSWD=${passwd}"],
