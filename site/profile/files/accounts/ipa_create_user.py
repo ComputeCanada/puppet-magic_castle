@@ -95,10 +95,8 @@ def kdestroy():
 
 
 def main(users, groups):
-    admin_passwd = os.environ["IPA_ADMIN_PASSWD"]
     guest_passwd = os.environ["IPA_GUEST_PASSWD"]
     init_api()
-    kinit("admin", admin_passwd)
     added_users = set()
     for username in users:
         user = user_add(
@@ -114,7 +112,6 @@ def main(users, groups):
         group = text_type(group)
         group_add(group)
         group_add_members(group, users)
-    kdestroy()
 
     # configure user password
     for username in added_users:
