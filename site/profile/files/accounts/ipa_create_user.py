@@ -94,8 +94,7 @@ def kdestroy():
     ipautil.run([paths.KDESTROY])
 
 
-def main(users, groups):
-    guest_passwd = os.environ["IPA_GUEST_PASSWD"]
+def main(users, groups, passwd):
     init_api()
     added_users = set()
     for username in users:
@@ -103,7 +102,7 @@ def main(users, groups):
             username,
             first=username,
             last=username,
-            password=guest_passwd,
+            password=passwd,
             shell="/bin/bash",
         )
         if user is not None:
@@ -115,15 +114,24 @@ def main(users, groups):
 
     # configure user password
     for username in added_users:
-        kinit(username, "\n".join([guest_passwd] * 3))
+        kinit(username, "\n".join([passwd] * 3))
         kdestroy()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Add a batch of generic users with common groups"
+        description="Add a batch of users with common a password and groups"
     )
     parser.add_argument("users", nargs="+", help="list of usernames to create")
     parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
+    parser.add_argument("--passwd", help="users's password")
     args = parser.parse_args()
-    main(users=args.users, groups=args.group)
+
+    if args.passwd is not None:
+        passwd = args.passwd
+    elif "IPA_USER_PASSWD" in os.environ:
+        passwd = os.environ["IPA_USER_PASSWD"]
+    else:
+        raise Exception("A password has to be defined either with the --passwd flag or with the IPA_USER_PASSWD environment variable.")
+
+    main(users=args.users, groups=args.group, passwd=passwd)
