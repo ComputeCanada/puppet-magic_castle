@@ -1,4 +1,6 @@
-class profile::accounts {
+class profile::accounts (
+  String $project_regex
+) {
   require profile::freeipa::server
   require profile::freeipa::mokey
   require profile::nfs::server
@@ -50,7 +52,8 @@ class profile::accounts {
   file { '/sbin/mkproject.sh':
     ensure  => 'present',
     content => epp('profile/accounts/mkproject.sh', {
-      with_folder => $with_project,
+      project_regex => $project_regex,
+      with_folder   => $with_project,
     }),
     mode    => '0755',
     owner   => 'root',
@@ -82,7 +85,7 @@ class profile::accounts::guests(
       command     => "kinit_wrapper ipa_create_user.py $(seq -w ${nb_accounts} | sed 's/^/${prefix}/') ${group_string}",
       unless      => "getent passwd $(seq -w ${nb_accounts} | sed 's/^/${prefix}/')",
       environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
-                      "IPA_GUEST_PASSWD=${passwd}"],
+                      "IPA_USER_PASSWD=${passwd}"],
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $nb_accounts * 10,
     }

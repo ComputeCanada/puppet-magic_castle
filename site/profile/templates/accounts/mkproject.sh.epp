@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # mkproject.sh watches 389-ds access log for operations related to group
-# with a predefined prefix ($PROJECT_PREFIX) with the intent of automatically
-# manipulate Slurm accounts and folder under /project associated with these
-# groups
+# matching a regex ($PROJECT_REGEX) with the intent of automatically
+# manipulating Slurm accounts and folder under /project associated with these
+# groups.
 
 # Three operations are currently supported: ADD, MOD and DEL.
 # - ADD triggers a creation of Slurm account and directory under /project
@@ -19,11 +19,11 @@
 # the 389-sd automember plugin, because these automember plugin actions
 # produce no trace in 389-ds access logs.
 
-PROJECT_PREFIX="ctb|def|rpp|rrg"
+PROJECT_REGEX="<%= $project_regex %>"
 PREV_CONN=""
 
 tail -F /var/log/dirsrv/slapd-*/access |
-grep --line-buffered -P "dn=\"cn=(${PROJECT_PREFIX})-[a-z0-9A-Z_-]*,cn=groups" |
+grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
 sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
 while read CONN OP GROUP; do
     # An operation has been done on a group in LDAP
