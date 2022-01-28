@@ -72,8 +72,8 @@ class profile::accounts (
 class profile::accounts::guests(
   String[8] $passwd,
   Integer[0] $nb_accounts,
-  String[1] $prefix = 'user',
-  Array[String] $groups = ['def-sponsor00']
+  String[1] $prefix,
+  Array[String] $groups,
   )
 {
   require profile::accounts
