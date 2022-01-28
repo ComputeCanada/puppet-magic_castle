@@ -75,7 +75,7 @@ def user_add(uid, first, last, password, shell):
 
 def group_add(name):
     try:
-        return api.Command.group_add(name)
+        return api.Command.group_add(text_type(name))
     except errors.DuplicateEntry:
         return
 
@@ -108,7 +108,6 @@ def main(users, groups, passwd):
         if user is not None:
             added_users.add(username)
     for group in groups:
-        group = text_type(group)
         group_add(group)
         group_add_members(group, users)
 
