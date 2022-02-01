@@ -90,6 +90,11 @@ profile::slurm::base::slurm_version: '21.08'
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
+profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
+profile::accounts::guests::prefix: 'user'
+profile::accounts::guests::groups:
+  - def-sponsor00
+
 profile::base::sudoer_username: "%{alias('terraform.data.sudoer_username')}"
 profile::base::public_keys: "%{alias('terraform.data.public_keys')}"
 
