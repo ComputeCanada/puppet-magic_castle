@@ -11,6 +11,7 @@ node default {
   }
 
   include profile::base
+  include profile::accounts::local
   include profile::metrics::exporter
 
   if 'login' in $instance_tags {
