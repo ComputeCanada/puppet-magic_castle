@@ -1,10 +1,8 @@
 #!/usr/libexec/platform-python
 import argparse
-import grp
 import logging
 import logging.handlers
 import os
-import sys
 import time
 
 from ipalib import api, errors
