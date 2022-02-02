@@ -95,8 +95,12 @@ profile::accounts::guests::prefix: 'user'
 profile::accounts::guests::groups:
   - def-sponsor00
 
-profile::base::sudoer_username: "%{alias('terraform.data.sudoer_username')}"
-profile::base::public_keys: "%{alias('terraform.data.public_keys')}"
+profile::accounts::local::users:
+  "%{alias('terraform.data.sudoer_username')}":
+    public_keys: "%{alias('terraform.data.public_keys')}"
+    groups: ['adm', 'wheel', 'systemd-journal']
+    sudoer: true
+
 
 profile::consul::acl_api_token: "%{alias('terraform.data.consul_token')}"
 
