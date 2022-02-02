@@ -39,7 +39,7 @@ define profile::users::ldap_user (
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
   if $count > 1 {
     $prefix = name
-    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string}",
+    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string}"
     $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
     $timeout = $count * 10
   } elsif $count == 1 {
