@@ -91,11 +91,13 @@ prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
-profile::accounts::guests::prefix: 'user'
-profile::accounts::guests::groups:
-  - def-sponsor00
+profile::users::ldap::users:
+  'user':
+    count: "%{alias('terraform.data.nb_users')}"
+    passwd: "%{alias('terraform.data.guest_passwd')}"
+    groups: ['def-sponsor00']
 
-profile::accounts::local::users:
+profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
     public_keys: "%{alias('terraform.data.public_keys')}"
     groups: ['adm', 'wheel', 'systemd-journal']
@@ -107,9 +109,6 @@ profile::consul::acl_api_token: "%{alias('terraform.data.consul_token')}"
 profile::freeipa::base::admin_passwd: "%{alias('terraform.data.freeipa_passwd')}"
 profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::freeipa::mokey::passwd: "%{alias('terraform.data.freeipa_passwd')}"
-
-profile::accounts::guests::passwd: "%{alias('terraform.data.guest_passwd')}"
-profile::accounts::guests::nb_accounts: "%{alias('terraform.data.nb_users')}"
 
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 profile::slurm::base::munge_key: "%{alias('terraform.data.munge_key')}"

@@ -11,24 +11,6 @@ variables for each profile.
 | Variable                                  | Type       | Description                                                                         | Default       |
 | ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
 | `profile::accounts:::project_regex` | String | Regex to identify LDAP groups that should also be Slurm accounts | `'(ctb|def|rpp|rrg)-[a-z0-9_-]*'` |
-| `profile::accounts::guests::passwd`       | String[8]  | Password set for all guest accounts (min length: 8)                                 |               |
-| `profile::accounts::guests::nb_accounts`  | Integer[0] | Number of guests account that needs to be created (min value: 0)                    |               |
-| `profile::accounts::guests::prefix`       | String[1]  | Prefix for guest account usernames followed an index i.e: `user12` (min length: 1)  | `'user'`      |
-| `profile::accounts::guests::groups`      | List[String]  | List of groups the users will be member of | `['def-sponsor00']` |
-| `profile::accounts::local::users` | Hash[Hash] | Dictionary of users to be created locally | |
-
-### profile::accounts::local::users
-
-A local user `bob` can be defined in hieradata as:
-```
-profile::accounts::local::users:
-  bob:
-    groups: ['group1', 'group2']
-    public_keys: ['ssh-rsa...', 'ssh-dsa']
-    # sudoer: false
-    # selinux_user: 'unconfined_u'
-    # mls_range: ''s0-s0:c0.c1023'
-```
 
 ## profile::base
 
@@ -112,6 +94,45 @@ profile::accounts::local::users:
 | `profile::squid::port`                | Integer        | Squid service listening port                                                | 3128     |
 | `profile::squid::cache_size`          | Integer        | Amount of disk space (MB) that can be used by Squid service                 | 4096     |
 | `profile::squid::cvmfs_acl_regex`     | Array[String]  | List of regexes corresponding to CVMFS stratum users are allowed to access  | `['^(cvmfs-.*\.computecanada\.ca)$', '^(.*-cvmfs\.openhtc\.io)$', '^(cvmfs-.*\.genap\.ca)$']`     |
+
+## profile::users
+
+| Variable                              | Type           | Description                                                                 | Default  |
+| ------------------------------------- | :------------- | :-------------------------------------------------------------------------- | -------- |
+| `profile::users::ldap::users` | Hash[Hash] | Dictionary of users to be created in LDAP | |
+| `profile::users::local::users` | Hash[Hash] | Dictionary of users to be created locally | |
+
+### profile::users::ldap::users
+
+A batch of 10 LDAP users, user01 to user10, can be defined in hieradata as:
+```
+profile::users::ldap::users:
+  user:
+    count: 10
+    passwd: user.password.is.easy.to.remember
+    groups: ['def-sponsor00']
+```
+
+A single LDAP user can be defined as:
+```
+profile::users::ldap::users:
+  alice:
+    passwd: user.password.is.easy.to.remember
+    groups: ['def-sponsor00']
+```
+
+### profile::users::local::users
+
+A local user `bob` can be defined in hieradata as:
+```
+profile::users::local::users:
+  bob:
+    groups: ['group1', 'group2']
+    public_keys: ['ssh-rsa...', 'ssh-dsa']
+    # sudoer: false
+    # selinux_user: 'unconfined_u'
+    # mls_range: ''s0-s0:c0.c1023'
+```
 
 ## profile::workshop
 
