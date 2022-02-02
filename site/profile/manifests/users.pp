@@ -43,7 +43,7 @@ define profile::users::ldap_user (
     $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
     $timeout = $count * 10
   } elsif $count == 1 {
-    $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string}",
+    $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string}"
     $timeout = 5
   }
 
