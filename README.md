@@ -10,17 +10,31 @@ variables for each profile.
 
 | Variable                                  | Type       | Description                                                                         | Default       |
 | ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
+| `profile::accounts:::project_regex` | String | Regex to identify LDAP groups that should also be Slurm accounts | `'(ctb|def|rpp|rrg)-[a-z0-9_-]*'` |
 | `profile::accounts::guests::passwd`       | String[8]  | Password set for all guest accounts (min length: 8)                                 |               |
 | `profile::accounts::guests::nb_accounts`  | Integer[0] | Number of guests account that needs to be created (min value: 0)                    |               |
 | `profile::accounts::guests::prefix`       | String[1]  | Prefix for guest account usernames followed an index i.e: `user12` (min length: 1)  | `'user'`      |
 | `profile::accounts::guests::groups`      | List[String]  | List of groups the users will be member of | `['def-sponsor00']` |
+| `profile::accounts::local::users` | Hash[Hash] | Dictionary of users to be created locally | |
+
+### profile::accounts::local::users
+
+A local user `bob` can be defined in hieradata as:
+```
+profile::accounts::local::users:
+  bob:
+    groups: ['group1', 'group2']
+    public_keys: ['ssh-rsa...', 'ssh-dsa']
+    # sudoer: false
+    # selinux_user: 'unconfined_u'
+    # mls_range: ''s0-s0:c0.c1023'
+```
 
 ## profile::base
 
 | Variable                         | Type   | Description                                                                             | Default    |
 | -------------------------------- | :----- | :-------------------------------------------------------------------------------------- | ---------- |
 | `profile::base::admin_email`     | String | Email of the cluster administrator, use to send log and report cluster related issues   | `undef`    |
-| `profile::base::sudoer_username` | String | Name of the user with sudo rights. Used to config SELinux user mapping                  | `'centos'` |
 
 ## profile::consul
 
