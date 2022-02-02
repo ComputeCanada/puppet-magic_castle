@@ -8,7 +8,7 @@ class profile::users::ldap(
     mode   => '0755'
   }
 
-  ensure_resources(profile::accounts::ldap_user, $users)
+  ensure_resources(profile::users::ldap_user, $users)
 }
 
 class profile::users::local (
