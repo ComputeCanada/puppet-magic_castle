@@ -1,5 +1,9 @@
 ---
 lookup_options:
+  profile::users::ldap::users:
+    merge: 'deep'
+  profile::users::local::users:
+    merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
 
