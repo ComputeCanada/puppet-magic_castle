@@ -38,7 +38,7 @@ define profile::users::ldap_user (
 {
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
-  $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey ${key}" }, ' ')
+  $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
   if $count > 1 {
     $prefix = $name
     $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string} ${$sshpubkey_string}"
