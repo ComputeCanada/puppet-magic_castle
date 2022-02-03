@@ -50,12 +50,17 @@ define profile::users::ldap_user (
     $timeout = 10
   }
 
+  if $passwd != '' {
+    $environment = ["IPA_ADMIN_PASSWD=${admin_passwd}", "IPA_USER_PASSWD=${passwd}"]
+  } else {
+    $environment = ["IPA_ADMIN_PASSWD=${admin_passwd}"]
+  }
+
   if $count > 0 {
     exec{ "ldap_user_${name}":
       command     => $command,
       unless      => $unless,
-      environment => ["IPA_ADMIN_PASSWD=${admin_passwd}",
-                      "IPA_USER_PASSWD=${passwd}"],
+      environment => $environment,
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $timeout,
     }
