@@ -113,10 +113,11 @@ def main(users, groups, passwd, sshpubkeys):
         group_add(group)
         group_add_members(group, users)
 
-    # configure user password
-    for username in added_users:
-        kinit(username, "\n".join([passwd] * 3))
-        kdestroy()
+    if passwd:
+        # configure user password
+        for username in added_users:
+            kinit(username, "\n".join([passwd] * 3))
+            kdestroy()
 
 
 if __name__ == "__main__":
