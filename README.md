@@ -119,6 +119,7 @@ profile::users::ldap::users:
   alice:
     passwd: user.password.is.easy.to.remember
     groups: ['def-sponsor00']
+    public_keys: ['ssh-rsa ... user@local', 'ssh-ecdsa ...']
 ```
 
 ### profile::users::local::users
