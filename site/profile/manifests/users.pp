@@ -30,8 +30,8 @@ class profile::users::local (
 }
 
 define profile::users::ldap_user (
-  String[8] $passwd,
   Array[String] $groups,
+  String[8] $passwd = undef,
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   )
