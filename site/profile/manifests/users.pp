@@ -32,18 +32,20 @@ class profile::users::local (
 define profile::users::ldap_user (
   String[8] $passwd,
   Array[String] $groups,
+  Array[String] $public_keys,
   Integer[0] $count = 1,
   )
 {
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
+  $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey ${key}" }, ' ')
   if $count > 1 {
     $prefix = $name
-    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string}"
+    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string} ${$sshpubkey_string}"
     $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
     $timeout = $count * 10
   } elsif $count == 1 {
-    $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string}"
+    $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string} ${$sshpubkey_string}"
     $timeout = 10
   }
 

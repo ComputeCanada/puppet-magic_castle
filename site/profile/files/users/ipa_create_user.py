@@ -33,14 +33,17 @@ def init_api():
     api.Backend.cli.create_context()
 
 
-def user_add(uid, first, last, password, shell):
-    kargs = dict(
-        uid=text_type(uid),
-        givenname=text_type(first),
-        sn=text_type(last),
-        userpassword=text_type(password),
-        loginshell=text_type(shell),
-    )
+def user_add(uid, first, last, password, shell, sshpubkeys):
+    kargs = dict()
+    kargs['uid'] = text_type(uid)
+    kargs['givenname'] = text_type(first)
+    kargs['sn'] = text_type(last)
+    if password:
+        kargs['userpassword'] = text_type(password)
+    if sshpubkeys:
+        kargs['ipasshpubkey'] = list(map(text_type, sshpubkeys))
+    kargs['loginshell'] = text_type(shell)
+
     try:
         uidnumber = os.stat("/mnt/home/" + uid).st_uid
     except:
@@ -92,7 +95,7 @@ def kdestroy():
     ipautil.run([paths.KDESTROY])
 
 
-def main(users, groups, passwd):
+def main(users, groups, passwd, sshpubkeys):
     init_api()
     added_users = set()
     for username in users:
@@ -102,6 +105,7 @@ def main(users, groups, passwd):
             last=username,
             password=passwd,
             shell="/bin/bash",
+            sshpubkeys=sshpubkeys
         )
         if user is not None:
             added_users.add(username)
@@ -122,6 +126,7 @@ if __name__ == "__main__":
     parser.add_argument("users", nargs="+", help="list of usernames to create")
     parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
     parser.add_argument("--passwd", help="users's password")
+    parser.add_argument("--sshpubkey", action="append", help="SSH public key (can be specified multiple times)")
     args = parser.parse_args()
 
     if args.passwd is not None:
@@ -129,6 +134,11 @@ if __name__ == "__main__":
     elif "IPA_USER_PASSWD" in os.environ:
         passwd = os.environ["IPA_USER_PASSWD"]
     else:
-        raise Exception("A password has to be defined either with the --passwd flag or with the IPA_USER_PASSWD environment variable.")
+        passwd = None
 
-    main(users=args.users, groups=args.group, passwd=passwd)
+    main(
+        users=args.users,
+        groups=args.group,
+        passwd=passwd,
+        sshpubkeys=args.sshpubkey
+    )
