@@ -46,6 +46,7 @@ define profile::users::ldap_user (
     $timeout = $count * 10
   } elsif $count == 1 {
     $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string} ${$sshpubkey_string}"
+    $unless = "getent passwd ${name}"
     $timeout = 10
   }
 
