@@ -11,7 +11,7 @@ node default {
   }
 
   include profile::base
-  include profile::accounts::local
+  include profile::users::local
   include profile::metrics::exporter
 
   if 'login' in $instance_tags {
@@ -34,7 +34,7 @@ node default {
     include profile::workshop::mgmt
 
     include profile::accounts
-    include profile::accounts::guests
+    include profile::users::ldap
   } else {
     include profile::freeipa::client
     include profile::rsyslog::client
