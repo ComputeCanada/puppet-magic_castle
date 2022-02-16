@@ -10,7 +10,7 @@ variables for each profile.
 
 | Variable                                  | Type       | Description                                                                         | Default       |
 | ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
-| `profile::accounts:::project_regex` | String | Regex to identify LDAP groups that should also be Slurm accounts | `'(ctb|def|rpp|rrg)-[a-z0-9_-]*'` |
+| `profile::accounts:::project_regex` | String | Regex to identify LDAP groups that should also be Slurm accounts | `'(ctb\|def\|rpp\|rrg)-[a-z0-9_-]*'` |
 
 ## profile::base
 
