@@ -23,7 +23,7 @@ class profile::workshop::mgmt {
     exec { 'workshop_chown_user':
       command     => "for user in $(ls /mnt/home/); do chown -R \$user:\$user /mnt/home/\$user; chmod -R u+rw /mnt/home/\$user; done",
       require     => Mount['/mnt/home'],
-      subscribe   => Exec['workshop_unzip_to_user_home'],
+      subscribe   => Exec['workshop_unzip_to_ldap_user_home'],
       refreshonly => true,
       path        => ['/bin', '/usr/sbin'],
       provider    => shell,
