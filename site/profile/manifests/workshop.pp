@@ -4,7 +4,7 @@ class profile::workshop {
 
 class profile::workshop::mgmt {
   $userzip_url = lookup({ name =>'profile::workshop::userzip_url', default_value => '' })
-  $userzip_path = lookup({ name => 'profile::workshop::userzip_path', default_value => '/project/userzip.zip' })
+  $userzip_path = lookup({ name => 'profile::workshop::userzip_path', default_value => '/mnt/project/userzip.zip' })
 
   if ($userzip_url != '') {
     file { $userzip_path:
