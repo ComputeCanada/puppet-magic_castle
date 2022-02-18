@@ -205,6 +205,16 @@ END
     subscribe         => File['/etc/slurm/node.conf.tpl'],
   }
 
+  # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
+  # Slurm commands tries to write to a socket in /var/run/munge.
+  # Confined users cannot stat this file, neither write to it. The policy
+  # allows user_t to getattr and write var_run_t sock file.
+  # To get the policy, we had to disable dontaudit rules with : sudo semanage -DB
+  selinux::module { 'munge_socket':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -595,16 +605,6 @@ AutoDetect=nvml
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
-
-  # SELinux policy required to allow confined users to submit job with Slurm 19
-  # and Slurm 20. Slurm commands tries to write to a socket in /var/run/munge.
-  # Confined users cannot stat this file, neither write to it. The policy
-  # allows user_t to getattr and write var_run_t sock file.
-  # To get the policy, we had to disable dontaudit rules with : sudo semanage -DB
-  selinux::module { 'munge_socket':
-    ensure    => 'present',
-    source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
-  }
 
   consul_template::watch { 'slurm.conf':
     require     => File['/etc/slurm/slurm.conf.tpl'],
