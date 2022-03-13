@@ -79,6 +79,7 @@ define profile::users::local_user (
   # Configure local account and ssh keys
   user { $name:
     ensure         => present,
+    forcelocal     => true,
     groups         => $groups,
     home           => "/${name}",
     purge_ssh_keys => true,
