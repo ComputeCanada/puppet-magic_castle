@@ -162,26 +162,6 @@ class profile::freeipa::client(String $server_ip)
     try_sleep   => 10,
   }
 
-  service { 'sssd':
-    ensure  => running,
-    enable  => true,
-    require => Exec['ipa-client-install']
-  }
-
-  # If selinux_provider is ipa, each time a new
-  # user logs in, the selinux policy is rebuilt.
-  # This can cause serious slow down when multiple
-  # concurrent users try to login at the same time
-  # since the rebuilt is done for each user sequentially.
-  file_line { 'selinux_provider':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    after   => 'id_provider = ipa',
-    line    => 'selinux_provider = none',
-    require => Exec['ipa-client-install'],
-    notify  => Service['sssd']
-  }
-
   # Configure default login selinux mapping
   exec { 'selinux_login_default':
     command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',

@@ -1,0 +1,47 @@
+[domain/<%= $ipa_domain %>]
+id_provider = ipa
+selinux_provider = none
+ipa_server = _srv_, ipa.<%= $ipa_domain %>
+ipa_domain = <%= $ipa_domain %>
+ipa_hostname = <%= $hostname %>.<%= $ipa_domain %>
+auth_provider = ipa
+chpass_provider = ipa
+access_provider = ipa
+cache_credentials = True
+ldap_tls_cacert = /etc/ipa/ca.crt
+krb5_store_password_if_offline = True
+
+<% $domains.map |$key, $values| { -%>
+[domain/<%= $key %>]
+<% $values.map |$ki, $vi| { -%>
+<% if $vi.is_a(Array) { -%>
+<%= $ki %> = <%= join($vi, ',') %>
+<% } elsif $vi != undef { -%>
+<%= $ki %> = <%= $vi %>
+<% } -%>
+<% } -%>
+<% } -%>
+
+[sssd]
+services = nss, pam, ssh, sudo
+
+domains = <%= join([$ipa_domain] + keys($domains), ',') %>
+
+[nss]
+homedir_substring = /home
+
+[pam]
+
+[sudo]
+
+[autofs]
+
+[ssh]
+
+[pac]
+
+[ifp]
+
+[secrets]
+
+[session_recording]
