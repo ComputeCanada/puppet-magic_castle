@@ -37,6 +37,7 @@ node default {
     include profile::users::ldap
   } else {
     include profile::freeipa::client
+    include profile::sssd::client
     include profile::rsyslog::client
   }
 
