@@ -4,10 +4,13 @@
 # on all types of nodes.
 # @param cluster_name Specifies the name of the cluster as it appears in slurm.conf
 # @param munge_key Specifies the munge secret key that allows slurm nodes to communicate
+# @param slurm_version Specifies which version of Slurm to install
+# @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
   Enum['19.05', '20.11', '21.08'] $slurm_version,
+  Integer $os_reserved_memory,
   Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
 )
@@ -440,14 +443,16 @@ class profile::slurm::node {
   }
 
   $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
+  $os_reserved_memory = lookup('profile::slurm::base::os_reserved_memory')
   consul::service { 'slurmd':
     port    => 6818,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => {
-      cpus       => String($facts['processors']['count']),
-      realmemory => String($real_memory),
-      gpus       => String($facts['nvidia_gpu_count']),
+      cpus         => String($facts['processors']['count']),
+      realmemory   => String($real_memory),
+      gpus         => String($facts['nvidia_gpu_count']),
+      memspeclimit => String($os_reserved_memory),
     },
   }
 

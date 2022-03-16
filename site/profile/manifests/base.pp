@@ -159,7 +159,7 @@ class profile::base (
     ensure => absent
   }
 
-  $mc_plugins_version = '1.0.3'
+  $mc_plugins_version = '1.0.5'
   package { 'magic_castle-plugins':
     ensure   => 'latest',
     name     => 'magic_castle-plugins',
