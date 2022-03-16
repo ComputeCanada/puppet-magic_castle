@@ -150,6 +150,17 @@ class profile::base (
     notify => Service['sshd']
   }
 
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
+    # instead of modifying /etc/ssh/sshd_config
+    # https://sshaudit.com/hardening_guides.html#rhel8
+    file { '/etc/crypto-policies/back-ends/opensshserver.config':
+      ensure => present,
+      source => 'puppet:///modules/profile/base/opensshserver.config',
+      notify => Service['sshd'],
+    }
+  }
+
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
   }
