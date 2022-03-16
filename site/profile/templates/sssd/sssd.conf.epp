@@ -1,6 +1,13 @@
 [domain/<%= $ipa_domain %>]
 id_provider = ipa
+
+# If selinux_provider is ipa, each time a new
+# user logs in, the selinux policy is rebuilt.
+# This can cause serious slow down when multiple
+# concurrent users try to login at the same time
+# since the rebuilt is done for each user sequentially.
 selinux_provider = none
+
 ipa_server = _srv_, ipa.<%= $ipa_domain %>
 ipa_domain = <%= $ipa_domain %>
 ipa_hostname = <%= $hostname %>.<%= $ipa_domain %>
