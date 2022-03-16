@@ -7,7 +7,7 @@ require {
 	type unconfined_service_t;
 	type user_t;
 	type var_spool_t;
-	class chr_file { ioctl read write };
+	class chr_file { getattr ioctl read write };
 	class file entrypoint;
 	class process { sigchld transition };
 	class process2 nosuid_transition;
@@ -24,3 +24,4 @@ allow user_t unconfined_service_t:process sigchld;
 allow user_t devpts_t:chr_file { ioctl read write };
 allow user_t var_spool_t:file entrypoint;
 allow user_t fusefs_t:file entrypoint;
+allow user_t devpts_t:chr_file getattr;
