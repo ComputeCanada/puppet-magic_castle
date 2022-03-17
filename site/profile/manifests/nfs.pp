@@ -10,7 +10,7 @@ class profile::nfs::client (String $server_ip) {
   }
 
   $devices = lookup('profile::nfs::server::devices', undef, undef, {})
-  if type($devices) != String {
+  if $devices =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($devices)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
     $nfs_export_list.each | String $name | {
@@ -92,11 +92,7 @@ END
     ensure => installed
   }
 
-  # I would have prefer to check if type is Hash[String, Array[String]]
-  # but type($devices) returns something weird with tuple and a defined key
-  # instead of the right type. Since there is only two variants possible for
-  # now, this comparison will do.
-  if type($devices) != String {
+  if $devices =~ Hash[String, Array[String]] {
     $devices.each | String $key, $glob | {
       profile::nfs::server::export_volume { $key:
         glob => $glob,
