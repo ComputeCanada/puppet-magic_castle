@@ -154,7 +154,12 @@ class profile::base (
     # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
     # instead of modifying /etc/ssh/sshd_config
     # https://sshaudit.com/hardening_guides.html#rhel8
-    file { '/etc/crypto-policies/back-ends/opensshserver.config':
+    # We replace the file in /usr/share/crypto-policies instead of
+    # /etc/crypto-policies as suggested by sshaudit.com, because the script
+    # update-crypto-policies can be called by RPM scripts and overwrites the
+    # config in /etc by what's in /usr/share. The files in /etc/crypto-policies
+    # are in just symlinks to /usr/share
+    file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
       ensure => present,
       source => 'puppet:///modules/profile/base/opensshserver.config',
       notify => Service['sshd'],
