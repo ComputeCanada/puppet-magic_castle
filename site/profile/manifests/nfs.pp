@@ -9,19 +9,22 @@ class profile::nfs::client (String $server_ip) {
     nfs_v4_idmap_domain => $nfs_domain
   }
 
-  $nfs_export_list = keys(lookup('profile::nfs::server::devices', undef, undef, {}))
-  $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
-  $nfs_export_list.each | String $name | {
-    nfs::client::mount { "/${name}":
-        server        => $server_ip,
-        share         => $name,
-        options_nfsv4 => $options_nfsv4
+  $devices = lookup('profile::nfs::server::devices', undef, undef, {})
+  if type($devices) == Hash[String, Array[String]] {
+    $nfs_export_list = keys($devices)
+    $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
+    $nfs_export_list.each | String $name | {
+      nfs::client::mount { "/${name}":
+          server        => $server_ip,
+          share         => $name,
+          options_nfsv4 => $options_nfsv4
+      }
     }
   }
 }
 
 class profile::nfs::server (
-  Hash[String, Array[String]] $devices,
+  Variant[String, Hash[String, Array[String]]] $devices,
 ) {
   require profile::base
 
@@ -89,9 +92,11 @@ END
     ensure => installed
   }
 
-  $devices.each | String $key, $glob | {
-    profile::nfs::server::export_volume { $key:
-      glob => $glob,
+  if type($devices) == Hash[String, Array[String]] {
+    $devices.each | String $key, $glob | {
+      profile::nfs::server::export_volume { $key:
+        glob => $glob,
+      }
     }
   }
 
