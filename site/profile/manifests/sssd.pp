@@ -20,7 +20,7 @@ class profile::sssd::client(
       mode    => '0600',
       content =>  epp('profile/sssd/sssd.conf', {
         'domain' => $domain,
-        'config' => $config + extra_config,
+        'config' => $config + $extra_config,
       }),
       seltype => 'sssd_conf_t',
       notify  => Service['sssd']
