@@ -35,6 +35,10 @@ node default {
 
     include profile::accounts
     include profile::users::ldap
+    class { 'profile::sssd::client':
+      domains     => lookup('profile::sssd::client::domains', undef, undef, {}),
+      deny_access => true,
+    }
   } else {
     include profile::freeipa::client
     include profile::sssd::client
