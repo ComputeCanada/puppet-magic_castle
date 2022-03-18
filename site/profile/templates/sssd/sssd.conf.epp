@@ -1,10 +1,8 @@
-<% $domains.map |$key, $values| { -%>
-[domain/<%= $key %>]
-<% $values.map |$ki, $vi| { -%>
+[domain/<%= $domain %>]
+<% $config.map |$ki, $vi| { -%>
 <% if $vi.is_a(Array) { -%>
 <%= $ki %> = <%= join($vi, ',') %>
 <% } elsif $vi != undef { -%>
 <%= $ki %> = <%= $vi %>
-<% } -%>
 <% } -%>
 <% } -%>

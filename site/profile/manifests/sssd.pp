@@ -8,21 +8,24 @@ class profile::sssd::client(
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $ipa_domain = "int.${domain_name}"
 
-  $domains.map | $key, $values | {
-    file { "/etc/sssd/conf.d/${key}.conf":
+
+
+  $domains.map | $domain, $config | {
+    file { "/etc/sssd/conf.d/${domain}.conf":
       ensure  => 'present',
       owner   => 'root',
       group   => 'root',
       mode    => '0600',
       content =>  epp('profile/sssd/sssd.conf', {
-        'ipa_domain' => $ipa_domain,
-        'domains'    => $domains,
-        'hostname'   => $::hostname,
+        'domain' => $domain,
+        'config' => $config,
       }),
       seltype => 'sssd_conf_t',
       notify  => Service['sssd']
     }
+  }
 
+  $domains.map | $key, $values | {
     if('ldap_tls_reqcert' in $values and $values['ldap_tls_reqcert'] in ['demand', 'hard']){
       $uris = join($values['ldap_uri'], ' ')
       $ldap_conf_template =  @("EOT")
@@ -37,8 +40,8 @@ EOT
         group   => 'root',
         mode    => '0644',
       }
-      break()
     }
+    break()
   }
 
   $domain_list = join([$ipa_domain] + keys($domains), ',')
