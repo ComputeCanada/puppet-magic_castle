@@ -245,7 +245,14 @@ END
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
-class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
+class profile::slurm::accounting(
+  String $password,
+  Hash[String, Any] $options = {},
+  Array[String] $admins = [],
+  Hash[String, Hash] $accounts = {},
+  Hash[String, Array[String]] $users = {},
+  Integer $dbd_port = 6819
+) {
 
   consul::service { 'slurmdbd':
     port    => $dbd_port,
@@ -314,19 +321,31 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
-  exec { 'sacctmgr_add_cluster':
-    command   => "sacctmgr add cluster ${cluster_name} -i | grep -qP '(already exists|Adding Cluster)'",
-    path      => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
-    unless    => "test `sacctmgr show cluster Names=${cluster_name} -n | wc -l` == 1",
-    tries     => 4,
-    try_sleep => 15,
-    timeout   => 15,
-    require   => [
+  file { '/etc/slurm/sacct.cfg':
+    ensure  => present,
+    content => epp('profile/slurm/sacct.cfg', {
+      cluster         => $cluster_name,
+      cluster_options => $options,
+      admins          => $admins,
+      accounts        => $accounts,
+      users           => $users
+    }),
+    notify  => Exec['sacctmgr_load_cfg']
+  }
+
+  exec { 'sacctmgr_load_cfg':
+    command     => 'sacctmgr load file=/etc/slurm/sacct.cfg -i',
+    path        => ['/bin', '/usr/sbin', '/opt/software/slurm/bin', '/opt/software/slurm/sbin'],
+    refreshonly => true,
+    tries       => 4,
+    try_sleep   => 15,
+    timeout     => 15,
+    require     => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
       Wait_for['slurmctldhost_set'],
     ],
-    before    => [
+    before      => [
       Service['slurmctld']
     ],
   }
