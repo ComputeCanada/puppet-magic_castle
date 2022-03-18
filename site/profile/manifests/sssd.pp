@@ -1,14 +1,10 @@
 class profile::sssd::client(
   Hash $domains
 ){
-  require profile::freeipa::client
-
   package { 'sssd-ldap': }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $ipa_domain = "int.${domain_name}"
-
-
 
   $domains.map | $domain, $config | {
     file { "/etc/sssd/conf.d/${domain}.conf":
@@ -46,11 +42,12 @@ EOT
 
   $domain_list = join([$ipa_domain] + keys($domains), ',')
   file_line { '/etc/sssd/sssd.conf':
-    ensure => present,
-    path   => '/etc/sssd/sssd.conf',
-    line   => "domains = ${domain_list}",
-    match  => "^domains = ${$ipa_domain}$",
-    notify => Service['sssd'],
+    ensure  => present,
+    path    => '/etc/sssd/sssd.conf',
+    line    => "domains = ${domain_list}",
+    match   => "^domains = ${$ipa_domain}$",
+    notify  => Service['sssd'],
+    require => Exec['ipa-install'],
   }
 
   service { 'sssd':
