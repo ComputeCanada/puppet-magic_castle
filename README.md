@@ -136,13 +136,6 @@ profile::users::local::users:
     # mls_range: ''s0-s0:c0.c1023'
 ```
 
-## profile::workshop
-
-| Variable                          | Type   | Description                                                                     | Default                  |
-| --------------------------------- | :----- | :------------------------------------------------------------------------------ | ------------------------ |
-| `profile::workshop::userzip_url`  | String | URL pointing to a zip that needs to be extracted in each guest account's home   | `''`                     |
-| `profile::workshop::userzip_path` | String | Path on the nfs server where to save the userzip archive                        | `'/project/userzip.zip'` |
-
 ## profile::mfa
 
 | Variable                 | Type                | Description                        | Default |
