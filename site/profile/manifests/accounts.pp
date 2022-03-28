@@ -1,5 +1,6 @@
 class profile::accounts (
-  String $project_regex
+  String $project_regex,
+  Array[String] $skel_urls = [],
 ) {
   require profile::freeipa::server
   require profile::freeipa::mokey
@@ -25,6 +26,14 @@ class profile::accounts (
     ensure => 'present',
     path   => '/lib/systemd/system/mkhome.service',
     source => 'puppet:///modules/profile/accounts/mkhome.service'
+  }
+
+  $skel_urls.each |$index, String $url| {
+    archive { "skel_${index}":
+      extract      => true,
+      extract_path => '/etc/skel',
+      source       => $url,
+    }
   }
 
   if $with_home or $with_scratch {
