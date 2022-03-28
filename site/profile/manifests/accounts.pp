@@ -1,6 +1,6 @@
 class profile::accounts (
   String $project_regex,
-  Array[String] $skel_urls = [],
+  Array[Struct[{filename => String[1], source => String[1]}]] $skel_archives = [],
 ) {
   require profile::freeipa::server
   require profile::freeipa::mokey
@@ -28,11 +28,14 @@ class profile::accounts (
     source => 'puppet:///modules/profile/accounts/mkhome.service'
   }
 
-  $skel_urls.each |$index, String $url| {
+  $skel_archives.each |$index, Hash $archive| {
+    $filename = $archive['filename']
     archive { "skel_${index}":
+      path         => "/tmp/${filename}",
+      cleanup      => true,
       extract      => true,
       extract_path => '/etc/skel',
-      source       => $url,
+      source       => $archive['source'],
     }
   }
 
