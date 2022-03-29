@@ -71,9 +71,12 @@ class profile::accounts (
       extract_path => '/etc/skel.ipa',
       source       => $archive['source'],
       require      => File['/etc/skel.ipa'],
-      user         => 'root',
-      group        => 'root',
+      notify       => Exec['chown -R root:root /etc/skel.ipa'],
     }
+  }
+
+  exec { 'chown -R root:root /etc/skel.ipa':
+    refreshonly => true,
   }
 
   if $with_home or $with_scratch {
