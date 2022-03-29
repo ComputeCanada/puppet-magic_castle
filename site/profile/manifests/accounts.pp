@@ -70,7 +70,9 @@ class profile::accounts (
       extract      => true,
       extract_path => '/etc/skel.ipa',
       source       => $archive['source'],
-      require      => File['/etc/skel.ipa']
+      require      => File['/etc/skel.ipa'],
+      user         => 'root',
+      group        => 'root',
     }
   }
 
