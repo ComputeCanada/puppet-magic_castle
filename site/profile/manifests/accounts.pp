@@ -77,7 +77,7 @@ class profile::accounts (
 
   exec { 'chown -R root:root /etc/skel.ipa':
     refreshonly => true,
-    require     => File['/etc/skel.ipa']
+    path        => ['/bin/', '/usr/bin'],
   }
 
   if $with_home or $with_scratch {
