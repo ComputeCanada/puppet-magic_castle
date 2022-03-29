@@ -62,11 +62,11 @@ class profile::accounts (
     require => File['/etc/skel.ipa']
   }
 
+  ensure_resource('file', '/opt/puppetlabs/puppet/cache/puppet-archive', {'ensure' => 'directory'})
   $skel_archives.each |$index, Hash $archive| {
     $filename = $archive['filename']
     archive { "skel_${index}":
-      path         => "/tmp/${filename}",
-      cleanup      => true,
+      path         => "/opt/puppetlabs/puppet/cache/puppet-archive/${filename}",
       extract      => true,
       extract_path => '/etc/skel.ipa',
       source       => $archive['source'],
