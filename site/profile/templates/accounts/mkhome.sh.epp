@@ -6,7 +6,7 @@ while read USERNAME; do
     while ! id $USERNAME; do sss_cache -u $USERNAME; sleep 5; done
     USER_HOME=$(getent passwd $USERNAME | cut -d: -f6)
     MNT_USER_HOME="/mnt${USER_HOME}"
-    rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel/ ${MNT_USER_HOME}
+    rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
     restorecon -F -R ${MNT_USER_HOME}
 <% } -%>
 

@@ -28,14 +28,49 @@ class profile::accounts (
     source => 'puppet:///modules/profile/accounts/mkhome.service'
   }
 
+  file { '/etc/skel.ipa':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+
+  file { '/etc/skel.ipa/.bash_logout':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bash_logout',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
+  file { '/etc/skel.ipa/.bash_profile':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bash_profile',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
+  file { '/etc/skel.ipa/.bashrc':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bashrc',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
   $skel_archives.each |$index, Hash $archive| {
     $filename = $archive['filename']
     archive { "skel_${index}":
       path         => "/tmp/${filename}",
       cleanup      => true,
       extract      => true,
-      extract_path => '/etc/skel',
+      extract_path => '/etc/skel.ipa',
       source       => $archive['source'],
+      require      => File['/etc/skel.ipa']
     }
   }
 
