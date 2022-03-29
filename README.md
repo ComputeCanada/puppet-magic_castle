@@ -11,6 +11,16 @@ variables for each profile.
 | Variable                                  | Type       | Description                                                                         | Default       |
 | ----------------------------------------- | :--------  | :---------------------------------------------------------------------------------- | ------------- |
 | `profile::accounts:::project_regex` | String | Regex to identify LDAP groups that should also be Slurm accounts | `'(ctb\|def\|rpp\|rrg)-[a-z0-9_-]*'` |
+| `profile::accounts:::skel_archives` | Array[Struct[{filename => String[1], source => String[1]}]] | List of archives that will be extracted and copied in each FreeIPA user's home folder. | `[]` |
+
+### profile::accounts:::skel_archives example
+```
+profile::accounts:::skel_archives:
+  - filename: hss-programing-lab-2022.zip
+    source: https://github.com/ComputeCanada/hss-programing-lab-2022/archive/refs/heads/main.zip
+  - filename: hss-training-topic-modeling.tar.gz
+    source: https://github.com/ComputeCanada/hss-training-topic-modeling/archive/refs/heads/main.tar.gz
+```
 
 ## profile::base
 
