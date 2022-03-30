@@ -3,8 +3,8 @@
 echo "---"
 if [ -d /etc/letsencrypt ]; then
     echo "letsencrypt:"
-    for path in $(ls /etc/letsencrypt/live); do
-        domain=$(basename $path)
+    for domain in $(ls /etc/letsencrypt/live); do
+        path=/etc/letsencrypt/live/$domain
         echo "  $domain:"
         echo "    fullchain:" $(test -e $path/fullchain.pem && echo true || echo false)
         echo "    cert:" $(test -e $path/cert.pem && echo true || echo false)
