@@ -7,8 +7,21 @@ class profile::reverse_proxy(
 {
   selinux::boolean { 'httpd_can_network_connect': }
 
+  if $domain_name in $::facts['letsencrypt'] {
+    $chain_exists = $::facts['letsencrypt'][$domain_name]['chain']
+    $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
+    $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
+    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
+  } else {
+    $chain_exists = false
+    $privkey_exists = false
+    $fullchain_exists = false
+    $willexpire = false
+  }
+  $configure_vhosts = ($chain_exists and $privkey_exists and $fullchain_exists)
+
   class { 'apache':
-    default_vhost => false,
+    default_vhost => !$configure_vhosts,
     servername    => $domain_name,
   }
 
@@ -22,19 +35,7 @@ class profile::reverse_proxy(
     action => 'accept'
   }
 
-  if $domain_name in $::facts['letsencrypt'] {
-    $chain_exists = $::facts['letsencrypt'][$domain_name]['chain']
-    $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
-    $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
-    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
-  } else {
-    $chain_exists = false
-    $privkey_exists = false
-    $fullchain_exists = false
-    $willexpire = false
-  }
-
-  if $chain_exists and $privkey_exists and $fullchain_exists {
+  if $configure_vhosts {
     if !$willexpire {
       class { 'profile::reverse_proxy::ssl':
         domain_name          => $domain_name,
@@ -44,12 +45,12 @@ class profile::reverse_proxy(
       }
     } else {
       notify { ' profile::reverse_proxy::ssl expired':
-        message => "WARNING: ${domain_name} SSL certificate will expire or is expired. Renew it."
+        message => "WARNING: ${domain_name} SSL certificate will expire or is expired. Renew it. Apache vhosts requiring SSL are deactivated."
       }
     }
   } else {
     notify { ' profile::reverse_proxy::ssl expired':
-      message => "WARNING: No SSL certificate for ${domain_name} was found. Apache vhosts are deactivated."
+      message => "WARNING: No SSL certificate for ${domain_name} was found. Apache vhosts requiring SSL are deactivated."
     }
   }
 }
