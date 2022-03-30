@@ -12,14 +12,6 @@ class profile::reverse_proxy(
     servername    => $domain_name,
   }
 
-  class { 'apache::mod::ssl':
-    ssl_compression      => false,
-    ssl_cipher           => 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384',
-    ssl_protocol         => ['all', '-SSLv3', '-TLSv1', '-TLSv1.1'],
-    ssl_honorcipherorder => false,
-    ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
-  }
-
   include apache::mod::proxy_wstunnel
 
   firewall { '200 httpd public':
@@ -28,6 +20,53 @@ class profile::reverse_proxy(
     proto  => 'tcp',
     source => '0.0.0.0/0',
     action => 'accept'
+  }
+
+  if $domain_name in $::facts['letsencrypt'] {
+    $chain_exists = $::facts['letsencrypt'][$domain_name]['chain']
+    $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
+    $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
+    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
+  } else {
+    $chain_exists = false
+    $privkey_exists = false
+    $fullchain_exists = false
+    $willexpire = false
+  }
+
+  if $chain_exists and $privkey_exists and $fullchain_exists {
+    if !$willexpire {
+      class { 'profile::reverse_proxy::ssl':
+        domain_name          => $domain_name,
+        jupyterhub_subdomain => $jupyterhub_subdomain,
+        ipa_subdomain        => $ipa_subdomain,
+        mokey_subdomain      =>  $mokey_subdomain
+      }
+    } else {
+      notify { ' profile::reverse_proxy::ssl expired':
+        message => "WARNING: ${domain_name} SSL certificate will expire or is expired. Renew it."
+      }
+    }
+  } else {
+    notify { ' profile::reverse_proxy::ssl expired':
+      message => "WARNING: No SSL certificate for ${domain_name} was found. Apache vhosts are deactivated."
+    }
+  }
+}
+
+class profile::reverse_proxy::ssl(
+  String $domain_name,
+  String $jupyterhub_subdomain,
+  String $ipa_subdomain,
+  String $mokey_subdomain,
+) {
+
+  class { 'apache::mod::ssl':
+    ssl_compression      => false,
+    ssl_cipher           => 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384',
+    ssl_protocol         => ['all', '-SSLv3', '-TLSv1', '-TLSv1.1'],
+    ssl_honorcipherorder => false,
+    ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
   }
 
   apache::vhost { 'domain_to_jupyter_non_ssl':

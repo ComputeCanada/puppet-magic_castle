@@ -8,64 +8,76 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  if ($globus_user != '') and ($globus_password != '') {
+
+  if $domain_name in $::facts['letsencrypt'] {
+    $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
+    $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
+    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
+  } else {
+    $privkey_exists = false
+    $fullchain_exists = false
+    $willexpire = false
+  }
+
+  if $globus_user != '' and $globus_password != '' {
     package { 'globus-connect-server':
       ensure  => 'installed',
       require => [Package['yum-plugin-priorities'],
                   Package['globus-connect-server-repo']]
     }
 
-    apache::vhost { "dtn.${domain_name}":
-      port                        => '443',
-      docroot                     => false,
-      wsgi_daemon_process         => 'myproxyoauth',
-      wsgi_daemon_process_options => {
-        user    => 'myproxyoauth',
-        group   => 'myproxyoauth',
-        threads => '1',
-      },
-      wsgi_process_group          => 'myproxyoauth',
-      wsgi_script_aliases         => { '/oauth' => '/usr/share/myproxy-oauth/wsgi.py' },
-      directories                 => [
-        {
-          path     => '/usr/share/myproxy-oauth/myproxyoauth',
-          requires => 'all granted',
-          # ssl_require_ssl => true,
+    if $privkey_exists and $fullchain_exists and !$willexpire {
+      apache::vhost { "dtn.${domain_name}":
+        port                        => '443',
+        docroot                     => false,
+        wsgi_daemon_process         => 'myproxyoauth',
+        wsgi_daemon_process_options => {
+          user    => 'myproxyoauth',
+          group   => 'myproxyoauth',
+          threads => '1',
         },
-        {
-          path     => '/usr/share/myproxy-oauth/',
-          requires => 'all granted',
-          # ssl_require_ssl => true,
-        },
-        {
-          path     => '/usr/share/myproxy-oauth/myproxyoauth/static',
-          requires => 'all granted',
-          options  => ['Indexes'],
-        },
-        {
-          path     => '/usr/share/myproxy-oauth/myproxyoauth/templates',
-          requires => 'all granted',
-          options  => ['Indexes'],
-        },
-      ],
-      aliases                     => [
-        {
-          alias => '/oauth/templates/',
-          path  => '/usr/share/myproxy-oauth/myproxyoauth/templates/',
-        },
-        {
-          alias => '/oauth/static/',
-          path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
-        },
-      ],
-      ssl                         => true,
-      ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-      ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    }
-
-    file { '/etc/globus-connect-server.conf':
-      ensure  => 'present',
-      content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
+        wsgi_process_group          => 'myproxyoauth',
+        wsgi_script_aliases         => { '/oauth' => '/usr/share/myproxy-oauth/wsgi.py' },
+        directories                 => [
+          {
+            path     => '/usr/share/myproxy-oauth/myproxyoauth',
+            requires => 'all granted',
+            # ssl_require_ssl => true,
+          },
+          {
+            path     => '/usr/share/myproxy-oauth/',
+            requires => 'all granted',
+            # ssl_require_ssl => true,
+          },
+          {
+            path     => '/usr/share/myproxy-oauth/myproxyoauth/static',
+            requires => 'all granted',
+            options  => ['Indexes'],
+          },
+          {
+            path     => '/usr/share/myproxy-oauth/myproxyoauth/templates',
+            requires => 'all granted',
+            options  => ['Indexes'],
+          },
+        ],
+        aliases                     => [
+          {
+            alias => '/oauth/templates/',
+            path  => '/usr/share/myproxy-oauth/myproxyoauth/templates/',
+          },
+          {
+            alias => '/oauth/static/',
+            path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
+          },
+        ],
+        ssl                         => true,
+        ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
+        ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
+      }
+      file { '/etc/globus-connect-server.conf':
+        ensure  => 'present',
+        content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
+      }
     }
 
     firewall { '100 Globus connect server - globus.org':
