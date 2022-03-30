@@ -81,10 +81,11 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
         ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
         ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
       }
-      file { '/etc/globus-connect-server.conf':
-        ensure  => 'present',
-        content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
-      }
+    }
+
+    file { '/etc/globus-connect-server.conf':
+      ensure  => 'present',
+      content => epp('profile/globus/globus-connect-server.conf', { 'hostname' => "dtn.${domain_name}" }),
     }
 
     firewall { '100 Globus connect server - globus.org':
