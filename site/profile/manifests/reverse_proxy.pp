@@ -11,7 +11,11 @@ class profile::reverse_proxy(
     $chain_exists = $::facts['letsencrypt'][$domain_name]['chain']
     $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
     $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
-    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
+    if $fullchain_exists {
+      $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
+    } else {
+      $willexpire = false
+    }
   } else {
     $chain_exists = false
     $privkey_exists = false
@@ -36,16 +40,15 @@ class profile::reverse_proxy(
   }
 
   if $configure_vhosts {
-    if !$willexpire {
-      class { 'profile::reverse_proxy::ssl':
-        domain_name          => $domain_name,
-        jupyterhub_subdomain => $jupyterhub_subdomain,
-        ipa_subdomain        => $ipa_subdomain,
-        mokey_subdomain      =>  $mokey_subdomain
-      }
-    } else {
+    class { 'profile::reverse_proxy::ssl':
+      domain_name          => $domain_name,
+      jupyterhub_subdomain => $jupyterhub_subdomain,
+      ipa_subdomain        => $ipa_subdomain,
+      mokey_subdomain      =>  $mokey_subdomain
+    }
+    if $willexpire {
       notify { ' profile::reverse_proxy::ssl expired':
-        message => "WARNING: ${domain_name} SSL certificate will expire or is expired. Renew it. Apache vhosts requiring SSL are deactivated."
+        message => "WARNING: ${domain_name} SSL certificate will expire or is expired. Renew it."
       }
     }
   } else {

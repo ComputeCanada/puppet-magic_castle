@@ -12,11 +12,9 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
   if $domain_name in $::facts['letsencrypt'] {
     $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
     $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
-    $willexpire = $::facts['letsencrypt'][$domain_name]['willexpire']
   } else {
     $privkey_exists = false
     $fullchain_exists = false
-    $willexpire = false
   }
 
   if $globus_user != '' and $globus_password != '' {
@@ -26,7 +24,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
                   Package['globus-connect-server-repo']]
     }
 
-    if $privkey_exists and $fullchain_exists and !$willexpire {
+    if $privkey_exists and $fullchain_exists {
       apache::vhost { "dtn.${domain_name}":
         port                        => '443',
         docroot                     => false,
