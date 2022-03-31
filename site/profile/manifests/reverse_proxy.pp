@@ -7,21 +7,6 @@ class profile::reverse_proxy(
 {
   selinux::boolean { 'httpd_can_network_connect': }
 
-  class { 'apache':
-    default_vhost => false,
-    servername    => $domain_name,
-  }
-
-  class { 'apache::mod::ssl':
-    ssl_compression      => false,
-    ssl_cipher           => 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384',
-    ssl_protocol         => ['all', '-SSLv3', '-TLSv1', '-TLSv1.1'],
-    ssl_honorcipherorder => false,
-    ssl_ca               => "/etc/letsencrypt/live/${domain_name}/chain.pem",
-  }
-
-  include apache::mod::proxy_wstunnel
-
   firewall { '200 httpd public':
     chain  => 'INPUT',
     dport  => [80, 443],
@@ -30,144 +15,57 @@ class profile::reverse_proxy(
     action => 'accept'
   }
 
-  apache::vhost { 'domain_to_jupyter_non_ssl':
-    servername      => $domain_name,
-    port            => '80',
-    redirect_status => 'permanent',
-    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
-    docroot         => false,
-    manage_docroot  => false,
-    access_log      => false,
-    error_log       => false,
-    priority        => 99,
+  yumrepo { 'caddy-copr-repo':
+    enabled             => true,
+    descr               => 'Copr repo for caddy',
+    baseurl             => "https://download.copr.fedorainfracloud.org/results/@caddy/caddy/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/@caddy/caddy/pubkey.gpg',
+    repo_gpgcheck       => 0,
   }
 
-  apache::vhost { 'domain_to_jupyter_ssl':
-    servername      => $domain_name,
-    port            => '443',
-    redirect_status => 'permanent',
-    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
-    docroot         => false,
-    manage_docroot  => false,
-    access_log      => false,
-    error_log       => false,
-    ssl             => true,
-    ssl_cert        => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-    ssl_key         => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    priority        => 99,
-  }
-
-  apache::vhost { 'jupyterhub80_to_jupyterhub443':
-    servername      => "${jupyterhub_subdomain}.${domain_name}",
-    port            => '80',
-    redirect_status => 'permanent',
-    redirect_dest   => "https://${jupyterhub_subdomain}.${domain_name}/",
-    docroot         => false,
-    manage_docroot  => false,
-    access_log      => false,
-    error_log       => false,
-  }
-
-  $jupyterhub_bind_host_port = join(split($jupyterhub::bind_url, /:/)[1,-1], ':')
-  apache::vhost { 'jupyterhub_ssl':
-    servername                => "${jupyterhub_subdomain}.${domain_name}",
-    port                      => '443',
-    docroot                   => false,
-    manage_docroot            => false,
-    access_log                => false,
-    error_log                 => false,
-    proxy_dest                => $jupyterhub::bind_url,
-    proxy_preserve_host       => true,
-    rewrites                  => [
-      {
-        rewrite_cond => ['%{HTTP:Connection} Upgrade [NC]', '%{HTTP:Upgrade} websocket [NC]'],
-        rewrite_rule => ["/(.*) wss:${jupyterhub_bind_host_port}/\$1 [P,L]"],
-      },
-    ],
-    ssl                       => true,
-    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    ssl_proxyengine           => true,
-    ssl_proxy_check_peer_cn   => 'off',
-    ssl_proxy_check_peer_name => 'off',
-    headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
+  package { 'caddy':
+    ensure  => 'installed',
+    require => Yumrepo['caddy-copr-repo']
   }
 
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
   $mokey_port = lookup('profile::freeipa::mokey::port')
 
-  apache::vhost { 'mokey80_to_mokey443':
-    servername      => "${mokey_subdomain}.${domain_name}",
-    port            => '80',
-    redirect_status => 'permanent',
-    redirect_dest   => "https://${mokey_subdomain}.${domain_name}/",
-    docroot         => false,
-    manage_docroot  => false,
-    access_log      => false,
-    error_log       => false,
+  file { '/etc/caddy/Caddyfile':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => Package['caddy'],
+    content => @("END")
+${domain_name} {
+  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  redir ${jupyterhub_subdomain}.${domain_name}
+}
+
+${jupyterhub_subdomain}.${domain_name} {
+  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  reverse_proxy ${$jupyterhub::bind_url}
+}
+
+${mokey_subdomain}.${domain_name} {
+  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  reverse_proxy ${ipa_server_ip}:${mokey_port}
+}
+
+${ipa_subdomain}.${domain_name} {
+  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  reverse_proxy ${ipa_subdomain}.int.${domain_name}
+}
+
+END
   }
 
-  apache::vhost { 'mokey_ssl':
-    servername                => "${mokey_subdomain}.${domain_name}",
-    port                      => '443',
-    docroot                   => false,
-    manage_docroot            => false,
-    access_log                => false,
-    error_log                 => false,
-    proxy_dest                => "http://${ipa_server_ip}:${mokey_port}",
-    proxy_preserve_host       => true,
-    ssl                       => true,
-    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    ssl_proxyengine           => true,
-    ssl_proxy_check_peer_cn   => 'off',
-    ssl_proxy_check_peer_name => 'off',
-    headers                   => ['always set Strict-Transport-Security "max-age=15768000"']
-  }
-
-  apache::vhost { 'ipa80_to_ipa443':
-    servername      => "${ipa_subdomain}.${domain_name}",
-    port            => '80',
-    redirect_status => 'permanent',
-    redirect_dest   => "https://${ipa_subdomain}.${domain_name}/",
-    docroot         => false,
-    manage_docroot  => false,
-    access_log      => false,
-    error_log       => false,
-  }
-
-  apache::vhost { 'ipa_ssl':
-    servername                => "${ipa_subdomain}.${domain_name}",
-    port                      => '443',
-    docroot                   => false,
-    manage_docroot            => false,
-    access_log                => false,
-    error_log                 => false,
-    proxy_preserve_host       => true,
-    rewrites                  => [
-      {
-        rewrite_cond => ['%{HTTPS:Connection} Upgrade [NC]'],
-      },
-    ],
-    ssl                       => true,
-    ssl_cert                  => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-    ssl_key                   => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-    ssl_proxyengine           => true,
-    ssl_proxy_check_peer_cn   => 'off',
-    ssl_proxy_check_peer_name => 'off',
-    headers                   => ['always set Strict-Transport-Security "max-age=15768000"'],
-    proxy_pass                => [
-      {
-        'path'            => '/',
-        'url'             => "https://${ipa_subdomain}.int.${domain_name}/",
-        'reverse_cookies' => [
-          {
-            'domain' => "${ipa_subdomain}.int.${domain_name}",
-            'url'    => "${ipa_subdomain}.${domain_name}"
-          },
-        ],
-      }
-    ],
-
+  service { 'caddy':
+    ensure    => running,
+    enable    => true,
+    require   => Package['caddy'],
+    subscribe => File['/etc/caddy/Caddyfile'],
   }
 }
