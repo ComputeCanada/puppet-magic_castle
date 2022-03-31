@@ -17,7 +17,7 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
     $fullchain_exists = false
   }
 
-  if $globus_user != '' and $globus_password != '' {
+  if $globus_user != '' and $globus_password != '' and $privkey_exists and $fullchain_exists {
     if dig($::facts, 'os', 'release', 'major') == '7' {
       $required_pkg = [
         Package['yum-plugin-priorities'],
@@ -35,54 +35,52 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
       require => $required_pkg,
     }
 
-    if $privkey_exists and $fullchain_exists {
-      apache::vhost { "dtn.${domain_name}":
-        port                        => '443',
-        docroot                     => false,
-        wsgi_daemon_process         => 'myproxyoauth',
-        wsgi_daemon_process_options => {
-          user    => 'myproxyoauth',
-          group   => 'myproxyoauth',
-          threads => '1',
+    apache::vhost { "dtn.${domain_name}":
+      port                        => '443',
+      docroot                     => false,
+      wsgi_daemon_process         => 'myproxyoauth',
+      wsgi_daemon_process_options => {
+        user    => 'myproxyoauth',
+        group   => 'myproxyoauth',
+        threads => '1',
+      },
+      wsgi_process_group          => 'myproxyoauth',
+      wsgi_script_aliases         => { '/oauth' => '/usr/share/myproxy-oauth/wsgi.py' },
+      directories                 => [
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth',
+          requires => 'all granted',
+          # ssl_require_ssl => true,
         },
-        wsgi_process_group          => 'myproxyoauth',
-        wsgi_script_aliases         => { '/oauth' => '/usr/share/myproxy-oauth/wsgi.py' },
-        directories                 => [
-          {
-            path     => '/usr/share/myproxy-oauth/myproxyoauth',
-            requires => 'all granted',
-            # ssl_require_ssl => true,
-          },
-          {
-            path     => '/usr/share/myproxy-oauth/',
-            requires => 'all granted',
-            # ssl_require_ssl => true,
-          },
-          {
-            path     => '/usr/share/myproxy-oauth/myproxyoauth/static',
-            requires => 'all granted',
-            options  => ['Indexes'],
-          },
-          {
-            path     => '/usr/share/myproxy-oauth/myproxyoauth/templates',
-            requires => 'all granted',
-            options  => ['Indexes'],
-          },
-        ],
-        aliases                     => [
-          {
-            alias => '/oauth/templates/',
-            path  => '/usr/share/myproxy-oauth/myproxyoauth/templates/',
-          },
-          {
-            alias => '/oauth/static/',
-            path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
-          },
-        ],
-        ssl                         => true,
-        ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
-        ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
-      }
+        {
+          path     => '/usr/share/myproxy-oauth/',
+          requires => 'all granted',
+          # ssl_require_ssl => true,
+        },
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth/static',
+          requires => 'all granted',
+          options  => ['Indexes'],
+        },
+        {
+          path     => '/usr/share/myproxy-oauth/myproxyoauth/templates',
+          requires => 'all granted',
+          options  => ['Indexes'],
+        },
+      ],
+      aliases                     => [
+        {
+          alias => '/oauth/templates/',
+          path  => '/usr/share/myproxy-oauth/myproxyoauth/templates/',
+        },
+        {
+          alias => '/oauth/static/',
+          path  => '/usr/share/myproxy-oauth/myproxyoauth/static/',
+        },
+      ],
+      ssl                         => true,
+      ssl_cert                    => "/etc/letsencrypt/live/${domain_name}/fullchain.pem",
+      ssl_key                     => "/etc/letsencrypt/live/${domain_name}/privkey.pem",
     }
 
     file { '/etc/globus-connect-server.conf':
