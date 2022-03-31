@@ -21,11 +21,13 @@ class profile::globus::base (String $globus_user = '', String $globus_password =
     if dig($::facts, 'os', 'release', 'major') == '7' {
       $required_pkg = [
         Package['yum-plugin-priorities'],
-        Package['globus-connect-server-repo']
+        Package['globus-connect-server-repo'],
+        Yumrepo['epel'],
       ]
     } else {
       $required_pkg = [
-        Package['globus-connect-server-repo']
+        Package['globus-connect-server-repo'],
+        Yumrepo['epel'],
       ]
     }
     package { 'globus-connect-server':
