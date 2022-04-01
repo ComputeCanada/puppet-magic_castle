@@ -57,6 +57,7 @@ node default {
 
   if 'proxy' in $instance_tags {
     include profile::jupyterhub::hub
+    include profile::reverse_proxy
   }
 
   if 'mfa' in $instance_tags {
