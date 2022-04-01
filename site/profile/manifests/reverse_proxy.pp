@@ -40,7 +40,7 @@ class profile::reverse_proxy(
     require => Package['caddy'],
     content => @("END")
 ${domain_name} {
-  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
   redir ${jupyterhub_subdomain}.${domain_name}
 }
 
@@ -50,12 +50,12 @@ ${jupyterhub_subdomain}.${domain_name} {
 }
 
 ${mokey_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
   reverse_proxy ${ipa_server_ip}:${mokey_port}
 }
 
 ${ipa_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
   reverse_proxy ${ipa_subdomain}.int.${domain_name}
 }
 
