@@ -39,23 +39,32 @@ class profile::reverse_proxy(
     mode    => '0644',
     require => Package['caddy'],
     content => @("END")
-${domain_name} {
+
+(tls) {
   tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
-  redir ${jupyterhub_subdomain}.${domain_name}
+}
+
+${domain_name} {
+  import tls
+  redir https://${jupyterhub_subdomain}.${domain_name}
 }
 
 ${jupyterhub_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
-  reverse_proxy ${$jupyterhub::bind_url}
+  import tls
+  reverse_proxy ${$jupyterhub::bind_url} {
+    transport http {
+      tls_insecure_skip_verify
+    }
+  }
 }
 
 ${mokey_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  import tls
   reverse_proxy ${ipa_server_ip}:${mokey_port}
 }
 
 ${ipa_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  import tls
   reverse_proxy ${ipa_subdomain}.int.${domain_name}
 }
 
