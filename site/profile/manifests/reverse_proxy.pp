@@ -38,7 +38,7 @@ class profile::reverse_proxy(
     owner   => 'root',
     group   => 'caddy',
     mode    => '0640',
-    link    => 'follow',
+    links   => 'follow',
     require => Package['caddy'],
   }
 
