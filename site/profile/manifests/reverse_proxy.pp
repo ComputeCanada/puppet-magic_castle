@@ -47,6 +47,7 @@ class profile::reverse_proxy(
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => Package['caddy'],
   }
 
@@ -54,6 +55,7 @@ class profile::reverse_proxy(
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => Package['caddy'],
     content => @("END")
 (tls) {
@@ -67,6 +69,7 @@ END
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
     content => @("END")
 ${domain_name} {
@@ -80,6 +83,7 @@ END
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
     content => @("END")
 ${jupyterhub_subdomain}.${domain_name} {
@@ -97,6 +101,7 @@ END
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
     content => @("END")
 ${mokey_subdomain}.${domain_name} {
@@ -110,6 +115,7 @@ END
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
+    seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
     content => @("END")
 ${ipa_subdomain}.${domain_name} {
