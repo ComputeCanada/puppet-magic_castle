@@ -35,7 +35,7 @@ class profile::reverse_proxy(
 
   file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
     ensure  => present,
-    user    => 'root',
+    owner   => 'root',
     group   => 'caddy',
     mode    => '0640',
     require => Package['caddy'],
