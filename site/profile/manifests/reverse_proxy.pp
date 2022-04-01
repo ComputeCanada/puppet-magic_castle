@@ -33,7 +33,7 @@ class profile::reverse_proxy(
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
   $mokey_port = lookup('profile::freeipa::mokey::port')
 
-  file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
+  file { "/etc/letsencrypt/archive/${domain_name}/privkey1.pem":
     ensure  => present,
     owner   => 'root',
     group   => 'caddy',
