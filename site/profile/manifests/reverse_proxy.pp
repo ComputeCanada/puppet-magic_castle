@@ -45,7 +45,7 @@ ${domain_name} {
 }
 
 ${jupyterhub_subdomain}.${domain_name} {
-  tls /etc/letsencrypt/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
   reverse_proxy ${$jupyterhub::bind_url}
 }
 
