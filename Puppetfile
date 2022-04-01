@@ -35,6 +35,7 @@ mod 'puppetlabs-stdlib', '5.2.0'
 mod 'puppetlabs-transition', '0.1.3'
 mod 'yelp-netstdlib', '0.0.1'
 mod 'KyleAnderson-consul', '6.1.0'
+mod 'treydock-globus', '6.0.0'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',

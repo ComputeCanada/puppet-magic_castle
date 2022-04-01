@@ -60,6 +60,10 @@ node default {
     include profile::reverse_proxy
   }
 
+  if 'dtn' in $instance_tags {
+    include globus
+  }
+
   if 'mfa' in $instance_tags {
     include profile::mfa
   }
