@@ -128,7 +128,10 @@ END
   service { 'caddy':
     ensure    => running,
     enable    => true,
-    require   => Package['caddy'],
+    require   => [
+      Package['caddy'],
+      File["/etc/letsencrypt/live/${domain_name}/privkey.pem"],
+    ],
     subscribe => [
       File['/etc/caddy/Caddyfile'],
       File['/etc/caddy/conf.d/host.conf'],
