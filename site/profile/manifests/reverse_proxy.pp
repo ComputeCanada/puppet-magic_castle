@@ -42,22 +42,46 @@ class profile::reverse_proxy(
     require => Package['caddy'],
   }
 
+  file { '/etc/caddy/conf.d':
+    ensure  => directory,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => Package['caddy'],
+  }
+
   file { '/etc/caddy/Caddyfile':
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
     require => Package['caddy'],
     content => @("END")
-
 (tls) {
   tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
 }
+import conf.d/*
+END
+  }
 
+  file { '/etc/caddy/conf.d/host.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/caddy/conf.d'],
+    content => @("END")
 ${domain_name} {
   import tls
   redir https://${jupyterhub_subdomain}.${domain_name}
 }
+END
+  }
 
+  file { '/etc/caddy/conf.d/jupyter.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/caddy/conf.d'],
+    content => @("END")
 ${jupyterhub_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${$jupyterhub::bind_url} {
@@ -66,17 +90,32 @@ ${jupyterhub_subdomain}.${domain_name} {
     }
   }
 }
+END
+  }
 
+  file { '/etc/caddy/conf.d/mokey.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/caddy/conf.d'],
+    content => @("END")
 ${mokey_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${ipa_server_ip}:${mokey_port}
 }
+END
+  }
 
+  file { '/etc/caddy/conf.d/ipa.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/caddy/conf.d'],
+    content => @("END")
 ${ipa_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${ipa_subdomain}.int.${domain_name}
 }
-
 END
   }
 
@@ -84,6 +123,12 @@ END
     ensure    => running,
     enable    => true,
     require   => Package['caddy'],
-    subscribe => File['/etc/caddy/Caddyfile'],
+    subscribe => [
+      File['/etc/caddy/Caddyfile'],
+      File['/etc/caddy/conf.d/host.conf'],
+      File['/etc/caddy/conf.d/jupyter.conf'],
+      File['/etc/caddy/conf.d/mokey.conf'],
+      File['/etc/caddy/conf.d/ipa.conf'],
+    ]
   }
 }
