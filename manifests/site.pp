@@ -61,7 +61,7 @@ node default {
   }
 
   if 'dtn' in $instance_tags {
-    include globus
+    include profile::globus
   }
 
   if 'mfa' in $instance_tags {
