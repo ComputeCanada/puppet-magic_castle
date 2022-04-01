@@ -33,13 +33,32 @@ class profile::reverse_proxy(
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
   $mokey_port = lookup('profile::freeipa::mokey::port')
 
-  file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
-    ensure  => present,
-    owner   => 'root',
-    group   => 'caddy',
-    mode    => '0640',
-    links   => 'follow',
-    require => Package['caddy'],
+  if $domain_name in $::facts['letsencrypt'] {
+    $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
+    $privkey_exists = $::facts['letsencrypt'][$domain_name]['privkey']
+  } else {
+    $fullchain_exists = false
+    $privkey_exists = false
+  }
+
+  $configure_tls = ($privkey_exists and $fullchain_exists)
+
+  if $privkey_exists {
+    file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
+      ensure  => present,
+      owner   => 'root',
+      group   => 'caddy',
+      mode    => '0640',
+      links   => 'follow',
+      require => Package['caddy'],
+      before  => Service['caddy'],
+    }
+  }
+
+  if $configure_tls {
+    $tls_string = "tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem"
+  } else {
+    $tls_string = ''
   }
 
   file { '/etc/caddy/conf.d':
@@ -59,7 +78,7 @@ class profile::reverse_proxy(
     require => Package['caddy'],
     content => @("END")
 (tls) {
-  tls /etc/letsencrypt/live/${domain_name}/fullchain.pem /etc/letsencrypt/live/${domain_name}/privkey.pem
+  ${tls_string}
 }
 import conf.d/*
 END
@@ -130,7 +149,6 @@ END
     enable    => true,
     require   => [
       Package['caddy'],
-      File["/etc/letsencrypt/live/${domain_name}/privkey.pem"],
     ],
     subscribe => [
       File['/etc/caddy/Caddyfile'],
