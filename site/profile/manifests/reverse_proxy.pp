@@ -33,6 +33,14 @@ class profile::reverse_proxy(
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
   $mokey_port = lookup('profile::freeipa::mokey::port')
 
+  file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
+    ensure  => present,
+    user    => 'root',
+    group   => 'caddy',
+    mode    => '0640',
+    require => Package['caddy'],
+  }
+
   file { '/etc/caddy/Caddyfile':
     owner   => 'root',
     group   => 'root',
