@@ -127,7 +127,7 @@ class profile::freeipa::client(String $server_ip)
       -w ${admin_passwd}
       | IPACLIENTINSTALL
 
-  exec { 'ipa-client-install':
+  exec { 'ipa-install':
     command   => Sensitive($ipa_client_install_cmd),
     tries     => 2,
     try_sleep => 60,
@@ -147,7 +147,7 @@ class profile::freeipa::client(String $server_ip)
   exec { 'ipa_dnsrecord-del_ptr':
     command     => "kinit_wrapper ipa dnsrecord-del ${reverse_zone} ${ptr_record} --del-all",
     onlyif      => "test `dig -x ${ipaddress} | grep -oP '^.*\\s[0-9]*\\sIN\\sPTR\\s\\K(.*)'` != ${fqdn}.",
-    require     => [File['kinit_wrapper'], Exec['ipa-client-install']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
@@ -155,17 +155,30 @@ class profile::freeipa::client(String $server_ip)
   exec { 'ipa_dnsrecord-add_ptr':
     command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-hostname=${fqdn}.",
     unless      => "dig -x ${ipaddress} | grep -q ';; ANSWER SECTION:'",
-    require     => [File['kinit_wrapper'], Exec['ipa-client-install'], Exec['ipa_dnsrecord-del_ptr']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install'], Exec['ipa_dnsrecord-del_ptr']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     tries       => 5,
     try_sleep   => 10,
   }
 
-  service { 'sssd':
-    ensure  => running,
-    enable  => true,
-    require => Exec['ipa-client-install']
+  # Configure default login selinux mapping
+  exec { 'selinux_login_default':
+    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
+    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require => Exec['ipa-install']
+  }
+
+  # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
+  # The installation is only done if the certificate on the ipa-server no
+  # longer corresponds to the one currently installed on the client. When this
+  # happens, curl returns a code 35.
+  exec { 'ipa-client-uninstall':
+    command => '/sbin/ipa-client-install -U --uninstall',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    onlyif  => ['test -f /etc/ipa/default.conf',
+                'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
   }
 
   # If selinux_provider is ipa, each time a new
@@ -178,27 +191,8 @@ class profile::freeipa::client(String $server_ip)
     path    => '/etc/sssd/sssd.conf',
     after   => 'id_provider = ipa',
     line    => 'selinux_provider = none',
-    require => Exec['ipa-client-install'],
+    require => Exec['ipa-install'],
     notify  => Service['sssd']
-  }
-
-  # Configure default login selinux mapping
-  exec { 'selinux_login_default':
-    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
-    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Exec['ipa-client-install']
-  }
-
-  # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
-  # The installation is only done if the certificate on the ipa-server no
-  # longer corresponds to the one currently installed on the client. When this
-  # happens, curl returns a code 35.
-  exec { 'ipa-client-uninstall':
-    command => '/sbin/ipa-client-install -U --uninstall',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    onlyif  => ['test -f /etc/ipa/default.conf',
-                'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
   }
 
 }
@@ -225,7 +219,7 @@ class profile::freeipa::server
   # Remove host entry only once before install FreeIPA
   exec { 'remove-hosts-entry':
     command => "/usr/bin/sed -i '/${ipaddress}/d' /etc/hosts",
-    before  => Exec['ipa-server-install'],
+    before  => Exec['ipa-install'],
     unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log']
   }
 
@@ -235,7 +229,7 @@ class profile::freeipa::server
     ip           => $ipaddress,
     host_aliases => [$::hostname],
     require      => Exec['remove-hosts-entry'],
-    before       => Exec['ipa-server-install'],
+    before       => Exec['ipa-install'],
   }
 
   $idstart = Integer($facts['uid_max']) + 1
@@ -262,7 +256,7 @@ class profile::freeipa::server
       --no_hbac_allow
       | IPASERVERINSTALL
 
-  exec { 'ipa-server-install':
+  exec { 'ipa-install':
     command => Sensitive($ipa_server_install_cmd),
     creates => '/etc/ipa/default.conf',
     timeout => 0,
@@ -279,7 +273,7 @@ class profile::freeipa::server
         'nameservers'     => ['127.0.0.1'],
       }),
     notify  => Service['NetworkManager'],
-    require => Exec['ipa-server-install'],
+    require => Exec['ipa-install'],
   }
 
   file_line { 'ipa_server_fileline':
@@ -287,7 +281,7 @@ class profile::freeipa::server
     path    => '/etc/ipa/default.conf',
     after   => "domain = ${int_domain_name}",
     line    => "server = ${::hostname}.${int_domain_name}",
-    require => Exec['ipa-server-install'],
+    require => Exec['ipa-install'],
   }
 
   exec { 'ipa_config-mod_auth-otp':
@@ -296,7 +290,7 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'],],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install']
+    subscribe   => Exec['ipa-install']
   }
 
   # Configure the password of the admin accounts to never expire
@@ -306,7 +300,7 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'],],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
   }
   ~> exec { 'ipa_admin_passwd_reset':
     command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
@@ -322,35 +316,35 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'], ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install']
+    subscribe   => Exec['ipa-install']
   }
 
   exec { 'ipa_hostgroup_not_mgmt':
     command     => 'kinit_wrapper ipa hostgroup-add not_mgmt',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install']
+    subscribe   => Exec['ipa-install']
   }
   ~> exec { 'ipa_automember_not_mgmt':
     command     => 'kinit_wrapper ipa automember-add not_mgmt --type=hostgroup',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
   ~> exec { 'ipa_automember_condition_not_mgmt':
     command     => 'kinit_wrapper ipa automember-add-condition not_mgmt --type=hostgroup --key=fqdn --inclusive-regex=.* --exclusive-regex="^mgmt.*"',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
   ~> exec { 'ipa_automember_rebuild_hostgroup':
     command     => 'kinit_wrapper ipa automember-rebuild --type=hostgroup',
     refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-server-install']],
+    require     => [File['kinit_wrapper'], Exec['ipa-install']],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
@@ -361,7 +355,7 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'],],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install']
+    subscribe   => Exec['ipa-install']
   }
 
   exec { 'ipa_hbacrule_notmgmt_addusers':
@@ -388,7 +382,7 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'], ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
   }
 
   exec { 'ipa_add_host_ipa':
@@ -397,7 +391,7 @@ class profile::freeipa::server
     require     => [File['kinit_wrapper'], ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
   }
 
   exec { 'ipa_add_service_principal':
@@ -410,7 +404,7 @@ class profile::freeipa::server
     ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
   }
 
   $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
@@ -423,20 +417,20 @@ class profile::freeipa::server
     ],
     environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
     notify      => Service['httpd'],
   }
 
   service { 'ipa':
     ensure  => running,
     enable  => true,
-    require => Exec['ipa-server-install'],
+    require => Exec['ipa-install'],
   }
 
   service { 'httpd':
     ensure  => running,
     enable  => true,
-    require => Exec['ipa-server-install'],
+    require => Exec['ipa-install'],
   }
 
   file { '/etc/httpd/conf.d/ipa-rewrite.conf':
@@ -449,7 +443,7 @@ class profile::freeipa::server
       }
     ),
     notify  => Service['httpd'],
-    require => Exec['ipa-server-install'],
+    require => Exec['ipa-install'],
     seltype => 'httpd_config_t',
   }
 
@@ -509,7 +503,7 @@ class profile::freeipa::mokey(
     ],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-server-install'],
+    subscribe   => Exec['ipa-install'],
   }
 
   exec { 'ipa_mokey_role_add_privilege':
