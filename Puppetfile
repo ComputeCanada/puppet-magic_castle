@@ -25,7 +25,6 @@ mod 'puppet-selinux', '3.2.0'
 mod 'puppet-squid', '3.0.0'
 mod 'puppet-staging', '3.2.0'
 mod 'puppet-yum', '4.3.0'
-mod 'puppetlabs-apache', '5.6.0'
 mod 'puppetlabs-concat', '6.2.0'
 mod 'puppetlabs-firewall', '2.7.0'
 mod 'puppetlabs-inifile', '4.3.1'
@@ -36,6 +35,7 @@ mod 'puppetlabs-stdlib', '5.2.0'
 mod 'puppetlabs-transition', '0.1.3'
 mod 'yelp-netstdlib', '0.0.1'
 mod 'KyleAnderson-consul', '6.1.0'
+mod 'treydock-globus', '6.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',

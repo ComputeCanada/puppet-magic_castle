@@ -52,13 +52,6 @@ variables for each profile.
 | `profile::freeipa::mokey::enable_user_signup`    | Boolean | Allow users to create an account on the cluster                                     | `true`   |
 | `profile::freeipa::mokey::require_verify_admin`  | Boolean | Require a FreeIPA to enable Mokey created account before usage                      | `true`   |
 
-## profile::globus
-
-| Variable                           | Type   | Description                                                             | Default  |
-| ---------------------------------- | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::globus::base::globus_user`     | String | Username under which the globus endpoint will be registered.            | `undef`  |
-| `profile::globus::base::globus_password` | String | Password associated with the globus username.                           | `undef`  |
-
 ## profile::nfs
 
 | Variable                           | Type   | Description                            | Default  |
