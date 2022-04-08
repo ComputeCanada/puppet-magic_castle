@@ -49,7 +49,7 @@ EOT
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $ipa_domain = "int.${domain_name}"
   $domain_list = join([$ipa_domain] + keys($domains), ',')
-  file_line { '/etc/sssd/sssd.conf':
+  file_line { 'sssd_domains':
     ensure  => present,
     path    => '/etc/sssd/sssd.conf',
     line    => "domains = ${domain_list}",

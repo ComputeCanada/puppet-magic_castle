@@ -181,6 +181,20 @@ class profile::freeipa::client(String $server_ip)
                 'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
   }
 
+  # If selinux_provider is ipa, each time a new
+  # user logs in, the selinux policy is rebuilt.
+  # This can cause serious slow down when multiple
+  # concurrent users try to login at the same time
+  # since the rebuilt is done for each user sequentially.
+  file_line { 'selinux_provider':
+    ensure  => present,
+    path    => '/etc/sssd/sssd.conf',
+    after   => 'id_provider = ipa',
+    line    => 'selinux_provider = none',
+    require => Exec['ipa-install'],
+    notify  => Service['sssd']
+  }
+
 }
 
 class profile::freeipa::server
