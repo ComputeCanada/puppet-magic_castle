@@ -31,7 +31,6 @@ node default {
 
     include profile::freeipa::mokey
     include profile::slurm::accounting
-    include profile::workshop::mgmt
 
     include profile::accounts
     include profile::users::ldap

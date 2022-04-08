@@ -1,5 +1,6 @@
 class profile::accounts (
-  String $project_regex
+  String $project_regex,
+  Array[Struct[{filename => String[1], source => String[1]}]] $skel_archives = [],
 ) {
   require profile::freeipa::server
   require profile::freeipa::mokey
@@ -25,6 +26,58 @@ class profile::accounts (
     ensure => 'present',
     path   => '/lib/systemd/system/mkhome.service',
     source => 'puppet:///modules/profile/accounts/mkhome.service'
+  }
+
+  file { '/etc/skel.ipa':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+
+  file { '/etc/skel.ipa/.bash_logout':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bash_logout',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
+  file { '/etc/skel.ipa/.bash_profile':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bash_profile',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
+  file { '/etc/skel.ipa/.bashrc':
+    ensure  => present,
+    source  => 'file:///etc/skel/.bashrc',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => File['/etc/skel.ipa']
+  }
+
+  ensure_resource('file', '/opt/puppetlabs/puppet/cache/puppet-archive', {'ensure' => 'directory'})
+  $skel_archives.each |$index, Hash $archive| {
+    $filename = $archive['filename']
+    archive { "skel_${index}":
+      path         => "/opt/puppetlabs/puppet/cache/puppet-archive/${filename}",
+      extract      => true,
+      extract_path => '/etc/skel.ipa',
+      source       => $archive['source'],
+      require      => File['/etc/skel.ipa'],
+      notify       => Exec['chown -R root:root /etc/skel.ipa'],
+    }
+  }
+
+  exec { 'chown -R root:root /etc/skel.ipa':
+    refreshonly => true,
+    path        => ['/bin/', '/usr/bin'],
   }
 
   if $with_home or $with_scratch {
