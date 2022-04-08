@@ -1,5 +1,5 @@
 class profile::sssd::client(
-  Hash $domains,
+  Hash $domains = {},
   Boolean $deny_access = false,
 ){
   package { 'sssd-ldap': }
