@@ -122,31 +122,31 @@ class profile::base (
     notify => Service['sshd']
   }
 
+  file_line { 'Ciphers':
+    ensure => present,
+    path   => '/etc/ssh/sshd_config',
+    line   => 'Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr',
+    notify => Service['sshd']
+  }
+
   file_line { 'MACs':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
-    line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
+    line   => 'MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com',
     notify => Service['sshd']
   }
 
   file_line { 'KexAlgorithms':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
-    line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
+    line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512',
     notify => Service['sshd']
   }
 
   file_line { 'HostKeyAlgorithms':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
-    line   => 'HostKeyAlgorithms ssh-rsa',
-    notify => Service['sshd']
-  }
-
-  file_line { 'Ciphers':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
+    line   => 'HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512',
     notify => Service['sshd']
   }
 
