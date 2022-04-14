@@ -4,6 +4,7 @@ class profile::base (
   include stdlib
   include ::consul_template
   include epel
+  include selinux
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_powertools':
@@ -41,11 +42,6 @@ class profile::base (
 
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
     ensure => absent
-  }
-
-  class { 'selinux':
-    mode => 'enforcing',
-    type => 'targeted',
   }
 
   class { '::swap_file':
