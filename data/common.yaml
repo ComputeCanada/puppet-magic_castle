@@ -66,8 +66,8 @@ jupyterhub::jupyterhub_config_hash:
       choices: ['notebook', 'lab', 'terminal', 'code-server', 'desktop']
       def: 'lab'
 
-selinux::mode: 'enforcing'
-selinux::type: 'targeted'
+selinux::mode: 'permissive'
+# selinux::type: 'targeted'
 
 squid::cache_mem: "256 MB"
 squid::extra_config_sections:
