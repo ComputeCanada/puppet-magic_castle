@@ -390,7 +390,7 @@ class profile::slurm::controller (
     mode    => '0600',
     content => @("EOT")
 export TF_CLOUD_TOKEN=${tf_cloud_token}
-export TF_WORKSPACE=${tf_cloud_workspace}
+export TF_CLOUD_WORKSPACE=${tf_cloud_workspace}
 export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 |EOT
   }
