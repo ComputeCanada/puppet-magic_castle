@@ -377,7 +377,7 @@ class profile::slurm::controller (
   }
 
   exec { 'elastic_slurm_tf_cloud_install':
-    command => 'pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.1.tar.gz',
+    command => 'pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.2.tar.gz',
     require => [
       Exec['elastic_slurm_env'], Exec['elastic_slurm_env_upgrade_pip']
     ],
