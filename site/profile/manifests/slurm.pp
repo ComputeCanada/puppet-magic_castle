@@ -358,7 +358,7 @@ class profile::slurm::controller (
     mode   => '0755',
   }
 
-  ensure_package(['python3'], { ensure => 'present' })
+  ensure_packages(['python3'], { ensure => 'present' })
 
   exec { 'elastic_slurm_env':
     command => 'python3 -m venv /opt/software/slurm/elastic_env',
