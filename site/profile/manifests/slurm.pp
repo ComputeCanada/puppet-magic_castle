@@ -11,6 +11,8 @@ class profile::slurm::base (
   String $munge_key,
   Enum['19.05', '20.11', '21.08'] $slurm_version,
   Integer $os_reserved_memory,
+  Integer $suspend_time = 3600,
+  Integer $resume_timeout = 3600,
   Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
 )
@@ -192,6 +194,8 @@ END
         'enable_x11_forwarding' => $enable_x11_forwarding,
         'nb_nodes'              => length($instances),
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
+        'resume_timeout'        => $resume_timeout,
+        'suspend_time'          => $suspend_time,
       }),
     group   => 'slurm',
     owner   => 'slurm',
