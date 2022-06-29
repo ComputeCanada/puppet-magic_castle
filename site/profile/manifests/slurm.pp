@@ -365,20 +365,23 @@ class profile::slurm::controller (
     creates => '/opt/software/slurm/elastic_env/bin/activate',
     require => [
       Package['python3'], Package['slurm']
-    ]
+    ],
+    path    => ['/usr/bin'],
   }
 
   exec { 'elastic_slurm_env_upgrade_pip':
-    command     => '/opt/software/slurm/elastic_env/pip install --upgrade pip',
+    command     => 'pip install --upgrade pip',
     subscribe   => Exec['elastic_slurm_env'],
     refreshonly => true,
+    path        => ['/opt/software/slurm/elastic_env/bin'],
   }
 
   exec { 'elastic_slurm_tf_cloud_install':
-    command => '/opt/software/slurm/elastic_env/pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.1.tar.gz',
+    command => 'pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.1.tar.gz',
     require => [
       Exec['elastic_slurm_env'], Exec['elastic_slurm_env_upgrade_pip']
-    ]
+    ],
+    path    => ['/opt/software/slurm/elastic_env/bin']
   }
 
   file { '/etc/slurm/env.secrets':
