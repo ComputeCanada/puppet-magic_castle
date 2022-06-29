@@ -181,6 +181,7 @@ END
   }
 
   $instances = lookup('terraform.instances')
+  $suspend_exc_nodes = keys($instances.filter|$key, $attr|{ 'node' in $attr['tags'] and !('draft' in $attr['tags']) })
   file { 'slurm.conf.tpl':
     ensure  => 'present',
     path    => '/etc/slurm/slurm.conf.tpl',
@@ -190,6 +191,7 @@ END
         'slurm_version'         => $slurm_version,
         'enable_x11_forwarding' => $enable_x11_forwarding,
         'nb_nodes'              => length($instances),
+        'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
       }),
     group   => 'slurm',
     owner   => 'slurm',

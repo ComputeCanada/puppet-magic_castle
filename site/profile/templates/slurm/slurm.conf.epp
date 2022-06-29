@@ -22,11 +22,12 @@ include /etc/slurm/draft.conf
 
 TreeWidth=<%= $nb_nodes %>
 ResumeProgram=/usr/bin/slurm_resume
-SuspendProgram=/usr/bin/slurm_resume
+SuspendProgram=/usr/bin/slurm_cancel
 ResumeTimeout=1800
 SuspendTime=3600
 SuspendRate=1
 ResumeRate=12
+SuspendExcNodes=<%= $suspend_exc_nodes %>
 
 SchedulerParameters=salloc_wait_nodes
 SlurmctldParameters=idle_on_node_suspend,cloud_dns
