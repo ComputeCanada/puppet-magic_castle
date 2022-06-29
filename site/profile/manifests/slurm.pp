@@ -236,16 +236,6 @@ NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['s
     seltype => 'etc_t',
   }
 
-  file { '/usr/bin/slurm_resume':
-    ensure  => 'present',
-    mode    => '0755',
-    seltype => 'bin_t',
-    content => @(EOT/L)
-#!/bin/bash
-echo $@ >> /tmp/slurm_resume.txt
-|EOT
-  }
-
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -353,6 +343,9 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller (
   String $selinux_context = 'user_u:user_r:user_t:s0',
+  String $tf_cloud_token = '',
+  String $tf_cloud_workspace = '',
+  String $tf_cloud_var_name = '',
 ) {
   contain profile::slurm::base
   include profile::mail::server
@@ -362,6 +355,63 @@ class profile::slurm::controller (
     source => 'puppet:///modules/profile/slurm/slurm_mail',
     mode   => '0755',
   }
+
+  ensure_package(['python3'], { ensure => 'present' })
+
+  exec { 'elastic_slurm_env':
+    command => 'python3 -m venv /opt/software/slurm/elastic_env',
+    creates => '/opt/software/slurm/elastic_env/bin/activate',
+    require => [
+      Package['python3'], Package['slurm']
+    ]
+  }
+
+  exec { 'elastic_slurm_env_upgrade_pip':
+    command     => '/opt/software/slurm/elastic_env/pip install --upgrade pip',
+    subscribe   => Exec['elastic_slurm_env'],
+    refreshonly => true,
+  }
+
+  exec { 'elastic_slurm_tf_cloud_install':
+    command => '/opt/software/slurm/elastic_env/pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.1.tar.gz',
+    require => [
+      Exec['elastic_slurm_env'], Exec['elastic_slurm_env_upgrade_pip']
+    ]
+  }
+
+  file { '/etc/slurm/env.secrets':
+    ensure  => 'present',
+    owner   => 'slurm',
+    mode    => '0600',
+    content => @("EOT")
+export TF_CLOUD_TOKEN=${tf_cloud_token}
+export TF_WORKSPACE=${tf_cloud_workspace}
+export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
+|EOT
+  }
+
+  file { '/usr/bin/slurm_resume':
+    ensure  => 'present',
+    mode    => '0755',
+    seltype => 'bin_t',
+    content => @(EOT/L)
+#!/bin/bash
+source /etc/slurm/env.secrets
+/opt/software/slurm/elastic_env/bin/slurm_resume $@
+|EOT
+  }
+
+  file { '/usr/bin/slurm_cancel':
+    ensure  => 'present',
+    mode    => '0755',
+    seltype => 'bin_t',
+    content => @(EOT/L)
+#!/bin/bash
+source /etc/slurm/env.secrets
+/opt/software/slurm/elastic_env/bin/slurm_cancel $@
+|EOT
+  }
+
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if $slurm_version == '21.08' {
