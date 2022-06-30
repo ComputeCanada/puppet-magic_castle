@@ -15,12 +15,6 @@ SelectTypeParameters=CR_Core_Memory
 GresTypes=gpu
 include /etc/slurm/draft.conf
 
-{{ /* if service "slurmd" - */}}
-# include /etc/slurm/node.conf
-{{ /* else */ }}
-# NodeName=node1 State=down
-{{/* end - */}}
-
 
 TreeWidth=<%= $nb_nodes %>
 ResumeProgram=/usr/bin/slurm_resume
