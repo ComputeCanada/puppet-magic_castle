@@ -411,14 +411,14 @@ source /etc/slurm/env.secrets
 |EOT
   }
 
-  file { '/usr/bin/slurm_cancel':
+  file { '/usr/bin/slurm_suspend':
     ensure  => 'present',
     mode    => '0755',
     seltype => 'bin_t',
     content => @(EOT/L)
 #!/bin/bash
 source /etc/slurm/env.secrets
-/opt/software/slurm/elastic_env/bin/slurm_cancel $@
+/opt/software/slurm/elastic_env/bin/slurm_suspend $@
 |EOT
   }
 
