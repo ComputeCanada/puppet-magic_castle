@@ -229,7 +229,7 @@ END
   $draft_template = @(EOT/L)
 <% $instances.each |$name, $attr| { -%>
 <% if 'node' in $attr['tags'] and 'draft' in $attr['tags']  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %>  State=CLOUD
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %>  MemSpecLimit=<%= $memlimit %> State=CLOUD
 <% } -%>
 <% } -%>
 |EOT
@@ -238,14 +238,14 @@ NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['s
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => inline_epp($draft_template, { 'instances' => $instances }),
+    content => inline_epp($draft_template, { 'instances' => $instances, 'memlimit' => $os_reserved_memory }),
     seltype => 'etc_t',
   }
 
   $node_template = @(EOT/L)
 <% $instances.each |$name, $attr| { -%>
 <% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> MemSpecLimit=<%= $memlimit %>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> MemSpecLimit=<%= $memlimit %> State=CLOUD
 <% } -%>
 <% } -%>
 |EOT
