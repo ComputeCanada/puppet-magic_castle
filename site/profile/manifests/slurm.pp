@@ -406,8 +406,10 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
     seltype => 'bin_t',
     content => @(EOT/L)
 #!/bin/bash
-source /etc/slurm/env.secrets
-/opt/software/slurm/elastic_env/bin/slurm_resume $@
+{
+  source /etc/slurm/env.secrets
+  /opt/software/slurm/elastic_env/bin/slurm_resume $@
+} &> /var/log/slurm/slurm_resume.log
 |EOT
   }
 
@@ -417,8 +419,10 @@ source /etc/slurm/env.secrets
     seltype => 'bin_t',
     content => @(EOT/L)
 #!/bin/bash
-source /etc/slurm/env.secrets
-/opt/software/slurm/elastic_env/bin/slurm_suspend $@
+{
+  source /etc/slurm/env.secrets
+  /opt/software/slurm/elastic_env/bin/slurm_suspend $@
+} &> /var/log/slurm/slurm_suspend.log
 |EOT
   }
 
