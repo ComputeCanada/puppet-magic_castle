@@ -14,6 +14,7 @@ SelectTypeParameters=CR_Core_Memory
 # NODE CONFIGURATIONS
 GresTypes=gpu
 include /etc/slurm/draft.conf
+include /etc/slurm/node.conf
 
 
 TreeWidth=<%= $nb_nodes %>
