@@ -228,7 +228,7 @@ END
 
   $draft_template = @(EOT/L)
 <% $instances.each |$name, $attr| { -%>
-<% if $attr['id'] == "" and 'node' in $attr['tags'] { -%>
+<% if 'node' in $attr['tags'] and 'draft' in $attr['tags']  { -%>
 NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %>  State=CLOUD
 <% } -%>
 <% } -%>
