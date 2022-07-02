@@ -215,7 +215,7 @@ END
       Service['consul-template']
     ],
     refreshonly       => true,
-    # subscribe         => File['/etc/slurm/node.conf.tpl'],
+    subscribe         => File['/etc/slurm/slurm.conf.tpl'],
   }
 
   # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
@@ -610,7 +610,8 @@ class profile::slurm::node {
       perms       => '0644',
       source      => '/etc/slurm/slurm.conf.tpl',
       destination => '/etc/slurm/slurm.conf',
-      command     => 'systemctl restart slurmd',
+      # command     => 'systemctl restart slurmd',
+      command     => '/bin/true',
     }
   }
   # consul_template::watch { 'node.conf':
