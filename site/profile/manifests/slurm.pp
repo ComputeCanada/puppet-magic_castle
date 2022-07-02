@@ -196,6 +196,8 @@ END
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,
         'suspend_time'          => $suspend_time,
+        'instances'             => $instances,
+        'memlimit'              => $os_reserved_memory,
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -241,23 +243,6 @@ NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['s
     content => inline_epp($draft_template, { 'instances' => $instances, 'memlimit' => $os_reserved_memory }),
     seltype => 'etc_t',
   }
-
-  $node_template = @(EOT/L)
-<% $instances.each |$name, $attr| { -%>
-<% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> MemSpecLimit=<%= $memlimit %> State=CLOUD
-<% } -%>
-<% } -%>
-|EOT
-
-  file { '/etc/slurm/node.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => inline_epp($node_template, { 'instances' => $instances, 'memlimit' => $os_reserved_memory }),
-    seltype => 'etc_t',
-  }
-
 
 }
 

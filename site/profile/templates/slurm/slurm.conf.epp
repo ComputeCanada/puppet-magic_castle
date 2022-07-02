@@ -16,7 +16,6 @@ GresTypes=gpu
 include /etc/slurm/draft.conf
 include /etc/slurm/node.conf
 
-
 TreeWidth=<%= $nb_nodes %>
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
@@ -24,7 +23,9 @@ ResumeTimeout=<%= $resume_timeout %>
 SuspendTime=<%= $suspend_time %>
 SuspendRate=1
 ResumeRate=12
+<% if $suspend_exc_nodes != '' { -%>
 SuspendExcNodes=<%= $suspend_exc_nodes %>
+<% } -%>
 
 SchedulerParameters=salloc_wait_nodes
 SlurmctldParameters=idle_on_node_suspend,cloud_dns
@@ -33,6 +34,12 @@ CommunicationParameters=NoAddrCache
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
+
+<% $instances.each |$name, $attr| { -%>
+<% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> MemSpecLimit=<%= $memlimit %> State=CLOUD
+<% } -%>
+<% } -%>
 
 SlurmctldPort=6817
 SlurmdPort=6818
