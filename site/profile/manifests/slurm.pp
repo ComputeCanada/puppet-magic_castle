@@ -296,7 +296,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
                 Yumrepo['slurm-copr-repo']],
   }
 
-  service { 'slurmdbd':
+  service { 'slurmdbd':
     ensure  => running,
     enable  => true,
     require => [Package['slurm-slurmdbd'],
