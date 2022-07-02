@@ -660,7 +660,7 @@ AutoDetect=nvml
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
-      File['/etc/slurm/node.conf'],
+      File['/etc/slurm/slurm.conf'],
     ],
     require   => [
       Package['slurm-slurmd'],
