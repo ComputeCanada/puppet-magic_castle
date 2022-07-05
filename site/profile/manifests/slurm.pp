@@ -103,15 +103,6 @@ class profile::slurm::base (
     mode   => '0755'
   }
 
-  file { '/etc/slurm/node.conf.tpl':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => "{{ service \"slurmd\" | toJSON | plugin \"/usr/local/bin/consul2slurm\" }}\n",
-    seltype => 'etc_t',
-    notify  => Service['consul-template'],
-  }
-
   $slurm_path = @(END)
 <% if ! $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
   export SLURM_HOME=/opt/software/slurm
@@ -184,9 +175,8 @@ END
 
   $instances = lookup('terraform.instances')
   $suspend_exc_nodes = keys($instances.filter|$key, $attr|{ 'node' in $attr['tags'] and !('draft' in $attr['tags']) })
-  file { 'slurm.conf.tpl':
+  file { '/etc/slurm/slurm.conf':
     ensure  => 'present',
-    path    => '/etc/slurm/slurm.conf.tpl',
     content => epp('profile/slurm/slurm.conf',
       {
         'cluster_name'          => $cluster_name,
@@ -196,18 +186,22 @@ END
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,
         'suspend_time'          => $suspend_time,
-        'instances'             => $instances,
         'memlimit'              => $os_reserved_memory,
       }),
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
     require => File['/etc/slurm'],
-    notify  => Service['consul-template'],
+  }
+
+  file { '/etc/slurm/slurm-consul.tpl':
+    ensure => 'present',
+    source => 'puppet:///modules/profile/slurm/slurm-consul.tpl',
+    notify => Service['consul-template'],
   }
 
   wait_for { 'slurmctldhost_set':
-    query             => 'cat /etc/slurm/slurm.conf',
+    query             => 'cat /etc/slurm/slurm-consul.conf',
     regex             => '^SlurmctldHost=',
     polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
     max_retries       => 30,
@@ -215,7 +209,7 @@ END
       Service['consul-template']
     ],
     refreshonly       => true,
-    subscribe         => File['/etc/slurm/slurm.conf.tpl'],
+    subscribe         => File['/etc/slurm/slurm-consul.tpl'],
   }
 
   # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
@@ -228,21 +222,17 @@ END
     source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
   }
 
-  $draft_template = @(EOT/L)
-# Draft compute nodes
-<% $instances.each |$name, $attr| { -%>
-<% if 'node' in $attr['tags'] and 'draft' in $attr['tags']  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %>  MemSpecLimit=<%= $memlimit %> State=CLOUD
-<% } -%>
-<% } -%>
-|EOT
-
-  file { '/etc/slurm/draft.conf':
+  file {'/etc/slurm/nodes.conf':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => inline_epp($draft_template, { 'instances' => $instances, 'memlimit' => $os_reserved_memory }),
     seltype => 'etc_t',
+    content => epp('profile/slurm/nodes.conf',
+      {
+        'instances' => $instances,
+        'memlimit'  => $os_reserved_memory,
+        'weights'   => slurm_compute_weights($instances),
+      }),
   }
 
 }
@@ -299,9 +289,11 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   service { 'slurmdbd':
     ensure  => running,
     enable  => true,
-    require => [Package['slurm-slurmdbd'],
-                File['/etc/slurm/slurmdbd.conf'],
-                Mysql::Db['slurm_acct_db']],
+    require => [
+      Package['slurm-slurmdbd'],
+      File['/etc/slurm/slurmdbd.conf'],
+      Mysql::Db['slurm_acct_db']
+    ],
     before  => Service['slurmctld']
   }
 
@@ -448,6 +440,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
     port    => 6817,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
+    before  => Wait_for['slurmctldhost_set'],
   }
 
   package { 'slurm-slurmctld':
@@ -455,32 +448,26 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
     require => Package['munge']
   }
 
-  consul_template::watch { 'slurm.conf':
-    require     => File['/etc/slurm/slurm.conf.tpl'],
+  consul_template::watch { 'slurm-consul.conf':
+    require     => File['/etc/slurm/slurm-consul.tpl'],
     config_hash => {
       perms       => '0644',
-      source      => '/etc/slurm/slurm.conf.tpl',
-      destination => '/etc/slurm/slurm.conf',
-      command     => 'systemctl restart slurmctld || true',
+      source      => '/etc/slurm/slurm-consul.tpl',
+      destination => '/etc/slurm/slurm-consul.conf',
+      command     => 'systemctl is-active slurmctld && systemctl restart slurmctld || true',
     }
   }
 
-  # consul_template::watch { 'node.conf':
-  #   # require     => File['/etc/slurm/node.conf.tpl'],
-  #   config_hash => {
-  #     perms       => '0644',
-  #     source      => '/etc/slurm/node.conf.tpl',
-  #     destination => '/etc/slurm/node.conf',
-  #     command     => 'systemctl restart slurmctld || true',
-  #   }
-  # }
-
   service { 'slurmctld':
-    ensure  => 'running',
-    enable  => true,
-    require => [
+    ensure    => 'running',
+    enable    => true,
+    require   => [
       Package['slurm-slurmctld'],
       Wait_for['slurmctldhost_set'],
+    ],
+    subscribe => [
+      File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/nodes.conf'],
     ]
   }
 
@@ -537,20 +524,6 @@ class profile::slurm::node {
       |EOT
   }
 
-  # $real_memory = $facts['memory']['system']['total_bytes'] / (1024 * 1024)
-  # $os_reserved_memory = lookup('profile::slurm::base::os_reserved_memory')
-  # consul::service { 'slurmd':
-  #   port    => 6818,
-  #   require => Tcp_conn_validator['consul'],
-  #   token   => lookup('profile::consul::acl_api_token'),
-  #   meta    => {
-  #     cpus         => String($facts['processors']['count']),
-  #     realmemory   => String($real_memory),
-  #     gpus         => String($facts['nvidia_gpu_count']),
-  #     memspeclimit => String($os_reserved_memory),
-  #   },
-  # }
-
   pam { 'Add pam_slurm_adopt':
     ensure   => present,
     service  => 'sshd',
@@ -604,25 +577,15 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
-  consul_template::watch { 'slurm.conf':
-    require     => File['/etc/slurm/slurm.conf.tpl'],
+  consul_template::watch { 'slurm-consul.conf':
+    require     => File['/etc/slurm/slurm-consul.tpl'],
     config_hash => {
       perms       => '0644',
-      source      => '/etc/slurm/slurm.conf.tpl',
-      destination => '/etc/slurm/slurm.conf',
-      # command     => 'systemctl restart slurmd',
-      command     => '/bin/true',
+      source      => '/etc/slurm/slurm-consul.tpl',
+      destination => '/etc/slurm/slurm-consul.conf',
+      command     => 'systemctl is-active slurmd && systemctl restart slurmd || true',
     }
   }
-  # consul_template::watch { 'node.conf':
-  #   require     => File['/etc/slurm/node.conf.tpl'],
-  #   config_hash => {
-  #     perms       => '0644',
-  #     source      => '/etc/slurm/node.conf.tpl',
-  #     destination => '/etc/slurm/node.conf',
-  #     command     => 'systemctl restart slurmd',
-  #   }
-  # }
 
   $gres_template = @(EOT/L)
 ###########################################################
@@ -643,29 +606,18 @@ AutoDetect=nvml
     seltype => 'etc_t'
   }
 
-  # wait_for { 'nodeconfig_set':
-  #   query             => 'cat /etc/slurm/node.conf',
-  #   regex             => "^NodeName=${::facts['hostname']}",
-  #   polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
-  #   max_retries       => 30,
-  #   require           => [
-  #     Service['consul-template']
-  #   ],
-  #   refreshonly       => true,
-  #   subscribe         => Package['slurm-slurmd']
-  # }
-
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
-      File['/etc/slurm/slurm.conf.tpl'],
+      File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/nodes.conf'],
+      File['/etc/slurm/gres.conf'],
     ],
     require   => [
       Package['slurm-slurmd'],
-      # Wait_for['nodeconfig_set'],
       Wait_for['slurmctldhost_set'],
     ]
   }
@@ -708,22 +660,14 @@ AutoDetect=nvml
 class profile::slurm::submitter {
   contain profile::slurm::base
 
-  consul_template::watch { 'slurm.conf':
-    require     => File['/etc/slurm/slurm.conf.tpl'],
+  consul_template::watch { 'slurm-consul.conf':
+    require     => File['/etc/slurm/slurm-consul.tpl'],
     config_hash => {
       perms       => '0644',
-      source      => '/etc/slurm/slurm.conf.tpl',
-      destination => '/etc/slurm/slurm.conf',
+      source      => '/etc/slurm/slurm-consul.tpl',
+      destination => '/etc/slurm/slurm-consul.conf',
       command     => '/bin/true',
     },
   }
-  # consul_template::watch { 'node.conf':
-  #   require     => File['/etc/slurm/node.conf.tpl'],
-  #   config_hash => {
-  #     perms       => '0644',
-  #     source      => '/etc/slurm/node.conf.tpl',
-  #     destination => '/etc/slurm/node.conf',
-  #     command     => '/bin/true',
-  #   },
-  # }
+
 }

@@ -1,11 +1,11 @@
+include /etc/slurm/slurm-consul.conf
+include /etc/slurm/node.conf
+
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
 AuthType=auth/munge
 CryptoType=crypto/munge
 SlurmUser=slurm
-{{ range service "slurmctld" -}}
-SlurmctldHost={{ .Node }}({{ .Address }})
-{{ end -}}
 # SCHEDULER CONFIGURATIONS
 SchedulerType=sched/backfill
 SelectType=select/cons_tres
@@ -13,7 +13,6 @@ SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
 GresTypes=gpu
-include /etc/slurm/draft.conf
 
 TreeWidth=<%= $nb_nodes %>
 ResumeProgram=/usr/bin/slurm_resume
@@ -34,13 +33,6 @@ CommunicationParameters=NoAddrCache
 DisableRootJobs=YES
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
 
-<% $instances.each |$name, $attr| { -%>
-<% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> MemSpecLimit=<%= $memlimit %> State=CLOUD
-<% } -%>
-<% } -%>
-
-SlurmctldPort=6817
 SlurmdPort=6818
 
 SlurmctldDebug=debug
@@ -83,16 +75,3 @@ LaunchParameters=use_interactive_step,disable_send_gids
 <% if $slurm_version == '21.08' { -%>
 JobSubmitPlugins=lua
 <% } -%>
-
-## Accounting
-{{ range service "slurmdbd" -}}
-AccountingStorageHost={{ .Node }}
-{{ end -}}
-{{ if service "slurmdbd" -}}
-AccountingStorageType=accounting_storage/slurmdbd
-AccountingStorageTRES=gres/gpu,cpu,mem
-AccountingStorageEnforce=associations
-JobAcctGatherType=jobacct_gather/cgroup
-JobAcctGatherFrequency=task=30
-JobAcctGatherParams=NoOverMemoryKill,UsePSS
-{{ end -}}
