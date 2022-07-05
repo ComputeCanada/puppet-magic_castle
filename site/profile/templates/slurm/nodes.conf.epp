@@ -1,6 +1,7 @@
-# Always online computes nodes
+# Default value for all types of nodes
 NodeName=DEFAULT MemSpecLimit=<%= $memlimit %> State=CLOUD
 
+# Always online computes nodes
 <% $instances.each |$name, $attr| { -%>
 <% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
 NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> Weight=<%= $weights[$name] %>
