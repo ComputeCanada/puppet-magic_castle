@@ -1,5 +1,5 @@
 include /etc/slurm/slurm-consul.conf
-include /etc/slurm/node.conf
+include /etc/slurm/nodes.conf
 
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
