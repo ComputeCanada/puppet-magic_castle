@@ -1,5 +1,5 @@
 Puppet::Functions.create_function(:slurm_compute_weights) do
-    dispatch :compute_weights do
+    dispatch :slurm_compute_weights do
         param 'Hash', :instances
         return_type 'Hash'
     end
