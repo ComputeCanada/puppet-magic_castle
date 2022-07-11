@@ -4,13 +4,13 @@ NodeName=DEFAULT MemSpecLimit=<%= $memlimit %> State=CLOUD
 # Always online computes nodes
 <% $instances.each |$name, $attr| { -%>
 <% if 'node' in $attr['tags'] and !('draft' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> Weight=<%= $weights[$name] %>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
 
 # On-demand draft compute nodes
 <% $instances.each |$name, $attr| { -%>
 <% if 'node' in $attr['tags'] and 'draft' in $attr['tags']  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpu'] %> Weight=<%= $weights[$name] %>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
