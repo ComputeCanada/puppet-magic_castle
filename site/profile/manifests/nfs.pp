@@ -125,7 +125,7 @@ define profile::nfs::server::export_volume (
     }
   }.map |$key, $values| {
     $values
-  }
+  }.unique
 
   exec { "vgchange-${name}_vg":
     command => "vgchange -ay ${name}_vg",
