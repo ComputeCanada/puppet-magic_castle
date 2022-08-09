@@ -7,8 +7,8 @@ class profile::cvmfs::client(
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
-    name     => 'cvmfs-release-2-6.noarch',
-    source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-latest.noarch.rpm'
+    name     => 'cvmfs-release-3-2.noarch',
+    source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
   }
 
   if $::software_stack == 'eessi' {
