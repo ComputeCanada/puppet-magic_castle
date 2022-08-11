@@ -585,7 +585,7 @@ class profile::slurm::node {
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => epp('puppet:///modules/profile/slurm/gres.conf',
+    content => epp('profile/slurm/gres.conf',
       {
         'nvidia_gpu_count' => $facts['nvidia_gpu_count'],
         'node_name'        => $facts['networking']['hostname'],
