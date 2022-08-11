@@ -134,25 +134,19 @@ END
   }
 
   if $facts['nvidia_gpu_count'] > 0 {
-    yumrepo { 'slurm-copr-repo':
-      enabled             => true,
-      descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
-      baseurl             => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}-nvml/epel-\$releasever-\$basearch/",
-      skip_if_unavailable => true,
-      gpgcheck            => 1,
-      gpgkey              => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}-nvml/pubkey.gpg",
-      repo_gpgcheck       => 0,
-    }
+    $yumrepo_prefix = "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}-nvml/"
   } else {
-    yumrepo { 'slurm-copr-repo':
-      enabled             => true,
-      descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
-      baseurl             => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/epel-\$releasever-\$basearch/",
-      skip_if_unavailable => true,
-      gpgcheck            => 1,
-      gpgkey              => "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/pubkey.gpg",
-      repo_gpgcheck       => 0,
-    }
+    $yumrepo_prefix = "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/"
+  }
+
+  yumrepo { 'slurm-copr-repo':
+    enabled             => true,
+    descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
+    baseurl             => "${yumrepo_prefix}/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => "${yumrepo_prefix}/pubkey.gpg",
+    repo_gpgcheck       => 0,
   }
 
   package { 'slurm':
