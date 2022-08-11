@@ -1,6 +1,6 @@
 ###########################################################
 # Slurm's Generic Resource (GRES) configuration file
 ###########################################################
-<% range(0, $nvidia_gpu_count).each |$index| { -%>
+<% range(0, $nvidia_gpu_count - 1).each |$index| { -%>
 NodeName=<%= $node_name %> Name=gpu File=/dev/nvidia<%= $index %>
 <% } -%>
