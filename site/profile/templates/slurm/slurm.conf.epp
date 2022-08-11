@@ -56,22 +56,17 @@ Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
-<% if $slurm_version == '19.05' or  $slurm_version == '20.11' { -%>
-TaskPlugin=task/cgroup
-<% } elsif $slurm_version == '21.08' { -%>
+<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 TaskPlugin=task/affinity,task/cgroup
+<% } else { -%>
+TaskPlugin=task/cgroup
 <% } -%>
 PropagateResourceLimits=NONE
 MailProg=/usr/sbin/slurm_mail
 
 StateSaveLocation=/var/spool/slurm
-<% if $slurm_version == '19.05' { -%>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none bash"
-<% } elsif $slurm_version == '20.11' or $slurm_version == '21.08' { -%>
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step,disable_send_gids
-<% } -%>
-
-<% if $slurm_version == '21.08' { -%>
+<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 JobSubmitPlugins=lua
 <% } -%>

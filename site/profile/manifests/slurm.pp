@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['19.05', '20.11', '21.08'] $slurm_version,
+  Enum['20.11', '21.08'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
@@ -423,7 +423,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if $slurm_version == '21.08' {
+  if versioncmp($slurm_version, '21.08') >= 0 {
     file { '/etc/slurm/job_submit.lua':
       ensure  => 'present',
       owner   => 'slurm',
