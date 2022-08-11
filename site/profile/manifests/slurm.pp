@@ -581,22 +581,16 @@ class profile::slurm::node {
     }
   }
 
-  $gres_template = @(EOT/L)
-###########################################################
-# Slurm's Generic Resource (GRES) configuration file
-# Use NVML to gather GPU configuration information
-# Information about all other GRES gathered from slurm.conf
-###########################################################
-<% if $gpu_count > 0 { -%>
-AutoDetect=nvml
-<% } -%>
-|EOT
-
   file { '/etc/slurm/gres.conf':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => inline_epp($gres_template, { 'gpu_count' => $facts['nvidia_gpu_count'] }),
+    content => epp('puppet:///modules/profile/slurm/gres.conf',
+      {
+        'nvidia_gpu_count' => $facts['nvidia_gpu_count'],
+        'node_name'        => $facts['networking']['hostname'],
+      }
+    ),
     seltype => 'etc_t'
   }
 
