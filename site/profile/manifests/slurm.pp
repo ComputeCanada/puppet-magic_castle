@@ -229,6 +229,18 @@ END
       }),
   }
 
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/gres.conf',
+      {
+        'instances' => $instances,
+      }
+    ),
+    seltype => 'etc_t'
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -461,6 +473,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
     ],
     subscribe => [
       File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/gres.conf'],
       File['/etc/slurm/nodes.conf'],
     ]
   }
@@ -579,19 +592,6 @@ class profile::slurm::node {
       destination => '/etc/slurm/slurm-consul.conf',
       command     => 'systemctl is-active slurmd && systemctl restart slurmd || true',
     }
-  }
-
-  file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => epp('profile/slurm/gres.conf',
-      {
-        'nvidia_gpu_count' => $facts['nvidia_gpu_count'],
-        'node_name'        => $facts['networking']['hostname'],
-      }
-    ),
-    seltype => 'etc_t'
   }
 
   service { 'slurmd':

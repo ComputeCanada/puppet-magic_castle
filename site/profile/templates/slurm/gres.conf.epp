@@ -2,6 +2,7 @@
 # Slurm's Generic Resource (GRES) configuration file
 ###########################################################
 AutoDetect=off
-<% if $nvidia_gpu_count > 0 { range(0, $nvidia_gpu_count - 1).each |$index| { -%>
-Name=gpu File=/dev/nvidia<%= $index %>
+<% $instances.each |$name, $attr| { -%>
+<% if $attr['specs']['gpus'] > 0 { -%>
+NodeName=<%= $name %> Name=gpu File=/dev/nvidia[0-<%= $attr['specs']['gpus'] %>]
 <% }} -%>
