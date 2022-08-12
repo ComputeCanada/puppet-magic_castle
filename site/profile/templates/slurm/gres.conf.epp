@@ -3,6 +3,8 @@
 ###########################################################
 AutoDetect=off
 <% $instances.each |$name, $attr| { -%>
-<% if $attr['specs']['gpus'] > 0 { -%>
+<% if $attr['specs']['gpus'] > 1 { -%>
 NodeName=<%= $name %> Name=gpu File=/dev/nvidia[0-<%= $attr['specs']['gpus'] - 1 %>]
+<% } elsif $attr['specs']['gpus'] == 1 { -%>
+NodeName=<%= $name %> Name=gpu File=/dev/nvidia0
 <% }} -%>
