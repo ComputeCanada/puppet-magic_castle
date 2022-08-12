@@ -4,5 +4,5 @@
 AutoDetect=off
 <% $instances.each |$name, $attr| { -%>
 <% if $attr['specs']['gpus'] > 0 { -%>
-NodeName=<%= $name %> Name=gpu File=/dev/nvidia[0-<%= $attr['specs']['gpus'] %>]
+NodeName=<%= $name %> Name=gpu File=/dev/nvidia[0-<%= $attr['specs']['gpus'] - 1 %>]
 <% }} -%>
