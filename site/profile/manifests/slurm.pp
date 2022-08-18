@@ -493,6 +493,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 class profile::slurm::node {
   contain profile::slurm::base
 
+  $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
     $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-22.05/'
   } else {
