@@ -493,13 +493,19 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 class profile::slurm::node {
   contain profile::slurm::base
 
+  if versioncmp($slurm_version, '22.05') >= 0 {
+    $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-22.05/'
+  } else {
+    $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/'
+  }
+
   yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
     enabled             => true,
     descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
-    baseurl             => "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/epel-\$releasever-\$basearch/",
+    baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
     skip_if_unavailable => true,
     gpgcheck            => 1,
-    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/pubkey.gpg',
+    gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
     repo_gpgcheck       => 0,
   }
 
