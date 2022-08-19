@@ -300,7 +300,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
   wait_for { 'slurmdbd_started':
     query             => 'cat /var/log/slurm/slurmdbd.log',
-    regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+ started$',
+    regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+(-\d+){0,1} started$',
     polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
     max_retries       => 24,
     refreshonly       => true,
