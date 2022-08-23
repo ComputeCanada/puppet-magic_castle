@@ -14,6 +14,11 @@ class profile::base (
     }
   }
 
+  $instances = lookup('terraform.instances')
+  $nodes = $instances.filter |$keys, $values| { 'node' in $values['tags'] }
+  $host_to_add = Hash($nodes.map |$k, $v| { [$k, { 'ip' => $v['local_ip'] }] })
+  ensure_resources('host', $host_to_add)
+
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
       ensure => 'installed'
