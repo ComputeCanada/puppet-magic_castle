@@ -602,13 +602,27 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  file { '/opt/software/slurm/bin/cond_restart_slurmd':
+    require => Package['slurm'],
+    mode    => '0755',
+    content => @("EOT"),
+#!/bin/bash
+{
+  /usr/bin/systemctl -q is-active slurmd && /usr/bin/systemctl restart slurmd || /usr/bin/true
+} &> /var/log/slurm/cond_restart_slurmd.log
+|EOT
+  }
+
   consul_template::watch { 'slurm-consul.conf':
-    require     => File['/etc/slurm/slurm-consul.tpl'],
+    require     => [
+      File['/etc/slurm/slurm-consul.tpl'],
+      File['/opt/software/slurm/bin/cond_restart_slurmd'],
+    ],
     config_hash => {
       perms       => '0644',
       source      => '/etc/slurm/slurm-consul.tpl',
       destination => '/etc/slurm/slurm-consul.conf',
-      command     => 'systemctl is-active slurmd && systemctl restart slurmd || true',
+      command     => '/opt/software/slurm/bin/cond_restart_slurmd',
     }
   }
 
