@@ -451,13 +451,28 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
     require => Package['munge']
   }
 
+  file { '/opt/software/slurm/bin/cond_restart_slurmctld':
+    require => Package['slurm'],
+    mode    => '0755',
+    content => @("EOT"),
+#!/bin/bash
+{
+  /usr/bin/systemctl -q is-active slurmctld && /usr/bin/systemctl restart slurmctld || /usr/bin/true
+} &> /var/log/slurm/cond_restart_slurmctld.log
+|EOT
+  }
+
+
   consul_template::watch { 'slurm-consul.conf':
-    require     => File['/etc/slurm/slurm-consul.tpl'],
+    require     => [
+      File['/etc/slurm/slurm-consul.tpl'],
+      File['/opt/software/slurm/bin/cond_restart_slurmctld'],
+    ],
     config_hash => {
       perms       => '0644',
       source      => '/etc/slurm/slurm-consul.tpl',
       destination => '/etc/slurm/slurm-consul.conf',
-      command     => 'systemctl is-active slurmctld && systemctl restart slurmctld || true',
+      command     => '/opt/software/slurm/bin/cond_restart_slurmctld',
     }
   }
 
