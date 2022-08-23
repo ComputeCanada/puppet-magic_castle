@@ -464,8 +464,8 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 
   consul_template::watch { 'slurm-consul.conf':
     require     => [
-     File['/etc/slurm/slurm-consul.tpl'],
-     File['/opt/software/slurm/bin/cond_restart_slurmd'],
+      File['/etc/slurm/slurm-consul.tpl'],
+      File['/opt/software/slurm/bin/cond_restart_slurmd'],
     ],
     config_hash => {
       perms       => '0644',
