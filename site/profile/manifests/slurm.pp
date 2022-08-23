@@ -88,11 +88,13 @@ class profile::slurm::base (
     ),
   }
 
-  file { '/etc/slurm/cgroup_allowed_devices_file.conf':
-    ensure => 'present',
-    owner  => 'slurm',
-    group  => 'slurm',
-    source => 'puppet:///modules/profile/slurm/cgroup_allowed_devices_file.conf'
+  if versioncmp($slurm_version, '22.05') < 0 {
+    file { '/etc/slurm/cgroup_allowed_devices_file.conf':
+      ensure => 'present',
+      owner  => 'slurm',
+      group  => 'slurm',
+      source => 'puppet:///modules/profile/slurm/cgroup_allowed_devices_file.conf'
+    }
   }
 
   file { '/etc/slurm/epilog':
