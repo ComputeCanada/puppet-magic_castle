@@ -141,27 +141,6 @@ class profile::freeipa::client(String $server_ip)
     notify    => Service['systemd-logind'],
   }
 
-  # $reverse_zone = profile::getreversezone()
-  # $ptr_record = profile::getptrrecord()
-
-  # exec { 'ipa_dnsrecord-del_ptr':
-  #   command     => "kinit_wrapper ipa dnsrecord-del ${reverse_zone} ${ptr_record} --del-all",
-  #   onlyif      => "test `dig -x ${ipaddress} | grep -oP '^.*\\s[0-9]*\\sIN\\sPTR\\s\\K(.*)'` != ${fqdn}.",
-  #   require     => [File['kinit_wrapper'], Exec['ipa-install']],
-  #   environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-  #   path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
-  # }
-
-  # exec { 'ipa_dnsrecord-add_ptr':
-  #   command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-hostname=${fqdn}.",
-  #   unless      => "dig -x ${ipaddress} | grep -q ';; ANSWER SECTION:'",
-  #   require     => [File['kinit_wrapper'], Exec['ipa-install'], Exec['ipa_dnsrecord-del_ptr']],
-  #   environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-  #   path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  #   tries       => 5,
-  #   try_sleep   => 10,
-  # }
-
   # Configure default login selinux mapping
   exec { 'selinux_login_default':
     command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
