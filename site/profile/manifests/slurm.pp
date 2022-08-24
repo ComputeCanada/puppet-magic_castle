@@ -407,7 +407,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 {
   source /etc/slurm/env.secrets
   /opt/software/slurm/elastic_env/bin/slurm_resume $@
-} &> /var/log/slurm/slurm_resume.log
+} &>> /var/log/slurm/slurm_resume.log
 |EOT
   }
 
@@ -420,7 +420,7 @@ export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
 {
   source /etc/slurm/env.secrets
   /opt/software/slurm/elastic_env/bin/slurm_suspend $@
-} &> /var/log/slurm/slurm_suspend.log
+} &>> /var/log/slurm/slurm_suspend.log
 |EOT
   }
 
