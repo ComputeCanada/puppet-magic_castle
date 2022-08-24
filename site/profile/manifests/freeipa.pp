@@ -30,13 +30,6 @@ class profile::freeipa::base (
     enable => true
   }
 
-  file { 'kinit_wrapper':
-    ensure => present,
-    path   => '/usr/bin/kinit_wrapper',
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755'
-  }
-
   file { '/etc/rsyslog.d/ignore-systemd-session-slice.conf':
     ensure => present,
     source => 'puppet:///modules/profile/freeipa/ignore-systemd-session-slice.conf',
@@ -179,6 +172,13 @@ class profile::freeipa::client(String $server_ip)
 class profile::freeipa::server
 {
   include profile::freeipa::base
+
+  file { 'kinit_wrapper':
+    ensure => present,
+    path   => '/usr/bin/kinit_wrapper',
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755'
+  }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
