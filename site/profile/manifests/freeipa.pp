@@ -146,11 +146,26 @@ class profile::freeipa::client(String $server_ip)
   # The installation is only done if the certificate on the ipa-server no
   # longer corresponds to the one currently installed on the client. When this
   # happens, curl returns a code 35.
-  exec { 'ipa-client-uninstall':
-    command => '/sbin/ipa-client-install -U --uninstall',
+  $uninstall_cmd = '/sbin/ipa-client-install -U --uninstall'
+  exec { 'ipa-client-uninstall_bad-server':
+    command => $uninstall_cmd,
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    onlyif  => ['test -f /etc/ipa/default.conf',
-                'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
+    onlyif  => [
+      'test -f /etc/ipa/default.conf',
+      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35'
+    ],
+    before  => Exec['ipa-install'],
+  }
+  # If the ipa-client is already installed in the image, it has potentially the wrong hostname.
+  # In this case, the ipa-client needs to be reinstalled.
+  exec { 'ipa-client-uninstall_bad-hostname':
+    command => $uninstall_cmd,
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    onlyif  => [
+      'test -f /etc/ipa/default.conf',
+      "grep -q 'host = ${fqdn}' /etc/ipa/default.conf",
+    ],
+    before  => Exec['ipa-install'],
   }
 
   # If selinux_provider is ipa, each time a new
