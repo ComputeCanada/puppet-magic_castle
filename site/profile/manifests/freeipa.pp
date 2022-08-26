@@ -81,7 +81,11 @@ class profile::freeipa::client(String $server_ip)
     polling_frequency => 10,
     max_retries       => 60,
     refreshonly       => true,
-    subscribe         => [Package['ipa-client'], Exec['ipa-client-uninstall']]
+    subscribe         => [
+      Package['ipa-client'],
+      Exec['ipa-client-uninstall_bad-hostname'],
+      Exec['ipa-client-uninstall_bad-server']
+    ]
   }
 
   # Check if the FreeIPA HTTPD service is consistently available
