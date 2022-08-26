@@ -11,6 +11,21 @@ class profile::base (
     content => "Magic Castle release ${version}",
   }
 
+  file { '/usr/sbin/prepare4image.sh':
+    content => @(EOL),
+      #!/bin/bash -e
+      systemctl stop puppet
+      systemctl stop slurmd &> /dev/null || true
+      systemctl disable puppet
+      systemctl disable slurmd &> /dev/null || true
+      /sbin/ipa-client-install -U --uninstall
+      rm -rf /etc/puppetlabs
+      cloud-init clean --log
+      halt -p
+      |EOL
+    mode    => '0755',
+  }
+
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_powertools':
       command => 'dnf config-manager --set-enabled powertools',
