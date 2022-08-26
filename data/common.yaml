@@ -13,7 +13,7 @@ consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
 
-epel::epel_exclude: 'slurm*'
+epel::epel_exclude: 'slurm* singularity'
 
 fail2ban::config_file_template: "fail2ban/CentOS/%{facts.os.release.major}/etc/fail2ban/jail.conf.epp"
 fail2ban::package_name: fail2ban-server
