@@ -20,7 +20,7 @@ class profile::base (
       systemctl disable slurmd &> /dev/null || true
       /sbin/ipa-client-install -U --uninstall
       rm -rf /etc/puppetlabs
-      cloud-init clean --log
+      cloud-init clean --logs
       halt -p
       |EOL
     mode    => '0755',
