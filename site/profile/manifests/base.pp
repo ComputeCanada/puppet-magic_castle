@@ -1,10 +1,15 @@
 class profile::base (
+  String $version,
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
   include ::consul_template
   include epel
   include selinux
+
+  file { '/etc/magic-castle-release':
+    content => "Magic Castle release ${version}",
+  }
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_powertools':

@@ -75,6 +75,8 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
+profile::base::version: elastic
+
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 
