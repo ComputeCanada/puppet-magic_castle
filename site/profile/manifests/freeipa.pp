@@ -167,7 +167,7 @@ class profile::freeipa::client(String $server_ip)
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     onlyif  => [
       'test -f /etc/ipa/default.conf',
-      "grep -q 'host = ${fqdn}' /etc/ipa/default.conf",
+      "! grep -q 'host = ${fqdn}' /etc/ipa/default.conf",
     ],
     before  => Exec['ipa-install'],
   }
