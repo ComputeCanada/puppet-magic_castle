@@ -165,10 +165,8 @@ class profile::freeipa::client(String $server_ip)
   exec { 'ipa-client-uninstall_bad-hostname':
     command => $uninstall_cmd,
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    onlyif  => [
-      'test -f /etc/ipa/default.conf',
-      "! grep -q 'host = ${fqdn}' /etc/ipa/default.conf",
-    ],
+    onlyif  => ['test -f /etc/ipa/default.conf'],
+    unless  => ["grep -q 'host = ${fqdn}' /etc/ipa/default.conf"],
     before  => Exec['ipa-install'],
   }
 
