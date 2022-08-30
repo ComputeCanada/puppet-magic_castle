@@ -24,6 +24,8 @@ class profile::base (
       rm -rf /etc/puppetlabs
       grep nfs /etc/fstab | cut -f 2 | xargs umount
       sed -i '/nfs/d' /etc/fstab
+      systemctl stop syslog
+      : > /var/log/messages
       cloud-init clean --logs
       halt -p
       |EOL
