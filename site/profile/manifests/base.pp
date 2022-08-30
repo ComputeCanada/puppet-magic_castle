@@ -22,6 +22,8 @@ class profile::base (
       systemctl disable consul &> /dev/null || true
       /sbin/ipa-client-install -U --uninstall
       rm -rf /etc/puppetlabs
+      grep nfs /etc/fstab | cut -f 2 | xargs umount
+      sed -i '/nfs/d' /etc/fstab
       cloud-init clean --logs
       halt -p
       |EOL
