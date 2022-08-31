@@ -88,23 +88,11 @@ END
   }
 
   file { '/usr/bin/puppet_event_handler.sh':
-    ensure  => present,
-    mode    => '0755',
-    owner   => 'root',
-    group   => 'root',
-    content => @(END)
-#!/bin/bash
-INPUT=$(cat -)
-logger ${INPUT}
-
-# No event, dry run of handler
-if [[ "${INPUT}" == "[]" ]]; then
-  exit 0;
-fi
-
-while [ -f /opt/puppetlabs/puppet/cache/state/agent_catalog_run.lock ]; do sleep 30; done
-sudo systemctl reload puppet
-END
+    ensure => present,
+    mode   => '0755',
+    owner  => 'root',
+    group  => 'root',
+    source => 'puppet:///modules/profile/consul/puppet_event_handler.sh'
   }
 
   consul::watch { 'puppet_event':
