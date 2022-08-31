@@ -12,6 +12,10 @@ class profile::accounts (
   $with_project = 'project' in $nfs_devices
   $with_scratch = 'scratch' in $nfs_devices
 
+  package { 'rsync':
+    ensure => 'installed',
+  }
+
   file { '/sbin/mkhome.sh':
     ensure  => 'present',
     content => epp('profile/accounts/mkhome.sh', {
