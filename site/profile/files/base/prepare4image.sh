@@ -14,5 +14,11 @@ grep nfs /etc/fstab | cut -f 2 | xargs umount
 sed -i '/nfs/d' /etc/fstab
 systemctl stop syslog
 : > /var/log/messages
-cloud-init clean --logs
+if [ -f /etc/cloud/cloud-init.disabled ]; then
+  # This is for GCP where we install cloud-init on first boot
+  rm /etc/cloud/cloud-init.disabled
+else
+  cloud-init clean --logs
+fi
+
 halt -p
