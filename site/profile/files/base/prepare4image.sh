@@ -9,6 +9,7 @@ systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 /sbin/ipa-client-install -U --uninstall
 rm -rf /etc/puppetlabs
+rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
 grep nfs /etc/fstab | cut -f 2 | xargs umount
 sed -i '/nfs/d' /etc/fstab
 systemctl stop syslog
