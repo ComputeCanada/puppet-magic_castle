@@ -19,8 +19,8 @@ ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
 ResumeTimeout=<%= $resume_timeout %>
 SuspendTime=<%= $suspend_time %>
-SuspendRate=1
-ResumeRate=12
+SuspendRate=20
+ResumeRate=20
 <% if $suspend_exc_nodes != '' { -%>
 SuspendExcNodes=<%= $suspend_exc_nodes %>
 <% } -%>
