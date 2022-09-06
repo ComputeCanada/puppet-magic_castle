@@ -138,6 +138,14 @@ class profile::freeipa::client(String $server_ip)
     notify    => Service['systemd-logind'],
   }
 
+  file_line { 'ssh_known_hosts':
+    ensure    => present,
+    path      => '/etc/ssh/ssh_config.d/04-ipa.conf',
+    match     => '^GlobalKnownHostsFile',
+    line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
+    subscribe => Exec['ipa-install']
+  }
+
   # Configure default login selinux mapping
   exec { 'selinux_login_default':
     command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',

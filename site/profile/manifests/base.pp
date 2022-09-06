@@ -37,6 +37,10 @@ class profile::base (
   $host_to_add = Hash($nodes.map |$k, $v| { [$k, { 'ip' => $v['local_ip'] }] })
   ensure_resources('host', $host_to_add)
 
+  $type = 'ed25519'
+  $sshkey_to_add = Hash($nodes.map |$k, $v| { [$k, { 'key' => split($v['hostkeys'][$type], /\s/)[1], 'type' => "ssh-${type}" }] })
+  ensure_resources('sshkey', $sshkey_to_add)
+
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
       ensure => 'installed'
