@@ -17,8 +17,8 @@ systemctl stop syslog
 if [ -f /etc/cloud/cloud-init.disabled ]; then
   # This is for GCP where we install cloud-init on first boot
   rm /etc/cloud/cloud-init.disabled
-else
-  cloud-init clean --logs
+  yum install -y cloud-init
+  systemctl disable cloud-init
 fi
-
+cloud-init clean --logs
 halt -p
