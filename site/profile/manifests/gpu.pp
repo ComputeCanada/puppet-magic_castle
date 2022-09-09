@@ -64,14 +64,13 @@ class profile::gpu::install (
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash($lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
-      [join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory' }]
+      [join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory', 'notify' => Exec['nvidia-symlink'] }]
     })
-    $lib_symlink_dir_res = ensure_resources('file', $lib_symlink_dir)
+    ensure_resources('file', $lib_symlink_dir)
     exec { 'nvidia-symlink':
       command     => "rpm -qa *nvidia* | xargs rpm -ql | grep -P '/usr/lib64/[a-z0-9-.]*.so[0-9.]*' | xargs -I {} ln -sf {} ${lib_symlink_path}",
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
-      require     => $lib_symlink_dir_res,
     }
   }
 }
