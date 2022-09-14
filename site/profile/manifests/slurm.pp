@@ -165,7 +165,8 @@ END
   }
 
   $instances = lookup('terraform.instances')
-  $suspend_exc_nodes = keys($instances.filter|$key, $attr|{ 'node' in $attr['tags'] and !('draft' in $attr['tags']) })
+  $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
+  $suspend_exc_nodes = keys($nodes.filter|$key, $attr|{ !('draft' in $attr['tags']) })
   file { '/etc/slurm/slurm.conf':
     ensure  => 'present',
     content => epp('profile/slurm/slurm.conf',
@@ -173,7 +174,7 @@ END
         'cluster_name'          => $cluster_name,
         'slurm_version'         => $slurm_version,
         'enable_x11_forwarding' => $enable_x11_forwarding,
-        'nb_nodes'              => length($instances),
+        'nb_nodes'              => length($nodes),
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,
         'suspend_time'          => $suspend_time,
@@ -220,9 +221,9 @@ END
     seltype => 'etc_t',
     content => epp('profile/slurm/nodes.conf',
       {
-        'instances' => $instances,
-        'memlimit'  => $os_reserved_memory,
-        'weights'   => slurm_compute_weights($instances),
+        'nodes'    => $nodes,
+        'memlimit' => $os_reserved_memory,
+        'weights'  => slurm_compute_weights($nodes),
       }),
   }
 
@@ -232,7 +233,7 @@ END
     group   => 'slurm',
     content => epp('profile/slurm/gres.conf',
       {
-        'instances' => $instances,
+        'nodes' => $nodes,
       }
     ),
     seltype => 'etc_t'
