@@ -166,7 +166,7 @@ END
 
   $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
-  $suspend_exc_nodes = keys($nodes.filter|$key, $attr|{ !('draft' in $attr['tags']) })
+  $suspend_exc_nodes = keys($nodes.filter|$key, $attr|{ !('pool' in $attr['tags']) })
   file { '/etc/slurm/slurm.conf':
     ensure  => 'present',
     content => epp('profile/slurm/slurm.conf',
@@ -350,7 +350,7 @@ class profile::slurm::controller (
   String $selinux_context = 'user_u:user_r:user_t:s0',
   String $tf_cloud_token = '',
   String $tf_cloud_workspace = '',
-  String $tf_cloud_var_name = '',
+  String $tf_cloud_var_name = 'pool',
 ) {
   contain profile::slurm::base
   include profile::mail::server

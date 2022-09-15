@@ -3,14 +3,14 @@ NodeName=DEFAULT MemSpecLimit=<%= $memlimit %> State=CLOUD
 
 # Always online computes nodes
 <% $nodes.each |$name, $attr| { -%>
-<% if !('draft' in $attr['tags'])  { -%>
+<% if !('pool' in $attr['tags'])  { -%>
 NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
 
-# On-demand draft compute nodes
+# On-demand pool compute nodes
 <% $nodes.each |$name, $attr| { -%>
-<% if 'draft' in $attr['tags']  { -%>
+<% if 'pool' in $attr['tags']  { -%>
 NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
