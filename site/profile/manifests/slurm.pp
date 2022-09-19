@@ -348,9 +348,9 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller (
   String $selinux_context = 'user_u:user_r:user_t:s0',
-  String $tf_cloud_token = '',
-  String $tf_cloud_workspace = '',
-  String $tf_cloud_var_name = 'pool',
+  String $tfe_token = '',
+  String $tfe_workspace = '',
+  String $tfe_var_pool = 'pool',
 ) {
   contain profile::slurm::base
   include profile::mail::server
@@ -393,9 +393,9 @@ class profile::slurm::controller (
     owner   => 'slurm',
     mode    => '0600',
     content => @("EOT")
-export TF_CLOUD_TOKEN=${tf_cloud_token}
-export TF_CLOUD_WORKSPACE=${tf_cloud_workspace}
-export TF_CLOUD_VAR_NAME=${tf_cloud_var_name}
+export TFE_TOKEN=${tfe_token}
+export TFE_WORKSPACE=${tfe_workspace}
+export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
