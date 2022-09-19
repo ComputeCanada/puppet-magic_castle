@@ -379,7 +379,7 @@ class profile::slurm::controller (
     path        => ['/opt/software/slurm/autoscale_env/bin'],
   }
 
-  $autoscale_version = 'v0.2.0'
+  $autoscale_version = 'v0.2.1'
   exec { 'autoscale_slurm_tf_cloud_install':
     command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/${autoscale_version}.tar.gz",
     creates => '/opt/software/slurm/autoscale_env/lib/python3.6/site-packages/slurm_autoscale_tfe',
