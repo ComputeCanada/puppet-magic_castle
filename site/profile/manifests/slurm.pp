@@ -363,29 +363,29 @@ class profile::slurm::controller (
 
   ensure_packages(['python3'], { ensure => 'present' })
 
-  exec { 'elastic_slurm_env':
-    command => 'python3 -m venv /opt/software/slurm/elastic_env',
-    creates => '/opt/software/slurm/elastic_env/bin/activate',
+  exec { 'autoscale_slurm_env':
+    command => 'python3 -m venv /opt/software/slurm/autoscale_env',
+    creates => '/opt/software/slurm/autoscale_env/bin/activate',
     require => [
       Package['python3'], Package['slurm']
     ],
     path    => ['/usr/bin'],
   }
 
-  exec { 'elastic_slurm_env_upgrade_pip':
+  exec { 'autoscale_slurm_env_upgrade_pip':
     command     => 'pip install --upgrade pip',
-    subscribe   => Exec['elastic_slurm_env'],
+    subscribe   => Exec['autoscale_slurm_env'],
     refreshonly => true,
-    path        => ['/opt/software/slurm/elastic_env/bin'],
+    path        => ['/opt/software/slurm/autoscale_env/bin'],
   }
 
-  exec { 'elastic_slurm_tf_cloud_install':
-    command => 'pip install https://github.com/MagicCastle/elastic-slurm-tf-cloud/archive/refs/tags/v0.1.2.tar.gz',
-    creates => '/opt/software/slurm/elastic_env/lib/python3.6/site-packages/elastic_slurm_tf_cloud',
+  exec { 'autoscale_slurm_tf_cloud_install':
+    command => 'pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v0.1.2.tar.gz',
+    creates => '/opt/software/slurm/autoscale_env/lib/python3.6/site-packages/slurm_autoscale_tfe',
     require => [
-      Exec['elastic_slurm_env'], Exec['elastic_slurm_env_upgrade_pip']
+      Exec['autoscale_slurm_env'], Exec['autoscale_slurm_env_upgrade_pip']
     ],
-    path    => ['/opt/software/slurm/elastic_env/bin']
+    path    => ['/opt/software/slurm/autoscale_env/bin']
   }
 
   file { '/etc/slurm/env.secrets':
@@ -407,7 +407,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  /opt/software/slurm/elastic_env/bin/slurm_resume $@
+  /opt/software/slurm/autoscale_env/bin/slurm_resume $@
 } &>> /var/log/slurm/slurm_resume.log
 |EOT
   }
@@ -420,7 +420,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  /opt/software/slurm/elastic_env/bin/slurm_suspend $@
+  /opt/software/slurm/autoscale_env/bin/slurm_suspend $@
 } &>> /var/log/slurm/slurm_suspend.log
 |EOT
   }
