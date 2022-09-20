@@ -147,6 +147,7 @@ END
   }
 
   package { 'slurm':
+    name    => "slurm-${slurm_version}*",
     ensure  => 'installed',
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
