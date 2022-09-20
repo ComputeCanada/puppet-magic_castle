@@ -285,7 +285,9 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
     mode    => '0600',
   }
 
+  $slurm_version = lookup('profile::slurm::base::slurm_version')
   package { 'slurm-slurmdbd':
+    name    => "slurm-slurmdbd-${slurm_version}*",
     ensure  => present,
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
