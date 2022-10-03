@@ -63,10 +63,14 @@ class profile::gpu::install (
 
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
-    $lib_symlink_dir = Hash($lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
-      [join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory', 'notify' => Exec['nvidia-symlink'] }]
-    })
-    ensure_resources('file', $lib_symlink_dir)
+    $lib_symlink_dir = Hash(
+      $lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
+        [join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory', 'notify' => Exec['nvidia-symlink'] }]
+      }.filter |$array| {
+        !($array[0] in ['/lib', '/lib64', '/usr', '/usr/lib', '/usr/lib64', '/opt'])
+      }
+    )
+    $lib_symlink_dir_res = ensure_resources('file', $lib_symlink_dir)
     exec { 'nvidia-symlink':
       command     => "rpm -qa *nvidia* | xargs rpm -ql | grep -P '/usr/lib64/[a-z0-9-.]*.so[0-9.]*' | xargs -I {} ln -sf {} ${lib_symlink_path}",
       refreshonly => true,
@@ -99,7 +103,7 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
     notify  => Exec['nvidia-symlink'],
   }
 
-  -> file { '/var/run/nvidia-persistenced':
+  -> file { '/run/nvidia-persistenced':
     ensure => directory,
     owner  => 'nvidia-persistenced',
     group  => 'nvidia-persistenced',
@@ -113,6 +117,12 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
       'set Group/value nvidia-persistenced',
       'rm ExecStart/arguments',
     ],
+  }
+
+  file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
+    ensure  => 'present',
+    content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
+    mode    => '0644',
   }
 }
 

@@ -1,10 +1,26 @@
 class profile::base (
+  String $version,
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
   include ::consul_template
   include epel
   include selinux
+
+  file { '/etc/magic-castle-release':
+    content => "Magic Castle release ${version}",
+  }
+
+  # Ensure consul can read the state of agent_catalog_run.lock
+  file { '/opt/puppetlabs/puppet/cache':
+    ensure => directory,
+    mode   => '0751',
+  }
+
+  file { '/usr/sbin/prepare4image.sh':
+    source => 'puppet:///modules/profile/base/prepare4image.sh',
+    mode   => '0755',
+  }
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_powertools':
@@ -13,6 +29,15 @@ class profile::base (
       path    => ['/usr/bin']
     }
   }
+
+  $instances = lookup('terraform.instances')
+  $nodes = $instances.filter |$keys, $values| { 'node' in $values['tags'] }
+  $host_to_add = Hash($nodes.map |$k, $v| { [$k, { 'ip' => $v['local_ip'] }] })
+  ensure_resources('host', $host_to_add)
+
+  $type = 'ed25519'
+  $sshkey_to_add = Hash($nodes.map |$k, $v| { [$k, { 'key' => split($v['hostkeys'][$type], /\s/)[1], 'type' => "ssh-${type}" }] })
+  ensure_resources('sshkey', $sshkey_to_add)
 
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
@@ -169,14 +194,6 @@ class profile::base (
   # Remove scripts leftover by terraform remote-exec provisioner
   file { glob('/tmp/terraform_*.sh'):
     ensure => absent
-  }
-
-  $mc_plugins_version = '1.0.5'
-  package { 'magic_castle-plugins':
-    ensure   => 'latest',
-    name     => 'magic_castle-plugins',
-    provider => 'rpm',
-    source   => "https://github.com/computecanada/magic_castle-plugins/releases/download/v${mc_plugins_version}/magic_castle-plugins-${mc_plugins_version}-1.${::facts['os']['architecture']}.rpm",
   }
 }
 

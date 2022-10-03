@@ -84,7 +84,7 @@ profile::accounts:::skel_archives:
 | ------------------------------------- | :------ | :---------------------------------------------------------------------- | -------- |
 | `profile::slurm::base::cluster_name`  | String  | Name of the cluster                                                     |          |
 | `profile::slurm::base::munge_key`     | String  | Base64 encoded Munge key                                                |          |
-| `profile::slurm::base::slurm_version`  | Enum[19.05, 20.11, 21.08]  | Slurm version to install                            | 21.08    |
+| `profile::slurm::base::slurm_version`  | Enum[20.11, 21.08, 22.05]  | Slurm version to install                            | 21.08    |
 | `profile::slurm::base::os_reserved_memory`  | Integer  | Quantity of memory in MB reserved for the operating system on the compute nodes | 512 |
 | `profile::slurm::base::enable_x11_forwarding`  | Boolean  | Enable Slurm's built-in X11 forwarding capabilities           | `true`   |
 | `profile::slurm::accounting::password` | String  | Password used by for SlurmDBD to connect to MariaDB                    |          |

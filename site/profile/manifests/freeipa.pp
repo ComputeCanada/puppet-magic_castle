@@ -30,13 +30,6 @@ class profile::freeipa::base (
     enable => true
   }
 
-  file { 'kinit_wrapper':
-    ensure => present,
-    path   => '/usr/bin/kinit_wrapper',
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755'
-  }
-
   file { '/etc/rsyslog.d/ignore-systemd-session-slice.conf':
     ensure => present,
     source => 'puppet:///modules/profile/freeipa/ignore-systemd-session-slice.conf',
@@ -88,7 +81,11 @@ class profile::freeipa::client(String $server_ip)
     polling_frequency => 10,
     max_retries       => 60,
     refreshonly       => true,
-    subscribe         => [Package['ipa-client'], Exec['ipa-client-uninstall']]
+    subscribe         => [
+      Package['ipa-client'],
+      Exec['ipa-client-uninstall_bad-hostname'],
+      Exec['ipa-client-uninstall_bad-server']
+    ]
   }
 
   # Check if the FreeIPA HTTPD service is consistently available
@@ -141,25 +138,12 @@ class profile::freeipa::client(String $server_ip)
     notify    => Service['systemd-logind'],
   }
 
-  $reverse_zone = profile::getreversezone()
-  $ptr_record = profile::getptrrecord()
-
-  exec { 'ipa_dnsrecord-del_ptr':
-    command     => "kinit_wrapper ipa dnsrecord-del ${reverse_zone} ${ptr_record} --del-all",
-    onlyif      => "test `dig -x ${ipaddress} | grep -oP '^.*\\s[0-9]*\\sIN\\sPTR\\s\\K(.*)'` != ${fqdn}.",
-    require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
-  }
-
-  exec { 'ipa_dnsrecord-add_ptr':
-    command     => "kinit_wrapper ipa dnsrecord-add ${reverse_zone} ${ptr_record} --ptr-hostname=${fqdn}.",
-    unless      => "dig -x ${ipaddress} | grep -q ';; ANSWER SECTION:'",
-    require     => [File['kinit_wrapper'], Exec['ipa-install'], Exec['ipa_dnsrecord-del_ptr']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    tries       => 5,
-    try_sleep   => 10,
+  file_line { 'ssh_known_hosts':
+    ensure    => present,
+    path      => '/etc/ssh/ssh_config.d/04-ipa.conf',
+    match     => '^GlobalKnownHostsFile',
+    line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
+    subscribe => Exec['ipa-install']
   }
 
   # Configure default login selinux mapping
@@ -174,11 +158,24 @@ class profile::freeipa::client(String $server_ip)
   # The installation is only done if the certificate on the ipa-server no
   # longer corresponds to the one currently installed on the client. When this
   # happens, curl returns a code 35.
-  exec { 'ipa-client-uninstall':
-    command => '/sbin/ipa-client-install -U --uninstall',
+  $uninstall_cmd = '/sbin/ipa-client-install -U --uninstall'
+  exec { 'ipa-client-uninstall_bad-server':
+    command => $uninstall_cmd,
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    onlyif  => ['test -f /etc/ipa/default.conf',
-                'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35']
+    onlyif  => [
+      'test -f /etc/ipa/default.conf',
+      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35'
+    ],
+    before  => Exec['ipa-install'],
+  }
+  # If the ipa-client is already installed in the image, it has potentially the wrong hostname.
+  # In this case, the ipa-client needs to be reinstalled.
+  exec { 'ipa-client-uninstall_bad-hostname':
+    command => $uninstall_cmd,
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    onlyif  => ['test -f /etc/ipa/default.conf'],
+    unless  => ["grep -q 'host = ${fqdn}' /etc/ipa/default.conf"],
+    before  => Exec['ipa-install'],
   }
 
   # If selinux_provider is ipa, each time a new
@@ -200,6 +197,13 @@ class profile::freeipa::client(String $server_ip)
 class profile::freeipa::server
 {
   include profile::freeipa::base
+
+  file { 'kinit_wrapper':
+    ensure => present,
+    path   => '/usr/bin/kinit_wrapper',
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755'
+  }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $admin_passwd = lookup('profile::freeipa::base::admin_passwd')

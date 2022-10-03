@@ -51,6 +51,9 @@ node default {
     include profile::jupyterhub::node
 
     include profile::slurm::node
+
+    Class['profile::nfs::client'] -> Service['slurmd']
+    Class['profile::gpu'] -> Service['slurmd']
   }
 
   if 'nfs' in $instance_tags {

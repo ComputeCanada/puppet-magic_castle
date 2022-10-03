@@ -1,0 +1,10 @@
+###########################################################
+# Slurm's Generic Resource (GRES) configuration file
+###########################################################
+AutoDetect=off
+<% $nodes.each |$name, $attr| { -%>
+<% if $attr['specs']['gpus'] > 1 { -%>
+NodeName=<%= $name %> Name=gpu File=/dev/nvidia[0-<%= $attr['specs']['gpus'] - 1 %>]
+<% } elsif $attr['specs']['gpus'] == 1 { -%>
+NodeName=<%= $name %> Name=gpu File=/dev/nvidia0
+<% }} -%>
