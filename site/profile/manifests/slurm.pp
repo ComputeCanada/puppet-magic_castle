@@ -147,8 +147,8 @@ END
   }
 
   package { 'slurm':
-    name    => "slurm-${slurm_version}*",
     ensure  => 'installed',
+    name    => "slurm-${slurm_version}*",
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
   }
@@ -287,8 +287,8 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   package { 'slurm-slurmdbd':
-    name    => "slurm-slurmdbd-${slurm_version}*",
     ensure  => present,
+    name    => "slurm-slurmdbd-${slurm_version}*",
     require => [Package['munge'],
                 Yumrepo['slurm-copr-repo']],
   }
