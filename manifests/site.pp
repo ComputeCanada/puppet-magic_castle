@@ -12,7 +12,7 @@ node default {
 
   include profile::base
   include profile::users::local
-  include profile::metrics::exporter
+  include profile::metrics::node_exporter
 
   if 'login' in $instance_tags {
     include profile::fail2ban
@@ -51,6 +51,8 @@ node default {
     include profile::jupyterhub::node
 
     include profile::slurm::node
+
+    include profile::metrics::slurm_job_exporter
 
     Class['profile::nfs::client'] -> Service['slurmd']
     Class['profile::gpu'] -> Service['slurmd']
