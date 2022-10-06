@@ -45,7 +45,7 @@ profile::accounts:::skel_archives:
 
 | Variable                       | Type   | Description                                                             | Default  |
 | ------------------------------ | :----- | :---------------------------------------------------------------------- | -------- |
-| `profile::consul::server_ip`   | String | IP address of the consul server                                         |          |
+| `profile::consul::client::server_ip`   | String | IP address of the consul server                                         |          |
 
 ## profile::cvmfs
 
