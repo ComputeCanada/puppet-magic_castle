@@ -29,6 +29,18 @@ profile::accounts:::skel_archives:
 | `profile::base::version`     | String | Current version number of Magic Castle  | `'12.0.0'` |
 | `profile::base::admin_email`     | String | Email of the cluster administrator, use to send log and report cluster related issues   | `undef`    |
 
+## profile::ceph
+| Variable                         | Type   | Description                                                                             | Default    |
+| -------------------------------- | :----- | :-------------------------------------------------------------------------------------- | ---------- |
+| `profile::ceph::share_name` | String | CEPH share name |  |
+| `profile::ceph::access_key` | String | CEPH share access key |  |
+| `profile::ceph::export_path`| String | Path of the share as exported by the monitors |  |
+| `profile::ceph::mon_host`   | Array[String] | List of CEPH monitor hostnames | |
+| `profile::ceph::mount_binds`| Array[String] | List of CEPH share folders that will bind mounted under `/` | `[]`  |
+| `profile::ceph::mount_name` | String | Name to give to the CEPH share once mounted under `/mnt` | `'cephfs01'` |
+| `profile::ceph::binds_fcontext_equivalence` | String | SELinux file context equivalence for the CEPH share | '`/home`' |
+
+
 ## profile::consul
 
 | Variable                       | Type   | Description                                                             | Default  |
