@@ -27,7 +27,6 @@ profile::accounts:::skel_archives:
 | Variable                         | Type   | Description                                                                             | Default    |
 | -------------------------------- | :----- | :-------------------------------------------------------------------------------------- | ---------- |
 | `profile::base::version`     | String | Current version number of Magic Castle  | `'12.0.0'` |
-
 | `profile::base::admin_email`     | String | Email of the cluster administrator, use to send log and report cluster related issues   | `undef`    |
 
 ## profile::consul
