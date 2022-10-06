@@ -86,10 +86,16 @@ profile::accounts:::skel_archives:
 | `profile::slurm::base::munge_key`     | String  | Base64 encoded Munge key                                                |          |
 | `profile::slurm::base::slurm_version`  | Enum[20.11, 21.08, 22.05]  | Slurm version to install                            | 21.08    |
 | `profile::slurm::base::os_reserved_memory`  | Integer  | Quantity of memory in MB reserved for the operating system on the compute nodes | 512 |
+| `profile::slurm::base::suspend_time`  | Integer  | Nodes becomes eligible for suspension after being idle for this number of seconds. | 3600 |
+| `profile::slurm::base::resume_timeout`  | Integer  | Maximum time permitted (in seconds) between when a node resume request is issued and when the node is actually available for use. | 3600 |
+| `profile::slurm::base::force_slurm_in_path`  | Boolean  | When enabled, all users (local and LDAP) will have slurm binaries in their PATH | `false`   |
 | `profile::slurm::base::enable_x11_forwarding`  | Boolean  | Enable Slurm's built-in X11 forwarding capabilities           | `true`   |
 | `profile::slurm::accounting::password` | String  | Password used by for SlurmDBD to connect to MariaDB                    |          |
 | `profile::slurm::accounting::dbd_port` | Integer | SlurmDBD service listening port                                        |          |
 | `profile::slurm::controller::selinux_context` | String | SELinux context for jobs (used only with Slurm >= 21.08)         | `user_u:user_r:user_t:s0` |
+| `profile::slurm::controller::tfe_token` | String | Terraform Cloud API Token. Required to enable autoscaling. | `''` |
+| `profile::slurm::controller::tfe_workspace` | String | Terraform Cloud workspace id. Required to enable autoscaling. | `''` |
+| `profile::slurm::controller::tfe_var_pool` | String | Named of the variable in Terraform Cloud workspace to control compute node pool | `'pool'` |
 
 ## profile::squid
 
