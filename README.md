@@ -66,15 +66,14 @@ profile::accounts:::skel_archives:
 
 ## profile::freeipa
 
-| Variable                                         | Type    | Description                                                                         | Default  |
-| ------------------------------------------------ | :-----  | :---------------------------------------------------------------------------------- | -------- |
-| `profile::freeipa::base::admin_passwd`           | String  | Password of the FreeIPA admin account, also used by the clients to join the server  |          |
-| `profile::freeipa::base::dns_ip`                 | String  | FreeIPA DNS server IP Address. Used by the client to join find the server           |          |
-| `profile::freeipa::base::domain_name`            | String  | FreeIPA primary domain                                                              |          |
-| `profile::freeipa::client::server_ip`            | String  | FreeIPA server ip address                                                           |          |
-| `profile::freeipa::mokey::port`                  | Integer | Mokey internal web server port                                                      | `12345`  |
-| `profile::freeipa::mokey::enable_user_signup`    | Boolean | Allow users to create an account on the cluster                                     | `true`   |
-| `profile::freeipa::mokey::require_verify_admin`  | Boolean | Require a FreeIPA to enable Mokey created account before usage                      | `true`   |
+| Variable | Type | Description | Default |
+| -------- | :--  | :---------- | ------- |
+| `profile::freeipa::base::admin_passwd`| String  | Password of the FreeIPA admin account, also used by the clients to join the server  | |
+| `profile::freeipa::base::domain_name` | String  | FreeIPA primary domain | |
+| `profile::freeipa::client::server_ip` | String  | FreeIPA server ip address | |
+| `profile::freeipa::mokey::port` | Integer | Mokey internal web server port | `12345`  |
+| `profile::freeipa::mokey::enable_user_signup` | Boolean | Allow users to create an account on the cluster | `true` |
+| `profile::freeipa::mokey::require_verify_admin` | Boolean | Require a FreeIPA to enable Mokey created account before usage | `true` |
 
 ## profile::nfs
 
