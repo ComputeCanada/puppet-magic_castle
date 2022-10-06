@@ -75,12 +75,29 @@ profile::accounts:::skel_archives:
 | `profile::freeipa::mokey::enable_user_signup` | Boolean | Allow users to create an account on the cluster | `true` |
 | `profile::freeipa::mokey::require_verify_admin` | Boolean | Require a FreeIPA to enable Mokey created account before usage | `true` |
 
+## profile::mfa
+
+| Variable                 | Type                | Description                        | Default |
+| ------------------------ | :------------------ | :--------------------------------- | ------- |
+| `profile::mfa::provider` | Enum['none', 'duo'] | MFA provider for node tagged 'mfa' | 'none'  |
+
+### duo_unix
+
+| Variable             | Type   | Description                  | Default                  |
+| -------------------- | :----- | :--------------------------- | ------------------------ |
+| `duo_unix::usage`    | String | Either login or pam          | `login`                  |
+| `duo_unix::ikey`     | String | Duo integration              | `''`                     |
+| `duo_unix::skey`     | String | Duo secret key               | `''`                     |
+| `duo_unix::host`     | String | Duo api host                 | `''`                     |
+| `duo_unix::motd`     | String | Enable motd                  | `no`                     |
+| `duo_unix::failmode` | String | Failure mode, secure or safe | `safe`                   |
+
 ## profile::nfs
 
 | Variable                           | Type   | Description                            | Default  |
 | ---------------------------------- | :----- | :------------------------------------- | -------- |
 | `profile::nfs::client::server_ip`  | String | IP address of the NFS server           | `undef`  |
-
+| `profile::nfs::server::devices`  | Variant[String, Hash[String, Array[String]]] | Mapping between NFS share and devices to export. Generated automatically with Terraform data |  |
 
 ## profile::reverse_proxy
 
@@ -158,19 +175,3 @@ profile::users::local::users:
     # mls_range: ''s0-s0:c0.c1023'
 ```
 
-## profile::mfa
-
-| Variable                 | Type                | Description                        | Default |
-| ------------------------ | :------------------ | :--------------------------------- | ------- |
-| `profile::mfa::provider` | Enum['none', 'duo'] | MFA provider for node tagged 'mfa' | 'none'  |
-
-## duo_unix
-
-| Variable             | Type   | Description                  | Default                  |
-| -------------------- | :----- | :--------------------------- | ------------------------ |
-| `duo_unix::usage`    | String | Either login or pam          | `login`                  |
-| `duo_unix::ikey`     | String | Duo integration              | `''`                     |
-| `duo_unix::skey`     | String | Duo secret key               | `''`                     |
-| `duo_unix::host`     | String | Duo api host                 | `''`                     |
-| `duo_unix::motd`     | String | Enable motd                  | `no`                     |
-| `duo_unix::failmode` | String | Failure mode, secure or safe | `safe`                   |
