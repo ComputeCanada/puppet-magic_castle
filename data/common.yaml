@@ -124,6 +124,8 @@ profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 profile::slurm::base::munge_key: "%{alias('terraform.data.munge_key')}"
 profile::slurm::accounting::password: "%{alias('terraform.data.freeipa_passwd')}"
 
+profile::userportal::server::password: "%{alias('terraform.data.freeipa_passwd')}"
+
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::client::server_ip: "%{alias('terraform.tag_ip.puppet.0')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"

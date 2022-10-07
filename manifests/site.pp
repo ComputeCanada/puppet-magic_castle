@@ -25,6 +25,7 @@ node default {
     include profile::freeipa::server
 
     include profile::metrics::server
+    include profile::userportal::server
     include profile::rsyslog::server
     include profile::squid::server
     include profile::slurm::controller
