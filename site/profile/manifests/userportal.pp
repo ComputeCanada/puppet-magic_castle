@@ -10,9 +10,17 @@ class profile::userportal::server (
     require => Package['python3-virtualenv'],
   }
 
-  # TODO git clone
   file { '/var/www/userportal/':
     ensure => 'directory',
+    owner  => 'apache',
+    group  => 'apache',
+  }
+  -> vcsrepo { '/var/www/userportal/':
+    ensure   => present,
+    provider => git,
+    source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
+    revision => '2b92be468f5c95541223a54adfa6675da680cd71',
+    user     => 'apache',
   }
   -> file { '/var/www/userportal/userportal/settings.py':
     show_diff => false,
@@ -24,21 +32,47 @@ class profile::userportal::server (
         'fqdn'         => $fqdn,
       }
     ),
+    notify => Service['httpd'],
   }
-
-  exec {'/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt':
-    require => [Exec['create virtualenv'], File['/var/www/userportal/']],
+  -> file { '/var/www/userportal/userportal/common.py':
+    source => 'file:/var/www/userportal/example/common.py',
+    notify => Service['httpd'],
+  }
+  -> exec { 'pip install -r':
+    command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
+    require => [Exec['create virtualenv']],
   }
 
   # Need to use this fork to manage is_staff correctly
   # https://github.com/enervee/django-freeipa-auth/pull/9
-  exec {'/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git':
-    require => [Exec['create virtualenv'], File['/var/www/userportal/']],
+  -> exec { 'pip install django-freeipa-auth':
+    command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git',
+    require => [Exec['create virtualenv']],
   }
 
-  # TODO
-  # python manage.py migrate
-  # python manage.py collectstatic
+  file { '/var/www/userportal-static':
+    ensure => 'directory',
+    owner  => 'apache',
+    group  => 'apache',
+  }
+
+  file { '/etc/httpd/conf.d/userportal.conf':
+    content => epp('profile/userportal/userportal.conf.epp'),
+    notify  => Service['httpd'],
+  }
+
+  exec { 'django migrate':
+    command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
+    require => [
+      File['/var/www/userportal/userportal/settings.py'],
+      File['/var/www/userportal/userportal/common.py'],
+    ],
+  }
+  exec { 'django collectstatic':
+    command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
+    require => [File['/var/www/userportal/userportal/settings.py'], File['/var/www/userportal/userportal/common.py']],
+    notify  => Service['httpd'],
+  }
 
   mysql::db { 'userportal':
     ensure   => present,
@@ -46,5 +80,6 @@ class profile::userportal::server (
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+    before   => Exec['django migrate'],
   }
 }
