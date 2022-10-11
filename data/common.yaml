@@ -289,6 +289,7 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
+  explore: "ipa.int.%{lookup('terraform.data.domain_name')}:8000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
