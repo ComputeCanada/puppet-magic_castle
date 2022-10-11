@@ -1,5 +1,6 @@
-<VirtualHost *:80>
-  ServerName userportal.int.sigui4.calculquebec.cloud
+Listen 8000
+
+<VirtualHost *:8000>
   DocumentRoot "/var/www/userportal"
   Alias /static "/var/www/userportal-static"
 
