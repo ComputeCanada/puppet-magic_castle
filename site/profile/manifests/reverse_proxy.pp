@@ -3,6 +3,7 @@ class profile::reverse_proxy(
   String $jupyterhub_subdomain,
   String $ipa_subdomain,
   String $mokey_subdomain,
+  String $userportal_subdomain,
   )
 {
   selinux::boolean { 'httpd_can_network_connect': }
