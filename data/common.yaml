@@ -93,6 +93,7 @@ profile::freeipa::mokey::require_verify_admin: true
 profile::reverse_proxy::jupyterhub_subdomain: jupyter
 profile::reverse_proxy::ipa_subdomain: ipa
 profile::reverse_proxy::mokey_subdomain: mokey
+profile::reverse_proxy::userportal_subdomain: portal
 
 profile::slurm::base::slurm_version: '21.08'
 profile::slurm::base::os_reserved_memory: 512
