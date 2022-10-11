@@ -121,21 +121,6 @@ import conf.d/*
     }
   }
 
-  # The django userportal is hosted on the same apache server as FreeIPA, but on port 8000
-  file { '/etc/caddy/conf.d/userportal.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    seltype => 'httpd_config_t',
-    require => File['/etc/caddy/conf.d'],
-    content => @("END")
-${userportal_subdomain}.${domain_name} {
-  import tls
-  reverse_proxy ${ipa_subdomain}.int.${domain_name}:8000
-}
-END
-  }
-
   service { 'caddy':
     ensure    => running,
     enable    => true,
