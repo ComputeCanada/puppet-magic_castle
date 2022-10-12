@@ -97,6 +97,7 @@ profile::reverse_proxy::userportal_subdomain: portal
 
 profile::slurm::base::slurm_version: '21.08'
 profile::slurm::base::os_reserved_memory: 512
+profile::slurm::controller::autoscale_version: '0.2.3'
 
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'

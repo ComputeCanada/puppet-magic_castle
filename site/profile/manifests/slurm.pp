@@ -350,6 +350,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
 
 # Slurm controller class. This where slurmctld is ran.
 class profile::slurm::controller (
+  String $autoscale_version,
   String $selinux_context = 'user_u:user_r:user_t:s0',
   String $tfe_token = '',
   String $tfe_workspace = '',
@@ -366,9 +367,10 @@ class profile::slurm::controller (
 
   ensure_packages(['python3'], { ensure => 'present' })
 
+  $autoscale_env_prefix = '/opt/software/slurm/autoscale_env'
   exec { 'autoscale_slurm_env':
-    command => 'python3 -m venv /opt/software/slurm/autoscale_env',
-    creates => '/opt/software/slurm/autoscale_env/bin/activate',
+    command => "python3 -m venv ${autoscale_env_prefix}",
+    creates => "${autoscale_env_prefix}/bin/activate",
     require => [
       Package['python3'], Package['slurm']
     ],
@@ -379,17 +381,16 @@ class profile::slurm::controller (
     command     => 'pip install --upgrade pip',
     subscribe   => Exec['autoscale_slurm_env'],
     refreshonly => true,
-    path        => ['/opt/software/slurm/autoscale_env/bin'],
+    path        => ["${autoscale_env_prefix}/bin"],
   }
 
-  $autoscale_version = 'v0.2.1'
   exec { 'autoscale_slurm_tf_cloud_install':
-    command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/${autoscale_version}.tar.gz",
-    creates => '/opt/software/slurm/autoscale_env/lib/python3.6/site-packages/slurm_autoscale_tfe',
+    command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v${autoscale_version}.tar.gz",
+    creates => "${autoscale_env_prefix}/lib/python3.6/site-packages/slurm_autoscale_tfe-${autoscale_version}.dist-info",
     require => [
       Exec['autoscale_slurm_env'], Exec['autoscale_slurm_env_upgrade_pip']
     ],
-    path    => ['/opt/software/slurm/autoscale_env/bin']
+    path    => ["${autoscale_env_prefix}/bin"]
   }
 
   file { '/etc/slurm/env.secrets':
@@ -407,11 +408,11 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ensure  => 'present',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @(EOT/L)
+    content => @("EOT")
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  /opt/software/slurm/autoscale_env/bin/slurm_resume $@
+  ${autoscale_env_prefix}/bin/slurm_resume $@
 } &>> /var/log/slurm/slurm_resume.log
 |EOT
   }
@@ -420,11 +421,11 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ensure  => 'present',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @(EOT/L)
+    content => @("EOT")
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  /opt/software/slurm/autoscale_env/bin/slurm_suspend $@
+  ${autoscale_env_prefix}/bin/slurm_suspend $@
 } &>> /var/log/slurm/slurm_suspend.log
 |EOT
   }
