@@ -2,7 +2,7 @@ class profile::userportal::server (
   $password
 ){
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  package {['python3-virtualenv']: }
+  package {['python3-virtualenv', 'python3-devel']: }
   package {['openldap-devel', 'gcc', 'mariadb-devel']: }
 
   exec { 'create virtualenv':
@@ -20,7 +20,7 @@ class profile::userportal::server (
     ensure   => present,
     provider => git,
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => '2b92be468f5c95541223a54adfa6675da680cd71',
+    revision => 'd981af6fdd6664c24eb6760bfe106ef3b1373b78',
     user     => 'apache',
   }
   -> file { '/var/www/userportal/userportal/settings.py':
@@ -41,7 +41,7 @@ class profile::userportal::server (
   }
   -> exec { 'pip install -r':
     command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
-    require => [Exec['create virtualenv']],
+    require => [Exec['create virtualenv'], Package['python3-devel'], Package['gcc']],
   }
 
   # Need to use this fork to manage is_staff correctly
