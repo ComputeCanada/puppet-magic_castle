@@ -48,6 +48,7 @@ class profile::userportal::server (
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
     command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git',
+    unless => '/var/www/userportal-env/bin/pip3 freeze | /usr/bin/grep django-freeipa-auth',
     require => [Exec['create virtualenv']],
   }
 
@@ -72,7 +73,6 @@ class profile::userportal::server (
   exec { 'django collectstatic':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
     require => [File['/var/www/userportal/userportal/settings.py'], File['/var/www/userportal/userportal/common.py']],
-    notify  => Service['httpd'],
   }
 
   mysql::db { 'userportal':
