@@ -75,6 +75,43 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
+prometheus::alerts:
+  groups:
+    - name: 'recorder.rules'
+      rules:
+      - record: slurm_job:allocated_core:count
+        expr: count(slurm_job_core_usage_total)
+      - record: slurm_job:allocated_core:count_user_account
+        expr: count(slurm_job_core_usage_total) by (user,account)
+      - record: slurm_job:used_core:sum
+        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000)
+      - record: slurm_job:used_core:sum_user_account
+        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000) by (user,account)
+      - record: slurm_job:allocated_memory:sum
+        expr: sum(slurm_job_memory_limit{})
+      - record: slurm_job:allocated_memory:sum_user_account
+        expr: sum(slurm_job_memory_limit{}) by (user,account)
+      - record: slurm_job:rss_memory:sum
+        expr: sum(slurm_job_memory_rss)
+      - record: slurm_job:rss_memory:sum_user_account
+        expr: sum(slurm_job_memory_rss) by (user, account)
+      - record: slurm_job:max_memory:sum_user_account
+        expr: sum(slurm_job_memory_max) by (user, account)
+      - record: slurm_job:allocated_gpu:count
+        expr: count(slurm_job_utilization_gpu)
+      - record: slurm_job:allocated_gpu:count_user_account
+        expr: count(slurm_job_utilization_gpu) by (user, account)
+      - record: slurm_job:used_gpu:sum
+        expr: sum(slurm_job_utilization_gpu) / 100
+      - record: slurm_job:used_gpu:sum_user_account
+        expr: sum(slurm_job_utilization_gpu) by (user,account) / 100
+      - record: slurm_job:non_idle_gpu:sum_user_account
+        expr: count(slurm_job_utilization_gpu > 0) by (user,account)
+      - record: slurm_job:power_gpu:sum
+        expr: sum(slurm_job_power_gpu)
+      - record: slurm_job:power_gpu:sum_user_account
+        expr: sum(slurm_job_power_gpu) by (user,account)
+
 profile::base::version: 12.0.0
 
 profile::squid::server::port: 3128
