@@ -172,8 +172,8 @@ AUTHENTICATION_BACKENDS = [
     ]
 
 FREEIPA_AUTH_BACKEND_ENABLED = True
-FREEIPA_AUTH_SERVER = "<%= $fqdn %>"
-FREEIPA_AUTH_SSL_VERIFY = False# FIXME # this would be the path to the ssl cert used
+FREEIPA_AUTH_SERVER = "mgmt1.int.<%= $domain_name %>"
+FREEIPA_AUTH_SSL_VERIFY = '/etc/pki/tls/certs/ca-bundle.crt'
 FREEIPA_AUTH_UPDATE_USER_GROUPS = True
 FREEIPA_AUTH_ALWAYS_UPDATE_USER = True
 FREEIPA_AUTH_USER_ATTRS_MAP = {"first_name": "givenname", "last_name": "sn", "email": "mail"}

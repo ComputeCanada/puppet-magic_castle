@@ -1,6 +1,7 @@
 class profile::userportal::server (
   $password
 ){
+  $domain_name = lookup('profile::freeipa::base::domain_name')
   package {['python3-virtualenv']: }
   package {['openldap-devel', 'gcc', 'mariadb-devel']: }
 
@@ -29,7 +30,7 @@ class profile::userportal::server (
         'password'     => $password,
         'cluster_name' => lookup('profile::slurm::base::cluster_name'),
         'secret_key'   => fqdn_rand_string(32, undef, $password),
-        'fqdn'         => $fqdn,
+        'domain_name'  => $domain_name,
       }
     ),
     notify => Service['httpd'],
