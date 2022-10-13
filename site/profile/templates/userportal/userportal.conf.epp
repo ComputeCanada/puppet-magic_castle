@@ -1,20 +1,17 @@
-Listen 8000
+Listen 9000
 
-<VirtualHost *:8000>
+<VirtualHost *:9000>
   DocumentRoot "/var/www/userportal"
+
+  ProxyPass /static/ !
+  ProxyPass / http://127.0.0.1:8001/
   Alias /static "/var/www/userportal-static"
 
-  ProxyPass / http://127.0.0.1:8001/
-  ProxyPassReverse / "http://127.0.0.1:8001/"
-
-  <Directory "/var/www/userportal/">
-    AllowOverride None
-    Require all granted
-  </Directory>
-
-  <Directory "/var/www/userportal/static">
-    AllowOverride None
-    Require all granted
+  <Directory "/var/www/userportal-static">
+    Order allow,deny
+    Allow from all
+    Options Indexes FollowSymLinks MultiViews
+    Satisfy Any
   </Directory>
 
 </VirtualHost>
