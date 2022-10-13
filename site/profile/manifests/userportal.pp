@@ -63,16 +63,49 @@ class profile::userportal::server (
     notify  => Service['httpd'],
   }
 
+  file { '/etc/systemd/system/gunicorn.service':
+    mode    => '0755',
+    content => '[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=apache
+Group=apache
+RuntimeDirectory=gunicorn
+WorkingDirectory=/var/www/userportal/
+ExecStart=/var/www/userportal-env/bin/gunicorn --bind 127.0.0.1:8001 --workers 2 --timeout 90 userportal.wsgi
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target',
+    notify => Service['gunicorn'],
+  }
+
+  service { 'gunicorn':
+    ensure  => 'running',
+    enable  => true,
+    require => Exec['pip install django-freeipa-auth'],
+  }
+
   exec { 'django migrate':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
     require => [
       File['/var/www/userportal/userportal/settings.py'],
       File['/var/www/userportal/userportal/common.py'],
+      Exec['pip install django-freeipa-auth'],
     ],
   }
   exec { 'django collectstatic':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
-    require => [File['/var/www/userportal/userportal/settings.py'], File['/var/www/userportal/userportal/common.py']],
+    require => [
+      File['/var/www/userportal/userportal/settings.py'],
+      File['/var/www/userportal/userportal/common.py'],
+      Exec['pip install django-freeipa-auth'],
+    ],
   }
 
   mysql::db { 'userportal':

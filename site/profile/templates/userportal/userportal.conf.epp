@@ -4,6 +4,9 @@ Listen 8000
   DocumentRoot "/var/www/userportal"
   Alias /static "/var/www/userportal-static"
 
+  ProxyPass / http://127.0.0.1:8001/
+  ProxyPassReverse / "http://127.0.0.1:8001/"
+
   <Directory "/var/www/userportal/">
     AllowOverride None
     Require all granted
@@ -14,9 +17,4 @@ Listen 8000
     Require all granted
   </Directory>
 
-  WSGIApplicationGroup %{GLOBAL}
-  WSGIDaemonProcess userportal python-home=/var/www/userportal-env python-path=/var/www/userportal/
-  WSGIProcessGroup userportal
-  WSGIScriptAlias / "/var/www/userportal/userportal/wsgi.py"
-  WSGIPassAuthorization On
 </VirtualHost>
