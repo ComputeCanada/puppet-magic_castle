@@ -145,7 +145,7 @@ ${ipa_subdomain}.${domain_name} {
 END
   }
 
-  # The django userportal is hosted on the same apache server as FreeIPA, but on port 8000
+  # The django userportal is hosted on the same apache server as FreeIPA, but on port 9000
   file { '/etc/caddy/conf.d/userportal.conf':
     owner   => 'root',
     group   => 'root',
@@ -155,7 +155,7 @@ END
     content => @("END")
 ${userportal_subdomain}.${domain_name} {
   import tls
-  reverse_proxy ${ipa_subdomain}.int.${domain_name}:8000
+  reverse_proxy ${ipa_subdomain}.int.${domain_name}:9000
 }
 END
   }
@@ -172,6 +172,7 @@ END
       File['/etc/caddy/conf.d/jupyter.conf'],
       File['/etc/caddy/conf.d/mokey.conf'],
       File['/etc/caddy/conf.d/ipa.conf'],
+      File['/etc/caddy/conf.d/userportal.conf'],
     ]
   }
 }
