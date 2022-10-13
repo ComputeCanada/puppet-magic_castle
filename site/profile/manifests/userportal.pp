@@ -2,13 +2,14 @@ class profile::userportal::server (
   $password
 ){
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  package {['python3-virtualenv', 'python3-devel']: }
+  package {['python3-virtualenv', 'python38', 'python38-devel']: }
   package {['openldap-devel', 'gcc', 'mariadb-devel']: }
 
+  # Using python3.8 with gunicorn
   exec { 'create virtualenv':
-    command => '/usr/bin/virtualenv-3 /var/www/userportal-env',
+    command => '/usr/bin/virtualenv-3 --python="/usr/bin/python3.8" /var/www/userportal-env',
     unless  => '/usr/bin/test -d /var/www/userportal-env',
-    require => Package['python3-virtualenv'],
+    require => [Package['python3-virtualenv'], Package['python38']],
   }
 
   file { '/var/www/userportal/':
@@ -41,7 +42,7 @@ class profile::userportal::server (
   }
   -> exec { 'pip install -r':
     command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
-    require => [Exec['create virtualenv'], Package['python3-devel'], Package['gcc']],
+    require => [Exec['create virtualenv'], Package['python38-devel'], Package['gcc']],
   }
 
   # Need to use this fork to manage is_staff correctly
