@@ -94,11 +94,14 @@ if [ -d /etc/NetworkManager/system-connections ]; then
   rm -f /etc/NetworkManager/system-connections/*.nmconnection
 fi
 
+# sysprep kerberos-hostkeytab
+rm -f /etc/krb5.keytab
+
 # sysprep net-hwaddr
 sed -i '/HWADDR/d' /etc/sysconfig/network-scripts/ifcfg-* || true
 
-# sysprep kerberos-hostkeytab
-rm -f /etc/krb5.keytab
+# sysprep package-manager-cache
+rm -rf /var/cache/{yum,dnf}/*
 
 # sysprep rpm-db
 rm -f /var/lib/rpm/__db.*
