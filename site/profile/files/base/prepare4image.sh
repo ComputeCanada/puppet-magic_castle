@@ -25,6 +25,9 @@ cloud-init clean --logs
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
+# sysprep ssh-hostkeys
+rm -f /etc/ssh/*_host_*
+
 # sysprep ssh-userdir
 find / -maxdepth 2 -name .ssh -type d -exec rm -rf {} \;
 
