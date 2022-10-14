@@ -8,8 +8,6 @@ systemctl disable slurmd &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 /sbin/ipa-client-install -U --uninstall
-rm -f /var/lib/sss/db/*
-rm -f /var/log/sssd/*
 rm -rf /etc/puppetlabs
 rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
 grep nfs /etc/fstab | cut -f 2 | xargs umount
@@ -23,6 +21,16 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
   systemctl disable cloud-init
 fi
 cloud-init clean --logs
+
+# sysprep kerberos-hostkeytab
+rm -f /etc/krb5.keytab
+
+# sysprep sssd-db-log
+rm -f /var/lib/sss/db/*
+rm -f /var/log/sssd/*
+
+# sysprep tmp-files
 rm -rf /tmp/*
 rm -rf /var/tmp/*
+
 halt -p
