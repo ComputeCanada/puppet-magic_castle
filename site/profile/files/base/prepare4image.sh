@@ -22,6 +22,9 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
 fi
 cloud-init clean --logs
 
+# sysprep machine-id
+rm -f /etc/machine-id
+
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
