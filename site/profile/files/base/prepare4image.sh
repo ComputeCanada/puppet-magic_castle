@@ -97,6 +97,9 @@ fi
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
+# sysprep ssh-userdir
+find / -maxdepth 2 -name .ssh -type d -exec rm -rf {} \;
+
 # sysprep sssd-db-log
 rm -f /var/lib/sss/db/*
 rm -f /var/log/sssd/*
