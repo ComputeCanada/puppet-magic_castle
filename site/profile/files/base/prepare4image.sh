@@ -94,6 +94,9 @@ if [ -d /etc/NetworkManager/system-connections ]; then
   rm -f /etc/NetworkManager/system-connections/*.nmconnection
 fi
 
+# sysprep net-hwaddr
+sed -i '/HWADDR/d' /etc/sysconfig/network-scripts/ifcfg-* || true
+
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
