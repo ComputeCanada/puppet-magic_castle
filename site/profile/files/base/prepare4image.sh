@@ -22,14 +22,17 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
 fi
 cloud-init clean --logs
 
+# sysprep kerberos-hostkeytab
+rm -f /etc/krb5.keytab
+
 # sysprep machine-id
 rm -f /etc/machine-id
 
 # sysprep net-hwaddr
 sed -i '/HWADDR/d' /etc/sysconfig/network-scripts/ifcfg-* || true
 
-# sysprep kerberos-hostkeytab
-rm -f /etc/krb5.keytab
+# sysprep package-manager-cache
+rm -rf /var/cache/{yum,dnf}/*
 
 # sysprep rpm-db
 rm -f /var/lib/rpm/__db.*
