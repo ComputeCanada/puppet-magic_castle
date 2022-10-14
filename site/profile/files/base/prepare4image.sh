@@ -97,6 +97,9 @@ fi
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
+# sysprep rpm-db
+rm -f /var/lib/rpm/__db.*
+
 # sysprep ssh-hostkeys
 rm -f /etc/ssh/*_host_*
 
