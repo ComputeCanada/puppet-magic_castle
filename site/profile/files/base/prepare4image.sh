@@ -25,6 +25,9 @@ cloud-init clean --logs
 # sysprep machine-id
 rm -f /etc/machine-id
 
+# sysprep net-hwaddr
+sed -i '/HWADDR/d' /etc/sysconfig/network-scripts/ifcfg-* || true
+
 # sysprep kerberos-hostkeytab
 rm -f /etc/krb5.keytab
 
