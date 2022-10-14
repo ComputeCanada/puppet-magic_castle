@@ -23,4 +23,6 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
   systemctl disable cloud-init
 fi
 cloud-init clean --logs
+rm -rf /tmp/*
+rm -rf /var/tmp/*
 halt -p
