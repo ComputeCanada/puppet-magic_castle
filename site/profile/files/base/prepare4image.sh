@@ -36,6 +36,8 @@ test -f /var/log/ipaclient-install.log && /sbin/ipa-client-install -U --uninstal
 rm -f /var/log/ipaclient-uninstall.log
 rm -f /var/log/ipaclient-install.log
 rm -rf /etc/sssd/sssd.conf.deleted
+rm -f /var/lib/sss/db/*
+rm -f /var/log/sssd/*
 
 rm -rf /etc/puppetlabs
 rm -rf /opt/puppetlabs/puppet/cache/{clientbucket,client_data,client_yaml,state}
