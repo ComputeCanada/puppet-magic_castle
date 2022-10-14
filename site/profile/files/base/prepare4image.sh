@@ -36,4 +36,7 @@ rm -f /var/log/sssd/*
 rm -rf /tmp/*
 rm -rf /var/tmp/*
 
+# sysprep udev-persistent-net
+rm -f /etc/udev/rules.d/70-persistent-net.rules
+
 halt -p
