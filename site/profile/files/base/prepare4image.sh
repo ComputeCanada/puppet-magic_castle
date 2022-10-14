@@ -96,4 +96,6 @@ if [ -d /etc/NetworkManager/system-connections ]; then
   rm -f /etc/NetworkManager/system-connections/*.nmconnection
 fi
 
+rm -rf /tmp/*
+rm -rf /var/tmp/*
 halt -p
