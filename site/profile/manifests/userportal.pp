@@ -21,8 +21,9 @@ class profile::userportal::server (
     ensure   => present,
     provider => git,
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => 'c59c83110b4429b69ce1e16e4322215e00b09050',
+    revision => '2bb2c2c32d45c8559c451781ffb3e15379312cea',
     user     => 'apache',
+    notify   => [Service['httpd'], Service['gunicorn']],
   }
   -> file { '/var/www/userportal/userportal/settings.py':
     show_diff => false,
@@ -34,11 +35,11 @@ class profile::userportal::server (
         'domain_name'  => $domain_name,
       }
     ),
-    notify => Service['httpd'],
+    notify => Service['gunicorn'],
   }
   -> file { '/var/www/userportal/userportal/common.py':
     source => 'file:/var/www/userportal/example/common.py',
-    notify => Service['httpd'],
+    notify => [Service['httpd'], Service['gunicorn']],
   }
   -> exec { 'pip install -r':
     command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
