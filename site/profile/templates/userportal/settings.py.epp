@@ -189,6 +189,13 @@ EXPORTER_INSTALLED = [
     'slurm_exporter',
 ]
 
+
+EXPORTER_SAMPLING_RATE = {
+    'slurm-job-exporter': 10,
+    'node_exporter': 10,
+    'slurm_exporter': 10,
+}
+
 CLUSTER_NAME = '<%= $cluster_name %>'  # used for slurm DB name
 LUSTRE_FS_NAMES = None
 LOGINS = {
