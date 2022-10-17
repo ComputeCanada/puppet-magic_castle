@@ -20,7 +20,7 @@ class profile::userportal::server (
     ensure   => present,
     provider => git,
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => '3765a813952371947f910921a282fdbeaaf98bd5',
+    revision => 'c59c83110b4429b69ce1e16e4322215e00b09050',
     user     => 'apache',
   }
   -> file { '/var/www/userportal/userportal/settings.py':
