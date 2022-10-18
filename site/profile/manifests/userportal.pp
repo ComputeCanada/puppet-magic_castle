@@ -21,7 +21,7 @@ class profile::userportal::server (
     ensure   => present,
     provider => git,
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => '2bb2c2c32d45c8559c451781ffb3e15379312cea',
+    revision => '7940ae14891a60d18afd1d9d009dada044512b0f',
     user     => 'apache',
     notify   => [Service['httpd'], Service['gunicorn']],
   }
