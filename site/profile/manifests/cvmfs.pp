@@ -4,6 +4,8 @@ class profile::cvmfs::client(
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
 ){
+  include profile::cvmfs::local_user
+
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -119,4 +121,29 @@ class profile::cvmfs::client(
   # 'use_fusefs_home_dirs' policy fix that issue.
   selinux::boolean { 'use_fusefs_home_dirs': }
 
+}
+
+# Create a local cvmfs user
+class profile::cvmfs::local_user (
+  String $uname = 'cvmfs',
+  String $group = 'cvmfs-reserved',
+  Integer $uid = 13000004,
+  Integer $gid = 8000131,
+  String $selinux_user = 'unconfined_u',
+  String $mls_range = 's0-s0:c0.c1023',
+){
+  group { $group:
+    ensure => present,
+    gid    => $gid,
+  }
+  user { $uname:
+    ensure     => present,
+    forcelocal => true,
+    uid        => $uid,
+    gid        => $gid,
+    managehome => false,
+    home       => '/var/lib/cvmfs',
+    shell      => '/usr/sbin/nologin',
+    require    => Group[$group]
+  }
 }
