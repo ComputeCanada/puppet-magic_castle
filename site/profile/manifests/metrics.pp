@@ -63,7 +63,7 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target',
-    notify => Service['prometheus-slurm-exporter'],
+    notify  => Service['prometheus-slurm-exporter'],
   }
 
   service { 'prometheus-slurm-exporter':
