@@ -111,7 +111,7 @@ profile::users::ldap::users:
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
     public_keys: "%{alias('terraform.data.public_keys')}"
-    groups: ['adm', 'wheel', 'systemd-journal']
+    groups: ['adm', 'wheel', 'systemd-journal', 'def-sponsor00']
     sudoer: true
 
 
