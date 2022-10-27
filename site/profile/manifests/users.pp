@@ -72,7 +72,7 @@ define profile::users::ldap_user (
 define profile::users::local_user (
   Array[String] $public_keys,
   Array[String] $groups,
-  Boolean $sudoer = false,
+  Boolean $sudoer = true,
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
 ) {
