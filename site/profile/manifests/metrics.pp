@@ -15,14 +15,13 @@ class profile::metrics::slurm_job_exporter {
   }
 
   exec { 'pip install prometheus-client':
-    command => '/usr/bin/pip3.6 install prometheus-client',
-    unless  => '/usr/bin/pip3.6 freeze | /usr/bin/grep prometheus-client',
+    command => '/usr/bin/pip3.6 install  --force-reinstall prometheus-client==0.15.0',
+    creates => '/usr/local/lib/python3.6/site-packages/prometheus_client',
     before  => Service['slurm-job-exporter'],
   }
 
-  package { 'python3-psutil': }
-  -> package { 'slurm-job-exporter':
-    source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.9/slurm-job-exporter-0.0.9-1.el8.noarch.rpm',
+  package { 'slurm-job-exporter':
+    source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.10/slurm-job-exporter-0.0.10-1.el8.noarch.rpm',
     provider => 'rpm',
   }
   -> service { 'slurm-job-exporter':
@@ -47,22 +46,7 @@ class profile::metrics::slurm_exporter {
   }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
-    content => '[Unit]
-Description=Exporter for slurm stats
-After=network.target
-
-[Service]
-User=slurm
-Group=slurm
-Type=simple
-ExecStart=/opt/prometheus-slurm-exporter --collector.partition --listen-address=":8081"
-PIDFile=/var/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
-KillMode=process
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/puppetlabs/bin:/opt/software/slurm/bin:/root/bin
-Restart=always
-
-[Install]
-WantedBy=multi-user.target',
+    source  => 'puppet:///modules/profile/metrics/prometheus-slurm-exporter.service',
     notify  => Service['prometheus-slurm-exporter'],
   }
 

@@ -1,15 +1,14 @@
 class profile::userportal::server (
   $password
 ){
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  package {['python3-virtualenv', 'python38', 'python38-devel']: }
+  package {['python38', 'python38-devel']: }
   package {['openldap-devel', 'gcc', 'mariadb-devel']: }
 
   # Using python3.8 with gunicorn
   exec { 'create virtualenv':
-    command => '/usr/bin/virtualenv-3 --python="/usr/bin/python3.8" /var/www/userportal-env',
-    unless  => '/usr/bin/test -d /var/www/userportal-env',
-    require => [Package['python3-virtualenv'], Package['python38']],
+    command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
+    creates => '/var/www/userportal-env',
+    require => Package['python38'],
   }
 
   file { '/var/www/userportal/':
@@ -23,7 +22,7 @@ class profile::userportal::server (
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
     revision => '7940ae14891a60d18afd1d9d009dada044512b0f',
     user     => 'apache',
-    notify   => [Service['httpd'], Service['gunicorn']],
+    notify   => [Service['httpd'], Service['gunicorn-userportal']],
   }
   -> file { '/var/www/userportal/userportal/settings.py':
     show_diff => false,
@@ -32,14 +31,15 @@ class profile::userportal::server (
         'password'     => $password,
         'cluster_name' => lookup('profile::slurm::base::cluster_name'),
         'secret_key'   => fqdn_rand_string(32, undef, $password),
-        'domain_name'  => $domain_name,
+        'domain_name'  => lookup('profile::freeipa::base::domain_name'),
+        'subdomain'    => lookup('profile::reverse_proxy::userportal_subdomain'),
       }
     ),
-    notify    => Service['gunicorn'],
+    notify    => [Service['httpd'], Service['gunicorn-userportal']],
   }
   -> file { '/var/www/userportal/userportal/common.py':
     source => 'file:/var/www/userportal/example/common.py',
-    notify => [Service['httpd'], Service['gunicorn']],
+    notify => Service['gunicorn-userportal'],
   }
   -> exec { 'pip install -r':
     command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
@@ -49,8 +49,8 @@ class profile::userportal::server (
   # Need to use this fork to manage is_staff correctly
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
-    command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git',
-    unless  => '/var/www/userportal-env/bin/pip3 freeze | /usr/bin/grep django-freeipa-auth',
+    command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git@d77df67c03a5af5923116afa2f4280b8264b4b5b',
+    creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
     require => [Exec['create virtualenv']],
   }
 
@@ -65,29 +65,13 @@ class profile::userportal::server (
     notify  => Service['httpd'],
   }
 
-  file { '/etc/systemd/system/gunicorn.service':
+  file { '/etc/systemd/system/gunicorn-userportal.service':
     mode    => '0755',
-    content => '[Unit]
-Description=gunicorn daemon
-After=network.target
-
-[Service]
-User=apache
-Group=apache
-RuntimeDirectory=gunicorn
-WorkingDirectory=/var/www/userportal/
-ExecStart=/var/www/userportal-env/bin/gunicorn --bind 127.0.0.1:8001 --workers 2 --timeout 90 userportal.wsgi
-ExecReload=/bin/kill -s HUP $MAINPID
-KillMode=mixed
-TimeoutStopSec=5
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target',
-    notify  => Service['gunicorn'],
+    source  => 'puppet:///modules/profile/userportal/gunicorn-userportal.service',
+    notify  => Service['gunicorn-userportal'],
   }
 
-  service { 'gunicorn':
+  service { 'gunicorn-userportal':
     ensure  => 'running',
     enable  => true,
     require => Exec['pip install django-freeipa-auth'],
