@@ -69,13 +69,20 @@ class profile::accounts (
   ensure_resource('file', '/opt/puppetlabs/puppet/cache/puppet-archive', {'ensure' => 'directory'})
   $skel_archives.each |$index, Hash $archive| {
     $filename = $archive['filename']
+    if $archive['source'][0,4] == 'http' and 'token' in $archive {
+      $download_options = "-H \"Authorization: Bearer ${archive['token']}\""
+    } else {
+      $download_options = null
+    }
+
     archive { "skel_${index}":
-      path         => "/opt/puppetlabs/puppet/cache/puppet-archive/${filename}",
-      extract      => true,
-      extract_path => '/etc/skel.ipa',
-      source       => $archive['source'],
-      require      => File['/etc/skel.ipa'],
-      notify       => Exec['chown -R root:root /etc/skel.ipa'],
+      path             => "/opt/puppetlabs/puppet/cache/puppet-archive/${filename}",
+      extract          => true,
+      extract_path     => '/etc/skel.ipa',
+      source           => $archive['source'],
+      require          => File['/etc/skel.ipa'],
+      notify           => Exec['chown -R root:root /etc/skel.ipa'],
+      download_options => $download_options,
     }
   }
 
