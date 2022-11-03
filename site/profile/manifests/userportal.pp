@@ -20,13 +20,13 @@ class profile::userportal::server (
     ensure   => present,
     provider => git,
     source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => '7940ae14891a60d18afd1d9d009dada044512b0f',
+    revision => '955d912b0a2e74f708a9bf772cc0a980e3f50ab5',
     user     => 'apache',
     notify   => [Service['httpd'], Service['gunicorn-userportal']],
   }
-  -> file { '/var/www/userportal/userportal/settings.py':
+  -> file { '/var/www/userportal/userportal/settings/99-local.py':
     show_diff => false,
-    content   => epp('profile/userportal/settings.py',
+    content   => epp('profile/userportal/99-local.py',
       {
         'password'     => $password,
         'cluster_name' => lookup('profile::slurm::base::cluster_name'),
@@ -37,8 +37,8 @@ class profile::userportal::server (
     ),
     notify    => [Service['httpd'], Service['gunicorn-userportal']],
   }
-  -> file { '/var/www/userportal/userportal/common.py':
-    source => 'file:/var/www/userportal/example/common.py',
+  -> file { '/var/www/userportal/userportal/local.py':
+    source => 'file:/var/www/userportal/example/local.py',
     notify => Service['gunicorn-userportal'],
   }
   -> exec { 'pip install -r':
@@ -80,16 +80,16 @@ class profile::userportal::server (
   exec { 'django migrate':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
     require => [
-      File['/var/www/userportal/userportal/settings.py'],
-      File['/var/www/userportal/userportal/common.py'],
+      File['/var/www/userportal/userportal/settings/99-local.py'],
+      File['/var/www/userportal/userportal/local.py'],
       Exec['pip install django-freeipa-auth'],
     ],
   }
   exec { 'django collectstatic':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
     require => [
-      File['/var/www/userportal/userportal/settings.py'],
-      File['/var/www/userportal/userportal/common.py'],
+      File['/var/www/userportal/userportal/settings/99-local.py'],
+      File['/var/www/userportal/userportal/local.py'],
       Exec['pip install django-freeipa-auth'],
     ],
   }
