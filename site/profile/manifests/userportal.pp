@@ -16,13 +16,16 @@ class profile::userportal::server (
     owner  => 'apache',
     group  => 'apache',
   }
-  -> vcsrepo { '/var/www/userportal/':
-    ensure   => present,
-    provider => git,
-    source   => 'https://github.com/guilbaults/TrailblazingTurtle.git',
-    revision => '955d912b0a2e74f708a9bf772cc0a980e3f50ab5',
-    user     => 'apache',
-    notify   => [Service['httpd'], Service['gunicorn-userportal']],
+  -> archive { 'userportal':
+    ensure          => present,
+    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.0.tar.gz',
+    path            => '/tmp/userportal.tar.gz',
+    extract         => true,
+    extract_path    => '/var/www/userportal/',
+    extract_command => 'tar xfz %s --strip-components=1',
+    cleanup         => true,
+    user            => 'apache',
+    notify          => [Service['httpd'], Service['gunicorn-userportal']],
   }
   -> file { '/var/www/userportal/userportal/settings/99-local.py':
     show_diff => false,
