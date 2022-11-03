@@ -21,6 +21,8 @@ INSTALLED_APPS = [
     'jobstats',
     'top',
 
+    'ccldap',
+
     # system modules
     'rest_framework',
     'rest_framework.authtoken',
