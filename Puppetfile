@@ -33,7 +33,6 @@ mod 'puppetlabs-mount_core', '1.0.4'
 mod 'puppetlabs-mysql', '13.3.0'
 mod 'puppetlabs-stdlib', '5.2.0'
 mod 'puppetlabs-transition', '0.1.3'
-mod 'puppetlabs-vcsrepo', '5.3.0'
 mod 'treydock-globus', '9.0.0'
 
 mod 'computecanada-jupyterhub',
