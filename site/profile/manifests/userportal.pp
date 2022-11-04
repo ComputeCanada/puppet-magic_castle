@@ -18,7 +18,7 @@ class profile::userportal::server (
   }
   -> archive { 'userportal':
     ensure          => present,
-    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.0.tar.gz',
+    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.1.tar.gz',
     path            => '/tmp/userportal.tar.gz',
     extract         => true,
     extract_path    => '/var/www/userportal/',
