@@ -18,7 +18,7 @@ class profile::userportal::server (
   }
   -> archive { 'userportal':
     ensure          => present,
-    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.1.tar.gz',
+    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.2.tar.gz',
     path            => '/tmp/userportal.tar.gz',
     extract         => true,
     extract_path    => '/var/www/userportal/',
@@ -95,6 +95,35 @@ class profile::userportal::server (
       File['/var/www/userportal/userportal/local.py'],
       Exec['pip install django-freeipa-auth'],
     ],
+  }
+
+  $domain = lookup('profile::freeipa::base::domain_name')
+  exec { 'create api user':
+    command => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
+    require => Exec['django migrate'],
+    returns => [0, 1], # ignore error if user already exists
+  }
+
+  # Can't do it in puppet since the token is generated on the client and is not present in the serverside puppet catalog
+  -> file { '/root/generate_slurm_jobscripts.sh':
+    mode   => '0700',
+    source => 'puppet:///modules/profile/userportal/generate_slurm_jobscripts.sh',
+  }
+  -> exec { 'create api token':
+    command => '/root/generate_slurm_jobscripts.sh',
+    creates => '/etc/slurm/slurm_jobscripts.ini',
+    notify  => Service['slurm_jobscripts'],
+  }
+
+  file { '/etc/systemd/system/slurm_jobscripts.service':
+    mode   => '0755',
+    source => 'puppet:///modules/profile/userportal/slurm_jobscripts.service',
+    notify => Service['slurm_jobscripts'],
+  }
+  service { 'slurm_jobscripts':
+    ensure  => 'running',
+    enable  => true,
+    require => Exec['create api token'],
   }
 
   mysql::db { 'userportal':
