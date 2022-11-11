@@ -455,6 +455,7 @@ class profile::freeipa::server
 
 class profile::freeipa::mokey(
   Integer $port,
+  String $password,
   Boolean $enable_user_signup,
   Boolean $require_verify_admin,
 )
@@ -477,20 +478,19 @@ class profile::freeipa::mokey(
   }
 
   $ipa_passwd = lookup('profile::freeipa::base::admin_passwd')
-  $mokey_password = lookup('profile::freeipa::mokey::passwd')
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
 
   mysql::db { 'mokey':
     ensure   => present,
     user     => 'mokey',
-    password => $mokey_password,
+    password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
   }
 
   exec { 'mysql_mokey_schema':
-    command     => Sensitive("mysql -u mokey -p${mokey_password} mokey < /usr/share/mokey/ddl/schema.sql"),
+    command     => Sensitive("mysql -u mokey -p${password} mokey < /usr/share/mokey/ddl/schema.sql"),
     refreshonly => true,
     require     => [
       Package['mokey'],
@@ -592,11 +592,11 @@ class profile::freeipa::mokey(
       'profile/freeipa/mokey.yaml',
       {
         'user'                 => 'mokey',
-        'password'             => $mokey_password,
+        'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://${mokey_hostname}/",
