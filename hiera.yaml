@@ -30,5 +30,5 @@ hierarchy:
     paths:
       - "bootstrap.yaml"
     options:
-      pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
-      pkcs7_public_key:  /etc/puppetlabs/puppet/eyaml/public_key.pkcs7.pem
+      pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/boot_private_key.pkcs7.pem
+      pkcs7_public_key:  /etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
