@@ -475,6 +475,10 @@ class profile::freeipa::server(
     path    => ['/usr/sbin', '/usr/bin', '/bin'],
     require => Exec['ipa-install'],
   }
+  # Verify ipa admin password:
+  # $ kinit admin
+  # Reset ipa admin password:
+  # $ ldappasswd -ZZ -D 'cn=Directory Manager' -W -S uid=admin,cn=users,cn=accounts,dc=int,dc=saturn,dc=calculquebec,dc=cloud -H ldap://mgmt1.int.saturn.calculquebec.cloud
 }
 
 class profile::freeipa::mokey(
