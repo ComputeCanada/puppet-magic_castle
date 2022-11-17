@@ -118,7 +118,6 @@ profile::users::local::users:
     sudoer: true
 
 
-profile::freeipa::base::admin_passwd: "%{alias('terraform.data.freeipa_passwd')}"
 profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"

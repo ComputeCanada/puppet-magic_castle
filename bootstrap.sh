@@ -8,6 +8,7 @@ PATH=$PATH:/opt/puppetlabs/puppet/bin
     eyaml encrypt -l 'profile::slurm::accounting::password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
     eyaml encrypt -l 'profile::freeipa::mokey::password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
     eyaml encrypt -l 'profile::freeipa::server::ds_password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
+    eyaml encrypt -l 'profile::freeipa::server::admin_password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
 ) >> /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
 
 # Check if the puppet module for consul is present
