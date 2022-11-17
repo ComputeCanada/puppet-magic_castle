@@ -475,10 +475,24 @@ class profile::freeipa::server(
     path    => ['/usr/sbin', '/usr/bin', '/bin'],
     require => Exec['ipa-install'],
   }
-  # Verify ipa admin password:
-  # $ kinit admin
-  # Reset ipa admin password:
-  # $ ldappasswd -ZZ -D 'cn=Directory Manager' -W -S uid=admin,cn=users,cn=accounts,dc=int,dc=saturn,dc=calculquebec,dc=cloud -H ldap://mgmt1.int.saturn.calculquebec.cloud
+
+  $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $reset_admin_password_cmd = @("EOT")
+    echo -e "${admin_passwd}\\n${admin_passwd}\\n${ds_password}\\n" | \
+    ldappasswd -ZZ -D 'cn=Directory Manager' -W \
+      -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
+      -H ldap://${fqdn}
+    |EOT
+  $check_admin_password_cmd = "echo ${admin_passwd} | kinit admin && kdestroy"
+  exec { 'reset admin password':
+    command => Sensitive($reset_admin_password_cmd),
+    unless  => Sensitive($check_admin_password_cmd),
+    path    => ['/usr/sbin', '/usr/bin', '/bin'],
+    require => [
+      Exec['ipa-install'],
+      Exec['reset ds password'],
+    ],
+  }
 }
 
 class profile::freeipa::mokey(
