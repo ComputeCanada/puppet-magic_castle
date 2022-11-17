@@ -294,14 +294,16 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   }
 
   service { 'slurmdbd':
-    ensure  => running,
-    enable  => true,
-    require => [
+    ensure    => running,
+    enable    => true,
+    require   => [
       Package['slurm-slurmdbd'],
       File['/etc/slurm/slurmdbd.conf'],
-      Mysql::Db['slurm_acct_db']
     ],
-    before  => Service['slurmctld']
+    subscribe => [
+      Mysql::Db['slurm_acct_db'],
+    ],
+    before    => Service['slurmctld']
   }
 
   wait_for { 'slurmdbd_started':
