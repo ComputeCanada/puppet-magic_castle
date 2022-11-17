@@ -2,14 +2,16 @@
 # Initialize random hieradata values
 set -e
 PATH=$PATH:/opt/puppetlabs/puppet/bin
+PKCS7_KEY="/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem"
+ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
 (
-    eyaml encrypt -l 'profile::consul::acl_api_token' -o block -s $(uuidgen) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-    eyaml encrypt -l 'profile::slurm::base::munge_key' -o block -s $(openssl rand 1024 | openssl enc -A -base64) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-    eyaml encrypt -l 'profile::slurm::accounting::password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-    eyaml encrypt -l 'profile::freeipa::mokey::password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-    eyaml encrypt -l 'profile::freeipa::server::ds_password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-    eyaml encrypt -l 'profile::freeipa::server::admin_password' -o block -s $(openssl rand -base64 9) --pkcs7-public-key=/etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
-) >> /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
+    $ENC_CMD -l 'profile::consul::acl_api_token' -s $(uuidgen)
+    $ENC_CMD -l 'profile::slurm::base::munge_key' -s $(openssl rand 1024 | openssl enc -A -base64)
+    $ENC_CMD -l 'profile::slurm::accounting::password' -s $(openssl rand -base64 9)
+    $ENC_CMD -l 'profile::freeipa::mokey::password' -s $(openssl rand -base64 9)
+    $ENC_CMD -l 'profile::freeipa::server::ds_password' -s $(openssl rand -base64 9)
+    $ENC_CMD -l 'profile::freeipa::server::admin_password' -s $(openssl rand -base64 9)
+) > /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
 
 # Check if the puppet module for consul is present
 # If it is, initialize the consul server
