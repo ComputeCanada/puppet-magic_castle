@@ -35,9 +35,8 @@ define profile::users::ldap_user (
   String $passwd = '',
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
-  )
-{
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
+) {
+  $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
   if $count > 1 {
@@ -52,9 +51,9 @@ define profile::users::ldap_user (
   }
 
   if $passwd != '' {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_passwd}", "IPA_USER_PASSWD=${passwd}"]
+    $environment = ["IPA_ADMIN_PASSWD=${admin_password}", "IPA_USER_PASSWD=${passwd}"]
   } else {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_passwd}"]
+    $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
   }
 
   if $count > 0 {
