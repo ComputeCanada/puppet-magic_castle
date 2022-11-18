@@ -35,6 +35,7 @@ define profile::users::ldap_user (
   String $passwd = '',
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
+  Boolean $manage_password = true,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
@@ -64,8 +65,34 @@ define profile::users::ldap_user (
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $timeout,
     }
-  }
 
+    if $manage_password {
+      $ds_password = lookup('profile::freeipa::server::ds_password')
+      $domain_name = lookup('profile::freeipa::base::domain_name')
+      $int_domain_name = "int.${domain_name}"
+      $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+
+      $ldad_passwd_cmd = @("EOT")
+        ldappasswd -ZZ -H ldap://${::hostname}.${int_domain_name} \
+        -x -D "cn=Directory Manager" -w "${ds_password}" \
+        -S "uid={},cn=users,cn=accounts,${ldap_dc_string}" \
+        -s "${passwd}"
+        |EOT
+      if $count > 1 {
+        $reset_password_cmd = "seq -w ${count} | sed 's/^/${prefix}/' | xargs -I '{}' ${ldad_passwd_cmd}"
+        $check_password_cmd = "echo ${passwd} | kinit $(seq -w ${count} | sed 's/^/${prefix}/' | head -n1) && kdestroy"
+      } else {
+        $reset_password_cmd = regsubst($ldad_passwd_cmd, '{}', $name)
+        $check_password_cmd = "echo ${passwd} | kinit ${name} && kdestroy"
+      }
+
+      exec { 'reset_password user':
+        command => Sensitive($reset_password_cmd),
+        unless  => Sensitive($check_password_cmd),
+        path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      }
+    }
+  }
 }
 
 define profile::users::local_user (
