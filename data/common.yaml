@@ -81,6 +81,9 @@ profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::local_user::group: 'cvmfs-reserved'
+profile::cvmfs::local_user::uid: 13000004
+profile::cvmfs::local_user::gid: 8000131
 
 profile::mfa::mgmt::provider: 'none'
 profile::mfa::node::provider: 'none'

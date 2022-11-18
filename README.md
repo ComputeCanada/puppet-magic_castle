@@ -55,6 +55,10 @@ profile::accounts:::skel_archives:
 | `profile::cvmfs::client::initial_profile` | String | Path to shell script initializing software stack environment variables | Depends on the chosen software stack |
 | `profile::cvmfs::client::repositories` | Array[String] | List of CVMFS repositories to mount  | Depends on the chosen software stack |
 | `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules | Depends on the chosen software stack |
+| `profile::cvmfs::local_user::cvmfs_uid`     | Integer   |  cvmfs user id  	   | 13000004  |
+| `profile::cvmfs::local_user::cvmfs_gid`     | Integer   |  cvmfs group id  	   |  8000131 |
+| `profile::cvmfs::local_user::cvmfs_group`   | String    |  cvmfs group name   |  'cvmfs-reserved' |
+
 
 ## profile::fail2ban
 
@@ -174,4 +178,3 @@ profile::users::local::users:
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
 ```
-
