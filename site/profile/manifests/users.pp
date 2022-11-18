@@ -86,7 +86,7 @@ define profile::users::ldap_user (
         $check_password_cmd = "echo ${passwd} | kinit ${name} && kdestroy"
       }
 
-      exec { 'reset_password user':
+      exec { "ldap_reset_password_${name}":
         command => Sensitive($reset_password_cmd),
         unless  => Sensitive($check_password_cmd),
         path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
