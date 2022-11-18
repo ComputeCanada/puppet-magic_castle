@@ -472,10 +472,9 @@ class profile::freeipa::server(
 
   $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reset_admin_password_cmd = @("EOT")
-    echo -e "${admin_password}\\n${admin_password}\\n${ds_password}\\n" | \
-    ldappasswd -ZZ -D 'cn=Directory Manager' -W \
+    ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
       -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
-      -H ldap://${fqdn}
+      -s ${admin_password} -H ldap://${fqdn}
     |EOT
   $check_admin_password_cmd = "echo ${admin_password} | kinit admin && kdestroy"
   exec { 'reset admin password':
