@@ -168,6 +168,10 @@ profile::users::ldap::users:
     public_keys: ['ssh-rsa ... user@local', 'ssh-ecdsa ...']
 ```
 
+By default, Puppet will manage the LDAP user(s) password and change it in ldap if it no
+longer corresponds to what is prescribed in the hieradata. To disable this feature, add
+`manage_password: false` to the user(s) definition.
+
 ### profile::users::local::users
 
 A local user `bob` can be defined in hieradata as:
