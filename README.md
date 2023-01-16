@@ -72,12 +72,14 @@ profile::accounts:::skel_archives:
 
 | Variable | Type | Description | Default |
 | -------- | :--  | :---------- | ------- |
-| `profile::freeipa::base::admin_passwd`| String  | Password of the FreeIPA admin account, also used by the clients to join the server  | |
 | `profile::freeipa::base::domain_name` | String  | FreeIPA primary domain | |
 | `profile::freeipa::client::server_ip` | String  | FreeIPA server ip address | |
 | `profile::freeipa::mokey::port` | Integer | Mokey internal web server port | `12345`  |
 | `profile::freeipa::mokey::enable_user_signup` | Boolean | Allow users to create an account on the cluster | `true` |
+| `profile::freeipa::mokey::password`| String  | Password of Mokey table in MariaDB | |
 | `profile::freeipa::mokey::require_verify_admin` | Boolean | Require a FreeIPA to enable Mokey created account before usage | `true` |
+| `profile::freeipa::server::admin_password`| String  | Password of the FreeIPA admin account | |
+| `profile::freeipa::server::ds_password`| String  | Password of the directory server | |
 
 ## profile::mfa
 
@@ -165,6 +167,10 @@ profile::users::ldap::users:
     groups: ['def-sponsor00']
     public_keys: ['ssh-rsa ... user@local', 'ssh-ecdsa ...']
 ```
+
+By default, Puppet will manage the LDAP user(s) password and change it in ldap if it no
+longer corresponds to what is prescribed in the hieradata. To disable this feature, add
+`manage_password: false` to the user(s) definition.
 
 ### profile::users::local::users
 

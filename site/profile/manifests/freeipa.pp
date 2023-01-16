@@ -1,8 +1,4 @@
-class profile::freeipa::base (
-  String $admin_passwd,
-  String $domain_name)
-{
-
+class profile::freeipa::base (String $domain_name) {
   if dig($::facts, 'os', 'release', 'major') == '8' {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',
@@ -38,12 +34,11 @@ class profile::freeipa::base (
 
 }
 
-class profile::freeipa::client(String $server_ip)
-{
+class profile::freeipa::client(String $server_ip) {
   include profile::freeipa::base
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
+  $admin_password = lookup('profile::freeipa::server::admin_password')
   $fqdn = "${::hostname}.${int_domain_name}"
   $realm = upcase($int_domain_name)
   $interface = split($::interfaces, ',')[0]
@@ -121,7 +116,7 @@ class profile::freeipa::client(String $server_ip)
       --unattended \
       --force-join \
       -p admin \
-      -w ${admin_passwd}
+      -w ${admin_password}
       | IPACLIENTINSTALL
 
   exec { 'ipa-install':
@@ -194,8 +189,10 @@ class profile::freeipa::client(String $server_ip)
 
 }
 
-class profile::freeipa::server
-{
+class profile::freeipa::server(
+  String $admin_password,
+  String $ds_password,
+) {
   include profile::freeipa::base
 
   file { 'kinit_wrapper':
@@ -206,7 +203,6 @@ class profile::freeipa::server
   }
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
-  $admin_passwd = lookup('profile::freeipa::base::admin_passwd')
 
   package { 'ipa-server-dns':
     ensure => 'installed'
@@ -238,27 +234,27 @@ class profile::freeipa::server
 
   $idstart = Integer($facts['uid_max']) + 1
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
-      /sbin/ipa-server-install \
-      --setup-dns \
-      --hostname ${fqdn} \
-      --ds-password ${admin_passwd} \
-      --admin-password ${admin_passwd} \
-      --idstart=${idstart} \
-      --ssh-trust-dns \
-      --unattended \
-      --auto-forwarders \
-      --ip-address=${ipaddress} \
-      --no-host-dns \
-      --no-dnssec-validation \
-      --no-ui-redirect \
-      --no-pkinit \
-      --no-ntp \
-      --allow-zone-overlap \
-      --reverse-zone=${reverse_zone} \
-      --realm=${realm} \
-      --domain=${int_domain_name} \
-      --no_hbac_allow
-      | IPASERVERINSTALL
+    /sbin/ipa-server-install \
+    --setup-dns \
+    --hostname ${fqdn} \
+    --ds-password ${ds_password} \
+    --admin-password ${admin_password} \
+    --idstart=${idstart} \
+    --ssh-trust-dns \
+    --unattended \
+    --auto-forwarders \
+    --ip-address=${ipaddress} \
+    --no-host-dns \
+    --no-dnssec-validation \
+    --no-ui-redirect \
+    --no-pkinit \
+    --no-ntp \
+    --allow-zone-overlap \
+    --reverse-zone=${reverse_zone} \
+    --realm=${realm} \
+    --domain=${int_domain_name} \
+    --no_hbac_allow
+    | IPASERVERINSTALL
 
   exec { 'ipa-install':
     command => Sensitive($ipa_server_install_cmd),
@@ -292,7 +288,7 @@ class profile::freeipa::server
     command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
     refreshonly => true,
     require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install']
   }
@@ -302,23 +298,22 @@ class profile::freeipa::server
     command     => 'kinit_wrapper ipa pwpolicy-add --minlife=0 --maxlife=0 --priority=1 admins',
     refreshonly => true,
     require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
   }
   ~> exec { 'ipa_admin_passwd_reset':
     command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
-
 
   exec { 'ipa_automember_ipausers':
     command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
     refreshonly => true,
     require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install']
   }
@@ -327,7 +322,7 @@ class profile::freeipa::server
     command     => 'kinit_wrapper ipa hostgroup-add not_mgmt',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install']
   }
@@ -335,21 +330,21 @@ class profile::freeipa::server
     command     => 'kinit_wrapper ipa automember-add not_mgmt --type=hostgroup',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
   ~> exec { 'ipa_automember_condition_not_mgmt':
     command     => 'kinit_wrapper ipa automember-add-condition not_mgmt --type=hostgroup --key=fqdn --inclusive-regex=.* --exclusive-regex="^mgmt.*"',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
   ~> exec { 'ipa_automember_rebuild_hostgroup':
     command     => 'kinit_wrapper ipa automember-rebuild --type=hostgroup',
     refreshonly => true,
     require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin']
   }
 
@@ -357,7 +352,7 @@ class profile::freeipa::server
     command     => 'kinit_wrapper ipa hbacrule-add ipauser_not_mgmt --servicecat=all',
     refreshonly => true,
     require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install']
   }
@@ -365,7 +360,7 @@ class profile::freeipa::server
   exec { 'ipa_hbacrule_notmgmt_addusers':
     command     => 'kinit_wrapper ipa hbacrule-add-user ipauser_not_mgmt --groups=ipausers',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     require     => [File['kinit_wrapper'],],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_automember_ipausers']]
@@ -374,7 +369,7 @@ class profile::freeipa::server
   exec { 'ipa_hbacrule_notmgmt_addhosts':
     command     => 'kinit_wrapper ipa hbacrule-add-host ipauser_not_mgmt --hostgroups=not_mgmt',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     require     => [File['kinit_wrapper'],],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']]
@@ -384,7 +379,7 @@ class profile::freeipa::server
     command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${::hostname}",
     refreshonly => true,
     require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
   }
@@ -393,7 +388,7 @@ class profile::freeipa::server
     command     => "kinit_wrapper ipa host-add ipa.${int_domain_name} --force",
     refreshonly => true,
     require     => [File['kinit_wrapper'], ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
   }
@@ -406,7 +401,7 @@ class profile::freeipa::server
       Exec['ipa_add_record_CNAME'],
       Exec['ipa_add_host_ipa'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
   }
@@ -419,7 +414,7 @@ class profile::freeipa::server
       File['kinit_wrapper'],
       Exec['ipa_add_service_principal'],
     ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_passwd}"],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
     notify      => Service['httpd'],
@@ -451,10 +446,51 @@ class profile::freeipa::server
     seltype => 'httpd_config_t',
   }
 
+  # Monitor change of the directory server password
+  # and apply change if the current password hash does
+  # not correspond to the password definned in the hieradata.
+  # This is needed because the password is generated by
+  # the puppet server during the bootstrap phase and it can
+  # change if the puppet server is reinstalled.
+  $ds_domain = upcase(regsubst($int_domain_name, '\.', '-', 'G'))
+  $ds_file = "/etc/dirsrv/slapd-${ds_domain}/dse.ldif"
+  $reset_ds_password_cmd = @("EOT")
+    dsctl ${ds_domain} stop && \
+    sed -n ':loop N; s/\n //; t loop; P; D' ${ds_file} |\
+        sed "s;^nsslapd-rootpw:.*$;nsslapd-rootpw: $(pwdhash ${ds_password});g" \
+        > ${ds_file}.tmp && \
+    mv -f ${ds_file}.tmp ${ds_file} && \
+    dsctl ${ds_domain} start
+    |EOT
+  $check_ds_password_cmd = "pwdhash -c $(sed -n ':loop N; s/\\n //; t loop; P; D' ${ds_file} | grep -oP 'nsslapd-rootpw: \\K(.*)') ${ds_password}"
+  exec { 'reset ds password':
+    command => Sensitive($reset_ds_password_cmd),
+    unless  => Sensitive($check_ds_password_cmd),
+    path    => ['/usr/sbin', '/usr/bin', '/bin'],
+    require => Exec['ipa-install'],
+  }
+
+  $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $reset_admin_password_cmd = @("EOT")
+    ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
+      -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
+      -s ${admin_password} -H ldap://${fqdn}
+    |EOT
+  $check_admin_password_cmd = "echo ${admin_password} | kinit admin && kdestroy"
+  exec { 'reset admin password':
+    command => Sensitive($reset_admin_password_cmd),
+    unless  => Sensitive($check_admin_password_cmd),
+    path    => ['/usr/sbin', '/usr/bin', '/bin'],
+    require => [
+      Exec['ipa-install'],
+      Exec['reset ds password'],
+    ],
+  }
 }
 
 class profile::freeipa::mokey(
   Integer $port,
+  String $password,
   Boolean $enable_user_signup,
   Boolean $require_verify_admin,
 )
@@ -476,21 +512,20 @@ class profile::freeipa::mokey(
     ],
   }
 
-  $ipa_passwd = lookup('profile::freeipa::base::admin_passwd')
-  $mokey_password = lookup('profile::freeipa::mokey::passwd')
+  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
 
   mysql::db { 'mokey':
     ensure   => present,
     user     => 'mokey',
-    password => $mokey_password,
+    password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
   }
 
   exec { 'mysql_mokey_schema':
-    command     => Sensitive("mysql -u mokey -p${mokey_password} mokey < /usr/share/mokey/ddl/schema.sql"),
+    command     => Sensitive("mysql -u mokey -p${password} mokey < /usr/share/mokey/ddl/schema.sql"),
     refreshonly => true,
     require     => [
       Package['mokey'],
@@ -592,11 +627,11 @@ class profile::freeipa::mokey(
       'profile/freeipa/mokey.yaml',
       {
         'user'                 => 'mokey',
-        'password'             => $mokey_password,
+        'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${mokey_password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${mokey_password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://${mokey_hostname}/",
