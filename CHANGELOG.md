@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [base] Added generation of `/etc/hosts` from `terraform_data.yaml` information for compute nodes (PR #208)
 - [base] Added definition of /etc/ssh/ssh_known_hosts for compute node (PR #208)
 - [base] Added a script `prepare4image.sh` that prepare an instance to be snapshot. (PR #208)
+- [cvmfs] Added cvmfs local user
 - [singularity] Added singularity to the list of EPEL exclusion
 - [slurm] Added definition of `node.conf` using `terraform_data.yaml` information (PR #208)
 - [slurm] Added ResumeProgram and SuspendProgram option allowing Slurm to autoscale with Terraform Cloud (PR #208)
