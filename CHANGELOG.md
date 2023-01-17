@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.1.0] UNRELEASED
+
+### Added
+- Added eyaml lookup in hiera.yaml
+- Added generation of ipa admin password to bootstrap.sh
+- Added resource allowing reset of ipa admin password
+- Added generation of consul token, freeipa admin password, mysql password, munge token to bootstrap script
+- Defined a specific password for directory server
+- Added a specific password for slurmdbd
+- Added management of LDAP user password in Puppet - guest password can now be resetted by changing the hieradata
+- Added documentation
+
+### Changed
+- Replaced mokey password lookup by class variable
+
+### Removed
+
 ## [12.0.0] 2023-01-16
 
 ### Added
