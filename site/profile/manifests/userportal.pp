@@ -122,7 +122,7 @@ class profile::userportal::server (String $password) {
     mode   => '0700',
     source => 'puppet:///modules/profile/userportal/generate_slurm_jobscripts.sh',
   }
-  -> exec { 'create api token':
+  -> exec { 'userportal_api_token':
     command => '/root/generate_slurm_jobscripts.sh',
     creates => '/etc/slurm/slurm_jobscripts.ini',
     notify  => Service['slurm_jobscripts'],
@@ -136,7 +136,7 @@ class profile::userportal::server (String $password) {
   service { 'slurm_jobscripts':
     ensure  => 'running',
     enable  => true,
-    require => Exec['create api token'],
+    require => Exec['userportal_api_token'],
   }
 
   mysql::db { 'userportal':
