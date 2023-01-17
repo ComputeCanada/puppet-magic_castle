@@ -45,7 +45,8 @@ class profile::userportal::server (String $password) {
   }
 
   exec { 'userportal_pip':
-    command     => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
+    command     => 'pip3 install -r /var/www/userportal/requirements.txt',
+    path        => '/var/www/userportal-env/bin',
     refreshonly => true,
     subscribe   => Archive['userportal'],
     require     => [
@@ -58,7 +59,8 @@ class profile::userportal::server (String $password) {
   # Need to use this fork to manage is_staff correctly
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
-    command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git@d77df67c03a5af5923116afa2f4280b8264b4b5b',
+    command => 'pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git@d77df67c03a5af5923116afa2f4280b8264b4b5b',
+    path    => '/var/www/userportal-env/bin',
     creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
     require => [Exec['userportal_venv']],
   }
@@ -87,7 +89,8 @@ class profile::userportal::server (String $password) {
   }
 
   exec { 'userportal_migrate':
-    command     => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
+    command     => 'manage.py migrate',
+    path        => '/var/www/userportal-env/bin',
     refreshonly => true,
     subscribe   => Mysql::Db['userportal'],
     require     => [
@@ -97,7 +100,8 @@ class profile::userportal::server (String $password) {
     ],
   }
   exec { 'userportal_collectstatic':
-    command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
+    command => 'manage.py collectstatic --noinput',
+    path    => '/var/www/userportal-env/bin',
     require => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
@@ -112,7 +116,8 @@ class profile::userportal::server (String $password) {
 
   $domain = lookup('profile::freeipa::base::domain_name')
   exec { 'userportal_apiuser':
-    command     => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
+    command     => "manage.py createsuperuser --noinput --username root --email root@${domain}",
+    path        => '/var/www/userportal-env/bin',
     refreshonly => true,
     subscribe   => Exec['userportal_migrate'],
     returns     => [0, 1], # ignore error if user already exists
