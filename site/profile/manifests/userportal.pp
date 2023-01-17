@@ -59,7 +59,7 @@ class profile::userportal::server (String $password) {
   # Need to use this fork to manage is_staff correctly
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
-    command => 'pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git@d77df67c03a5af5923116afa2f4280b8264b4b5b',
+    command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
     path    => '/var/www/userportal-env/bin',
     creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
     require => [Exec['userportal_venv']],
