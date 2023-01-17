@@ -1,8 +1,6 @@
-class profile::userportal::server (
-  $password
-){
-  package {['python38', 'python38-devel']: }
-  package {['openldap-devel', 'gcc', 'mariadb-devel']: }
+class profile::userportal::server (String $password) {
+  package { ['python38', 'python38-devel']: }
+  package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
 
   # Using python3.8 with gunicorn
   exec { 'create virtualenv':
