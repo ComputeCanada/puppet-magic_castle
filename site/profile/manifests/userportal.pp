@@ -99,9 +99,10 @@ class profile::userportal::server (String $password) {
 
   $domain = lookup('profile::freeipa::base::domain_name')
   exec { 'create api user':
-    command => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
-    require => Exec['django migrate'],
-    returns => [0, 1], # ignore error if user already exists
+    command     => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
+    refreshonly => true,
+    subscribe   => Exec['django migrate'],
+    returns     => [0, 1], # ignore error if user already exists
   }
 
   # Can't do it in puppet since the token is generated on the client and is not present in the serverside puppet catalog
