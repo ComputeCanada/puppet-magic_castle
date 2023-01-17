@@ -137,7 +137,7 @@ script_length = 100000
   exec { 'userportal_api_token':
     command     => 'manage.py drf_create_token root | awk \'{print "token = " $3}\' >> /etc/slurm/slurm_jobscripts.ini',
     refreshonly => true,
-    require     => '/etc/slurm/slurm_jobscripts.ini',
+    require     => File['/etc/slurm/slurm_jobscripts.ini'],
     subscribe   => [
       File['/etc/slurm/slurm_jobscripts.ini'],
       Exec['userportal_apiuser'],
