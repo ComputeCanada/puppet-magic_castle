@@ -79,8 +79,10 @@ class profile::userportal::server (String $password) {
   }
 
   exec { 'django migrate':
-    command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
-    require => [
+    command     => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
+    refreshonly => true,
+    subscribe   => Mysql::Db['userportal'],
+    require     => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
       Exec['pip install django-freeipa-auth'],
@@ -130,6 +132,5 @@ class profile::userportal::server (String $password) {
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
-    before   => Exec['django migrate'],
   }
 }
