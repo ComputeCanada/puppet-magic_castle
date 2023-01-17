@@ -3,7 +3,7 @@ class profile::userportal::server (String $password) {
   package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
 
   # Using python3.8 with gunicorn
-  exec { 'create virtualenv':
+  exec { 'userportal_venv':
     command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
     creates => '/var/www/userportal-env',
     require => Package['python38'],
@@ -42,9 +42,16 @@ class profile::userportal::server (String $password) {
     source => 'file:/var/www/userportal/example/local.py',
     notify => Service['gunicorn-userportal'],
   }
-  -> exec { 'pip install -r':
-    command => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
-    require => [Exec['create virtualenv'], Package['python38-devel'], Package['gcc']],
+
+  exec { 'userportal_pip':
+    command     => '/var/www/userportal-env/bin/pip3 install -r /var/www/userportal/requirements.txt',
+    refreshonly => true,
+    subscribe   => Archive['userportal'],
+    require     => [
+      Exec['userportal_venv'],
+      Package['python38-devel'],
+      Package['gcc']
+    ],
   }
 
   # Need to use this fork to manage is_staff correctly
@@ -52,7 +59,7 @@ class profile::userportal::server (String $password) {
   -> exec { 'pip install django-freeipa-auth':
     command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git@d77df67c03a5af5923116afa2f4280b8264b4b5b',
     creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
-    require => [Exec['create virtualenv']],
+    require => [Exec['userportal_venv']],
   }
 
   file { '/var/www/userportal-static':
@@ -78,7 +85,7 @@ class profile::userportal::server (String $password) {
     require => Exec['pip install django-freeipa-auth'],
   }
 
-  exec { 'django migrate':
+  exec { 'userportal_migrate':
     command     => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py migrate',
     refreshonly => true,
     subscribe   => Mysql::Db['userportal'],
@@ -88,7 +95,7 @@ class profile::userportal::server (String $password) {
       Exec['pip install django-freeipa-auth'],
     ],
   }
-  exec { 'django collectstatic':
+  exec { 'userportal_collectstatic':
     command => '/var/www/userportal-env/bin/python3 /var/www/userportal/manage.py collectstatic --noinput',
     require => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
@@ -103,7 +110,7 @@ class profile::userportal::server (String $password) {
   }
 
   $domain = lookup('profile::freeipa::base::domain_name')
-  exec { 'create api user':
+  exec { 'userportal_apiuser':
     command     => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
     refreshonly => true,
     subscribe   => Exec['django migrate'],
