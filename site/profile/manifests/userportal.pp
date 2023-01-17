@@ -95,6 +95,11 @@ class profile::userportal::server (String $password) {
       File['/var/www/userportal/userportal/local.py'],
       Exec['pip install django-freeipa-auth'],
     ],
+    creates => [
+      '/var/www/userportal-static/admin',
+      '/var/www/userportal-static/custom.js',
+      '/var/www/userportal-static/dashboard.css',
+    ],
   }
 
   $domain = lookup('profile::freeipa::base::domain_name')
