@@ -118,15 +118,36 @@ class profile::userportal::server (String $password) {
     returns     => [0, 1], # ignore error if user already exists
   }
 
-  # Can't do it in puppet since the token is generated on the client and is not present in the serverside puppet catalog
-  -> file { '/root/generate_slurm_jobscripts.sh':
-    mode   => '0700',
-    source => 'puppet:///modules/profile/userportal/generate_slurm_jobscripts.sh',
+  file { '/etc/slurm/slurm_jobscripts.ini':
+    ensure  => 'file',
+    owner   => 'slurm',
+    group   => 'slurm',
+    mode    => '0600',
+    replace => false,
+    content => @(EOT),
+[slurm]
+spool = /var/spool/slurm
+
+[api]
+host = http://localhost:8001
+script_length = 100000
+|EOT
   }
-  -> exec { 'userportal_api_token':
-    command => '/root/generate_slurm_jobscripts.sh',
-    creates => '/etc/slurm/slurm_jobscripts.ini',
-    notify  => Service['slurm_jobscripts'],
+
+  exec { 'userportal_api_token':
+    command     => 'manage.py drf_create_token root | awk \'{print "token = " $3}\' >> /etc/slurm/slurm_jobscripts.ini',
+    refreshonly => true,
+    require     => '/etc/slurm/slurm_jobscripts.ini',
+    subscribe   => [
+      File['/etc/slurm/slurm_jobscripts.ini'],
+      Exec['userportal_apiuser'],
+    ],
+    notify      => Service['slurm_jobscripts'],
+    path        => [
+      '/var/www/userportal',
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ]
   }
 
   file { '/etc/systemd/system/slurm_jobscripts.service':
@@ -134,6 +155,7 @@ class profile::userportal::server (String $password) {
     source => 'puppet:///modules/profile/userportal/slurm_jobscripts.service',
     notify => Service['slurm_jobscripts'],
   }
+
   service { 'slurm_jobscripts':
     ensure  => 'running',
     enable  => true,
