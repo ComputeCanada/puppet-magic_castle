@@ -29,11 +29,12 @@ class profile::userportal::server (String $password) {
     show_diff => false,
     content   => epp('profile/userportal/99-local.py',
       {
-        'password'     => $password,
-        'cluster_name' => lookup('profile::slurm::base::cluster_name'),
-        'secret_key'   => fqdn_rand_string(32, undef, $password),
-        'domain_name'  => lookup('profile::freeipa::base::domain_name'),
-        'subdomain'    => lookup('profile::reverse_proxy::userportal_subdomain'),
+        'password'       => $password,
+        'slurm_password' => lookup('profile::slurm::accounting::password'),
+        'cluster_name'   => lookup('profile::slurm::base::cluster_name'),
+        'secret_key'     => fqdn_rand_string(32, undef, $password),
+        'domain_name'    => lookup('profile::freeipa::base::domain_name'),
+        'subdomain'      => lookup('profile::reverse_proxy::userportal_subdomain'),
       }
     ),
     notify    => [Service['httpd'], Service['gunicorn-userportal']],

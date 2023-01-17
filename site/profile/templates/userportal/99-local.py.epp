@@ -43,7 +43,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'slurm_acct_db',
         'USER': 'slurm',
-        'PASSWORD': '<%= $password %>',
+        'PASSWORD': '<%= $slurm_password %>',
         'HOST': 'localhost',
         'PORT': '3306',
     },
