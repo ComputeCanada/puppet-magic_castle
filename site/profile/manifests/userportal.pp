@@ -113,7 +113,7 @@ class profile::userportal::server (String $password) {
   exec { 'userportal_apiuser':
     command     => "/var/www/userportal-env/bin/python /var/www/userportal/manage.py createsuperuser --noinput --username root --email root@${domain}",
     refreshonly => true,
-    subscribe   => Exec['django migrate'],
+    subscribe   => Exec['userportal_migrate'],
     returns     => [0, 1], # ignore error if user already exists
   }
 
