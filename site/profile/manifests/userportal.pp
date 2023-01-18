@@ -90,7 +90,10 @@ class profile::userportal::server (String $password) {
 
   exec { 'userportal_migrate':
     command     => 'manage.py migrate',
-    path        => '/var/www/userportal-env/bin',
+    path        => [
+      '/var/www/userportal',
+      '/var/www/userportal-env/bin',
+    ],
     refreshonly => true,
     subscribe   => Mysql::Db['userportal'],
     require     => [
@@ -101,7 +104,10 @@ class profile::userportal::server (String $password) {
   }
   exec { 'userportal_collectstatic':
     command => 'manage.py collectstatic --noinput',
-    path    => '/var/www/userportal-env/bin',
+    path    => [
+      '/var/www/userportal',
+      '/var/www/userportal-env/bin',
+    ],
     require => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
@@ -117,7 +123,10 @@ class profile::userportal::server (String $password) {
   $domain = lookup('profile::freeipa::base::domain_name')
   exec { 'userportal_apiuser':
     command     => "manage.py createsuperuser --noinput --username root --email root@${domain}",
-    path        => '/var/www/userportal-env/bin',
+    path        => [
+      '/var/www/userportal',
+      '/var/www/userportal-env/bin',
+    ],
     refreshonly => true,
     subscribe   => Exec['userportal_migrate'],
     returns     => [0, 1], # ignore error if user already exists
