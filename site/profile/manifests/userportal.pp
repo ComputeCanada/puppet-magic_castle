@@ -52,7 +52,9 @@ class profile::userportal::server (String $password) {
     require     => [
       Exec['userportal_venv'],
       Package['python38-devel'],
-      Package['gcc']
+      Package['mariadb-devel'],
+      Package['openldap-devel'],
+      Package['gcc'],
     ],
   }
 
