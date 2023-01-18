@@ -7,11 +7,21 @@ class profile::metrics::node_exporter {
   }
 }
 
-class profile::metrics::slurm_job_exporter {
+# Configure a Prometheus exporter that exports the Slurm compute node metrics, for example:
+# - job memory usage
+# - job memory max
+# - job memory limit
+# - job core usage total
+# - job process count
+# - job threads count
+# - job power gpu
+# This exporter needs to run on compute nodes.
+# @param version The version of the slurm job exporter to install
+class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
   consul::service { 'slurm-job-exporter':
     port  => 9798,
     tags  => ['slurm-job-exporter'],
-    token => lookup('profile::consul::acl_api_token')
+    token => lookup('profile::consul::acl_api_token'),
   }
 
   exec { 'pip install prometheus-client':
@@ -21,7 +31,7 @@ class profile::metrics::slurm_job_exporter {
   }
 
   package { 'slurm-job-exporter':
-    source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.10/slurm-job-exporter-0.0.10-1.el8.noarch.rpm',
+    source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el8.noarch.rpm",
     provider => 'yum',
   }
   -> service { 'slurm-job-exporter':
