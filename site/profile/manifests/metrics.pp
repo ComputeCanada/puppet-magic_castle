@@ -1,3 +1,7 @@
+# Configure a Prometheus exporter that exports server usage metrics, for example:
+# - CPU usage
+# - memory usage
+# It should run on every server of the cluster.
 class profile::metrics::node_exporter {
   include prometheus::node_exporter
   consul::service { 'node-exporter':
@@ -40,6 +44,13 @@ class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
   }
 }
 
+# Configure a Prometheus exporter that exports the Slurm scheduling metrics, for example:
+# - allocated nodes
+# - allocated gpus
+# - pending jobs
+# - completed jobs
+# This exporter typically runs on the Slurm controller server, but it can run on any server
+# with a functional Slurm command-line installation.
 class profile::metrics::slurm_exporter {
   consul::service { 'slurm-exporter':
     port  => 8081,
