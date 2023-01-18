@@ -46,7 +46,10 @@ class profile::userportal::server (String $password) {
 
   exec { 'userportal_pip':
     command     => 'pip3 install -r /var/www/userportal/requirements.txt',
-    path        => '/var/www/userportal-env/bin',
+    path        => [
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ],
     refreshonly => true,
     subscribe   => Archive['userportal'],
     require     => [
@@ -62,7 +65,10 @@ class profile::userportal::server (String $password) {
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
     command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
-    path    => '/var/www/userportal-env/bin',
+    path    => [
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ],
     creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
     require => [Exec['userportal_venv']],
   }
