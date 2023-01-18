@@ -24,19 +24,19 @@ class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
     token => lookup('profile::consul::acl_api_token'),
   }
 
-  exec { 'pip install prometheus-client':
-    command => '/usr/bin/pip3.6 install  --force-reinstall prometheus-client==0.15.0',
-    creates => '/usr/local/lib/python3.6/site-packages/prometheus_client',
-    before  => Service['slurm-job-exporter'],
-  }
-
+  package { 'python3-prometheus_client': }
   package { 'slurm-job-exporter':
     source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el8.noarch.rpm",
     provider => 'yum',
   }
-  -> service { 'slurm-job-exporter':
-    ensure => 'running',
-    enable => true,
+
+  service { 'slurm-job-exporter':
+    ensure  => 'running',
+    enable  => true,
+    require => [
+      Package['slurm-job-exporter'],
+      Package['python3-prometheus_client'],
+    ],
   }
 }
 
