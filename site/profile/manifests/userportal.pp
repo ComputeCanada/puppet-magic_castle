@@ -2,6 +2,9 @@ class profile::userportal::server (String $password) {
   package { ['python38', 'python38-devel']: }
   package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
 
+  $instances = lookup('terraform.instances')
+  $logins = $instances.filter |$keys, $values| { 'login' in $values['tags'] }
+
   # Using python3.8 with gunicorn
   exec { 'userportal_venv':
     command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
@@ -36,6 +39,7 @@ class profile::userportal::server (String $password) {
         'secret_key'     => seeded_rand_string(32, $password),
         'domain_name'    => lookup('profile::freeipa::base::domain_name'),
         'subdomain'      => lookup('profile::reverse_proxy::userportal_subdomain'),
+        'logins'         => $logins,
       }
     ),
     notify    => [Service['httpd'], Service['gunicorn-userportal']],
