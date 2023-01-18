@@ -103,10 +103,13 @@ class profile::userportal::server (String $password) {
       '/var/www/userportal-env/bin',
     ],
     refreshonly => true,
-    subscribe   => Mysql::Db['userportal'],
-    require     => [
+    subscribe   => [
+      Mysql::Db['userportal'],
+      Archive['userportal'],
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
+    ],
+    require     => [
       Exec['pip install django-freeipa-auth'],
     ],
   }
@@ -169,7 +172,7 @@ script_length = 100000
       '/var/www/userportal',
       '/var/www/userportal-env/bin',
       '/usr/bin',
-    ]
+    ],
   }
 
   file { '/etc/systemd/system/slurm_jobscripts.service':
