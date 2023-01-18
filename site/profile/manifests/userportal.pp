@@ -42,6 +42,9 @@ class profile::userportal::server (String $password) {
         'logins'         => $logins,
       }
     ),
+    owner     => 'apache',
+    group     => 'apache',
+    mode      => '0600',
     notify    => [Service['httpd'], Service['gunicorn-userportal']],
   }
   -> file { '/var/www/userportal/userportal/local.py':
