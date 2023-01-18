@@ -1,35 +1,10 @@
 class profile::userportal::server (String $password) {
-  package { ['python38', 'python38-devel']: }
-  package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
-
   $instances = lookup('terraform.instances')
   $logins = $instances.filter |$keys, $values| { 'login' in $values['tags'] }
 
-  # Using python3.8 with gunicorn
-  exec { 'userportal_venv':
-    command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
-    creates => '/var/www/userportal-env',
-    require => Package['python38'],
-  }
+  include profile::userportal::install_tarball
 
-  file { '/var/www/userportal/':
-    ensure => 'directory',
-    owner  => 'apache',
-    group  => 'apache',
-  }
-  -> archive { 'userportal':
-    ensure          => present,
-    source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.2.tar.gz',
-    creates         => '/var/www/userportal/manage.py',
-    path            => '/tmp/userportal.tar.gz',
-    extract         => true,
-    extract_path    => '/var/www/userportal/',
-    extract_command => 'tar xfz %s --strip-components=1',
-    cleanup         => true,
-    user            => 'apache',
-    notify          => [Service['httpd'], Service['gunicorn-userportal']],
-  }
-  -> file { '/var/www/userportal/userportal/settings/99-local.py':
+  file { '/var/www/userportal/userportal/settings/99-local.py':
     show_diff => false,
     content   => epp('profile/userportal/99-local.py',
       {
@@ -45,40 +20,14 @@ class profile::userportal::server (String $password) {
     owner     => 'apache',
     group     => 'apache',
     mode      => '0600',
+    require   => Class['profile::userportal::install_tarball'],
     notify    => [Service['httpd'], Service['gunicorn-userportal']],
   }
-  -> file { '/var/www/userportal/userportal/local.py':
-    source => 'file:/var/www/userportal/example/local.py',
-    notify => Service['gunicorn-userportal'],
-  }
 
-  exec { 'userportal_pip':
-    command     => 'pip3 install -r /var/www/userportal/requirements.txt',
-    path        => [
-      '/var/www/userportal-env/bin',
-      '/usr/bin',
-    ],
-    refreshonly => true,
-    subscribe   => Archive['userportal'],
-    require     => [
-      Exec['userportal_venv'],
-      Package['python38-devel'],
-      Package['mariadb-devel'],
-      Package['openldap-devel'],
-      Package['gcc'],
-    ],
-  }
-
-  # Need to use this fork to manage is_staff correctly
-  # https://github.com/enervee/django-freeipa-auth/pull/9
-  -> exec { 'pip install django-freeipa-auth':
-    command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
-    path    => [
-      '/var/www/userportal-env/bin',
-      '/usr/bin',
-    ],
-    creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
-    require => [Exec['userportal_venv']],
+  file { '/var/www/userportal/userportal/local.py':
+    source  => 'file:/var/www/userportal/example/local.py',
+    require => Class['profile::userportal::install_tarball'],
+    notify  => Service['gunicorn-userportal'],
   }
 
   file { '/var/www/userportal-static':
@@ -101,7 +50,7 @@ class profile::userportal::server (String $password) {
   service { 'gunicorn-userportal':
     ensure  => 'running',
     enable  => true,
-    require => Exec['pip install django-freeipa-auth'],
+    require => Class['profile::userportal::install_tarball'],
   }
 
   exec { 'userportal_migrate':
@@ -113,15 +62,13 @@ class profile::userportal::server (String $password) {
     refreshonly => true,
     subscribe   => [
       Mysql::Db['userportal'],
-      Archive['userportal'],
+      Class['profile::userportal::install_tarball'],
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
     ],
-    require     => [
-      Exec['pip install django-freeipa-auth'],
-    ],
     notify      => Service['gunicorn-userportal'],
   }
+
   exec { 'userportal_collectstatic':
     command => 'manage.py collectstatic --noinput',
     path    => [
@@ -131,7 +78,7 @@ class profile::userportal::server (String $password) {
     require => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
       File['/var/www/userportal/userportal/local.py'],
-      Exec['pip install django-freeipa-auth'],
+      Class['profile::userportal::install_tarball'],
     ],
     creates => [
       '/var/www/userportal-static/admin',
@@ -202,5 +149,64 @@ script_length = 100000
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+  }
+}
+
+class profile::userportal::install_tarball (String $version = '1.0.2') {
+  package { ['python38', 'python38-devel']: }
+  package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
+
+  # Using python3.8 with gunicorn
+  exec { 'userportal_venv':
+    command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
+    creates => '/var/www/userportal-env',
+    require => Package['python38'],
+  }
+
+  file { '/var/www/userportal/':
+    ensure => 'directory',
+    owner  => 'apache',
+    group  => 'apache',
+  }
+  -> archive { 'userportal':
+    ensure          => present,
+    source          => "https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v${version}.tar.gz",
+    creates         => '/var/www/userportal/manage.py',
+    path            => '/tmp/userportal.tar.gz',
+    extract         => true,
+    extract_path    => '/var/www/userportal/',
+    extract_command => 'tar xfz %s --strip-components=1',
+    cleanup         => true,
+    user            => 'apache',
+    notify          => [Service['httpd'], Service['gunicorn-userportal']],
+  }
+
+  exec { 'userportal_pip':
+    command     => 'pip3 install -r /var/www/userportal/requirements.txt',
+    path        => [
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ],
+    refreshonly => true,
+    subscribe   => Archive['userportal'],
+    require     => [
+      Exec['userportal_venv'],
+      Package['python38-devel'],
+      Package['mariadb-devel'],
+      Package['openldap-devel'],
+      Package['gcc'],
+    ],
+  }
+
+  # Need to use this fork to manage is_staff correctly
+  # https://github.com/enervee/django-freeipa-auth/pull/9
+  -> exec { 'pip install django-freeipa-auth':
+    command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
+    path    => [
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ],
+    creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
+    require => [Exec['userportal_venv']],
   }
 }
