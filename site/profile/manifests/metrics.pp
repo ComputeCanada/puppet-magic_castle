@@ -20,13 +20,9 @@ class profile::metrics::slurm_job_exporter {
     before  => Service['slurm-job-exporter'],
   }
 
-  # Since slurm-job-exporter is installed without a repo, it will not install
-  # the required dependency of python3-psutil from the specfile, so it needs
-  # to be installed manually before slurm-job-exporter
-  package { 'python3-psutil': }
-  -> package { 'slurm-job-exporter':
+  package { 'slurm-job-exporter':
     source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.10/slurm-job-exporter-0.0.10-1.el8.noarch.rpm',
-    provider => 'rpm',
+    provider => 'yum',
   }
   -> service { 'slurm-job-exporter':
     ensure => 'running',
