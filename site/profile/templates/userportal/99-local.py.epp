@@ -66,7 +66,7 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = '/accounts/login/' # So it does not use SAML2
 
 FREEIPA_AUTH_BACKEND_ENABLED = True
-FREEIPA_AUTH_SERVER = "mgmt1.int.<%= $domain_name %>"
+FREEIPA_AUTH_SERVER = "ipa.int.<%= $domain_name %>"
 FREEIPA_AUTH_SSL_VERIFY = '/etc/pki/tls/certs/ca-bundle.crt'
 FREEIPA_AUTH_UPDATE_USER_GROUPS = True
 FREEIPA_AUTH_ALWAYS_UPDATE_USER = True
@@ -89,9 +89,11 @@ EXPORTER_SAMPLING_RATE = {
 CLUSTER_NAME = '<%= $cluster_name %>'  # used for slurm DB name
 LUSTRE_FS_NAMES = None
 LOGINS = {
-    'login1': {
+<% $logins.each |$key, $values| { -%>
+    '<%= $key %>': {
         'network_interface': 'eth0',
     },
+<% } -%>
 }
 DTNS = None
 
