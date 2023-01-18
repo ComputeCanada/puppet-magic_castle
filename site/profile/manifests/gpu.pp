@@ -143,33 +143,33 @@ class profile::gpu::install::vgpu::rpm(
   Array[String] $packages,
 )
 {
-    $source_pkg_name = split(split($source, '[/]')[-1], '[.]')[0]
-    package { 'vgpu-repo':
-      ensure   => 'latest',
-      provider => 'rpm',
-      name     => $source_pkg_name,
-      source   => $source,
-    }
+  $source_pkg_name = split(split($source, '[/]')[-1], '[.]')[0]
+  package { 'vgpu-repo':
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => $source_pkg_name,
+    source   => $source,
+  }
 
-    package { $packages:
-      ensure  => 'installed',
-      require => [
-        Yumrepo['epel'],
-        Package['vgpu-repo'],
-      ],
-      notify  => Exec['nvidia-symlink'],
-    }
+  package { $packages:
+    ensure  => 'installed',
+    require => [
+      Yumrepo['epel'],
+      Package['vgpu-repo'],
+    ],
+    notify  => Exec['nvidia-symlink'],
+  }
 
-    # The device files/dev/nvidia* are normally created by nvidia-modprobe
-    # If the permissions of nvidia-modprobe exclude setuid, some device files
-    # will be missing.
-    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
-    -> file { '/usr/bin/nvidia-modprobe':
-      ensure => present,
-      mode   => '4755',
-      owner  => 'root',
-      group  => 'root',
-    }
+  # The device files/dev/nvidia* are normally created by nvidia-modprobe
+  # If the permissions of nvidia-modprobe exclude setuid, some device files
+  # will be missing.
+  # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
+  -> file { '/usr/bin/nvidia-modprobe':
+    ensure => present,
+    mode   => '4755',
+    owner  => 'root',
+    group  => 'root',
+  }
 }
 
 class profile::gpu::install::vgpu::bin(
