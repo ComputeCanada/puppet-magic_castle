@@ -112,6 +112,7 @@ class profile::userportal::server (String $password) {
     require     => [
       Exec['pip install django-freeipa-auth'],
     ],
+    notify      => Service['gunicorn-userportal'],
   }
   exec { 'userportal_collectstatic':
     command => 'manage.py collectstatic --noinput',
