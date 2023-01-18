@@ -17,6 +17,7 @@ class profile::userportal::server (String $password) {
   -> archive { 'userportal':
     ensure          => present,
     source          => 'https://github.com/guilbaults/TrailblazingTurtle/archive/refs/tags/v1.0.2.tar.gz',
+    creates         => '/var/www/userportal/manage.py',
     path            => '/tmp/userportal.tar.gz',
     extract         => true,
     extract_path    => '/var/www/userportal/',
