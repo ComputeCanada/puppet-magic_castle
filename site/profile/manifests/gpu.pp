@@ -195,8 +195,7 @@ class profile::gpu::install::vgpu::bin (
   }
 }
 
-class profile::gpu::monitoring(){
-
+class profile::gpu::monitoring {
   exec { 'pip install nvidia-ml-py':
     command => '/usr/bin/pip3.6 install --force-reinstall nvidia-ml-py==11.515.75',
     creates => '/usr/local/lib/python3.6/site-packages/pynvml.py',
