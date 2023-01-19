@@ -29,7 +29,9 @@ class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
   }
 
   $el = $facts['os']['release']['major']
-  package { 'python3-prometheus_client': }
+  package { 'python3-prometheus_client':
+    require => Yumrepo['epel'],
+  }
   package { 'slurm-job-exporter':
     source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el${el}.noarch.rpm",
     provider => 'yum',
