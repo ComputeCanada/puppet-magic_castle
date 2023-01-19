@@ -113,6 +113,7 @@ prometheus::alerts:
       - record: slurm_job:power_gpu:sum_user_account
         expr: sum(slurm_job_power_gpu) by (user,account)
 
+prometheus::node_exporter::version: 1.5.0
 prometheus::server::version: 2.39.0
 prometheus::server::scrape_configs:
   - job_name: node
