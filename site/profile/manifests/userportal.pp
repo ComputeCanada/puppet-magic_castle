@@ -1,4 +1,10 @@
-class profile::userportal::server (String $password) {
+class profile::userportal::server (
+  String $password,
+  String $prometheus_ip,
+  String $prometheus_port,
+  String $mysql_ip,
+  String $mysql_port,
+) {
   $instances = lookup('terraform.instances')
   $logins = $instances.filter |$keys, $values| { 'login' in $values['tags'] }
 
@@ -8,13 +14,17 @@ class profile::userportal::server (String $password) {
     show_diff => false,
     content   => epp('profile/userportal/99-local.py',
       {
-        'password'       => $password,
-        'slurm_password' => lookup('profile::slurm::accounting::password'),
-        'cluster_name'   => lookup('profile::slurm::base::cluster_name'),
-        'secret_key'     => seeded_rand_string(32, $password),
-        'domain_name'    => lookup('profile::freeipa::base::domain_name'),
-        'subdomain'      => lookup('profile::reverse_proxy::userportal_subdomain'),
-        'logins'         => $logins,
+        'password'        => $password,
+        'slurm_password'  => lookup('profile::slurm::accounting::password'),
+        'cluster_name'    => lookup('profile::slurm::base::cluster_name'),
+        'secret_key'      => seeded_rand_string(32, $password),
+        'domain_name'     => lookup('profile::freeipa::base::domain_name'),
+        'subdomain'       => lookup('profile::reverse_proxy::userportal_subdomain'),
+        'logins'          => $logins,
+        'prometheus_ip'   => $prometheus_ip,
+        'prometheus_port' => $prometheus_port,
+        'db_ip'           => $db_ip,
+        'db_port'         => $db_port,
       }
     ),
     owner     => 'apache',
