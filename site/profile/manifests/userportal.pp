@@ -38,6 +38,7 @@ class profile::userportal::server (String $password) {
 
   file { '/etc/httpd/conf.d/userportal.conf':
     content => epp('profile/userportal/userportal.conf.epp'),
+    seltype => 'httpd_config_t',
     notify  => Service['httpd'],
   }
 
