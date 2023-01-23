@@ -346,3 +346,8 @@ profile::gpu::install::passthrough::packages:
   - nvidia-xconfig
   - nvidia-persistenced
   - nvidia-driver-cuda
+
+profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::userportal::server::prometheus_port: 9090
+profile::userportal::server::db_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::userportal::server::db_port: 3306
