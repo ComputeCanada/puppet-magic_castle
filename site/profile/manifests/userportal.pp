@@ -1,9 +1,9 @@
 class profile::userportal::server (
   String $password,
   String $prometheus_ip,
-  String $prometheus_port,
+  Integer $prometheus_port,
   String $db_ip,
-  String $db_port,
+  Integer $db_port,
 ) {
   $instances = lookup('terraform.instances')
   $logins = $instances.filter |$keys, $values| { 'login' in $values['tags'] }
