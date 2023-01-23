@@ -36,21 +36,21 @@ DATABASES = {
         'NAME': 'userportal',
         'USER': 'userportal',
         'PASSWORD': '<%= $password %>',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'HOST': '<%= $db_ip %>',
+        'PORT': '<%= $db_port %>',
     },
     'slurm': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'slurm_acct_db',
         'USER': 'slurm',
         'PASSWORD': '<%= $slurm_password %>',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'HOST': '<%= $db_ip %>',
+        'PORT': '<%= $db_port %>',
     },
 }
 
 PROMETHEUS = {
-    'url': 'http://localhost:9090',
+    'url': 'http://<%= $prometheus_ip %>:<%= $prometheus_port %>',
     'headers': {},
     'filter': "",
 }
