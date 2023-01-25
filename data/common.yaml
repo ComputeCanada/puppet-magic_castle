@@ -294,5 +294,5 @@ profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.
 
 profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::userportal::server::prometheus_port: 9090
-profile::userportal::server::db_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::userportal::server::db_ip: 127.0.0.1
 profile::userportal::server::db_port: 3306
