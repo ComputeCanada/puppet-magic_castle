@@ -422,15 +422,15 @@ class profile::freeipa::server(
   $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
   exec { 'ipa_regen_cert':
     command   => "${regen_cert_cmd} -D ipa.${int_domain_name}",
+    path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
     try_sleep => 10,
     require   => [
       Exec['ipa_add_service_principal_http'],
       Exec['ipa_add_service_principal_ldap'],
+      Exec['ipa-install'],
     ],
-    path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe => Exec['ipa-install'],
   }
 
   service { 'ipa':
