@@ -1,5 +1,5 @@
 ---
-profile::freeipa::server::regen_cert_cmd: 'ipa-getcert list | grep -oP "Request ID '\K[^']+" | xargs -I '{}' ipa-getcert resubmit -i '{}''
+profile::freeipa::server::regen_cert_cmd: ipa-getcert list | grep -oP "Request ID '\K[^']+" | xargs -I '{}' ipa-getcert resubmit -i '{}'
 profile::gpu::install::passthrough::packages:
     - nvidia-driver-latest-dkms
     - nvidia-driver-latest-dkms-cuda
