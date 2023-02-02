@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.2.0] 2023-02-02
+
+
+### Changed
+- Bump puppet-jupyterhub to 4.5.0
+
 ## [12.1.0] 2023-01-17
 
 ### Added
