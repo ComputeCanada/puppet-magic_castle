@@ -30,13 +30,28 @@ class profile::base (
     }
   }
 
+  # build /etc/hosts
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
   $instances = lookup('terraform.instances')
-  $nodes = $instances.filter |$keys, $values| { 'node' in $values['tags'] }
-  $host_to_add = Hash($nodes.map |$k, $v| { [$k, { 'ip' => $v['local_ip'] }] })
+  $hosts = $instances.filter |$keys, $values| { 'node' in $values['tags'] or 'login' in $values['tags'] }
+  $host_to_add = Hash($hosts.map |$k, $v| { ["${k}.${int_domain_name}", { 'ip' => $v['local_ip'], host_aliases => [$k] }] })
   ensure_resources('host', $host_to_add)
 
+  # building /etc/ssh/ssh_known_hosts
+  # for host based authentication
   $type = 'ed25519'
-  $sshkey_to_add = Hash($nodes.map |$k, $v| { [$k, { 'key' => split($v['hostkeys'][$type], /\s/)[1], 'type' => "ssh-${type}" }] })
+  $sshkey_to_add = Hash(
+    $hosts.map |$k, $v| {
+      [
+        $k,
+        {
+          'key' => split($v['hostkeys'][$type], /\s/)[1],
+          'type' => "ssh-${type}",
+          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],]
+        }
+      ]
+  })
   ensure_resources('sshkey', $sshkey_to_add)
 
   if dig($::facts, 'os', 'release', 'major') == '7' {
@@ -169,6 +184,30 @@ class profile::base (
     path   => '/etc/ssh/sshd_config',
     line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
     notify => Service['sshd']
+  }
+
+  file { '/etc/ssh/ssh_host_ed25519_key':
+    mode  => '0640',
+    owner => 'root',
+    group => 'ssh_keys',
+  }
+
+  file { '/etc/ssh/ssh_host_ed25519_key.pub':
+    mode  => '0644',
+    owner => 'root',
+    group => 'ssh_keys',
+  }
+
+  file { '/etc/ssh/ssh_host_rsa_key':
+    mode  => '0640',
+    owner => 'root',
+    group => 'ssh_keys',
+  }
+
+  file { '/etc/ssh/ssh_host_rsa_key.pub':
+    mode  => '0644',
+    owner => 'root',
+    group => 'ssh_keys',
   }
 
   if dig($::facts, 'os', 'release', 'major') == '8' {
