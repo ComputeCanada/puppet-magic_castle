@@ -19,6 +19,7 @@ node default {
     include profile::cvmfs::client
     include profile::slurm::submitter
     include profile::singularity
+    include profile::ssh::hostbased_auth::client
   }
 
   if 'mgmt' in $instance_tags {
@@ -51,6 +52,8 @@ node default {
     include profile::jupyterhub::node
 
     include profile::slurm::node
+    include profile::ssh::hostbased_auth::client
+    include profile::ssh::hostbased_auth::server
 
     Class['profile::nfs::client'] -> Service['slurmd']
     Class['profile::gpu'] -> Service['slurmd']
