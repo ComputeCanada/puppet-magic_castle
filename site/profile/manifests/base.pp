@@ -3,7 +3,7 @@ class profile::base (
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
-  include ::consul_template
+  include consul_template
   include epel
   include selinux
 
@@ -26,7 +26,7 @@ class profile::base (
     exec { 'enable_powertools':
       command => 'dnf config-manager --set-enabled powertools',
       unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
-      path    => ['/usr/bin']
+      path    => ['/usr/bin'],
     }
   }
 
@@ -56,7 +56,7 @@ class profile::base (
 
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
-      ensure => 'installed'
+      ensure => 'installed',
     }
   }
 
@@ -68,11 +68,12 @@ class profile::base (
   if $admin_email {
     include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
-      ensure  => present,
       mode    => '0700',
-      content => epp('profile/base/postrun', {
-        'email' => $admin_email,
-      }),
+      content => epp('profile/base/postrun',
+        {
+          'email' => $admin_email,
+        }
+      ),
     }
   }
 
@@ -81,10 +82,10 @@ class profile::base (
   selinux::boolean { 'selinuxuser_tcp_server': }
 
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
-    ensure => absent
+    ensure => absent,
   }
 
-  class { '::swap_file':
+  class { 'swap_file':
     files => {
       '/mnt/swap' => {
         ensure       => present,
@@ -95,15 +96,15 @@ class profile::base (
   }
 
   package { 'pciutils':
-    ensure => 'installed'
+    ensure => 'installed',
   }
 
   package { 'vim':
-    ensure => 'installed'
+    ensure => 'installed',
   }
 
   package { 'unzip':
-    ensure => 'installed'
+    ensure => 'installed',
   }
 
   package { 'firewalld':
@@ -116,7 +117,7 @@ class profile::base (
     chain  => 'INPUT',
     proto  => 'all',
     source => profile::getcidr(),
-    action => 'accept'
+    action => 'accept',
   }
 
   firewall { '001 drop access to metadata server':
@@ -124,27 +125,27 @@ class profile::base (
     proto       => 'tcp',
     destination => '169.254.169.254',
     action      => 'drop',
-    uid         => '! root'
+    uid         => '! root',
   }
 
   package { 'haveged':
     ensure  => 'installed',
-    require => Yumrepo['epel']
+    require => Yumrepo['epel'],
   }
 
   package { 'clustershell':
     ensure  => 'installed',
-    require => Yumrepo['epel']
+    require => Yumrepo['epel'],
   }
 
   service { 'haveged':
     ensure  => running,
     enable  => true,
-    require => Package['haveged']
+    require => Package['haveged'],
   }
 
   package { 'xauth':
-    ensure => 'installed'
+    ensure => 'installed',
   }
 
   service { 'sshd':
@@ -155,35 +156,35 @@ class profile::base (
   sshd_config { 'PermitRootLogin':
     ensure => present,
     value  => 'no',
-    notify => Service['sshd']
+    notify => Service['sshd'],
   }
 
   file_line { 'MACs':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
     line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-    notify => Service['sshd']
+    notify => Service['sshd'],
   }
 
   file_line { 'KexAlgorithms':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
     line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-    notify => Service['sshd']
+    notify => Service['sshd'],
   }
 
   file_line { 'HostKeyAlgorithms':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
     line   => 'HostKeyAlgorithms ssh-rsa',
-    notify => Service['sshd']
+    notify => Service['sshd'],
   }
 
   file_line { 'Ciphers':
     ensure => present,
     path   => '/etc/ssh/sshd_config',
     line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
-    notify => Service['sshd']
+    notify => Service['sshd'],
   }
 
   file { '/etc/ssh/ssh_host_ed25519_key':
@@ -220,7 +221,6 @@ class profile::base (
     # config in /etc by what's in /usr/share. The files in /etc/crypto-policies
     # are in just symlinks to /usr/share
     file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
-      ensure => present,
       source => 'puppet:///modules/profile/base/opensshserver.config',
       notify => Service['sshd'],
     }
@@ -232,7 +232,7 @@ class profile::base (
 
   # Remove scripts leftover by terraform remote-exec provisioner
   file { glob('/tmp/terraform_*.sh'):
-    ensure => absent
+    ensure => absent,
   }
 }
 
@@ -242,7 +242,6 @@ class profile::base::azure {
   }
 
   file { '/etc/udev/rules.d/66-azure-storage.rules':
-    ensure         => 'present',
     source         => 'https://raw.githubusercontent.com/Azure/WALinuxAgent/v2.2.48.1/config/66-azure-storage.rules',
     require        => Package['WALinuxAgent'],
     owner          => 'root',
