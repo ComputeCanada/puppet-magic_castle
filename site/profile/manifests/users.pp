@@ -1,11 +1,11 @@
-class profile::users::ldap(
+class profile::users::ldap (
   Hash $users
 ) {
   require profile::accounts
 
   file { '/sbin/ipa_create_user.py':
     source => 'puppet:///modules/profile/users/ipa_create_user.py',
-    mode   => '0755'
+    mode   => '0755',
   }
 
   ensure_resources(profile::users::ldap_user, $users)
@@ -13,10 +13,9 @@ class profile::users::ldap(
 
 class profile::users::local (
   Hash $users
-)
-{
+) {
   file { '/etc/sudoers.d/90-puppet-users':
-    ensure => present,
+    ensure => file,
     mode   => '0440',
     owner  => 'root',
     group  => 'root',
@@ -24,7 +23,7 @@ class profile::users::local (
 
   file { '/etc/sudoers.d/90-cloud-init-users':
     ensure  => absent,
-    require => $users.map | $k, $v | { Profile::Users::Local_user[$k] }
+    require => $users.map | $k, $v | { Profile::Users::Local_user[$k] },
   }
 
   ensure_resources(profile::users::local_user, $users)
@@ -32,10 +31,10 @@ class profile::users::local (
 
 define profile::users::ldap_user (
   Array[String] $groups,
-  String $passwd = '',
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
+  Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
@@ -51,14 +50,14 @@ define profile::users::ldap_user (
     $timeout = 10
   }
 
-  if $passwd != '' {
+  if $passwd {
     $environment = ["IPA_ADMIN_PASSWD=${admin_password}", "IPA_USER_PASSWD=${passwd}"]
   } else {
     $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
   }
 
   if $count > 0 {
-    exec{ "ldap_user_${name}":
+    exec { "ldap_user_${name}" :
       command     => $command,
       unless      => $unless,
       environment => $environment,
@@ -70,10 +69,11 @@ define profile::users::ldap_user (
       $ds_password = lookup('profile::freeipa::server::ds_password')
       $domain_name = lookup('profile::freeipa::base::domain_name')
       $int_domain_name = "int.${domain_name}"
+      $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
       $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
 
       $ldad_passwd_cmd = @("EOT")
-        ldappasswd -ZZ -H ldap://${::hostname}.${int_domain_name} \
+        ldappasswd -ZZ -H ldap://${fqdn} \
         -x -D "cn=Directory Manager" -w "${ds_password}" \
         -S "uid={},cn=users,cn=accounts,${ldap_dc_string}" \
         -s "${passwd}"
@@ -102,7 +102,6 @@ define profile::users::local_user (
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
 ) {
-
   # Configure local account and ssh keys
   user { $name:
     ensure         => present,
@@ -111,7 +110,7 @@ define profile::users::local_user (
     home           => "/${name}",
     purge_ssh_keys => true,
     managehome     => true,
-    notify         => Selinux::Exec_restorecon["/${name}"]
+    notify         => Selinux::Exec_restorecon["/${name}"],
   }
 
   selinux::exec_restorecon { "/${name}": }
@@ -138,11 +137,11 @@ define profile::users::local_user (
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
-  $ensure_sudoer = $sudoer ? { true => present, false => absent }
+  $ensure_sudoer = $sudoer ? { true => 'present', false => 'absent' }
   file_line { "sudoer_${name}":
-      ensure  => $ensure_sudoer,
-      path    => '/etc/sudoers.d/90-puppet-users',
-      line    => "${name} ALL=(ALL) NOPASSWD:ALL",
-      require => File['/etc/sudoers.d/90-puppet-users']
+    ensure  => $ensure_sudoer,
+    path    => '/etc/sudoers.d/90-puppet-users',
+    line    => "${name} ALL=(ALL) NOPASSWD:ALL",
+    require => File['/etc/sudoers.d/90-puppet-users'],
   }
 }
