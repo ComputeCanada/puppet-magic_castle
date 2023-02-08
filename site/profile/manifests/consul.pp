@@ -1,8 +1,8 @@
 class profile::consul::server {
-  $interface = split($::interfaces, ',')[0]
-  $ipaddress = $::networking['interfaces'][$interface]['ip']
+  $interface = keys($facts['networking']['interfaces'])[0]
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
-  class { '::consul':
+  class { 'consul':
     config_mode   => '0640',
     acl_api_token => lookup('profile::consul::acl_api_token'),
     config_hash   => {
@@ -10,17 +10,17 @@ class profile::consul::server {
       'bind_addr'        => $ipaddress,
       'data_dir'         => '/opt/consul',
       'log_level'        => 'INFO',
-      'node_name'        => $facts['hostname'],
+      'node_name'        => $facts['networking']['hostname'],
       'server'           => true,
       'acl_agent_token'  => lookup('profile::consul::acl_api_token'),
       'acl'              => {
         'enabled'        => true,
         'default_policy' => 'deny',
         'tokens'         => {
-          'master' => lookup('profile::consul::acl_api_token')
-        }
-      }
-    }
+          'master' => lookup('profile::consul::acl_api_token'),
+        },
+      },
+    },
   }
 
   tcp_conn_validator { 'consul':
@@ -28,26 +28,26 @@ class profile::consul::server {
     port      => 8500,
     try_sleep => 5,
     timeout   => 60,
-    require   => Service['consul']
+    require   => Service['consul'],
   }
 
   include profile::consul::puppet_watch
 }
 
-class profile::consul::client(String $server_ip) {
-  $interface = split($::interfaces, ',')[0]
-  $ipaddress = $::networking['interfaces'][$interface]['ip']
+class profile::consul::client (String $server_ip) {
+  $interface = keys($facts['networking']['interfaces'])[0]
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
-  class { '::consul':
+  class { 'consul':
     config_mode => '0640',
     config_hash => {
       'bind_addr'       => $ipaddress,
       'data_dir'        => '/opt/consul',
       'log_level'       => 'INFO',
-      'node_name'       => $facts['hostname'],
+      'node_name'       => $facts['networking']['hostname'],
       'retry_join'      => [$server_ip],
-      'acl_agent_token' => lookup('profile::consul::acl_api_token')
-    }
+      'acl_agent_token' => lookup('profile::consul::acl_api_token'),
+    },
   }
 
   tcp_conn_validator { 'consul-server':
@@ -55,7 +55,7 @@ class profile::consul::client(String $server_ip) {
     port      => 8300,
     try_sleep => 5,
     timeout   => 120,
-    require   => Service['consul']
+    require   => Service['consul'],
   }
 
   tcp_conn_validator { 'consul':
@@ -63,8 +63,10 @@ class profile::consul::client(String $server_ip) {
     port      => 8500,
     try_sleep => 5,
     timeout   => 60,
-    require   => [Service['consul'],
-                  Tcp_conn_validator['consul-server']]
+    require   => [
+      Service['consul'],
+      Tcp_conn_validator['consul-server']
+    ],
   }
 
   include profile::consul::puppet_watch
@@ -77,22 +79,19 @@ class profile::consul::puppet_watch {
   include epel
   ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
+  $consul_sudoer = "consul ALL=(root) NOPASSWD: /usr/bin/systemctl reload puppet\n"
   file { '/etc/sudoers.d/99-consul':
-    ensure  => present,
     owner   => 'root',
     group   => 'root',
     mode    => '0440',
-    content =>  @("END")
-consul ALL=(root) NOPASSWD: /usr/bin/systemctl reload puppet
-END
+    content => $consul_sudoer,
   }
 
   file { '/usr/bin/puppet_event_handler.sh':
-    ensure => present,
     mode   => '0755',
     owner  => 'root',
     group  => 'root',
-    source => 'puppet:///modules/profile/consul/puppet_event_handler.sh'
+    source => 'puppet:///modules/profile/consul/puppet_event_handler.sh',
   }
 
   consul::watch { 'puppet_event':
