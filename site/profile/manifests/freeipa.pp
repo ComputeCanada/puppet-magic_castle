@@ -393,7 +393,7 @@ class profile::freeipa::server(
     subscribe   => Exec['ipa-install'],
   }
 
-  exec { 'ipa_add_service_principal':
+  exec { 'ipa_add_service_principal_http':
     command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
     refreshonly => true,
     require     => [
@@ -406,18 +406,31 @@ class profile::freeipa::server(
     subscribe   => Exec['ipa-install'],
   }
 
-  $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
-  exec { 'ipa_regen_server-cert':
-    command     => "kinit_wrapper ${regen_cert_cmd} -D ipa.${int_domain_name}",
+  exec { 'ipa_add_service_principal_ldap':
+    command     => "kinit_wrapper ipa service-add-principal ldap/${fqdn} ldap/ipa.${int_domain_name}",
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
-      Exec['ipa_add_service_principal'],
+      Exec['ipa_add_record_CNAME'],
+      Exec['ipa_add_host_ipa'],
     ],
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => Exec['ipa-install'],
-    notify      => Service['httpd'],
+  }
+
+  $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
+  exec { 'ipa_regen_cert':
+    command   => "${regen_cert_cmd} -D ipa.${int_domain_name}",
+    path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
+    tries     => 5,
+    try_sleep => 10,
+    require   => [
+      Exec['ipa_add_service_principal_http'],
+      Exec['ipa_add_service_principal_ldap'],
+      Exec['ipa-install'],
+    ],
   }
 
   service { 'ipa':
