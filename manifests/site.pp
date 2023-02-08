@@ -18,7 +18,6 @@ node default {
     include profile::fail2ban
     include profile::cvmfs::client
     include profile::slurm::submitter
-    include profile::singularity
     include profile::ssh::hostbased_auth::client
   }
 
@@ -48,7 +47,6 @@ node default {
   if 'node' in $instance_tags {
     include profile::cvmfs::client
     include profile::gpu
-    include profile::singularity
     include profile::jupyterhub::node
 
     include profile::slurm::node
