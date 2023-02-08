@@ -1,9 +1,9 @@
-class profile::cvmfs::client(
+class profile::cvmfs::client (
   Integer $quota_limit,
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
-){
+) {
   include profile::cvmfs::local_user
 
   package { 'cvmfs-repo':
@@ -13,44 +13,45 @@ class profile::cvmfs::client(
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
   }
 
-  if $::software_stack == 'eessi' {
+  if $facts['software_stack'] == 'eessi' {
     package { 'stack':
       ensure   => 'latest',
       provider => 'rpm',
       name     => 'cvmfs-config-eessi',
-      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm'
+      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
     }
-  } elsif $::software_stack == 'computecanada' {
+  } elsif $facts['software_stack'] == 'computecanada' {
     package { 'cc-cvmfs-repo':
       ensure   => 'installed',
       provider => 'rpm',
       name     => 'computecanada-release-1.0-1.noarch',
-      source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm'
+      source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-latest.noarch.rpm',
     }
 
     package { 'stack':
       ensure  => 'installed',
       name    => 'cvmfs-config-computecanada',
-      require => [Package['cc-cvmfs-repo']]
+      require => [Package['cc-cvmfs-repo']],
     }
   }
 
   package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['stack']]
+    require => [Package['cvmfs-repo'], Package['stack']],
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
-    ensure  => 'present',
-    content => epp('profile/cvmfs/default.local', {
-      'quota_limit'  => $quota_limit,
-      'repositories' => $repositories,
-    }),
+    content => epp('profile/cvmfs/default.local',
+      {
+        'quota_limit'  => $quota_limit,
+        'repositories' => $repositories,
+      }
+    ),
     notify  => Service['consul-template'],
-    require => Package['cvmfs']
+    require => Package['cvmfs'],
   }
 
-  consul::service{ 'cvmfs':
+  consul::service { 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => {
@@ -59,17 +60,17 @@ class profile::cvmfs::client(
   }
 
   file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
-    ensure => 'present',
     source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
     notify => Service['consul-template'],
   }
 
   file { '/etc/profile.d/z-01-site.sh':
-    ensure  => 'present',
-    content => epp('profile/cvmfs/z-01-site.sh', {
-      'lmod_default_modules' => $lmod_default_modules,
-      'initial_profile'      => $initial_profile,
-    }),
+    content => epp('profile/cvmfs/z-01-site.sh',
+      {
+        'lmod_default_modules' => $lmod_default_modules,
+        'initial_profile'      => $initial_profile,
+      }
+    ),
   }
 
   consul_template::watch { 'z-00-rsnt_arch.sh':
@@ -79,7 +80,7 @@ class profile::cvmfs::client(
       source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
       destination => '/etc/profile.d/z-00-rsnt_arch.sh',
       command     => '/usr/bin/true',
-    }
+    },
   }
 
   consul_template::watch { '/etc/cvmfs/default.local':
@@ -89,7 +90,7 @@ class profile::cvmfs::client(
       source      => '/etc/cvmfs/default.local.ctmpl',
       destination => '/etc/cvmfs/default.local',
       command     => '/usr/bin/cvmfs_config reload',
-    }
+    },
   }
 
   service { 'autofs':
@@ -120,7 +121,6 @@ class profile::cvmfs::client(
   # CVMFS is a read-only filesystem, the context cannot be changed.
   # 'use_fusefs_home_dirs' policy fix that issue.
   selinux::boolean { 'use_fusefs_home_dirs': }
-
 }
 
 # Create a local cvmfs user
@@ -131,7 +131,7 @@ class profile::cvmfs::local_user (
   Integer $gid = 8000131,
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
-){
+) {
   group { $group:
     ensure => present,
     gid    => $gid,
@@ -144,6 +144,6 @@ class profile::cvmfs::local_user (
     managehome => false,
     home       => '/var/lib/cvmfs',
     shell      => '/usr/sbin/nologin',
-    require    => Group[$group]
+    require    => Group[$group],
   }
 }
