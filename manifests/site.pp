@@ -1,8 +1,8 @@
-stage { ['first', 'second'] : }
+stage { ['first', 'second']: }
 Stage['first'] -> Stage['second'] -> Stage['main']
 
 node default {
-  $instance_tags = lookup("terraform.instances.${::hostname}.tags")
+  $instance_tags = lookup("terraform.instances.${facts['networking']['hostname']}.tags")
 
   if 'puppet' in $instance_tags {
     include profile::consul::server
