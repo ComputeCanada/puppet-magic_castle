@@ -1,12 +1,13 @@
-class profile::nfs::client (String $server_ip) {
-  $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
-                          default_value => $::domain })
+class profile::nfs::client (
+  String $server_ip,
+  String $domain_name,
+) {
   $nfs_domain  = "int.${domain_name}"
 
-  class { '::nfs':
+  class { 'nfs':
     client_enabled      => true,
     nfs_v4_client       => true,
-    nfs_v4_idmap_domain => $nfs_domain
+    nfs_v4_idmap_domain => $nfs_domain,
   }
 
   $devices = lookup('profile::nfs::server::devices', undef, undef, {})
@@ -15,81 +16,68 @@ class profile::nfs::client (String $server_ip) {
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
     $nfs_export_list.each | String $name | {
       nfs::client::mount { "/${name}":
-          server        => $server_ip,
-          share         => $name,
-          options_nfsv4 => $options_nfsv4
+        server        => $server_ip,
+        share         => $name,
+        options_nfsv4 => $options_nfsv4,
       }
     }
   }
 }
 
 class profile::nfs::server (
+  String $domain_name,
   Variant[String, Hash[String, Array[String]]] $devices,
 ) {
   require profile::base
 
-  $domain_name = lookup({ name          => 'profile::freeipa::base::domain_name',
-                          default_value => $::domain })
   $nfs_domain  = "int.${domain_name}"
 
   file { '/lib/systemd/system/clean-nfs-rbind.service':
-    mode    => '0644',
-    owner   => 'root',
-    group   => 'root',
-    content => @(END)
-[Unit]
-Before=nfs-server.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=true
-ExecStop=/usr/bin/sed "-i ';/export/;d' /etc/fstab"
-
-[Install]
-WantedBy=multi-user.target
-END
+    mode   => '0644',
+    owner  => 'root',
+    group  => 'root',
+    source => 'puppet:///modules/profile/nfs/clean-nfs-rbind.service',
   }
 
   exec { 'clean-nfs-rbind-systemd-reload':
     command     => 'systemctl daemon-reload',
-    path        => [ '/usr/bin', '/bin', '/usr/sbin' ],
+    path        => ['/usr/bin', '/bin', '/usr/sbin'],
     refreshonly => true,
-    require     => File['/lib/systemd/system/clean-nfs-rbind.service']
+    require     => File['/lib/systemd/system/clean-nfs-rbind.service'],
   }
 
   service { 'clean-nfs-rbind':
     ensure  => running,
     enable  => true,
-    require => Exec['clean-nfs-rbind-systemd-reload']
+    require => Exec['clean-nfs-rbind-systemd-reload'],
   }
 
   $cidr = profile::getcidr()
-  class { '::nfs':
+  class { 'nfs':
     server_enabled             => true,
     nfs_v4                     => true,
     storeconfigs_enabled       => false,
     nfs_v4_export_root         => '/export',
     nfs_v4_export_root_clients => "${cidr}(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
-    nfs_v4_idmap_domain        => $nfs_domain
+    nfs_v4_idmap_domain        => $nfs_domain,
   }
 
   file { '/etc/nfs.conf':
-    ensure => present,
     owner  => 'root',
     group  => 'root',
     mode   => '0644',
     source => 'puppet:///modules/profile/nfs/nfs.conf',
-    notify => Service[$::nfs::server_service_name],
+    notify => Service[$nfs::server_service_name],
   }
 
   service { ['rpc-statd', 'rpcbind', 'rpcbind.socket']:
     ensure => stopped,
     enable => mask,
-    notify => Service[$::nfs::server_service_name],
+    notify => Service[$nfs::server_service_name],
   }
 
   package { 'lvm2':
-    ensure => installed
+    ensure => installed,
   }
 
   if $devices =~ Hash[String, Array[String]] {
@@ -103,7 +91,7 @@ END
   exec { 'unexportfs_exportfs':
     command => 'exportfs -ua; cat /proc/fs/nfs/exports; exportfs -a',
     path    => ['/usr/sbin', '/usr/bin'],
-    unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports'
+    unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports',
   }
 }
 
@@ -111,10 +99,9 @@ define profile::nfs::server::export_volume (
   Array[String] $glob,
   String $seltype = 'home_root_t',
 ) {
+  $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
-  $regexes = regsubst($glob, /[?*]/, {'?' => '.', '*' => '.*' })
-
-  file { ["/mnt/${name}"] :
+  file { ["/mnt/${name}"]:
     ensure  => directory,
     seltype => $seltype,
   }
@@ -157,18 +144,18 @@ define profile::nfs::server::export_volume (
     ensure  => 'present',
     target  => '/home',
     require => Mount["/mnt/${name}"],
-    notify  => Selinux::Exec_restorecon["/mnt/${name}"]
+    notify  => Selinux::Exec_restorecon["/mnt/${name}"],
   }
 
   selinux::exec_restorecon { "/mnt/${name}": }
 
-  nfs::server::export{ "/mnt/${name}":
+  nfs::server::export { "/mnt/${name}":
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
-    notify  => Service[$::nfs::server_service_name],
+    notify  => Service[$nfs::server_service_name],
     require => [
       Mount["/mnt/${name}"],
-      Class['::nfs'],
-    ]
+      Class['nfs'],
+    ],
   }
 }
