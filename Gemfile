@@ -4,6 +4,7 @@ source "https://rubygems.org"
 gem "rake"
 gem "puppet", ENV['PUPPET_VERSION'] || '~> 6.0'
 gem "puppet-lint"
+gem 'puppet-lint-param-docs'
 
 gem "rspec"
 gem "rspec-core"
