@@ -1,5 +1,5 @@
 class profile::mail::server {
-  ensure_packages(['postfix'], { ensure => 'present'})
+  ensure_packages(['postfix'], { ensure => 'present' })
 
   service { 'postfix':
     ensure  => running,
