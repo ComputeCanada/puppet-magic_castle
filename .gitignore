@@ -1,4 +1,10 @@
 .DS_Store
 terraform
 .vscode
+.librarian/
+.tmp/
+data/bootstrap.yaml
 data/terraform_data.yaml
+data/user_data.yaml
+modules/
+site/profile/facts.d/terraform_facts.yaml
