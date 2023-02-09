@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.3.0] UNRELEASED
+
+### Changed
+- Fixed mkhome daemon to retry initial rsync of a LDAP user's home (#218, #219)
+- Fixed LDAP TLS certificate to add ipa subdomain (#215)
+
+### Added
+- Activated SSH hostbased authentication on compute nodes, from login and compute nodes. (#5, #217)
+
+### Removed
+- Removed Singulairty class. `apptainer` is now provided by CVMFS. (#216)
+
 ## [12.2.0] 2023-02-02
 
 
