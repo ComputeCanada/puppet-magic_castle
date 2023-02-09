@@ -1,10 +1,9 @@
-class profile::reverse_proxy(
+class profile::reverse_proxy (
   String $domain_name,
   String $jupyterhub_subdomain,
   String $ipa_subdomain,
   String $mokey_subdomain,
-  )
-{
+) {
   selinux::boolean { 'httpd_can_network_connect': }
 
   firewall { '200 httpd public':
@@ -12,7 +11,7 @@ class profile::reverse_proxy(
     dport  => [80, 443],
     proto  => 'tcp',
     source => '0.0.0.0/0',
-    action => 'accept'
+    action => 'accept',
   }
 
   yumrepo { 'caddy-copr-repo':
@@ -27,7 +26,7 @@ class profile::reverse_proxy(
 
   package { 'caddy':
     ensure  => 'installed',
-    require => Yumrepo['caddy-copr-repo']
+    require => Yumrepo['caddy-copr-repo'],
   }
 
   $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
@@ -45,7 +44,6 @@ class profile::reverse_proxy(
 
   if $privkey_exists {
     file { "/etc/letsencrypt/live/${domain_name}/privkey.pem":
-      ensure  => present,
       owner   => 'root',
       group   => 'caddy',
       mode    => '0640',
@@ -76,12 +74,12 @@ class profile::reverse_proxy(
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => Package['caddy'],
-    content => @("END")
+    content => @("EOT"),
 (tls) {
   ${tls_string}
 }
 import conf.d/*
-END
+| EOT
   }
 
   file { '/etc/caddy/conf.d/host.conf':
@@ -90,7 +88,7 @@ END
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
-    content => @("END")
+    content => @("END"),
 ${domain_name} {
   import tls
   redir https://${jupyterhub_subdomain}.${domain_name}
@@ -104,7 +102,7 @@ END
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
-    content => @("END")
+    content => @("END"),
 ${jupyterhub_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${$jupyterhub::bind_url} {
@@ -122,7 +120,7 @@ END
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
-    content => @("END")
+    content => @("END"),
 ${mokey_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${ipa_server_ip}:${mokey_port}
@@ -136,7 +134,7 @@ END
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
-    content => @("END")
+    content => @("END"),
 ${ipa_subdomain}.${domain_name} {
   import tls
   reverse_proxy ${ipa_subdomain}.int.${domain_name}
@@ -156,6 +154,6 @@ END
       File['/etc/caddy/conf.d/jupyter.conf'],
       File['/etc/caddy/conf.d/mokey.conf'],
       File['/etc/caddy/conf.d/ipa.conf'],
-    ]
+    ],
   }
 }
