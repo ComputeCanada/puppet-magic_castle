@@ -18,11 +18,9 @@ class profile::gpu {
 class profile::gpu::install (
   String $lib_symlink_path = undef
 ) {
-  ensure_resource('file', '/etc/nvidia', {'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], {ensure => 'installed'})
-  ensure_packages(['dkms'], {
-    'require' => Yumrepo['epel']
-  })
+  ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
+  ensure_packages(['kernel-devel'], { 'ensure' => 'installed' })
+  ensure_packages(['dkms'], { 'require' => Yumrepo['epel'] })
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
@@ -44,8 +42,8 @@ class profile::gpu::install (
       timeout => 0,
       require => [
         Package['kernel-devel'],
-        Package['dkms']
-      ]
+        Package['dkms'],
+      ],
     }
     $kmod_require = [Exec['dkms autoinstall']]
   } else {
@@ -53,33 +51,33 @@ class profile::gpu::install (
   }
 
   kmod::load { [
-    'nvidia',
-    'nvidia_drm',
-    'nvidia_modeset',
-    'nvidia_uvm'
+      'nvidia',
+      'nvidia_drm',
+      'nvidia_modeset',
+      'nvidia_uvm',
     ]:
-    require => $kmod_require
+      require => $kmod_require,
   }
 
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash(
       $lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
-        [join($lib_symlink_path_split[0, $index+2], '/'), {'ensure' => 'directory', 'notify' => Exec['nvidia-symlink'] }]
+        [join($lib_symlink_path_split[0, $index+2], '/'), { 'ensure' => 'directory', 'notify' => Exec['nvidia-symlink'] }]
       }.filter |$array| {
         !($array[0] in ['/lib', '/lib64', '/usr', '/usr/lib', '/usr/lib64', '/opt'])
       }
     )
     $lib_symlink_dir_res = ensure_resources('file', $lib_symlink_dir)
     exec { 'nvidia-symlink':
-      command     => "rpm -qa *nvidia* | xargs rpm -ql | grep -P '/usr/lib64/[a-z0-9-.]*.so[0-9.]*' | xargs -I {} ln -sf {} ${lib_symlink_path}",
+      command     => "rpm -qa *nvidia* | xargs rpm -ql | grep -P '/usr/lib64/[a-z0-9-.]*.so[0-9.]*' | xargs -I {} ln -sf {} ${lib_symlink_path}", # lint:ignore:140chars
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
     }
   }
 }
 
-class profile::gpu::install::passthrough(Array[String] $packages) {
+class profile::gpu::install::passthrough (Array[String] $packages) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
   if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
@@ -120,16 +118,14 @@ class profile::gpu::install::passthrough(Array[String] $packages) {
   }
 
   file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
-    ensure  => 'present',
     content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
     mode    => '0644',
   }
 }
 
-class profile::gpu::install::vgpu(
+class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
-)
-{
+) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
   } elsif $installer == 'bin' {
@@ -138,11 +134,10 @@ class profile::gpu::install::vgpu(
   }
 }
 
-class profile::gpu::install::vgpu::rpm(
+class profile::gpu::install::vgpu::rpm (
   String $source,
   Array[String] $packages,
-)
-{
+) {
   $source_pkg_name = split(split($source, '[/]')[-1], '[.]')[0]
   package { 'vgpu-repo':
     ensure   => 'latest',
@@ -165,20 +160,19 @@ class profile::gpu::install::vgpu::rpm(
   # will be missing.
   # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#runfile-verifications
   -> file { '/usr/bin/nvidia-modprobe':
-    ensure => present,
+    ensure => file,
     mode   => '4755',
     owner  => 'root',
     group  => 'root',
   }
 }
 
-class profile::gpu::install::vgpu::bin(
+class profile::gpu::install::vgpu::bin (
   String $source,
   String $gridd_source,
-)
-{
+) {
   exec { 'vgpu-driver-install-bin':
-    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run",
+    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     creates => [
       '/usr/bin/nvidia-smi',
@@ -188,11 +182,11 @@ class profile::gpu::install::vgpu::bin(
     require => [
       Package['kernel-devel'],
       Package['dkms'],
-    ]
+    ],
   }
 
   file { '/etc/nvidia/gridd.conf':
-    ensure => present,
+    ensure => file,
     mode   => '0644',
     owner  => 'root',
     group  => 'root',

@@ -3,7 +3,7 @@ class profile::metrics::exporter {
   consul::service { 'node-exporter':
     port  => 9100,
     tags  => ['monitor'],
-    token => lookup('profile::consul::acl_api_token')
+    token => lookup('profile::consul::acl_api_token'),
   }
 }
 
@@ -16,10 +16,12 @@ class profile::metrics::server {
         'scrape_interval'   => '10s',
         'scrape_timeout'    => '10s',
         'honor_labels'      => true,
-        'consul_sd_configs' => [{
-          'server' => '127.0.0.1:8500',
-          'token'  => lookup('profile::consul::acl_api_token')
-        }],
+        'consul_sd_configs' => [
+          {
+            'server' => '127.0.0.1:8500',
+            'token'  => lookup('profile::consul::acl_api_token')
+          },
+        ],
         'relabel_configs'   => [
           {
             'source_labels' => ['__meta_consul_tags'],
@@ -32,6 +34,6 @@ class profile::metrics::server {
           }
         ],
       },
-    ]
+    ],
   }
 }

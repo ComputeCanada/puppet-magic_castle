@@ -1,9 +1,9 @@
 class profile::globus {
-  package{ 'wget':
-    ensure => installed
+  package { 'wget':
+    ensure => installed,
   }
 
-  $public_ip = lookup("terraform.instances.${::hostname}.public_ip")
+  $public_ip = lookup("terraform.instances.${facts['networking']['hostname']}.public_ip")
   class { 'globus':
     display_name  => $globus::display_name,
     client_id     => $globus::client_id,
@@ -14,5 +14,4 @@ class profile::globus {
     owner         => $globus::owner,
     require       => Package['wget'],
   }
-
 }

@@ -1,23 +1,23 @@
 class profile::rsyslog::base {
   package { 'rsyslog':
-    ensure => 'installed'
+    ensure => 'installed',
   }
   service { 'rsyslog':
     ensure => running,
-    enable => true
+    enable => true,
   }
 }
 
 class profile::rsyslog::client {
   include profile::rsyslog::base
 
+  $remote_host_conf = @(EOT)
+    {{ range service "rsyslog" -}}
+    *.* @@{{.Address}}:{{.Port}}
+    {{ end -}}
+    | EOT
   file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
-    ensure  => present,
-    content => @(END)
-{{ range service "rsyslog" -}}
-*.* @@{{.Address}}:{{.Port}}
-{{ end -}}
-END
+    content => $remote_host_conf,
   }
 
   consul_template::watch { 'slurm.remote_host.conf.ctmpl':
@@ -27,7 +27,7 @@ END
       source      => '/etc/rsyslog.d/remote_host.conf.ctmpl',
       destination => '/etc/rsyslog.d/remote_host.conf',
       command     => 'systemctl restart rsyslog || true',
-    }
+    },
   }
 }
 
@@ -45,7 +45,7 @@ class profile::rsyslog::server {
     path   => '/etc/rsyslog.conf',
     match  => '^#$ModLoad imtcp',
     line   => '$ModLoad imtcp',
-    notify => Service['rsyslog']
+    notify => Service['rsyslog'],
   }
 
   file_line { 'rsyslog_InputTCPServerRun':
@@ -53,6 +53,6 @@ class profile::rsyslog::server {
     path   => '/etc/rsyslog.conf',
     match  => '^#$InputTCPServerRun 514',
     line   => '$InputTCPServerRun 514',
-    notify => Service['rsyslog']
+    notify => Service['rsyslog'],
   }
 }

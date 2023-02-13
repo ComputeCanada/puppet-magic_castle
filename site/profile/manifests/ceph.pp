@@ -1,4 +1,4 @@
-class profile::ceph::client(
+class profile::ceph::client (
   String $share_name,
   String $access_key,
   String $export_path,
@@ -15,7 +15,7 @@ class profile::ceph::client(
   }
 
   file { "/mnt/${mount_name}":
-    ensure => directory
+    ensure => directory,
   }
 
   $mon_host_string = join($mon_host, ',')
@@ -24,17 +24,17 @@ class profile::ceph::client(
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
     options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${share_name}",
-    require => Class['profile::ceph::client::config']
+    require => Class['profile::ceph::client::config'],
   }
 
   $mount_binds.each |$mount| {
     file { "/mnt/${mount_name}/${mount}":
       ensure  => directory,
-      require => Class['profile::ceph::client::config']
+      require => Class['profile::ceph::client::config'],
     }
     file { "/${mount}":
       ensure  => directory,
-      require => Class['profile::ceph::client::config']
+      require => Class['profile::ceph::client::config'],
     }
     mount { "/${mount}":
       ensure  => 'mounted',
@@ -52,7 +52,7 @@ class profile::ceph::client(
         ensure  => 'present',
         target  => $binds_fcontext_equivalence,
         require => Mount["/${mount}"],
-        notify  => Selinux::Exec_restorecon["/${mount}"]
+        notify  => Selinux::Exec_restorecon["/${mount}"],
       }
       selinux::exec_restorecon { "/${mount}": }
     }
@@ -60,7 +60,6 @@ class profile::ceph::client(
 }
 
 class profile::ceph::client::install {
-
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
@@ -76,19 +75,20 @@ class profile::ceph::client::install {
     $argparse_pkgname = 'python-ceph-argparse'
   }
 
-  package { [
-    'libcephfs2',
-    'python-cephfs',
-    'ceph-common',
-    $argparse_pkgname,
-#    'ceph-fuse',
-  ] :
-    ensure  => installed,
-    require => [Yumrepo['epel'], Yumrepo['ceph-stable']]
+  package {
+    [
+      'libcephfs2',
+      'python-cephfs',
+      'ceph-common',
+      $argparse_pkgname,
+      # 'ceph-fuse',
+    ]:
+      ensure  => installed,
+      require => [Yumrepo['epel'], Yumrepo['ceph-stable']],
   }
 }
 
-class profile::ceph::client::config(
+class profile::ceph::client::config (
   String $share_name,
   String $access_key,
   String $export_path,
@@ -96,32 +96,33 @@ class profile::ceph::client::config(
 ) {
   require profile::ceph::client::install
 
+  $client_fullkey = @("EOT")
+    [client.${share_name}]
+    key = ${access_key}
+    | EOT
+
   file { "/etc/ceph/client.fullkey.${share_name}":
-    ensure  => present,
-    content => @("EOT"),
-[client.${share_name}]
-key = ${access_key}
-|EOT
+    content => $client_fullkey,
     mode    => '0600',
     owner   => 'root',
-    group   => 'root'
+    group   => 'root',
   }
 
   file { "/etc/ceph/client.keyonly.${share_name}":
-    ensure  => present,
     content => Sensitive($access_key),
     mode    => '0600',
     owner   => 'root',
-    group   => 'root'
+    group   => 'root',
   }
 
   $mon_host_string = join($mon_host, ',')
-  file { '/etc/ceph/ceph.conf':
-    ensure  => present,
-    content => @("EOT"),
-[client]
+  $ceph_conf = @("EOT")
+    [client]
     client quota = true
     mon host = ${mon_host_string}
-|EOT
+    | EOT
+
+  file { '/etc/ceph/ceph.conf':
+    content => $ceph_conf,
   }
 }

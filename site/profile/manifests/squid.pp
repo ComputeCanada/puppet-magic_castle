@@ -1,4 +1,4 @@
-class profile::squid::server(
+class profile::squid::server (
   Integer $port,
   Integer $cache_size,
   Array[String] $cvmfs_acl_regex,
@@ -15,11 +15,11 @@ class profile::squid::server(
   }
   squid::acl { 'CONNECT':
     type    => 'method',
-    entries => ['CONNECT']
+    entries => ['CONNECT'],
   }
   squid::acl { 'CLUSTER_NETWORK':
     type    => 'src',
-    entries => [profile::getcidr()]
+    entries => [profile::getcidr()],
   }
   # How can we have multiple regex entries under the same ACL name?
   # From Squid documentation:
@@ -30,25 +30,25 @@ class profile::squid::server(
     entries => $cvmfs_acl_regex,
   }
   squid::http_access { 'manager localhost':
-    action => 'allow'
+    action => 'allow',
   }
   squid::http_access { 'manager':
-    action => 'deny'
+    action => 'deny',
   }
   squid::http_access { '!Safe_ports':
-    action => 'deny'
+    action => 'deny',
   }
   squid::http_access { 'CONNECT !SSL_ports':
-    action => 'deny'
+    action => 'deny',
   }
   squid::http_access { 'localhost':
-    action => 'allow'
+    action => 'allow',
   }
   squid::http_access { 'all':
-    action => 'deny'
+    action => 'deny',
   }
   squid::http_access { 'CLUSTER_NETWORK CVMFS':
-    action => 'allow'
+    action => 'allow',
   }
   squid::cache_dir { '/var/spool/squid':
     type    => 'ufs',
