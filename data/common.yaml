@@ -105,6 +105,7 @@ prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
+profile::users::ldap::access_tags: ['login', 'node']
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"

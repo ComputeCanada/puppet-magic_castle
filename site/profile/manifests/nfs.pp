@@ -81,9 +81,19 @@ class profile::nfs::server (
   }
 
   if $devices =~ Hash[String, Array[String]] {
+    $hostname = $facts['networking']['hostname']
+    $instance_tags = lookup("terraform.instances.${hostname}.tags")
+    $users_tags = unique(
+      flatten(
+        lookup('profile::users::ldap::users').map|$key,$values| {
+          pick($values['access_tags'], lookup('profile::users::ldap::access_tags'))
+        }
+      )
+    )
     $devices.each | String $key, $glob | {
       profile::nfs::server::export_volume { $key:
-        glob => $glob,
+        glob            => $glob,
+        root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
       }
     }
   }
@@ -97,6 +107,7 @@ class profile::nfs::server (
 
 define profile::nfs::server::export_volume (
   Array[String] $glob,
+  Boolean $root_bind_mount = false,
   String $seltype = 'home_root_t',
 ) {
   $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
@@ -157,5 +168,18 @@ define profile::nfs::server::export_volume (
       Mount["/mnt/${name}"],
       Class['nfs'],
     ],
+  }
+  if $root_bind_mount {
+    file { "/${name}":
+      ensure  => directory,
+      seltype => $seltype,
+    }
+    mount { "/${name}":
+      ensure  => mounted,
+      device  => "/mnt/${name}",
+      fstype  => none,
+      options => 'rw,bind',
+      require => File["/${name}"],
+    }
   }
 }
