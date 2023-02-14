@@ -31,13 +31,16 @@ class profile::users::local (
 
 define profile::users::ldap_user (
   Array[String] $groups,
+  Array[String] $access_tags = ['login', 'node'],
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $group_string = join($groups.map |$group| { "--group ${group}" }, ' ')
+  $unique_group = "ipa-${name}"
+  $groups_ = concat($groups, [$unique_group])
+  $group_string = join($groups_.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
   if $count > 1 {
     $prefix = $name
@@ -63,6 +66,21 @@ define profile::users::ldap_user (
       environment => $environment,
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $timeout,
+    }
+
+    $access_tags.each |$tag| {
+      exec { "ipa_hbacrule_${name}_${tag}":
+        command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=${unique_group}",
+        refreshonly => true,
+        environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+        require     => [File['kinit_wrapper'],],
+        path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+        returns     => [0, 1],
+        subscribe   => [
+          Exec["ldap_user_${name}"],
+          Exec['hbac_rules'],
+        ],
+      }
     }
 
     if $manage_password {

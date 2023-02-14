@@ -1,0 +1,22 @@
+#!/bin/bash
+# 1. Create a hostgroup for each tag
+# 2. Create an automember rule for each hostgroup
+# 3. Add a condition to the automember rule for each prefix with that tag
+# 4. Rebuild the automember rules
+
+<% $tags.each |$tag| { -%>
+ipa hostgroup-add <%= $tag %>
+ipa automember-add <%= $tag %> --type=hostgroup
+ipa hbacrule-add <%= $tag %> --servicecat=all
+ipa hbacrule-add-host <%= $tag %> --hostgroups=<%= $tag %>
+
+<% } -%>
+
+
+<% $prefixes_tags.each |$prefix, $tags| { -%>
+<% $tags.each |$tag| { -%>
+ipa automember-add-condition <%= $tag %> --type=hostgroup --key=fqdn --inclusive-regex="^<%= $prefix %>\d+.int.<%= $domain_name %>$"
+<% } -%>
+<% } -%>
+
+ipa automember-rebuild --type=hostgroup
