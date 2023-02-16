@@ -58,6 +58,7 @@ profile::accounts:::skel_archives:
 | `profile::cvmfs::local_user::cvmfs_uid`     | Integer   |  cvmfs user id  	   | 13000004  |
 | `profile::cvmfs::local_user::cvmfs_gid`     | Integer   |  cvmfs group id  	   |  8000131 |
 | `profile::cvmfs::local_user::cvmfs_group`   | String    |  cvmfs group name   |  'cvmfs-reserved' |
+| `profile::cvmfs::client::alien_cache_repositories`| Array[String] | List of CVMFS repository that need an alien cache | `[]` |
 
 
 ## profile::fail2ban

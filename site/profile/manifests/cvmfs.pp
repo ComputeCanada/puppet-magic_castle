@@ -3,7 +3,9 @@ class profile::cvmfs::client (
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
-) {
+  Array[String] $alien_cache_repositories,
+  String $alien_cache_fs_root = '/scratch',
+){
   include profile::cvmfs::local_user
 
   package { 'cvmfs-repo':
@@ -41,17 +43,25 @@ class profile::cvmfs::client (
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
-    content => epp('profile/cvmfs/default.local',
-      {
-        'quota_limit'  => $quota_limit,
-        'repositories' => $repositories,
-      }
-    ),
+    content => epp('profile/cvmfs/default.local', {
+      'quota_limit'  => $quota_limit,
+      'repositories' => $repositories + $alien_cache_repositories,
+    }),
     notify  => Service['consul-template'],
     require => Package['cvmfs'],
   }
 
-  consul::service { 'cvmfs':
+  $alien_cache_repositories.each |$repo| {
+    file { "/etc/cvmfs/config.d/${repo}.conf":
+      ensure  => 'present',
+      content => epp('profile/cvmfs/alien_cache.conf.epp', {
+        'alien_cache_fs_root' => $alien_cache_fs_root,
+      }),
+      require => Package['cvmfs']
+    }
+  }
+
+  consul::service{ 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => {
@@ -121,6 +131,20 @@ class profile::cvmfs::client (
   # CVMFS is a read-only filesystem, the context cannot be changed.
   # 'use_fusefs_home_dirs' policy fix that issue.
   selinux::boolean { 'use_fusefs_home_dirs': }
+}
+
+# Create an alien source that refers to the uid and gid of cvmfs user
+class profile::cvmfs::alien_source {
+
+  $uid = lookup('profile::cvmfs::local_user::uid', undef, undef, 0)
+  $gid = lookup('profile::cvmfs::local_user::gid', undef, undef, 0)
+  $alien_cache_fs_root = lookup('profile::cvmfs::client::alien_cache_fs_root', undef, undef, '/scratch')
+
+  file {"/mnt/${alien_cache_fs_root}/cvmfs_alien_cache":
+    ensure => directory,
+    group  => $gid,
+    owner  => $uid,
+  }
 }
 
 # Create a local cvmfs user
