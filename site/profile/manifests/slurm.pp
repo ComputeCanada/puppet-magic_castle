@@ -168,6 +168,8 @@ END
   $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
   $suspend_exc_nodes = keys($nodes.filter|$key, $attr|{ !('pool' in $attr['tags']) })
+  $partition_names = unique($nodes.map |$key, $attr| { $attr['prefix'] })
+  $partitions = Hash($partition_names.map | $name | { [$name, { 'nodes' => keys($nodes.filter|$key, $attr | { $name == $attr['prefix'] }) } ] })
   file { '/etc/slurm/slurm.conf':
     ensure  => 'present',
     content => epp('profile/slurm/slurm.conf',
@@ -180,6 +182,7 @@ END
         'resume_timeout'        => $resume_timeout,
         'suspend_time'          => $suspend_time,
         'memlimit'              => $os_reserved_memory,
+        'partitions'            => $partitions,
       }),
     group   => 'slurm',
     owner   => 'slurm',

@@ -32,6 +32,9 @@ CommunicationParameters=NoAddrCache
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
 PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
+<% $partitions.map|$name, $values| { -%>
+PartitionName=<%= $name %> Nodes=<%= join($values['nodes'], ',') %>
+<% } -%>
 
 SlurmdPort=6818
 
