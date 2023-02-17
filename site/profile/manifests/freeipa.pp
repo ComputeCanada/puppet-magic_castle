@@ -188,7 +188,7 @@ class profile::freeipa::client (String $server_ip) {
 class profile::freeipa::server (
   String $admin_password,
   String $ds_password,
-  Array[String] $hbac_services = ['sshd', 'jupyterhub'],
+  Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
 ) {
   include profile::freeipa::base
 
