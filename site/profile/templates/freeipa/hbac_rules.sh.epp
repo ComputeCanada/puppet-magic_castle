@@ -5,16 +5,16 @@
 # 4. Rebuild the automember rules
 
 <% $hbac_services.each |$service| { %>
-ipa hbacsvc-add $service
+ipa hbacsvc-add <%= $service %>
 <% } %>
 
 <% $tags.each |$tag| { -%>
 ipa hostgroup-add <%= $tag %>
 ipa automember-add <%= $tag %> --type=hostgroup
 <% $hbac_services.each |$service| { %>
-ipa hbacrule-add <%= $tag %>:<% $service =%>
-ipa hbacrule-add-host <%= $tag %>:<% $service =%> --hostgroups=<%= $tag %>
-ipa hbacrule-add-service <%= $tag %>:<% $service =%> --hbacsvcs=<% $service =%>
+ipa hbacrule-add <%= $tag %>:<%= $service %>
+ipa hbacrule-add-host <%= $tag %>:<%= $service %> --hostgroups=<%= $tag %>
+ipa hbacrule-add-service <%= $tag %>:<%= $service %> --hbacsvcs=<%= $service %>
 <% } %>
 
 <% } -%>
