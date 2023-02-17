@@ -51,13 +51,20 @@ class profile::base (
         "${k}.${int_domain_name}",
         {
           ip           => $v['local_ip'],
-          host_aliases => [$k],
+          host_aliases => [$k] + ('puppet' in $v['tags'] ? { true => ['puppet'], false => [] }),
           require      => Exec['sed_fqdn'],
+          before       => Exec['sed_host_puppet'],
         }
       ]
     }
   )
   ensure_resources('host', $hosts_to_add)
+
+  exec { 'sed_host_puppet':
+    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+puppet$/d" /etc/hosts',
+    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+puppet$" /etc/hosts',
+    path    => ['/bin'],
+  }
 
   # building /etc/ssh/ssh_known_hosts
   # for host based authentication
