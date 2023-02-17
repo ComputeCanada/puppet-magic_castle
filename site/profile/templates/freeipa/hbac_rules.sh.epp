@@ -4,11 +4,18 @@
 # 3. Add a condition to the automember rule for each prefix with that tag
 # 4. Rebuild the automember rules
 
+<% $services.each |$service| { %>
+ipa hbacsvc-add $service
+<% } %>
+
 <% $tags.each |$tag| { -%>
 ipa hostgroup-add <%= $tag %>
 ipa automember-add <%= $tag %> --type=hostgroup
-ipa hbacrule-add <%= $tag %> --servicecat=all
-ipa hbacrule-add-host <%= $tag %> --hostgroups=<%= $tag %>
+<% $services.each |$service| { %>
+ipa hbacrule-add <%= $tag %>:<% $service =%>
+ipa hbacrule-add-host <%= $tag %>:<% $service =%> --hostgroups=<%= $tag %>
+ipa hbacrule-add-service <%= $tag %>:<% $service =%> --hbacsvcs=<% $service =%>
+<% } %>
 
 <% } -%>
 

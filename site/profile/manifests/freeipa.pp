@@ -188,6 +188,7 @@ class profile::freeipa::client (String $server_ip) {
 class profile::freeipa::server (
   String $admin_password,
   String $ds_password,
+  Array[String] $hbac_services = ['sshd', 'jupyterhub'],
 ) {
   include profile::freeipa::base
 
@@ -360,6 +361,7 @@ class profile::freeipa::server (
         'tags'          => $tags,
         'prefixes_tags' => $prefixes_tags,
         'domain_name'   => $domain_name,
+        'hbac_services' => $hbac_services,
       }
     ),
   }

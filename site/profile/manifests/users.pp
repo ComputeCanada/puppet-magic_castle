@@ -31,7 +31,7 @@ class profile::users::local (
 
 define profile::users::ldap_user (
   Array[String] $groups,
-  Array[String] $access_tags = ['login', 'node'],
+  Array[String] $access_tags = ['login:sshd', 'node:sshd', 'proxy:jupyterhub'],
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
