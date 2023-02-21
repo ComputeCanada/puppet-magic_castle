@@ -240,6 +240,32 @@ END
     seltype => 'etc_t'
   }
 
+  file { '/opt/software/slurm/bin/cond_restart_slurm_services':
+    require => Package['slurm'],
+    mode    => '0755',
+    content => @("EOT"),
+#!/bin/bash
+{
+  /usr/bin/systemctl -q is-active slurmd && /usr/bin/systemctl restart slurmd || /usr/bin/true
+  /usr/bin/systemctl -q is-active slurmctld && /usr/bin/systemctl restart slurmctld || /usr/bin/true
+} &> /var/log/slurm/cond_restart_slurm_services.log
+|EOT
+  }
+
+
+  consul_template::watch { 'slurm-consul.conf':
+    require     => [
+      File['/etc/slurm/slurm-consul.tpl'],
+      File['/opt/software/slurm/bin/cond_restart_slurm_services'],
+    ],
+    config_hash => {
+      perms       => '0644',
+      source      => '/etc/slurm/slurm-consul.tpl',
+      destination => '/etc/slurm/slurm-consul.conf',
+      command     => '/opt/software/slurm/bin/cond_restart_slurm_services',
+    }
+  }
+
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
@@ -459,31 +485,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     require => Package['munge']
   }
 
-  file { '/opt/software/slurm/bin/cond_restart_slurmctld':
-    require => Package['slurm'],
-    mode    => '0755',
-    content => @("EOT"),
-#!/bin/bash
-{
-  /usr/bin/systemctl -q is-active slurmctld && /usr/bin/systemctl restart slurmctld || /usr/bin/true
-} &> /var/log/slurm/cond_restart_slurmctld.log
-|EOT
-  }
-
-
-  consul_template::watch { 'slurm-consul.conf':
-    require     => [
-      File['/etc/slurm/slurm-consul.tpl'],
-      File['/opt/software/slurm/bin/cond_restart_slurmctld'],
-    ],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/slurm/slurm-consul.tpl',
-      destination => '/etc/slurm/slurm-consul.conf',
-      command     => '/opt/software/slurm/bin/cond_restart_slurmctld',
-    }
-  }
-
   service { 'slurmctld':
     ensure    => 'running',
     enable    => true,
@@ -611,30 +612,6 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
-  file { '/opt/software/slurm/bin/cond_restart_slurmd':
-    require => Package['slurm'],
-    mode    => '0755',
-    content => @("EOT"),
-#!/bin/bash
-{
-  /usr/bin/systemctl -q is-active slurmd && /usr/bin/systemctl restart slurmd || /usr/bin/true
-} &> /var/log/slurm/cond_restart_slurmd.log
-|EOT
-  }
-
-  consul_template::watch { 'slurm-consul.conf':
-    require     => [
-      File['/etc/slurm/slurm-consul.tpl'],
-      File['/opt/software/slurm/bin/cond_restart_slurmd'],
-    ],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/slurm/slurm-consul.tpl',
-      destination => '/etc/slurm/slurm-consul.conf',
-      command     => '/opt/software/slurm/bin/cond_restart_slurmd',
-    }
-  }
-
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
@@ -688,15 +665,4 @@ class profile::slurm::node {
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
-
-  consul_template::watch { 'slurm-consul.conf':
-    require     => File['/etc/slurm/slurm-consul.tpl'],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/slurm/slurm-consul.tpl',
-      destination => '/etc/slurm/slurm-consul.conf',
-      command     => '/bin/true',
-    },
-  }
-
 }

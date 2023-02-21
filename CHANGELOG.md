@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Fixed mkhome daemon to retry initial rsync of a LDAP user's home (#218, #219)
 - Fixed LDAP TLS certificate to add ipa subdomain (#215)
+- Moved `consul_template::watch` of `slurm-consul.conf` in `slurm::base` (#221, #222)
 
 ### Added
 - Activated SSH hostbased authentication on compute nodes, from login and compute nodes. (#5, #217)
