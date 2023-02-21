@@ -1,5 +1,6 @@
 class profile::users::ldap (
-  Hash $users
+  Hash $users,
+  Array[String] $access_tags,
 ) {
   require profile::accounts
 
@@ -8,7 +9,7 @@ class profile::users::ldap (
     mode   => '0755',
   }
 
-  ensure_resources(profile::users::ldap_user, $users)
+  ensure_resources(profile::users::ldap_user, $users, { 'access_tags' => $access_tags })
 }
 
 class profile::users::local (
@@ -31,7 +32,7 @@ class profile::users::local (
 
 define profile::users::ldap_user (
   Array[String] $groups,
-  Array[String] $access_tags = ['login:sshd', 'node:sshd', 'proxy:jupyterhub'],
+  Array[String] $access_tags,
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
