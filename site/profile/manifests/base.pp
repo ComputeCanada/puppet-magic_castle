@@ -7,6 +7,13 @@ class profile::base (
   include epel
   include selinux
 
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+  $hostname = $facts['networking']['hostname']
+  $fqdn = "${hostname}.${int_domain_name}"
+  $interface = keys($facts['networking']['interfaces'])[0]
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
@@ -31,18 +38,39 @@ class profile::base (
   }
 
   # build /etc/hosts
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  # Make sure /etc/hosts entry for the current host is manage by Puppet only
+  exec { 'sed_fqdn':
+    command => "sed -i '/^${ipaddress}/d' /etc/hosts",
+    onlyif  => "grep '${ipaddress}' /etc/hosts | grep -v -E '${fqdn}\\s+${hostname}'",
+    path    => ['/bin'],
+  }
+
   $instances = lookup('terraform.instances')
-  $hosts = $instances.filter |$keys, $values| { 'node' in $values['tags'] or 'login' in $values['tags'] }
-  $host_to_add = Hash($hosts.map |$k, $v| { ["${k}.${int_domain_name}", { 'ip' => $v['local_ip'], host_aliases => [$k] }] })
-  ensure_resources('host', $host_to_add)
+  $hosts_to_add = Hash($instances.map |$k, $v| {
+      [
+        "${k}.${int_domain_name}",
+        {
+          ip           => $v['local_ip'],
+          host_aliases => [$k] + ('puppet' in $v['tags'] ? { true => ['puppet'], false => [] }),
+          require      => Exec['sed_fqdn'],
+          before       => Exec['sed_host_puppet'],
+        }
+      ]
+    }
+  )
+  ensure_resources('host', $hosts_to_add)
+
+  exec { 'sed_host_puppet':
+    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+puppet$/d" /etc/hosts',
+    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+puppet$" /etc/hosts',
+    path    => ['/bin'],
+  }
 
   # building /etc/ssh/ssh_known_hosts
   # for host based authentication
   $type = 'ed25519'
   $sshkey_to_add = Hash(
-    $hosts.map |$k, $v| {
+    $instances.map |$k, $v| {
       [
         $k,
         {

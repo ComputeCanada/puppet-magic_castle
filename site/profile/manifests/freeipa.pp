@@ -211,22 +211,6 @@ class profile::freeipa::server (
   $interface = keys($facts['networking']['interfaces'])[0]
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
-  # Remove host entry only once before install FreeIPA
-  exec { 'remove-hosts-entry':
-    command => "/usr/bin/sed -i '/${ipaddress}/d' /etc/hosts",
-    before  => Exec['ipa-install'],
-    unless  => ['/usr/bin/test -f /var/log/ipaserver-install.log'],
-  }
-
-  # Make sure the FQDN is set in /etc/hosts to avoid any resolve
-  # issue when install FreeIPA server
-  host { $fqdn:
-    ip           => $ipaddress,
-    host_aliases => [$facts['networking']['hostname']],
-    require      => Exec['remove-hosts-entry'],
-    before       => Exec['ipa-install'],
-  }
-
   $idstart = Integer($facts['uid_max']) + 1
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
     /sbin/ipa-server-install \
@@ -255,7 +239,10 @@ class profile::freeipa::server (
     command => Sensitive($ipa_server_install_cmd),
     creates => '/etc/ipa/default.conf',
     timeout => 0,
-    require => [Package['ipa-server-dns']],
+    require => [
+      Package['ipa-server-dns'],
+      Host[$fqdn],
+    ],
     notify  => Service['systemd-logind'],
   }
 
