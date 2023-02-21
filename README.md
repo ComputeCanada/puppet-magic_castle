@@ -80,6 +80,8 @@ profile::accounts:::skel_archives:
 | `profile::freeipa::mokey::require_verify_admin` | Boolean | Require a FreeIPA to enable Mokey created account before usage | `true` |
 | `profile::freeipa::server::admin_password`| String  | Password of the FreeIPA admin account | |
 | `profile::freeipa::server::ds_password`| String  | Password of the directory server | |
+| `profile::freeipa::server::hbac_services`| Array[String]  | Name of services to control with HBAC rules | `['sshd', 'jupyterhub-login']` |
+
 
 ## profile::mfa
 
@@ -141,11 +143,21 @@ profile::accounts:::skel_archives:
 | `profile::squid::cache_size`          | Integer        | Amount of disk space (MB) that can be used by Squid service                 | 4096     |
 | `profile::squid::cvmfs_acl_regex`     | Array[String]  | List of regexes corresponding to CVMFS stratum users are allowed to access  | `['^(cvmfs-.*\.computecanada\.ca)$', '^(.*-cvmfs\.openhtc\.io)$', '^(cvmfs-.*\.genap\.ca)$']`     |
 
+## profile::sssd
+
+| Variable | Type | Description | Default  |
+| -------- | :--- | :---------- | -------- |
+| `profile::sssd::domains` | Hash | Dictionary of domain-config which can authenticate on the cluster | `{}` |
+| `profile::sssd::access_tags` | Array[String] | List of host tags that domain user can connect to | `['login', 'node']` |
+| `profile::sssd::deny_access` | Optional[Boolean] | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | `undef` |
+
+
 ## profile::users
 
 | Variable                              | Type           | Description                                                                 | Default  |
 | ------------------------------------- | :------------- | :-------------------------------------------------------------------------- | -------- |
 | `profile::users::ldap::users` | Hash[Hash] | Dictionary of users to be created in LDAP | |
+| `profile::users::ldap::access_tags` | Array[String] | List of string of the form `'tag:service'` that LDAP user can connect to  | `['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']` |
 | `profile::users::local::users` | Hash[Hash] | Dictionary of users to be created locally | |
 
 ### profile::users::ldap::users
