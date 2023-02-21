@@ -14,6 +14,7 @@ class profile::jupyterhub::hub {
       }
     ),
   }
+  include profile::slurm::submitter
 }
 
 class profile::jupyterhub::node {
