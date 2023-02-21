@@ -13,6 +13,7 @@ node default {
   include profile::base
   include profile::users::local
   include profile::metrics::exporter
+  include profile::sssd::client
 
   if 'login' in $instance_tags {
     include profile::fail2ban
@@ -34,13 +35,8 @@ node default {
 
     include profile::accounts
     include profile::users::ldap
-    class { 'profile::sssd::client':
-      domains     => lookup('profile::sssd::client::domains', undef, undef, {}),
-      deny_access => true,
-    }
   } else {
     include profile::freeipa::client
-    include profile::sssd::client
     include profile::rsyslog::client
   }
 

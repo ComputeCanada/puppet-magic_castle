@@ -188,6 +188,7 @@ class profile::freeipa::client (String $server_ip) {
 class profile::freeipa::server (
   String $admin_password,
   String $ds_password,
+  Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
 ) {
   include profile::freeipa::base
 
@@ -291,72 +292,6 @@ class profile::freeipa::server (
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
-  exec { 'ipa_automember_ipausers':
-    command     => 'kinit_wrapper ipa automember-default-group-set --default-group=ipausers --type=group',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_hostgroup_not_mgmt':
-    command     => 'kinit_wrapper ipa hostgroup-add not_mgmt',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-  ~> exec { 'ipa_automember_not_mgmt':
-    command     => 'kinit_wrapper ipa automember-add not_mgmt --type=hostgroup',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  }
-  ~> exec { 'ipa_automember_condition_not_mgmt':
-    command     => 'kinit_wrapper ipa automember-add-condition not_mgmt --type=hostgroup --key=fqdn --inclusive-regex=.* --exclusive-regex="^mgmt.*"', # lint:ignore:140chars
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  }
-  ~> exec { 'ipa_automember_rebuild_hostgroup':
-    command     => 'kinit_wrapper ipa automember-rebuild --type=hostgroup',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  }
-
-  exec { 'ipa_hbacrule_notmgmt':
-    command     => 'kinit_wrapper ipa hbacrule-add ipauser_not_mgmt --servicecat=all',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_hbacrule_notmgmt_addusers':
-    command     => 'kinit_wrapper ipa hbacrule-add-user ipauser_not_mgmt --groups=ipausers',
-    refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_automember_ipausers']],
-  }
-
-  exec { 'ipa_hbacrule_notmgmt_addhosts':
-    command     => 'kinit_wrapper ipa hbacrule-add-host ipauser_not_mgmt --hostgroups=not_mgmt',
-    refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [Exec['ipa_hbacrule_notmgmt'], Exec['ipa_hostgroup_not_mgmt']],
-  }
-
   exec { 'ipa_add_record_CNAME':
     command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${facts['networking']['hostname']}",
     refreshonly => true,
@@ -411,6 +346,36 @@ class profile::freeipa::server (
     require   => [
       Exec['ipa_add_service_principal_http'],
       Exec['ipa_add_service_principal_ldap'],
+      Exec['ipa-install'],
+    ],
+  }
+
+  $instances = lookup('terraform.instances')
+  $tags = unique(flatten($instances.map |$key, $values| { $values['tags'] }))
+  $prefixes_tags = Hash(unique($instances.map |$key, $values| { [$values['prefix'], $values['tags']] }))
+  file { '/etc/ipa/hbac_rules.sh':
+    mode    => '0700',
+    content => epp(
+      'profile/freeipa/hbac_rules.sh',
+      {
+        'tags'          => $tags,
+        'prefixes_tags' => $prefixes_tags,
+        'domain_name'   => $domain_name,
+        'hbac_services' => $hbac_services,
+      }
+    ),
+  }
+
+  exec { 'hbac_rules':
+    command     => 'kinit_wrapper /etc/ipa/hbac_rules.sh',
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => [
+      File['/etc/ipa/hbac_rules.sh'],
       Exec['ipa-install'],
     ],
   }

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Activated SSH hostbased authentication on compute nodes, from login and compute nodes. (#5, #217)
+- Added automatic generation of HBAC rules for LDAP users based on instance tags (#221, #225)
 
 ### Removed
 - Removed Singulairty class. `apptainer` is now provided by CVMFS. (#216)
