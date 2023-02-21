@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added creation of Slurm partitions based on the compute node hostname prefixes(#38, #226)
 
 ### Removed
-- Removed Singulairty class. `apptainer` is now provided by CVMFS. (#216)
+- Removed Singularity class. `apptainer` is now provided by CVMFS. (#216)
 
 ## [12.2.0] 2023-02-02
 
