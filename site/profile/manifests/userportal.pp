@@ -10,6 +10,11 @@ class profile::userportal::server (
 
   include profile::userportal::install_tarball
 
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+  $base_dn = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $admin_password = lookup('profile::freeipa::server::admin_password')
+
   file { '/var/www/userportal/userportal/settings/99-local.py':
     show_diff => false,
     content   => epp('profile/userportal/99-local.py',
@@ -18,13 +23,15 @@ class profile::userportal::server (
         'slurm_password'  => lookup('profile::slurm::accounting::password'),
         'cluster_name'    => lookup('profile::slurm::base::cluster_name'),
         'secret_key'      => seeded_rand_string(32, $password),
-        'domain_name'     => lookup('profile::freeipa::base::domain_name'),
+        'domain_name'     => $domain_name,
         'subdomain'       => lookup('profile::reverse_proxy::userportal_subdomain'),
         'logins'          => $logins,
         'prometheus_ip'   => $prometheus_ip,
         'prometheus_port' => $prometheus_port,
         'db_ip'           => $db_ip,
         'db_port'         => $db_port,
+        'base_dn'         => $base_dn,
+        'ldap_password'   => $admin_password,
       }
     ),
     owner     => 'apache',

@@ -47,7 +47,16 @@ DATABASES = {
         'HOST': '<%= $db_ip %>',
         'PORT': '<%= $db_port %>',
     },
+    'ldap': {
+        'ENGINE': 'ldapdb.backends.ldap',
+        'NAME': 'ldaps://ipa.int.<%= $domain_name %>/',
+        'USER': 'uid=admin,cn=users,cn=accounts,<%= $base_dn %>',
+        'PASSWORD': '<%= $ldap_password %>',
+    },
 }
+
+import ldap
+ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_ALLOW)
 
 PROMETHEUS = {
     'url': 'http://<%= $prometheus_ip %>:<%= $prometheus_port %>',
@@ -67,7 +76,7 @@ LOGIN_URL = '/accounts/login/' # So it does not use SAML2
 
 FREEIPA_AUTH_BACKEND_ENABLED = True
 FREEIPA_AUTH_SERVER = "ipa.int.<%= $domain_name %>"
-FREEIPA_AUTH_SSL_VERIFY = '/etc/pki/tls/certs/ca-bundle.crt'
+FREEIPA_AUTH_SSL_VERIFY = False#'/etc/pki/tls/certs/ca-bundle.crt'
 FREEIPA_AUTH_UPDATE_USER_GROUPS = True
 FREEIPA_AUTH_ALWAYS_UPDATE_USER = True
 FREEIPA_AUTH_USER_ATTRS_MAP = {"first_name": "givenname", "last_name": "sn", "email": "mail"}
@@ -125,3 +134,4 @@ CLUSTER_INTRO = """
 <p><%= $cluster_name %>'s cluster</p>
 """
 
+BASE_DN = '<%= $base_dn %>'
