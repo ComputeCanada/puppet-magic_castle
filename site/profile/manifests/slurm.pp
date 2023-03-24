@@ -116,7 +116,13 @@ END
 
   file { '/etc/profile.d/z-00-slurm.sh':
     ensure  => 'present',
-    content => inline_epp($slurm_path, {'force_slurm_in_path' => $force_slurm_in_path, 'uid_max' => $::uid_max}),
+    content => inline_epp(
+      $slurm_path,
+      {
+        'force_slurm_in_path' => $force_slurm_in_path,
+        'uid_max' => $facts['uid_max'],
+      }
+    ),
   }
 
   file { '/etc/munge/munge.key':
