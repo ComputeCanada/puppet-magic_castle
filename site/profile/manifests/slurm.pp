@@ -120,7 +120,7 @@ END
       $slurm_path,
       {
         'force_slurm_in_path' => $force_slurm_in_path,
-        'uid_max' => $facts['uid_max'],
+        'uid_max'             => $facts['uid_max'],
       }
     ),
   }
