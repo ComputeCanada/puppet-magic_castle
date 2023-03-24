@@ -306,7 +306,7 @@ class profile::slurm::accounting(String $password, Integer $dbd_port = 6819) {
   file { '/etc/slurm/slurmdbd.conf':
     ensure  => present,
     content => epp('profile/slurm/slurmdbd.conf',
-      { 'dbd_host'     => $::hostname,
+      { 'dbd_host'     => $facts['networking']['hostname'],
         'dbd_port'     => $dbd_port,
         'storage_pass' => $password
       }),
@@ -646,9 +646,10 @@ class profile::slurm::node {
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
   }
 
+  $hostname = $facts['networking']['hostname']
   exec { 'scontrol_update_state':
-    command   => "scontrol update nodename=${::hostname} state=idle",
-    onlyif    => "sinfo -n ${::hostname} -o %t -h | grep -E -q -w 'down|drain'",
+    command   => "scontrol update nodename=${hostname} state=idle",
+    onlyif    => "sinfo -n ${hostname} -o %t -h | grep -E -q -w 'down|drain'",
     path      => ['/usr/bin', '/opt/software/slurm/bin'],
     subscribe => Service['slurmd']
   }
@@ -657,7 +658,7 @@ class profile::slurm::node {
   # Otherwise, slurmd keeps running, but the node is not in any partition
   # and no job can be scheduled on it.
   exec { 'systemctl restart slurmd':
-    onlyif  => "test $(sinfo -n ${::hostname} -o %t -h | wc -l) -eq 0",
+    onlyif  => "test $(sinfo -n ${hostname} -o %t -h | wc -l) -eq 0",
     path    => ['/usr/bin', '/opt/software/slurm/bin'],
     require => Service['slurmd'],
   }
