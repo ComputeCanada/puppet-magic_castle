@@ -160,6 +160,7 @@ define profile::nfs::server::export_volume (
 
   selinux::exec_restorecon { "/mnt/${name}": }
 
+  $cidr = profile::getcidr()
   nfs::server::export { "/mnt/${name}":
     ensure  => 'mounted',
     clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
