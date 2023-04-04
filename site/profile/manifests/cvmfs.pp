@@ -135,6 +135,7 @@ class profile::cvmfs::local_user (
   group { $group:
     ensure => present,
     gid    => $gid,
+    before => Package['cvmfs'],
   }
   user { $uname:
     ensure     => present,
@@ -145,5 +146,6 @@ class profile::cvmfs::local_user (
     home       => '/var/lib/cvmfs',
     shell      => '/usr/sbin/nologin',
     require    => Group[$group],
+    before     => Package['cvmfs'],
   }
 }
