@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.3.1] UNRELEASED
+
+### Changed
+- Defined missing variable `$cidr` in `profile::nfs::server::export_volume`.
+- Added a before `Package['cvmfs']` clause for `cvmfs` user and `cvmfs-reserverd` group.
+
 ## [12.3.0] 2023-02-22
 
 ### Changed
