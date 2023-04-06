@@ -148,4 +148,13 @@ class profile::cvmfs::local_user (
     require    => Group[$group],
     before     => Package['cvmfs'],
   }
+  if $group != 'cvmfs' {
+    # cvmfs rpm create a user and a group 'cvmfs' if they do not exist.
+    # If the group created for the local user 'cvmfs' is not named 'cvmfs',
+    # we make sure the group created by the rpm is removed after the rpm install.
+    group { 'cvmfs':
+      ensure  => absent,
+      require => Package['cvmfs'],
+    }
+  }
 }
