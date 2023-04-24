@@ -39,7 +39,7 @@ class profile::freeipa::client (String $server_ip) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
   $realm = upcase($int_domain_name)
-  $interface = keys($facts['networking']['interfaces'])[0]
+  $interface = $networking['primary']
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
@@ -209,7 +209,7 @@ class profile::freeipa::server (
   $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
   $reverse_zone = profile::getreversezone()
 
-  $interface = keys($facts['networking']['interfaces'])[0]
+  $interface = $networking['primary']
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   $idstart = Integer($facts['uid_max']) + 1

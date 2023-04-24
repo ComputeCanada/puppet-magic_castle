@@ -1,5 +1,5 @@
 function profile::getreversezone() >> String {
-  $interface = split($interfaces, ',')[0]
+  $interface = $networking['primary']
   $network = $networking['interfaces'][$interface]['network']
   $network_list = split($network, '[.]')
   $netmask_list = split(profile::getnetmask(), '[.]')
