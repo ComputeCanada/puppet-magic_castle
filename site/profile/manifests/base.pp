@@ -11,7 +11,7 @@ class profile::base (
   $int_domain_name = "int.${domain_name}"
   $hostname = $facts['networking']['hostname']
   $fqdn = "${hostname}.${int_domain_name}"
-  $interface = $networking['primary']
+  $interface = $facts['networking']['primary']
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   file { '/etc/magic-castle-release':
