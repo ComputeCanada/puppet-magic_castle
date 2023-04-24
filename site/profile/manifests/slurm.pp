@@ -141,7 +141,7 @@ END
     require   => Package['munge']
   }
 
-  $yumrepo_prefix = "https://copr-be.cloud.fedoraproject.org/results/cmdntrf/Slurm${slurm_version}/"
+  $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
   yumrepo { 'slurm-copr-repo':
     enabled             => true,
     descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
