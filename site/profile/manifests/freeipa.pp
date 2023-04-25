@@ -107,6 +107,7 @@ class profile::freeipa::client (String $server_ip) {
   }
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
+    /usr/bin/nohup \
     /sbin/mc-ipa-client-install \
     --domain ${int_domain_name} \
     --hostname ${fqdn} \
@@ -115,7 +116,8 @@ class profile::freeipa::client (String $server_ip) {
     --unattended \
     --force-join \
     -p admin \
-    -w ${admin_password}
+    -w ${admin_password} \
+    &> /dev/null &
     | IPACLIENTINSTALL
 
   exec { 'ipa-install':
@@ -129,7 +131,6 @@ class profile::freeipa::client (String $server_ip) {
       Wait_for['ipa-ca_https'],
     ],
     creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind'],
   }
 
   file_line { 'ssh_known_hosts':
@@ -145,7 +146,6 @@ class profile::freeipa::client (String $server_ip) {
     command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
     unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Exec['ipa-install'],
   }
 
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
