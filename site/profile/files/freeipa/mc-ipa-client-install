@@ -1,14 +1,66 @@
 #!/bin/bash
-# keep previous installation logs
-mv /var/log/ipaclient-install.log{,.$(ls /var/log/ipaclient-install.log* | wc -l)}
-if /sbin/ipa-client-install "${@}"; then
-  if grep -q "nsupdate failed" /var/log/ipaclient-install.log; then
-    /sbin/ipa-client-install --uninstall -U
-    exit 1
+# Recover domain from command-line arguments
+INPUT_ARGS="$@"
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --domain)
+      DOMAIN="$2"
+      shift
+      shift # past argument=value
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# Make sure DNS records are set, there is no point in trying to install
+# the client unless these are set.
+RECORDS=(
+  _kerberos-master._tcp SRV
+  _kerberos-master._udp SRV
+  _kerberos._tcp SRV
+  _kerberos._udp SRV
+  _kpasswd._tcp SRV
+  _kpasswd._udp SRV
+  _ldap._tcp SRV
+  ipa-ca A
+)
+while [[ "${#RECORDS[@]}" -gt 0 ]]; do
+  if [[ $(dig +short ${RECORDS[0]}.${DOMAIN} ${RECORDS[1]}) ]]; then
+    dig +short ${RECORDS[0]}.${DOMAIN} ${RECORDS[1]}
+    RECORDS=("${RECORDS[@]:2}")
   else
-    exit 0
+    sleep 2
   fi
-else
-  /sbin/ipa-client-install --uninstall -U
-  exit $?
-fi
+done
+
+# Check if the FreeIPA HTTPD service is consistently available
+# over a period of 2sec * 15 times = 30 seconds. If a single
+# test of availability fails, we wait for 5 seconds, then try
+# again.
+httpd_avail=0
+while [[ $httpd_avail -lt 15 ]]; do
+  if curl --insecure -L --silent --output /dev/null https://ipa-ca.${DOMAIN}/; then
+    sleep 2
+    httpd_avail=$(($httpd_avail + 1))
+  else
+    sleep 5
+    httpd_avail=0
+  fi
+done
+
+# keep previous installation logs
+for i in {1..5}; do
+  mv /var/log/ipaclient-install.log{,.$(ls /var/log/ipaclient-install.log* | wc -l)}
+  if /sbin/ipa-client-install "${INPUT_ARGS}"; then
+    if grep -q "nsupdate failed" /var/log/ipaclient-install.log; then
+      /sbin/ipa-client-install --uninstall -U
+    else
+      exit 0
+    fi
+  else
+    /sbin/ipa-client-install --uninstall -U
+  fi
+  sleep 5
+done

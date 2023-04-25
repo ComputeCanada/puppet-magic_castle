@@ -59,43 +59,6 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
-  $ipa_records = [
-    "_kerberos-master._tcp.${int_domain_name} SRV",
-    "_kerberos-master._udp.${int_domain_name} SRV",
-    "_kerberos._tcp.${int_domain_name} SRV",
-    "_kerberos._udp.${int_domain_name} SRV",
-    "_kpasswd._tcp.${int_domain_name} SRV",
-    "_kpasswd._udp.${int_domain_name} SRV",
-    "_ldap._tcp.${int_domain_name} SRV",
-    "ipa-ca.${int_domain_name} A",
-  ]
-
-  wait_for { 'ipa_records':
-    query             => sprintf('dig +short %s | wc -l', join($ipa_records, ' ')),
-    regex             => String(length($ipa_records)),
-    polling_frequency => 10,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => [
-      Package['ipa-client'],
-      Exec['ipa-client-uninstall_bad-hostname'],
-      Exec['ipa-client-uninstall_bad-server'],
-    ],
-  }
-
-  # Check if the FreeIPA HTTPD service is consistently available
-  # over a period of 2sec * 15 times = 30 seconds. If a single
-  # test of availability fails, we wait for 5 seconds, then try
-  # again.
-  wait_for { 'ipa-ca_https':
-    query             => "for i in {1..15}; do curl --insecure -L --silent --output /dev/null https://ipa-ca.${int_domain_name}/ && sleep 2 || exit 1; done",
-    exit_code         => 0,
-    polling_frequency => 5,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => Wait_for['ipa_records'],
-  }
-
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
     unless  => "/usr/bin/test `hostname` = ${fqdn}",
@@ -128,7 +91,6 @@ class profile::freeipa::client (String $server_ip) {
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa-ca_https'],
     ],
     creates   => '/etc/ipa/default.conf',
   }
