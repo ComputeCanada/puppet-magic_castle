@@ -196,7 +196,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${int_domain_name} \
-    --no_hbac_allow
+    --no_hbac_allow &> /var/log/ipaserver-install.log
     | IPASERVERINSTALL
 
   exec { 'ipa-install':
@@ -206,8 +206,15 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       Host[$fqdn],
+      File['/var/log/ipaserver-install.log'],
     ],
     notify  => Service['systemd-logind'],
+  }
+
+  file { '/var/log/ipaserver-install.log':
+    mode  => '0600',
+    owner => 'root',
+    group => 'root',
   }
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
