@@ -550,7 +550,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
   contain profile::slurm::base
-  include profile::slurm::slurmctld_dep
+  # include profile::slurm::slurmctld_dep
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
@@ -672,8 +672,8 @@ class profile::slurm::node {
     ],
     require   => [
       Package['slurm-slurmd'],
-      Wait_for['slurmctldhost_set'],
-    ],
+      # Wait_for['slurmctldhost_set'],
+    ]
   }
 
   logrotate::rule { 'slurmd':
