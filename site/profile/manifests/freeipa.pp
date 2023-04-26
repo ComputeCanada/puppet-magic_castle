@@ -84,15 +84,13 @@ class profile::freeipa::client (String $server_ip) {
     | IPACLIENTINSTALL
 
   exec { 'ipa-install':
-    command   => Sensitive($ipa_client_install_cmd),
-    tries     => 2,
-    try_sleep => 60,
-    require   => [
+    command => Sensitive($ipa_client_install_cmd),
+    require => [
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
     ],
-    creates   => '/etc/ipa/default.conf',
+    creates => '/etc/ipa/default.conf',
   }
 
   file_line { 'ssh_known_hosts':
