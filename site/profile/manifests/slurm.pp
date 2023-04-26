@@ -213,19 +213,6 @@ END
     notify => Service['consul-template'],
   }
 
-  wait_for { 'slurmctldhost_set':
-    query             => 'cat /etc/slurm/slurm-consul.conf',
-    regex             => '^SlurmctldHost=',
-    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
-    max_retries       => 30,
-    require           => [
-      Service['consul-template'],
-      Class['consul::reload_service'],
-    ],
-    refreshonly       => true,
-    subscribe         => File['/etc/slurm/slurm-consul.tpl'],
-  }
-
   # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
   # Slurm commands tries to write to a socket in /var/run/munge.
   # Confined users cannot stat this file, neither write to it. The policy
@@ -273,7 +260,6 @@ END
 |EOT
   }
 
-
   consul_template::watch { 'slurm-consul.conf':
     require     => [
       File['/etc/slurm/slurm-consul.tpl'],
@@ -289,6 +275,20 @@ END
 
 }
 
+class profile::slurm::slurmctld_dep {
+  wait_for { 'slurmctldhost_set':
+    query             => 'cat /etc/slurm/slurm-consul.conf',
+    regex             => '^SlurmctldHost=',
+    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
+    max_retries       => 30,
+    require           => [
+      Service['consul-template']
+    ],
+    refreshonly       => true,
+    subscribe         => File['/etc/slurm/slurm-consul.tpl'],
+  }
+}
+
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
@@ -301,6 +301,7 @@ class profile::slurm::accounting(
   Integer $dbd_port = 6819
 ) {
   include mysql::server
+  include profile::slurm::slurmctld_dep
 
   mysql::db { 'slurm_acct_db':
     ensure   => present,
@@ -414,6 +415,7 @@ class profile::slurm::controller (
 ) {
   contain profile::slurm::base
   include profile::mail::server
+  include profile::slurm::slurmctld_dep
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',
@@ -548,6 +550,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
   contain profile::slurm::base
+  include profile::slurm::slurmctld_dep
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
