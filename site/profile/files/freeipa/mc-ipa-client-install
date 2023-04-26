@@ -1,6 +1,6 @@
 #!/bin/bash
 # Recover domain from command-line arguments
-INPUT_ARGS="$@"
+INPUT_ARGS="${@}"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --domain)
@@ -53,7 +53,7 @@ done
 # keep previous installation logs
 for i in {1..5}; do
   mv /var/log/ipaclient-install.log{,.$(ls /var/log/ipaclient-install.log* | wc -l)}
-  if /sbin/ipa-client-install "${INPUT_ARGS}"; then
+  if /sbin/ipa-client-install ${INPUT_ARGS}; then
     if grep -q "nsupdate failed" /var/log/ipaclient-install.log; then
       /sbin/ipa-client-install --uninstall -U
     else
