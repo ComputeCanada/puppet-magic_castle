@@ -15,7 +15,7 @@ LimitMEMLOCK=infinity
 LimitSTACK=infinity
 Delegate=yes
 TasksMax=infinity
-Restart=on-failure
+Restart=always
 RestartSec=30
 
 [Install]
