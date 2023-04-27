@@ -8,7 +8,7 @@ Type=simple
 EnvironmentFile=-/etc/sysconfig/slurmd
 ExecStart=/opt/software/slurm/sbin/slurmd -D -s $SLURMD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
-ExecStartPost=/opt/software/slurm/bin/scontrol update nodename="%H" state=idle
+#ExecStartPost=/opt/software/slurm/bin/scontrol update nodename=$(hostname -s) state=idle
 KillMode=process
 LimitNOFILE=131072
 LimitMEMLOCK=infinity
