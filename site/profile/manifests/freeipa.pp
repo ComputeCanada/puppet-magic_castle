@@ -196,7 +196,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${int_domain_name} \
-    --no_hbac_allow &> /var/log/ipaserver-install.log
+    --no_hbac_allow &>> /var/log/ipaserver-install.log
     | IPASERVERINSTALL
 
   exec { 'ipa-install':
