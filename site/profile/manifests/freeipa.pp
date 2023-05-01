@@ -276,6 +276,15 @@ class profile::freeipa::server (
     subscribe   => Exec['ipa-install'],
   }
 
+  exec { 'ipa_config-mod_shell':
+    command     => 'kinit_wrapper ipa config-mod --defaultshell=/bin/bash',
+    refreshonly => true,
+    require     => [File['kinit_wrapper'],],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    subscribe   => Exec['ipa-install'],
+  }
+
   # Configure the password of the admin accounts to never expire
   exec { 'ipa_admin_passwd_exp':
     command     => 'kinit_wrapper ipa pwpolicy-add --minlife=0 --maxlife=0 --priority=1 admins',
