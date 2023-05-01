@@ -74,9 +74,9 @@ def user_add(uid, first, last, password, shell, sshpubkeys):
         raise Exception("Could not add user: {uid}".format(**kargs))
 
 
-def group_add(name):
+def group_add(name, nonposix=False):
     try:
-        return api.Command.group_add(text_type(name))
+        return api.Command.group_add(text_type(name), nonposix=nonposix)
     except errors.DuplicateEntry:
         return
 
@@ -95,7 +95,7 @@ def kdestroy():
     ipautil.run([paths.KDESTROY])
 
 
-def main(users, groups, passwd, sshpubkeys):
+def main(users, posix_groups, nonposix_groups, passwd, sshpubkeys):
     init_api()
     added_users = set()
     for username in users:
@@ -109,8 +109,12 @@ def main(users, groups, passwd, sshpubkeys):
         )
         if user is not None:
             added_users.add(username)
-    for group in groups:
+    for group in posix_groups:
         group_add(group)
+        group_add_members(group, users)
+
+    for group in nonposix_groups:
+        group_add(group, nonposix=True)
         group_add_members(group, users)
 
     if passwd:
@@ -125,7 +129,8 @@ if __name__ == "__main__":
         description="Add a batch of users with common a password and groups"
     )
     parser.add_argument("users", nargs="+", help="list of usernames to create")
-    parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
+    parser.add_argument("--posix_group", action='append', help="posix group the users will be member of (can be specified multiple times)")
+    parser.add_argument("--nonposix_group", action='append', help="non posix group the users will be member of (can be specified multiple times)")
     parser.add_argument("--passwd", help="users's password")
     parser.add_argument("--sshpubkey", action="append", help="SSH public key (can be specified multiple times)")
     args = parser.parse_args()
@@ -139,7 +144,8 @@ if __name__ == "__main__":
 
     main(
         users=args.users,
-        groups=args.group,
+        posix_groups=args.posix_group,
+        nonposix_groups=args.nonposix_group,
         passwd=passwd,
         sshpubkeys=args.sshpubkey
     )
