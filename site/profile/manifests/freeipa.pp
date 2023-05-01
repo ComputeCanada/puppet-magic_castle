@@ -462,6 +462,7 @@ class profile::freeipa::mokey (
   String $password,
   Boolean $enable_user_signup,
   Boolean $require_verify_admin,
+  Array[String] $access_tags,
 ) {
   yumrepo { 'mokey-copr-repo':
     enabled             => true,
@@ -619,5 +620,64 @@ class profile::freeipa::mokey (
       File['/etc/mokey/mokey.yaml'],
       Mysql::Db['mokey'],
     ],
+  }
+
+  exec { 'ipa_group_self-signup':
+    command     => 'kinit_wrapper ipa group-add self-signup --nonposix',
+    refreshonly => true,
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    require     => [File['kinit_wrapper'],],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    returns     => [0],
+    subscribe   => [
+      Package['mokey'],
+      Exec['ipa-install'],
+    ],
+  }
+
+  exec { 'ipa_self-signup_automember':
+    command     => 'kinit_wrapper ipa automember-add --type=group self-signup',
+    refreshonly => true,
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    require     => [File['kinit_wrapper'],],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    returns     => [0],
+    subscribe   => [
+      Exec['ipa_group_self-signup']
+    ],
+  }
+
+  # Users self signing with Mokey have to provide a valid email address.
+  # Users created with ipa-create-user.py script are assigned an internal email address
+  # which domain corresponds to the internal domain name. We therefore create a rule
+  # for which every user with a non empty email address that is not internal should be
+  # part of the self-signup group.
+  # We had to come up with this automember rule because Mokey does not provide the ability
+  # to assign a group to users who self-signup.
+  exec { 'ipa_self-signup_automember-rule':
+    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${int_domain_name}$\'",
+    refreshonly => true,
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    require     => [File['kinit_wrapper'],],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    returns     => [0],
+    subscribe   => [
+      Exec['ipa_self-signup_automember'],
+    ],
+  }
+
+  $access_tags.each |$tag| {
+    exec { "ipa_hbacrule_self-signup_${tag}":
+      command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=self-signup",
+      refreshonly => true,
+      environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+      require     => [File['kinit_wrapper'],],
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      returns     => [0, 1],
+      subscribe   => [
+        Exec['ipa_group_self-signup'],
+        Exec['hbac_rules'],
+      ],
+    }
   }
 }
