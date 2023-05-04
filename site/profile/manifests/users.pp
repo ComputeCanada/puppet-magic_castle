@@ -39,17 +39,18 @@ define profile::users::ldap_user (
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $unique_group = "ipa-${name}"
-  $groups_ = concat($groups, [$unique_group])
-  $group_string = join($groups_.map |$group| { "--group ${group}" }, ' ')
+  $unique_group = "hbac-${name}"
+  $posix_group = join($groups.map |$group| { "--posix_group ${group}" }, ' ')
+  $nonposix_group = "--nonposix_group ${unique_group}"
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
+  $cmd_args = "${posix_group} ${nonposix_group} ${$sshpubkey_string}"
   if $count > 1 {
     $prefix = $name
-    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${group_string} ${$sshpubkey_string}"
+    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${cmd_args}"
     $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
     $timeout = $count * 10
   } elsif $count == 1 {
-    $command = "kinit_wrapper ipa_create_user.py ${name} ${group_string} ${$sshpubkey_string}"
+    $command = "kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"
     $unless = "getent passwd ${name}"
     $timeout = 10
   }

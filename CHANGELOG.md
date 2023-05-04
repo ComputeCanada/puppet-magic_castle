@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [12.3.1] UNRELEASED
 
+### Added
+- Added automembership rule for users who self sign-up with Mokey
+- Added HBAC rules to allow self signup user to connect
+
 ### Changed
 - Defined missing variable `$cidr` in `profile::nfs::server::export_volume`.
 - Added a before `Package['cvmfs']` clause for `cvmfs` user and `cvmfs-reserved` group.
+- Changed the default FreeIPA user shell from `/bin/sh` to `/bin/bash`.
 
 ## [12.3.0] 2023-02-22
 

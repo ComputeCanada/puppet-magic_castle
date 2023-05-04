@@ -92,6 +92,7 @@ profile::mfa::login::provider: 'none'
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
+profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
 profile::reverse_proxy::jupyterhub_subdomain: jupyter
 profile::reverse_proxy::ipa_subdomain: ipa
