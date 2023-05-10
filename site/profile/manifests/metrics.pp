@@ -38,6 +38,46 @@ class profile::metrics::slurm_job_exporter {
   }
 }
 
+class profile::metrics::slurm_exporter {
+  consul::service { 'slurm-exporter':
+    port  => 8081,
+    tags  => ['slurm-exporter'],
+    token => lookup('profile::consul::acl_api_token')
+  }
+
+  file { '/opt/prometheus-slurm-exporter':
+    source => 'https://object-arbutus.cloud.computecanada.ca/userportal-public/prometheus-slurm-exporter',
+    owner  => 'slurm',
+    group  => 'slurm',
+    mode   => '0755',
+    notify => Service['prometheus-slurm-exporter'],
+  }
+
+  file { '/etc/systemd/system/prometheus-slurm-exporter.service':
+    content => '[Unit]
+Description=Exporter for slurm stats
+After=network.target
+
+[Service]
+User=slurm
+Group=slurm
+Type=simple
+ExecStart=/opt/prometheus-slurm-exporter --collector.partition --listen-address=":8081"
+PIDFile=/var/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
+KillMode=process
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/puppetlabs/bin:/opt/software/slurm/bin:/root/bin
+Restart=always
+
+[Install]
+WantedBy=multi-user.target',
+    notify => Service['prometheus-slurm-exporter'],
+  }
+
+  service { 'prometheus-slurm-exporter':
+    ensure => 'running',
+    enable => true,
+  }
+}
 
 class profile::metrics::server {
   class { 'prometheus::server':
@@ -71,14 +111,39 @@ class profile::metrics::server {
         'scrape_interval'   => '10s',
         'scrape_timeout'    => '10s',
         'honor_labels'      => true,
-        'consul_sd_configs' => [{
-          'server' => '127.0.0.1:8500',
-          'token'  => lookup('profile::consul::acl_api_token')
-        }],
+        'consul_sd_configs' => [
+          {
+            'server' => '127.0.0.1:8500',
+            'token'  => lookup('profile::consul::acl_api_token'),
+          },
+        ],
         'relabel_configs'   => [
           {
             'source_labels' => ['__meta_consul_tags'],
             'regex'         => '.*,slurm-job-exporter,.*',
+            'action'        => 'keep'
+          },
+          {
+            'source_labels' => ['__meta_consul_node'],
+            'target_label'  => 'instance'
+          }
+        ],
+      },
+      {
+        'job_name'          => 'prometheus-slurm-exporter',
+        'scrape_interval'   => '10s',
+        'scrape_timeout'    => '10s',
+        'honor_labels'      => true,
+        'consul_sd_configs' => [
+          {
+            'server' => '127.0.0.1:8500',
+            'token'  => lookup('profile::consul::acl_api_token'),
+          }
+        ],
+        'relabel_configs'   => [
+          {
+            'source_labels' => ['__meta_consul_tags'],
+            'regex'         => '.*,slurm-exporter,.*',
             'action'        => 'keep'
           },
           {
