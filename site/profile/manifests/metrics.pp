@@ -7,7 +7,7 @@ class profile::metrics::node_exporter {
   consul::service { 'node-exporter':
     port  => 9100,
     tags  => ['node-exporter'],
-    token => lookup('profile::consul::acl_api_token')
+    token => lookup('profile::consul::acl_api_token'),
   }
 }
 
@@ -28,9 +28,10 @@ class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
     token => lookup('profile::consul::acl_api_token'),
   }
 
+  $el = $facts['os']['release']['major']
   package { 'python3-prometheus_client': }
   package { 'slurm-job-exporter':
-    source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el8.noarch.rpm",
+    source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el${el}.noarch.rpm",
     provider => 'yum',
   }
 
@@ -55,7 +56,7 @@ class profile::metrics::slurm_exporter {
   consul::service { 'slurm-exporter':
     port  => 8081,
     tags  => ['slurm-exporter'],
-    token => lookup('profile::consul::acl_api_token')
+    token => lookup('profile::consul::acl_api_token'),
   }
 
   file { '/opt/prometheus-slurm-exporter':
