@@ -20,16 +20,9 @@ class profile::metrics::slurm_job_exporter {
     before  => Service['slurm-job-exporter'],
   }
 
-  #FIXME need GPUs installed before doing this pip, if not the exporter will crash because libs are missing
-  #exec { 'pip install nvidia-ml-py':
-  #  command => '/usr/bin/pip3.6 install nvidia-ml-py',
-  #  unless  => '/usr/bin/pip3.6 freeze | /usr/bin/grep nvidia-ml-py',
-  #  before  => Service['slurm-job-exporter'],
-  #}
-
   package { 'python3-psutil': }
   -> package { 'slurm-job-exporter':
-    source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.8/slurm-job-exporter-0.0.8-1.el8.noarch.rpm',
+    source   => 'https://github.com/guilbaults/slurm-job-exporter/releases/download/v0.0.9/slurm-job-exporter-0.0.9-1.el8.noarch.rpm',
     provider => 'rpm',
   }
   -> service { 'slurm-job-exporter':

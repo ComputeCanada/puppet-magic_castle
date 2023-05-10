@@ -1,4 +1,5 @@
 class profile::gpu {
+  include profile::gpu::monitoring
   if $facts['nvidia_gpu_count'] > 0 {
     require profile::gpu::install
     if ! $facts['nvidia_grid_vgpu'] {
@@ -192,4 +193,24 @@ class profile::gpu::install::vgpu::bin (
     group  => 'root',
     source => $gridd_source,
   }
+}
+
+class profile::gpu::monitoring(){
+
+  exec { 'pip install nvidia-ml-py':
+    command => '/usr/bin/pip3.6 install nvidia-ml-py',
+    unless  => '/usr/bin/pip3.6 freeze | /usr/bin/grep nvidia-ml-py',
+    before  => Service['slurm-job-exporter'],
+  }
+
+# DCGM does not work with GRID VGPU, most of the stats are missing
+#  package { 'datacenter-gpu-manager':
+#    source   =>'https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/datacenter-gpu-manager-2.4.7-1-x86_64.rpm',
+#    provider => 'rpm',
+#    notify   => Service['nvidia-dcgm'],
+#  }
+#  service { 'nvidia-dcgm':
+#    ensure => 'running',
+#    enable => true,
+#  }
 }
