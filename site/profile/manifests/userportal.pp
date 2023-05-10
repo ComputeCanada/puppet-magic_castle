@@ -35,7 +35,7 @@ class profile::userportal::server (
         'domain_name'  => $domain_name,
       }
     ),
-    notify => Service['gunicorn'],
+    notify    => Service['gunicorn'],
   }
   -> file { '/var/www/userportal/userportal/common.py':
     source => 'file:/var/www/userportal/example/common.py',
@@ -50,7 +50,7 @@ class profile::userportal::server (
   # https://github.com/enervee/django-freeipa-auth/pull/9
   -> exec { 'pip install django-freeipa-auth':
     command => '/var/www/userportal-env/bin/pip3 install git+https://github.com/88Ocelot/django-freeipa-auth.git',
-    unless => '/var/www/userportal-env/bin/pip3 freeze | /usr/bin/grep django-freeipa-auth',
+    unless  => '/var/www/userportal-env/bin/pip3 freeze | /usr/bin/grep django-freeipa-auth',
     require => [Exec['create virtualenv']],
   }
 
@@ -84,7 +84,7 @@ PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target',
-    notify => Service['gunicorn'],
+    notify  => Service['gunicorn'],
   }
 
   service { 'gunicorn':
