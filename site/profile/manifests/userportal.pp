@@ -66,9 +66,9 @@ class profile::userportal::server (
   }
 
   file { '/etc/systemd/system/gunicorn-userportal.service':
-    mode    => '0755',
-    source  => 'puppet:///modules/profile/userportal/gunicorn-userportal.service',
-    notify  => Service['gunicorn-userportal'],
+    mode   => '0755',
+    source => 'puppet:///modules/profile/userportal/gunicorn-userportal.service',
+    notify => Service['gunicorn-userportal'],
   }
 
   service { 'gunicorn-userportal':
