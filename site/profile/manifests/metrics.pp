@@ -46,8 +46,8 @@ class profile::metrics::slurm_exporter {
   }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
-    source  => 'puppet:///modules/profile/metrics/prometheus-slurm-exporter.service',
-    notify  => Service['prometheus-slurm-exporter'],
+    source => 'puppet:///modules/profile/metrics/prometheus-slurm-exporter.service',
+    notify => Service['prometheus-slurm-exporter'],
   }
 
   service { 'prometheus-slurm-exporter':
