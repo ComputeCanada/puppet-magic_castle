@@ -61,13 +61,17 @@ class profile::metrics::slurm_exporter {
     token => lookup('profile::consul::acl_api_token'),
   }
 
-  file { '/opt/prometheus-slurm-exporter':
-    source => 'https://object-arbutus.cloud.computecanada.ca/userportal-public/prometheus-slurm-exporter',
-    owner  => 'slurm',
-    group  => 'slurm',
-    mode   => '0755',
-    notify => Service['prometheus-slurm-exporter'],
+  $slurm_exporter_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/prometheus-slurm-exporter/'
+  yumrepo { 'prometheus-slurm-exporter-copr-repo':
+    enabled             => true,
+    descr               => 'Copr repo for prometheus-slurm-exporter owned by cmdntrf',
+    baseurl             => "${slurm_exporter_url}/epel-\$releasever-\$basearch/",
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => "${slurm_exporter_url}/pubkey.gpg",
+    repo_gpgcheck       => 0,
   }
+  -> package { 'prometheus-slurm-exporter': }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
     source => 'puppet:///modules/profile/metrics/prometheus-slurm-exporter.service',
@@ -75,8 +79,12 @@ class profile::metrics::slurm_exporter {
   }
 
   service { 'prometheus-slurm-exporter':
-    ensure => 'running',
-    enable => true,
+    ensure  => 'running',
+    enable  => true,
+    require => [
+      Package['prometheus-slurm-exporter'],
+      File['/etc/systemd/system/prometheus-slurm-exporter.service'],
+    ],
   }
 }
 
