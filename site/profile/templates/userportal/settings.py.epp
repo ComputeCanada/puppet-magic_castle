@@ -185,6 +185,7 @@ LOGIN_REDIRECT_URL = '/'
 EXPORTER_INSTALLED = [
     'slurm-job-exporter',
     'node_exporter',
+    'slurm_exporter',
 ]
 
 CLUSTER_NAME = '<%= $cluster_name %>'  # used for slurm DB name
