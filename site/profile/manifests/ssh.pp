@@ -62,8 +62,8 @@ class profile::ssh::base {
     group => 'ssh_keys',
   }
 
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
+  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
+    # sshd hardening in RedHat >= 8 requires fidgetting with crypto-policies
     # instead of modifying /etc/ssh/sshd_config
     # https://sshaudit.com/hardening_guides.html#rhel8
     # We replace the file in /usr/share/crypto-policies instead of

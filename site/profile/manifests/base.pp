@@ -171,7 +171,7 @@ class profile::base::etc_hosts {
 }
 
 class profile::base::powertools {
-  if dig($::facts, 'os', 'release', 'major') == '8' {
+  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
     exec { 'enable_powertools':
       command => 'dnf config-manager --set-enabled powertools',
       unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
