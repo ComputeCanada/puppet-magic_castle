@@ -102,7 +102,7 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
   }
 
   # Used by slurm-job-exporter to export GPU metrics
-  -> package { 'datacenter-gpu-manager-2.4.7-1': }
+  -> package { 'datacenter-gpu-manager': }
 
   -> file { '/run/nvidia-persistenced':
     ensure => directory,
@@ -128,7 +128,7 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
   service { 'nvidia-dcgm':
     ensure    => 'running',
     enable    => true,
-    subscribe => Package['datacenter-gpu-manager-2.4.7-1'],
+    subscribe => Package['datacenter-gpu-manager'],
   }
 }
 
