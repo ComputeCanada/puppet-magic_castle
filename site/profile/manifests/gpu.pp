@@ -196,10 +196,13 @@ class profile::gpu::install::vgpu::bin (
 }
 
 class profile::gpu::monitoring {
+  ensure_packages(['python3'], { ensure => 'present' })
+
   exec { 'pip install nvidia-ml-py':
     command => '/usr/bin/pip3.6 install --force-reinstall nvidia-ml-py==11.515.75',
     creates => '/usr/local/lib/python3.6/site-packages/pynvml.py',
     before  => Service['slurm-job-exporter'],
+    require => Package['python3'],
   }
 
 # DCGM does not work with GRID VGPU, most of the stats are missing
