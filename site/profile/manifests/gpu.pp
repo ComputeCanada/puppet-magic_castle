@@ -1,6 +1,6 @@
 class profile::gpu {
-  include profile::gpu::monitoring
   if $facts['nvidia_gpu_count'] > 0 {
+    include profile::gpu::monitoring
     require profile::gpu::install
     if ! $facts['nvidia_grid_vgpu'] {
       service { 'nvidia-persistenced':
@@ -198,8 +198,8 @@ class profile::gpu::install::vgpu::bin (
 class profile::gpu::monitoring(){
 
   exec { 'pip install nvidia-ml-py':
-    command => '/usr/bin/pip3.6 install nvidia-ml-py',
-    unless  => '/usr/bin/pip3.6 freeze | /usr/bin/grep nvidia-ml-py',
+    command => '/usr/bin/pip3.6 install --force-reinstall nvidia-ml-py==11.515.75',
+    creates => '/usr/local/lib/python3.6/site-packages/pynvml.py',
     before  => Service['slurm-job-exporter'],
   }
 
