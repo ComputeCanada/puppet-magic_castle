@@ -6,6 +6,10 @@ class profile::gpu {
         ensure => 'running',
         enable => true,
       }
+      service { 'nvidia-dcgm':
+        ensure => 'running',
+        enable => true,
+      }
     } else {
       service { 'nvidia-gridd':
         ensure => 'running',
@@ -123,12 +127,6 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
   file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
     content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
     mode    => '0644',
-  }
-
-  service { 'nvidia-dcgm':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => Package['datacenter-gpu-manager'],
   }
 }
 
