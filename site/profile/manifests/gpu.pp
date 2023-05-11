@@ -1,6 +1,5 @@
 class profile::gpu {
   if $facts['nvidia_gpu_count'] > 0 {
-    include profile::gpu::monitoring
     require profile::gpu::install
     if ! $facts['nvidia_grid_vgpu'] {
       service { 'nvidia-persistenced':
@@ -102,6 +101,9 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
     notify  => Exec['nvidia-symlink'],
   }
 
+  # Used by slurm-job-exporter to export GPU metrics
+  -> package { 'datacenter-gpu-manager-2.4.7-1': }
+
   -> file { '/run/nvidia-persistenced':
     ensure => directory,
     owner  => 'nvidia-persistenced',
@@ -122,6 +124,12 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
     content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
     mode    => '0644',
   }
+
+  service { 'nvidia-dcgm':
+    ensure    => 'running',
+    enable    => true,
+    subscribe => Package['datacenter-gpu-manager-2.4.7-1'],
+  }
 }
 
 class profile::gpu::install::vgpu (
@@ -132,6 +140,18 @@ class profile::gpu::install::vgpu (
   } elsif $installer == 'bin' {
     # install from binary installer
     include profile::gpu::install::vgpu::bin
+  }
+
+  # Used by slurm-job-exporter to export GPU metrics
+  # DCGM does not work with GRID VGPU, most of the stats are missing
+  ensure_packages(['python3'], { ensure => 'present' })
+  $py3_version = lookup('os::redhat::python3::version')
+
+  exec { 'pip install nvidia-ml-py':
+    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==11.515.75",
+    creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
+    before  => Service['slurm-job-exporter'],
+    require => Package['python3'],
   }
 }
 
@@ -193,28 +213,4 @@ class profile::gpu::install::vgpu::bin (
     group  => 'root',
     source => $gridd_source,
   }
-}
-
-class profile::gpu::monitoring {
-  ensure_packages(['python3'], { ensure => 'present' })
-
-  $py3_version = lookup('os::redhat::python3::version')
-
-  exec { 'pip install nvidia-ml-py':
-    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==11.515.75",
-    creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
-    before  => Service['slurm-job-exporter'],
-    require => Package['python3'],
-  }
-
-# DCGM does not work with GRID VGPU, most of the stats are missing
-#  package { 'datacenter-gpu-manager':
-#    source   =>'https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/datacenter-gpu-manager-2.4.7-1-x86_64.rpm',
-#    provider => 'rpm',
-#    notify   => Service['nvidia-dcgm'],
-#  }
-#  service { 'nvidia-dcgm':
-#    ensure => 'running',
-#    enable => true,
-#  }
 }
