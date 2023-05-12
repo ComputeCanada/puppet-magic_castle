@@ -172,8 +172,13 @@ class profile::base::etc_hosts {
 
 class profile::base::powertools {
   if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
-    exec { 'enable_powertools':
-      command => 'dnf config-manager --set-enabled powertools',
+    if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+      $repo_name = 'powertools'
+    } else {
+      $repo_name = 'crb'
+    }
+    exec { "enable_${$repo_name}":
+      command => "dnf config-manager --set-enabled ${$repo_name}",
       unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
       path    => ['/usr/bin'],
     }
