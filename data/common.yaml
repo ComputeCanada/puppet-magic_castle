@@ -217,7 +217,7 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
-profile::slurm::base::slurm_version: '21.08'
+profile::slurm::base::slurm_version: '22.05'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.4.0'
 
