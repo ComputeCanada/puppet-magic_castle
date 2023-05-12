@@ -179,7 +179,7 @@ class profile::base::powertools {
     }
     exec { "enable_${$repo_name}":
       command => "dnf config-manager --set-enabled ${$repo_name}",
-      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
       path    => ['/usr/bin'],
     }
   } else {
