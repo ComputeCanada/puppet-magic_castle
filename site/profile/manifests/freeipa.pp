@@ -1,5 +1,5 @@
 class profile::freeipa::base (String $domain_name) {
-  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',
       creates => '/etc/dnf/modules.d/idm.module',
