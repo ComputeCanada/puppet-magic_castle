@@ -57,7 +57,7 @@ class profile::cvmfs::client (
     file { "/etc/cvmfs/config.d/${repo}.conf":
       ensure  => 'present',
       content => epp('profile/cvmfs/alien_cache.conf.epp', {
-        'alien_fs_root' => $alien_fs_root,
+        'alien_fs_root'     => $alien_fs_root,
         'alien_folder_name' => $alien_folder_name,
       }),
       require => Package['cvmfs']
