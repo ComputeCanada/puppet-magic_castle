@@ -1,5 +1,5 @@
 # Create repo to store alien cache instead of having them created/store in default.local file
-CVMFS_ALIEN_CACHE="/<%= $alien_cache_fs_root %>/cvmfs_alien_cache/@fqrn@"
+CVMFS_ALIEN_CACHE="/<%= $alien_fs_root %>/<%= $alien_folder_name %>/@fqrn@"
 CVMFS_SHARED_CACHE='no'
 CVMFS_QUOTA_LIMIT=-1
 CVMFS_CLAIM_OWNERSHIP=yes
