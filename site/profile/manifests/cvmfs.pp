@@ -68,6 +68,13 @@ class profile::cvmfs::client (
     require => [Package['cvmfs-repo'], Package['stack']],
   }
 
+  exec { 'cvmfs_config setup':
+    notify  => Service['autofs'],
+    creates => '/etc/auto.master.d/cvmfs.autofs',
+    path    => ['/usr/bin', '/bin'],
+    require => Package['cvmfs'],
+  }
+
   file { '/etc/cvmfs/default.local.ctmpl':
     content => epp('profile/cvmfs/default.local', {
         'quota_limit'  => $quota_limit,
