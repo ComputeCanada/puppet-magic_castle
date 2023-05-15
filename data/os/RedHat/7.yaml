@@ -13,3 +13,4 @@ profile::gpu::install::passthrough::packages:
     - nvidia-xconfig-latest-dkms
     - kmod-nvidia-latest-dkms
 
+os::redhat::python3::version: 3.6

@@ -421,9 +421,11 @@ class profile::slurm::controller (
     path        => ["${autoscale_env_prefix}/bin"],
   }
 
+
+  $py3_version = lookup('os::redhat::python3::version')
   exec { 'autoscale_slurm_tf_cloud_install':
     command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v${autoscale_version}.tar.gz",
-    creates => "${autoscale_env_prefix}/lib/python3.6/site-packages/slurm_autoscale_tfe-${autoscale_version}.dist-info",
+    creates => "${autoscale_env_prefix}/lib/python${py3_version}/site-packages/slurm_autoscale_tfe-${autoscale_version}.dist-info",
     require => [
       Exec['autoscale_slurm_env'], Exec['autoscale_slurm_env_upgrade_pip']
     ],

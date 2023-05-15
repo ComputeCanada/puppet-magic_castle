@@ -10,3 +10,5 @@ profile::gpu::install::passthrough::packages:
     - nvidia-modprobe
     - nvidia-xconfig
     - nvidia-persistenced
+
+os::redhat::python3::version: 3.6
