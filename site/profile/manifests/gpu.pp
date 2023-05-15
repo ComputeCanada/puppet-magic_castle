@@ -198,9 +198,11 @@ class profile::gpu::install::vgpu::bin (
 class profile::gpu::monitoring {
   ensure_packages(['python3'], { ensure => 'present' })
 
+  $py3_version = lookup('os::redhat::python3::version')
+
   exec { 'pip install nvidia-ml-py':
-    command => '/usr/bin/pip3.6 install --force-reinstall nvidia-ml-py==11.515.75',
-    creates => '/usr/local/lib/python3.6/site-packages/pynvml.py',
+    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==11.515.75",
+    creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
     before  => Service['slurm-job-exporter'],
     require => Package['python3'],
   }
