@@ -7,8 +7,10 @@ class profile::cvmfs::client (
 
 ){
   include profile::cvmfs::local_user
-  $alien_fs_root = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, '/scratch')
-  $alien_folder_name = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
+  $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
+  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
+  $alien_folder_name_raw = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
+  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
   package { 'cvmfs-repo':
     ensure   => 'installed',
@@ -138,16 +140,19 @@ class profile::cvmfs::client (
 
 # Create an alien source that refers to the uid and gid of cvmfs user
 class profile::cvmfs::alien_cache (
-  String $alien_fs_root = '/scratch',
-  String $alien_folder_name = 'cvmfs_alien_cache',
+  String $alien_fs_root_raw = 'scratch',
+  String $alien_folder_name_raw = 'cvmfs_alien_cache',
 ) {
   $uid = lookup('profile::cvmfs::local_user::uid', undef, undef, 13000004)
   $gid = lookup('profile::cvmfs::local_user::gid', undef, undef, 8000131)
+  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
+  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
   file {"/mnt/${alien_fs_root}/${alien_folder_name}":
     ensure => directory,
     group  => $gid,
     owner  => $uid,
+    require => File["/mnt/${alien_fs_root}/"]
   }
 }
 
