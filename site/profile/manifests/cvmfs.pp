@@ -149,9 +149,9 @@ class profile::cvmfs::alien_cache (
   $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
   file {"/mnt/${alien_fs_root}/${alien_folder_name}":
-    ensure => directory,
-    group  => $gid,
-    owner  => $uid,
+    ensure  => directory,
+    group   => $gid,
+    owner   => $uid,
     require => File["/mnt/${alien_fs_root}/"]
   }
 }
