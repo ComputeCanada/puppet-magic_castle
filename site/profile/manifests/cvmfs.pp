@@ -3,7 +3,7 @@ class profile::cvmfs::client (
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
-  Array[String] $alien_cache_repositories,
+  Array[String] $alien_cache_repositories = [],
 
 ){
   include profile::cvmfs::local_user
