@@ -54,10 +54,13 @@ profile::accounts:::skel_archives:
 | `profile::cvmfs::client::quota_limit` | Integer | Instance local cache directory soft quota (MB) | 4096 |
 | `profile::cvmfs::client::initial_profile` | String | Path to shell script initializing software stack environment variables | Depends on the chosen software stack |
 | `profile::cvmfs::client::repositories` | Array[String] | List of CVMFS repositories to mount  | Depends on the chosen software stack |
+| `profile::cvmfs::client::alien_cache_repositories`| Array[String] | List of CVMFS repositories that need an alien cache | `[]` |
 | `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules | Depends on the chosen software stack |
 | `profile::cvmfs::local_user::cvmfs_uid`     | Integer   |  cvmfs user id  	   | 13000004  |
 | `profile::cvmfs::local_user::cvmfs_gid`     | Integer   |  cvmfs group id  	   |  8000131 |
 | `profile::cvmfs::local_user::cvmfs_group`   | String    |  cvmfs group name   |  'cvmfs-reserved' |
+| `profile::cvmfs::alien_cache::alien_fs_root`| String | Shared file system where the alien cache will be created | `/scratch` |
+| `profile::cvmfs::alien_cache::alien_folder_name`| String | Alien cache folder name | `cvmfs_alien_cache` |
 
 
 ## profile::fail2ban

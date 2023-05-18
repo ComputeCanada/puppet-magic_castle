@@ -3,8 +3,14 @@ class profile::cvmfs::client (
   String $initial_profile,
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
-) {
+  Array[String] $alien_cache_repositories = [],
+
+){
   include profile::cvmfs::local_user
+  $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
+  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
+  $alien_folder_name_raw = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
+  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
   package { 'cvmfs-repo':
     ensure   => 'installed',
@@ -41,17 +47,26 @@ class profile::cvmfs::client (
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
-    content => epp('profile/cvmfs/default.local',
-      {
-        'quota_limit'  => $quota_limit,
-        'repositories' => $repositories,
-      }
-    ),
+    content => epp('profile/cvmfs/default.local', {
+      'quota_limit'  => $quota_limit,
+      'repositories' => $repositories + $alien_cache_repositories,
+    }),
     notify  => Service['consul-template'],
     require => Package['cvmfs'],
   }
 
-  consul::service { 'cvmfs':
+  $alien_cache_repositories.each |$repo| {
+    file { "/etc/cvmfs/config.d/${repo}.conf":
+      ensure  => 'present',
+      content => epp('profile/cvmfs/alien_cache.conf.epp', {
+        'alien_fs_root'     => $alien_fs_root,
+        'alien_folder_name' => $alien_folder_name,
+      }),
+      require => Package['cvmfs']
+    }
+  }
+
+  consul::service{ 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => {
@@ -121,6 +136,24 @@ class profile::cvmfs::client (
   # CVMFS is a read-only filesystem, the context cannot be changed.
   # 'use_fusefs_home_dirs' policy fix that issue.
   selinux::boolean { 'use_fusefs_home_dirs': }
+}
+
+# Create an alien source that refers to the uid and gid of cvmfs user
+class profile::cvmfs::alien_cache (
+  String $alien_fs_root_raw = 'scratch',
+  String $alien_folder_name_raw = 'cvmfs_alien_cache',
+) {
+  $uid = lookup('profile::cvmfs::local_user::uid', undef, undef, 13000004)
+  $gid = lookup('profile::cvmfs::local_user::gid', undef, undef, 8000131)
+  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
+  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
+
+  file {"/mnt/${alien_fs_root}/${alien_folder_name}":
+    ensure  => directory,
+    group   => $gid,
+    owner   => $uid,
+    require => File["/mnt/${alien_fs_root}/"]
+  }
 }
 
 # Create a local cvmfs user

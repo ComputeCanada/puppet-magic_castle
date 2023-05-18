@@ -55,6 +55,7 @@ node default {
 
   if 'nfs' in $instance_tags {
     include profile::nfs::server
+    include profile::cvmfs::alien_cache
   } else {
     include profile::nfs::client
   }
