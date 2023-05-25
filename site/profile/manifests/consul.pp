@@ -1,23 +1,25 @@
 class profile::consul::server {
   $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $consul_servers = lookup('profile::consul::client::servers', undef, undef, [$ipaddress])
 
   class { 'consul':
     config_mode   => '0640',
     acl_api_token => lookup('profile::consul::acl_api_token'),
     config_hash   => {
-      'bootstrap_expect' => 1,
+      'bootstrap_expect' => length($consul_servers),
       'bind_addr'        => $ipaddress,
       'data_dir'         => '/opt/consul',
       'log_level'        => 'INFO',
       'node_name'        => $facts['networking']['hostname'],
       'server'           => true,
-      'acl_agent_token'  => lookup('profile::consul::acl_api_token'),
+      'retry_join'       => $consul_servers.filter | $ip | { $ip != $ipaddress },
       'acl'              => {
         'enabled'        => true,
         'default_policy' => 'deny',
         'tokens'         => {
-          'master' => lookup('profile::consul::acl_api_token'),
+          'initial_management' => lookup('profile::consul::acl_api_token'),
+          'agent'              => lookup('profile::consul::acl_api_token'),
         },
       },
     },
@@ -34,28 +36,34 @@ class profile::consul::server {
   include profile::consul::puppet_watch
 }
 
-class profile::consul::client (String $server_ip) {
+class profile::consul::client (Array[String] $servers) {
   $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   class { 'consul':
     config_mode => '0640',
     config_hash => {
-      'bind_addr'       => $ipaddress,
-      'data_dir'        => '/opt/consul',
-      'log_level'       => 'INFO',
-      'node_name'       => $facts['networking']['hostname'],
-      'retry_join'      => [$server_ip],
-      'acl_agent_token' => lookup('profile::consul::acl_api_token'),
+      'bind_addr'  => $ipaddress,
+      'data_dir'   => '/opt/consul',
+      'log_level'  => 'INFO',
+      'node_name'  => $facts['networking']['hostname'],
+      'retry_join' => $servers,
+      'acl'        => {
+        'tokens' => {
+          'agent' => lookup('profile::consul::acl_api_token'),
+        },
+      },
     },
   }
 
-  tcp_conn_validator { 'consul-server':
-    host      => $server_ip,
-    port      => 8300,
-    try_sleep => 5,
-    timeout   => 120,
-    require   => Service['consul'],
+  $consul_validators = $servers.map | $index, $server_ip | {
+    tcp_conn_validator { "consul-server-${index}":
+      host      => $server_ip,
+      port      => 8300,
+      try_sleep => 5,
+      timeout   => 120,
+      require   => Service['consul'],
+    }
   }
 
   tcp_conn_validator { 'consul':
@@ -63,10 +71,7 @@ class profile::consul::client (String $server_ip) {
     port      => 8500,
     try_sleep => 5,
     timeout   => 60,
-    require   => [
-      Service['consul'],
-      Tcp_conn_validator['consul-server']
-    ],
+    require   => [Service['consul']] + $consul_validators,
   }
 
   include profile::consul::puppet_watch
