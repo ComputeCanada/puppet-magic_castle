@@ -8,7 +8,7 @@ lookup_options:
     merge: 'deep'
 
 consul_template::version: 0.25.2
-consul::version: 1.9.5
+consul::version: 1.15.2
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
@@ -126,7 +126,7 @@ profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
-profile::consul::client::server_ip: "%{alias('terraform.tag_ip.puppet.0')}"
+profile::consul::client::servers: "%{alias('terraform.tag_ip.puppet')}"
 
 profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
