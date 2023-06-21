@@ -1,5 +1,5 @@
 class profile::consul::server {
-  $interface = $facts['networking']['primary']
+  $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   class { 'consul':
@@ -35,7 +35,7 @@ class profile::consul::server {
 }
 
 class profile::consul::client (String $server_ip) {
-  $interface = $facts['networking']['primary']
+  $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
   class { 'consul':
