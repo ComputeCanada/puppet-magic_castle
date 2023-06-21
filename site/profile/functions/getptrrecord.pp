@@ -1,5 +1,5 @@
 function profile::getptrrecord() >> String {
-  $interface = $networking['primary']
+  $interface = profile::getlocalinterface()
   $ip = $networking['interfaces'][$interface]['ip']
   $ip_list = split($ip, '[.]')
   $netmask_list = split(profile::getnetmask(), '[.]')
