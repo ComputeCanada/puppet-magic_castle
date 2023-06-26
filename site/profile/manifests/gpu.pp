@@ -132,6 +132,7 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
 
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
+  String $nvidia_ml_py_version = '11.515.75',
 ) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
@@ -146,7 +147,7 @@ class profile::gpu::install::vgpu (
   $py3_version = lookup('os::redhat::python3::version')
 
   exec { 'pip install nvidia-ml-py':
-    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==11.515.75",
+    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==${nvidia_ml_py_version}",
     creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
     before  => Service['slurm-job-exporter'],
     require => Package['python3'],
