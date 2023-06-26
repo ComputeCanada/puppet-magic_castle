@@ -15,6 +15,12 @@ class profile::jupyterhub::hub {
     ),
   }
   include profile::slurm::submitter
+
+  consul::service { 'jupyterhub':
+    port  => 8081,
+    tags  => ['jupyterhub'],
+    token => lookup('profile::consul::acl_api_token'),
+  }
 }
 
 class profile::jupyterhub::node {
