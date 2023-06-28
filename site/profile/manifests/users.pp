@@ -77,7 +77,7 @@ define profile::users::ldap_user (
         environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
         require     => [File['kinit_wrapper'],],
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-        returns     => [0, 1],
+        returns     => [0, 1, 2],
         subscribe   => [
           Exec["ldap_user_${name}"],
           Exec['hbac_rules'],

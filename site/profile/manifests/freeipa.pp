@@ -673,7 +673,7 @@ class profile::freeipa::mokey (
       environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
       require     => [File['kinit_wrapper'],],
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-      returns     => [0, 1],
+      returns     => [0, 1, 2],
       subscribe   => [
         Exec['ipa_group_self-signup'],
         Exec['hbac_rules'],
