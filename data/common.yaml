@@ -7,6 +7,8 @@ lookup_options:
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
 
+profile::base::version: 12.6.0
+
 consul_template::version: 0.25.2
 consul::version: 1.15.2
 consul_template::config_hash:
@@ -75,7 +77,6 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
-profile::base::version: 12.5.0
 prometheus::alerts:
   groups:
     - name: 'recorder.rules'
