@@ -5,7 +5,7 @@ class profile::cvmfs::client (
   Array[String] $lmod_default_modules,
   Array[String] $alien_cache_repositories = [],
 
-){
+) {
   include profile::cvmfs::local_user
   $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
   $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
@@ -48,8 +48,8 @@ class profile::cvmfs::client (
 
   file { '/etc/cvmfs/default.local.ctmpl':
     content => epp('profile/cvmfs/default.local', {
-      'quota_limit'  => $quota_limit,
-      'repositories' => $repositories + $alien_cache_repositories,
+        'quota_limit'  => $quota_limit,
+        'repositories' => $repositories + $alien_cache_repositories,
     }),
     notify  => Service['consul-template'],
     require => Package['cvmfs'],
@@ -57,16 +57,15 @@ class profile::cvmfs::client (
 
   $alien_cache_repositories.each |$repo| {
     file { "/etc/cvmfs/config.d/${repo}.conf":
-      ensure  => 'present',
       content => epp('profile/cvmfs/alien_cache.conf.epp', {
-        'alien_fs_root'     => $alien_fs_root,
-        'alien_folder_name' => $alien_folder_name,
+          'alien_fs_root'     => $alien_fs_root,
+          'alien_folder_name' => $alien_folder_name,
       }),
-      require => Package['cvmfs']
+      require => Package['cvmfs'],
     }
   }
 
-  consul::service{ 'cvmfs':
+  consul::service { 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => {
@@ -148,11 +147,12 @@ class profile::cvmfs::alien_cache (
   $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
   $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
-  file {"/mnt/${alien_fs_root}/${alien_folder_name}":
+  file { "/mnt/${alien_fs_root}/${alien_folder_name}":
     ensure  => directory,
     group   => $gid,
     owner   => $uid,
-    require => File["/mnt/${alien_fs_root}/"]
+    require => File["/mnt/${alien_fs_root}/"],
+    seluser => 'unconfined_u',
   }
 }
 
