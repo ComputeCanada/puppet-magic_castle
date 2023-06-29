@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.6.0] UNRELEASED
+
+### Added
+- Added GPU monitoring with Prometheus and improve global compute node monitoring configuration (#237)
+- Added `2` as a possible return code when creating HBAC rules
+- Add definition `seluser` to alien cache folder.
+
+### Changed
+- Updated consul to 1.15 (#245)
+- Enabled multi-servers consul configuration (#245)
+- Moved from puppet facts to Terraform data to identify the ethernet interface connected to the local network. (#247)
+- Bumped puppet-jupyterhub to v4.6.4
+
+
 ## [12.5.0] 2025-06-06
 
 ### Added
