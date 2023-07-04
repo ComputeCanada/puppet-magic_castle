@@ -1,15 +1,28 @@
 node default {
   $instance_tags = lookup("terraform.instances.${facts['networking']['hostname']}.tags")
 
-  include(lookup('magic_castle::site::all', undef, undef, []))
+  $include_all = lookup('magic_castle::site::all', undef, undef, [])
 
-  $instance_tags.each | $tag | {
-    include(lookup("magic_castle::site::tags.${tag}", undef, undef, []))
-  }
-  $not_tags = lookup('magic_castle::site::not_tags')
-  $not_tags.each | $tag, $classes | {
-    if ! ($tag in $instance_tags) {
-      include($classes)
+  $include_tags = flatten(
+    $instance_tags.map | $tag | {
+      lookup("magic_castle::site::tags.${tag}", undef, undef, [])
     }
+  )
+
+  $include_not_tags = flatten(
+    lookup('magic_castle::site::not_tags').map | $tag, $classes | {
+      if ! ($tag in $instance_tags) {
+        $classes
+      } else {
+        []
+      }
+    }
+  )
+
+  if lookup('magic_castle::site::enable_chaos', undef, undef, false) {
+    $classes = shuffle($include_all + $include_tags + $include_not_tags)
+  } else {
+    $classes = $include_all + $include_tags + $include_not_tags
   }
+  include($classes)
 }
