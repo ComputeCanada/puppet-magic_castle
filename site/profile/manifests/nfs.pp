@@ -97,12 +97,6 @@ class profile::nfs::server (
       }
     }
   }
-
-  exec { 'unexportfs_exportfs':
-    command => 'exportfs -ua; cat /proc/fs/nfs/exports; exportfs -a',
-    path    => ['/usr/sbin', '/usr/bin'],
-    unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports',
-  }
 }
 
 define profile::nfs::server::export_volume (
