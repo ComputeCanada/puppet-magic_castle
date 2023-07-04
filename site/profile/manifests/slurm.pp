@@ -208,7 +208,8 @@ END
     polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
     max_retries       => 30,
     require           => [
-      Service['consul-template']
+      Service['consul-template'],
+      Class['consul::reload_service'],
     ],
     refreshonly       => true,
     subscribe         => File['/etc/slurm/slurm-consul.tpl'],
