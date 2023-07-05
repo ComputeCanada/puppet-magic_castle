@@ -19,12 +19,18 @@ class profile::cvmfs::client (
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
   }
 
+  package { 'cvmfs':
+    ensure  => 'installed',
+    require => Package['cvmfs-repo'],
+  }
+
   if $facts['software_stack'] == 'eessi' {
     package { 'stack':
       ensure   => 'latest',
       provider => 'rpm',
       name     => 'cvmfs-config-eessi',
       source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
+      require  => Package['cvmfs'],
     }
   } elsif $facts['software_stack'] == 'computecanada' {
     package { 'cc-cvmfs-repo':
@@ -37,13 +43,19 @@ class profile::cvmfs::client (
     package { 'stack':
       ensure  => 'installed',
       name    => 'cvmfs-config-computecanada',
-      require => [Package['cc-cvmfs-repo']],
+      require => [
+        Package['cc-cvmfs-repo'],
+        Package['cvmfs'],
+      ],
     }
   }
 
-  package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
+  package { ['cvmfs-config-default', 'cvmfs-auto-setup']:
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['stack']],
+    require => [
+      Package['cvmfs'],
+      Package['stack'],
+    ],
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':
