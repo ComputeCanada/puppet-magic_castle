@@ -68,6 +68,14 @@ class profile::base (
 
   # building /etc/ssh/ssh_known_hosts
   # for host based authentication
+  file { '/etc/ssh/ssh_known_hosts':
+    content => '# This file is managed by Puppet',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    replace => false,
+  }
+
   $type = 'ed25519'
   $sshkey_to_add = Hash(
     $instances.map |$k, $v| {
@@ -76,7 +84,8 @@ class profile::base (
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],]
+          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],],
+          'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]
   })
