@@ -21,6 +21,9 @@ node default {
 
   if lookup('magic_castle::site::enable_chaos', undef, undef, false) {
     $classes = shuffle($include_all + $include_tags + $include_not_tags)
+    notify { 'Chaos order':
+      message => String($classes),
+    }
   } else {
     $classes = $include_all + $include_tags + $include_not_tags
   }
