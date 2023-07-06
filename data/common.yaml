@@ -192,9 +192,7 @@ profile::cvmfs::local_user::group: 'cvmfs-reserved'
 profile::cvmfs::local_user::uid: 13000004
 profile::cvmfs::local_user::gid: 8000131
 
-profile::mfa::mgmt::provider: 'none'
-profile::mfa::node::provider: 'none'
-profile::mfa::login::provider: 'none'
+profile::mfa::provider: 'none'
 
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
