@@ -1,11 +1,11 @@
 ---
 lookup_options:
   magic_castle::site::all:
-    merge: 'deep'
+    merge: 'first'
   magic_castle::site::tags:
-    merge: 'deep'
+    merge: 'hash'
   magic_castle::site::not_tags:
-    merge: 'deep'
+    merge: 'hash'
 
 magic_castle::site::all:
   - profile::base
