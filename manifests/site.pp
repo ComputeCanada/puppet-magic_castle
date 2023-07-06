@@ -10,7 +10,7 @@ node default {
   )
 
   $include_not_tags = flatten(
-    lookup('magic_castle::site::not_tags').map | $tag, $classes | {
+    lookup('magic_castle::site::not_tags', undef, undef, {}).map | $tag, $classes | {
       if ! ($tag in $instance_tags) {
         $classes
       } else {
