@@ -17,6 +17,8 @@ class profile::slurm::base (
   Boolean $enable_x11_forwarding = true,
 )
 {
+  include epel
+
   group { 'slurm':
     ensure => 'present',
     gid    =>  '2001'
