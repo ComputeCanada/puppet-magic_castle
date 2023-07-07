@@ -112,10 +112,6 @@ class profile::base (
     require => Package['haveged'],
   }
 
-  package { 'xauth':
-    ensure => 'installed',
-  }
-
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
   }

@@ -51,6 +51,10 @@ class profile::slurm::base (
     before  => Package['munge']
   }
 
+  package { 'xauth':
+    ensure => 'installed',
+  }
+
   package { 'munge':
     ensure  => 'installed',
     require => Yumrepo['epel']
