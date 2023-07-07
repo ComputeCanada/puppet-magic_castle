@@ -3,7 +3,6 @@ class profile::base (
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
-  include consul_template
   include epel
   include selinux
   include profile::base::etc_hosts

@@ -19,6 +19,7 @@ class profile::slurm::base (
 {
   include epel
   include profile::base::powertools
+  include profile::consul
 
   group { 'slurm':
     ensure => 'present',
