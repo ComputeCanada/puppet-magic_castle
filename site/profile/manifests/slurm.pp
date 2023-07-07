@@ -561,6 +561,8 @@ export TFE_VAR_POOL=${tfe_var_pool}
 class profile::slurm::node {
   contain profile::slurm::base
 
+  include profile::gpu
+
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
     $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-22.05/'
@@ -667,6 +669,7 @@ class profile::slurm::node {
     require   => [
       Package['slurm-slurmd'],
       Wait_for['slurmctldhost_set'],
+      Class['profile::gpu'],
     ]
   }
 
