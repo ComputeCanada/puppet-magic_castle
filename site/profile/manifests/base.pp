@@ -8,6 +8,7 @@ class profile::base (
   include selinux
   include profile::base::etc_hosts
 
+  $instances = lookup('terraform.instances')
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
 
