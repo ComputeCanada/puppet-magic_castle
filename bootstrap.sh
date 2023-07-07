@@ -17,5 +17,5 @@ ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
 # Check if the puppet module for consul is present
 # If it is, initialize the consul server
 if [ -d /etc/puppetlabs/code/environments/production/modules/consul ]; then
-    /opt/puppetlabs/bin/puppet apply -e 'include profile::consul::server'
+    /opt/puppetlabs/bin/puppet apply -e 'include profile::consul'
 fi

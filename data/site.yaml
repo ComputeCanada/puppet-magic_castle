@@ -9,6 +9,7 @@ lookup_options:
 
 magic_castle::site::all:
   - profile::base
+  - profile::consul
   - profile::users::local
   - profile::sssd::client
   - profile::metrics::node_exporter
@@ -45,15 +46,11 @@ magic_castle::site::tags:
   nfs:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
-  puppet:
-    - profile::consul::server
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
 
 magic_castle::site::not_tags:
-  puppet:
-    - profile::consul::client
   nfs:
     - profile::nfs::client
   mgmt:
