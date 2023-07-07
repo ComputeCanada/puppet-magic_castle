@@ -9,10 +9,6 @@ class profile::base (
   include profile::base::powertools
   include profile::ssh::base
 
-  $instances = lookup('terraform.instances')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
-
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
