@@ -18,6 +18,7 @@ class profile::slurm::base (
 )
 {
   include epel
+  include profile::base::powertools
 
   group { 'slurm':
     ensure => 'present',
@@ -157,8 +158,11 @@ END
   package { 'slurm':
     ensure  => 'installed',
     name    => "slurm-${slurm_version}*",
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Exec['enable_powertools'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   package { ['slurm-contribs', 'slurm-perlapi' ]:

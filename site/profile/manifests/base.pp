@@ -7,6 +7,7 @@ class profile::base (
   include epel
   include selinux
   include profile::base::etc_hosts
+  include profile::base::powertools
 
   $instances = lookup('terraform.instances')
   $domain_name = lookup('profile::freeipa::base::domain_name')
@@ -25,14 +26,6 @@ class profile::base (
   file { '/usr/sbin/prepare4image.sh':
     source => 'puppet:///modules/profile/base/prepare4image.sh',
     mode   => '0755',
-  }
-
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    exec { 'enable_powertools':
-      command => 'dnf config-manager --set-enabled powertools',
-      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
-      path    => ['/usr/bin'],
-    }
   }
 
   # building /etc/ssh/ssh_known_hosts
@@ -301,5 +294,20 @@ class profile::base::etc_hosts {
     command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+[a-z0-9-]+$/d" /etc/hosts',
     onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+[a-z0-9-]+$" /etc/hosts',
     path    => ['/bin'],
+  }
+}
+
+class profile::base::powertools {
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    exec { 'enable_powertools':
+      command => 'dnf config-manager --set-enabled powertools',
+      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      path    => ['/usr/bin'],
+    }
+  } else {
+    exec { 'enable_powertools':
+      command     => '/bin/true',
+      refreshonly => true,
+    }
   }
 }
