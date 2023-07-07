@@ -17,12 +17,6 @@ class profile::base (
     content => "Magic Castle release ${version}",
   }
 
-  # Ensure consul can read the state of agent_catalog_run.lock
-  file { '/opt/puppetlabs/puppet/cache':
-    ensure => directory,
-    mode   => '0751',
-  }
-
   file { '/usr/sbin/prepare4image.sh':
     source => 'puppet:///modules/profile/base/prepare4image.sh',
     mode   => '0755',

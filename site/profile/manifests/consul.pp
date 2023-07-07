@@ -68,6 +68,12 @@ class profile::consul::puppet_watch {
   include epel
   ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
+  # Ensure consul can read the state of agent_catalog_run.lock
+  file { '/opt/puppetlabs/puppet/cache':
+    ensure => directory,
+    mode   => '0751',
+  }
+
   $consul_sudoer = "consul ALL=(root) NOPASSWD: /usr/bin/systemctl reload puppet\n"
   file { '/etc/sudoers.d/99-consul':
     owner   => 'root',
