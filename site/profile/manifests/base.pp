@@ -7,6 +7,7 @@ class profile::base (
   include selinux
   include profile::base::etc_hosts
   include profile::base::powertools
+  include profile::ssh::base
 
   $instances = lookup('terraform.instances')
   $domain_name = lookup('profile::freeipa::base::domain_name')
@@ -26,31 +27,6 @@ class profile::base (
     source => 'puppet:///modules/profile/base/prepare4image.sh',
     mode   => '0755',
   }
-
-  # building /etc/ssh/ssh_known_hosts
-  # for host based authentication
-  file { '/etc/ssh/ssh_known_hosts':
-    content => '# This file is managed by Puppet',
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    replace => false,
-  }
-
-  $type = 'ed25519'
-  $sshkey_to_add = Hash(
-    $instances.map |$k, $v| {
-      [
-        $k,
-        {
-          'key' => split($v['hostkeys'][$type], /\s/)[1],
-          'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],],
-          'require' => File['/etc/ssh/ssh_known_hosts'],
-        }
-      ]
-  })
-  ensure_resources('sshkey', $sshkey_to_add)
 
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
@@ -144,84 +120,6 @@ class profile::base (
 
   package { 'xauth':
     ensure => 'installed',
-  }
-
-  service { 'sshd':
-    ensure => running,
-    enable => true,
-  }
-
-  sshd_config { 'PermitRootLogin':
-    ensure => present,
-    value  => 'no',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'MACs':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'KexAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'HostKeyAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'HostKeyAlgorithms ssh-rsa',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'Ciphers':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
-    notify => Service['sshd'],
-  }
-
-  file { '/etc/ssh/ssh_host_ed25519_key':
-    mode  => '0640',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_ed25519_key.pub':
-    mode  => '0644',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_rsa_key':
-    mode  => '0640',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_rsa_key.pub':
-    mode  => '0644',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
-    # instead of modifying /etc/ssh/sshd_config
-    # https://sshaudit.com/hardening_guides.html#rhel8
-    # We replace the file in /usr/share/crypto-policies instead of
-    # /etc/crypto-policies as suggested by sshaudit.com, because the script
-    # update-crypto-policies can be called by RPM scripts and overwrites the
-    # config in /etc by what's in /usr/share. The files in /etc/crypto-policies
-    # are in just symlinks to /usr/share
-    file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
-      source => 'puppet:///modules/profile/base/opensshserver.config',
-      notify => Service['sshd'],
-    }
   }
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
