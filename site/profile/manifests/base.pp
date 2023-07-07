@@ -49,16 +49,6 @@ class profile::base (
     ensure => absent,
   }
 
-  class { 'swap_file':
-    files => {
-      '/mnt/swap' => {
-        ensure       => present,
-        swapfile     => '/mnt/swap',
-        swapfilesize => '1 GB',
-      },
-    },
-  }
-
   package { 'pciutils':
     ensure => 'installed',
   }

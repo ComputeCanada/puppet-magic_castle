@@ -82,6 +82,12 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
+swap_file::files:
+  default:
+    ensure: "present"
+    swapfile: "/mnt/swap"
+    swapfilesize: "1 GB"
+
 prometheus::alerts:
   groups:
     - name: 'recorder.rules'

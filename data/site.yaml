@@ -13,6 +13,7 @@ magic_castle::site::all:
   - profile::users::local
   - profile::sssd::client
   - profile::metrics::node_exporter
+  - swap_file
 
 magic_castle::site::tags:
   dtn:
