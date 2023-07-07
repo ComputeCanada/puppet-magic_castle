@@ -20,7 +20,7 @@ class profile::rsyslog::client {
     content => $remote_host_conf,
   }
 
-  consul_template::watch { 'slurm.remote_host.conf.ctmpl':
+  consul_template::watch { 'remote_host.conf.ctmpl':
     require     => File['/etc/rsyslog.d/remote_host.conf.ctmpl'],
     config_hash => {
       perms       => '0644',
