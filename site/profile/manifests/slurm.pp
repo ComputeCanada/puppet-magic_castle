@@ -558,7 +558,9 @@ export TFE_VAR_POOL=${tfe_var_pool}
 }
 
 # Slurm node class. This is where slurmd is ran.
-class profile::slurm::node {
+class profile::slurm::node (
+  Array[String] $slurmd_class_dep = ['profile::nfs::client'],
+) {
   contain profile::slurm::base
 
   include profile::gpu
@@ -656,6 +658,12 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  if defined('$classes') {
+    $slurmd_required = $slurmd_class_dep.filter | $name | { $name in $classes }.map | $name | { Class[$name] }
+  } else {
+    $slurmd_required = []
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
@@ -670,7 +678,7 @@ class profile::slurm::node {
       Package['slurm-slurmd'],
       Wait_for['slurmctldhost_set'],
       Class['profile::gpu'],
-    ]
+    ] + $slurmd_required
   }
 
   logrotate::rule { 'slurmd':
