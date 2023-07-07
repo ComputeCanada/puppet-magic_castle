@@ -28,8 +28,6 @@ class profile::nfs::server (
   String $domain_name,
   Variant[String, Hash[String, Array[String]]] $devices,
 ) {
-  require profile::base
-
   $nfs_domain  = "int.${domain_name}"
 
   file { '/lib/systemd/system/clean-nfs-rbind.service':
