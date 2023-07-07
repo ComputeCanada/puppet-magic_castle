@@ -192,6 +192,7 @@ class profile::freeipa::server (
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
 ) {
+  include profile::base::etc_hosts
   include profile::freeipa::base
 
   file { 'kinit_wrapper':
