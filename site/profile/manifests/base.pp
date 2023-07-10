@@ -38,10 +38,11 @@ class profile::base (
   }
 
   # build /etc/hosts
-  # Make sure /etc/hosts entry for the current host is manage by Puppet only
+  # Make sure /etc/hosts entry for the current host is managed by Puppet or
+  # that at least it is in entered in the right format.
   exec { 'sed_fqdn':
-    command => "sed -i '/^${ipaddress}/d' /etc/hosts",
-    onlyif  => "grep '${ipaddress}' /etc/hosts | grep -v -E '${fqdn}\\s+${hostname}'",
+    command => "sed -i '/^${ipaddress}\\s/d' /etc/hosts",
+    unless  => "grep -E '^${ipaddress}\\s+${fqdn}\\s+${hostname}$' /etc/hosts",
     path    => ['/bin'],
   }
 
