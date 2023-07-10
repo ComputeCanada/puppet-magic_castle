@@ -52,7 +52,7 @@ class profile::base (
         "${k}.${int_domain_name}",
         {
           ip           => $v['local_ip'],
-          host_aliases => [$k] + ('puppet' in $v['tags'] ? { true => ['puppet'], false => [] }),
+          host_aliases => [$k],
           require      => Exec['sed_fqdn'],
           before       => Exec['sed_host_puppet'],
         }
