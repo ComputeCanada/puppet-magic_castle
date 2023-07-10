@@ -22,7 +22,6 @@ epel::epel_testing_managed: false
 epel::epel_testing_source_managed: false
 epel::epel_testing_debuginfo_managed: false
 
-fail2ban::config_file_template: "fail2ban/CentOS/%{facts.os.release.major}/etc/fail2ban/jail.conf.epp"
 fail2ban::package_name: fail2ban-server
 fail2ban::jails: ['ssh-route', 'ssh-ban-root']
 fail2ban::custom_jails:
