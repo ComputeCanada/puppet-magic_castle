@@ -659,7 +659,7 @@ class profile::slurm::node (
   }
 
   if defined('$classes') {
-    $slurmd_required = $slurmd_class_dep.filter | $name | { $name in $::classes }.map | $name | { Class[$name] }
+    $slurmd_required = $slurmd_class_dep.filter | $name | { $name in $classes }.map | $name | { Class[$name] } #lint:ignore:variable_scope
   } else {
     $slurmd_required = []
   }
