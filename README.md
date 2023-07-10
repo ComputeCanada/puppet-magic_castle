@@ -86,24 +86,6 @@ profile::accounts:::skel_archives:
 | `profile::freeipa::server::ds_password`| String  | Password of the directory server | |
 | `profile::freeipa::server::hbac_services`| Array[String]  | Name of services to control with HBAC rules | `['sshd', 'jupyterhub-login']` |
 
-
-## profile::mfa
-
-| Variable                 | Type                | Description                        | Default |
-| ------------------------ | :------------------ | :--------------------------------- | ------- |
-| `profile::mfa::provider` | Enum['none', 'duo'] | MFA provider for node tagged 'mfa' | 'none'  |
-
-### duo_unix
-
-| Variable             | Type   | Description                  | Default                  |
-| -------------------- | :----- | :--------------------------- | ------------------------ |
-| `duo_unix::usage`    | String | Either login or pam          | `login`                  |
-| `duo_unix::ikey`     | String | Duo integration              | `''`                     |
-| `duo_unix::skey`     | String | Duo secret key               | `''`                     |
-| `duo_unix::host`     | String | Duo api host                 | `''`                     |
-| `duo_unix::motd`     | String | Enable motd                  | `no`                     |
-| `duo_unix::failmode` | String | Failure mode, secure or safe | `safe`                   |
-
 ## profile::nfs
 
 | Variable                           | Type   | Description                            | Default  |
