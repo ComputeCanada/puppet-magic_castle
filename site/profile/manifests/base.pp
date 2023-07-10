@@ -54,16 +54,16 @@ class profile::base (
           ip           => $v['local_ip'],
           host_aliases => [$k],
           require      => Exec['sed_fqdn'],
-          before       => Exec['sed_host_puppet'],
+          before       => Exec['sed_host_wo_fqdn'],
         }
       ]
     }
   )
   ensure_resources('host', $hosts_to_add)
 
-  exec { 'sed_host_puppet':
-    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+puppet$/d" /etc/hosts',
-    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+puppet$" /etc/hosts',
+  exec { 'sed_host_wo_fqdn':
+    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+[a-z0-9-]+$/d" /etc/hosts',
+    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+[a-z0-9-]+$" /etc/hosts',
     path    => ['/bin'],
   }
 
