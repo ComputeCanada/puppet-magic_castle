@@ -158,7 +158,7 @@ class profile::freeipa::client (String $server_ip) {
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     onlyif  => [
       'test -f /etc/ipa/default.conf',
-      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35',
+      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf) > /dev/null; test $? -eq 35',
     ],
     before  => Exec['ipa-install'],
   }
