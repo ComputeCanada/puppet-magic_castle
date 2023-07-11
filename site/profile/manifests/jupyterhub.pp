@@ -1,5 +1,7 @@
 class profile::jupyterhub::hub {
   contain jupyterhub
+  include profile::sssd::service
+
   Yumrepo['epel'] -> Class['jupyterhub']
 
   $enable_user_signup = lookup('profile::freeipa::mokey::enable_user_signup')
