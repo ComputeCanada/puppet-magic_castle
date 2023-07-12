@@ -105,7 +105,7 @@ END
     content => @("END"),
 ${jupyterhub_subdomain}.${domain_name} {
   import tls
-  reverse_proxy ${$jupyterhub::bind_url} {
+  reverse_proxy ${jupyterhub::bind_url} {
     transport http {
       tls_insecure_skip_verify
     }
