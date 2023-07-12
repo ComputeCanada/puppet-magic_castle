@@ -1,0 +1,17 @@
+[Unit]
+Description=gunicorn daemon for the userportal
+After=network.target
+
+[Service]
+User=apache
+Group=apache
+RuntimeDirectory=gunicorn
+WorkingDirectory=/var/www/userportal/
+ExecStart=/var/www/userportal-env/bin/gunicorn --bind 127.0.0.1:8001 --workers 2 --timeout 90 userportal.wsgi
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
