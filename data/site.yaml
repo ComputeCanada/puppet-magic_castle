@@ -26,6 +26,7 @@ magic_castle::site::tags:
   mfa:
     - profile::mfa
   mgmt:
+    - mysql::server
     - profile::freeipa::server
     - profile::metrics::server
     - profile::metrics::slurm_exporter

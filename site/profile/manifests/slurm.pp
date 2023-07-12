@@ -301,25 +301,6 @@ class profile::slurm::accounting(
   Integer $dbd_port = 6819
 ) {
 
-  consul::service { 'slurmdbd':
-    port    => $dbd_port,
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
-  }
-
-  $override_options = {
-    'mysqld' => {
-      'innodb_buffer_pool_size' => '1024M',
-      'innodb_log_file_size' => '64M',
-      'innodb_lock_wait_timeout' => '900',
-    }
-  }
-
-  class { 'mysql::server':
-    remove_default_accounts => true,
-    override_options        => $override_options
-  }
-
   mysql::db { 'slurm_acct_db':
     ensure   => present,
     user     => 'slurm',
@@ -358,6 +339,12 @@ class profile::slurm::accounting(
       Mysql::Db['slurm_acct_db'],
     ],
     before    => Service['slurmctld']
+  }
+
+  consul::service { 'slurmdbd':
+    port    => $dbd_port,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
   }
 
   wait_for { 'slurmdbd_started':
