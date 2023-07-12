@@ -467,6 +467,8 @@ class profile::freeipa::mokey (
   Boolean $require_verify_admin,
   Array[String] $access_tags,
 ) {
+  include mysql::server
+
   yumrepo { 'mokey-copr-repo':
     enabled             => true,
     descr               => 'Copr repo for mokey owned by cmdntrf',

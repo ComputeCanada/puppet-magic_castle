@@ -300,6 +300,7 @@ class profile::slurm::accounting(
   Hash[String, Array[String]] $users = {},
   Integer $dbd_port = 6819
 ) {
+  include mysql::server
 
   mysql::db { 'slurm_acct_db':
     ensure   => present,
