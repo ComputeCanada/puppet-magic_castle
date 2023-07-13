@@ -645,6 +645,7 @@ class profile::slurm::node {
   Exec <| tag == profile::cvmfs |> -> Service['slurmd']
   Exec <| tag == profile::freeipa |> -> Service['slurmd']
   Exec <| tag == profile::gpu |> -> Service['slurmd']
+  Exec <| tag == profile::jupyterhub |> -> Service['slurmd']
   Kmod::Load <| |> -> Service['slurmd']
   Mount <| |> -> Service['slurmd']
   Selinux::Module <| |> -> Service['slurmd']
