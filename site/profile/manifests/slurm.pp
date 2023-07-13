@@ -650,6 +650,8 @@ class profile::slurm::node {
   Selinux::Module <| |> -> Service['slurmd']
   Selinux::Exec_restorecon <| |> -> Service['slurmd']
   Selinux::Boolean <| |> -> Service['slurmd']
+  Service <| tag == prometheus |> -> Service['slurmd']
+  Service <| tag == profile::metrics |> -> Service['slurmd']
   User <| |> -> Service['slurmd']
   Group <| |> -> Service['slurmd']
   Pam <| |> -> Service['slurmd']
