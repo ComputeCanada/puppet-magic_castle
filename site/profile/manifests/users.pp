@@ -71,7 +71,10 @@ define profile::users::ldap_user (
       environment => $environment,
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $timeout,
-      require     => File['/sbin/ipa_create_user.py'],
+      require     => [
+        File['kinit_wrapper'],
+        File['/sbin/ipa_create_user.py'],
+      ],
     }
 
     $access_tags.each |$tag| {
