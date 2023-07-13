@@ -546,12 +546,8 @@ export TFE_VAR_POOL=${tfe_var_pool}
 }
 
 # Slurm node class. This is where slurmd is ran.
-class profile::slurm::node (
-  Array[String] $slurmd_class_dep = ['profile::nfs::client'],
-) {
+class profile::slurm::node {
   contain profile::slurm::base
-
-  include profile::gpu
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
@@ -646,11 +642,17 @@ class profile::slurm::node (
     group  => 'slurm'
   }
 
-  if defined('$classes') {
-    $slurmd_required = $slurmd_class_dep.filter | $name | { $name in $classes }.map | $name | { Class[$name] } #lint:ignore:variable_scope
-  } else {
-    $slurmd_required = []
-  }
+  Exec <| tag == profile::cvmfs |> -> Service['slurmd']
+  Exec <| tag == profile::freeipa |> -> Service['slurmd']
+  Exec <| tag == profile::gpu |> -> Service['slurmd']
+  Kmod::Load <| |> -> Service['slurmd']
+  Mount <| |> -> Service['slurmd']
+  Selinux::Module -> Service['slurmd']
+  Selinux::Restorecon -> Service['slurmd']
+  Selinux::Boolean -> Service['slurmd']
+  User <| |> -> Service['slurmd']
+  Group <| |> -> Service['slurmd']
+  Pam <| |> -> Service['slurmd']
 
   service { 'slurmd':
     ensure    => 'running',
@@ -665,8 +667,7 @@ class profile::slurm::node (
     require   => [
       Package['slurm-slurmd'],
       Wait_for['slurmctldhost_set'],
-      Class['profile::gpu'],
-    ] + $slurmd_required
+    ],
   }
 
   logrotate::rule { 'slurmd':
