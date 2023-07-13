@@ -53,6 +53,7 @@ profile::accounts:::skel_archives:
 | ------------------------------------------------ | :------------ | :--------------------------------------------- | -------------------------------------------------------------------- |
 | `profile::cvmfs::client::quota_limit` | Integer | Instance local cache directory soft quota (MB) | 4096 |
 | `profile::cvmfs::client::initial_profile` | String | Path to shell script initializing software stack environment variables | Depends on the chosen software stack |
+| `profile::cvmfs::client::extra_site_env_vars` | Hash[String, String] | Map of environment variables that will be exported before sourcing profile shell scripts. | `{ }` |
 | `profile::cvmfs::client::repositories` | Array[String] | List of CVMFS repositories to mount  | Depends on the chosen software stack |
 | `profile::cvmfs::client::alien_cache_repositories`| Array[String] | List of CVMFS repositories that need an alien cache | `[]` |
 | `profile::cvmfs::client::lmod_default_modules`   | Array[String] | List of lmod default modules | Depends on the chosen software stack |

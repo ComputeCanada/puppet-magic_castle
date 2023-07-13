@@ -4,7 +4,7 @@ class profile::cvmfs::client (
   Array[String] $repositories,
   Array[String] $lmod_default_modules,
   Array[String] $alien_cache_repositories = [],
-
+  Hash[String, String] $extra_site_env_vars = {},
 ) {
   include consul_template
   include profile::cvmfs::local_user
@@ -84,6 +84,7 @@ class profile::cvmfs::client (
       {
         'lmod_default_modules' => $lmod_default_modules,
         'initial_profile'      => $initial_profile,
+        'extra_site_env_vars'  => $extra_site_env_vars,
       }
     ),
   }
