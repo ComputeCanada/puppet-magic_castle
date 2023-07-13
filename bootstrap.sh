@@ -15,4 +15,4 @@ ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
 ) > /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
 
 # Apply bootstrap classes if any
-puppet apply /etc/puppetlabs/code/environment/productions/site.pp  --tags mc_bootstrap
+puppet apply /etc/puppetlabs/code/environments/production/manifests/site.pp  --tags mc_bootstrap
