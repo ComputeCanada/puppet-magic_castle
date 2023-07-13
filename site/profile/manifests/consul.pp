@@ -1,4 +1,6 @@
 class profile::consul (Array[String] $servers) {
+  tag 'mc_bootstrap'
+
   include consul_template
 
   $interface = profile::getlocalinterface()

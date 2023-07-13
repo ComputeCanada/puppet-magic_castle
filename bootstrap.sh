@@ -14,8 +14,5 @@ ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
     $ENC_CMD -l 'profile::freeipa::server::admin_password' -s $(openssl rand -base64 9)
 ) > /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
 
-# Check if the puppet module for consul is present
-# If it is, initialize the consul server
-if [ -d /etc/puppetlabs/code/environments/production/modules/consul ]; then
-    /opt/puppetlabs/bin/puppet apply -e 'include profile::consul'
-fi
+# Apply bootstrap classes if any
+puppet apply /etc/puppetlabs/puppet/site.pp  --tags mc_bootstrap
