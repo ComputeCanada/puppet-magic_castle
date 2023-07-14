@@ -217,10 +217,6 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
-profile::reverse_proxy::jupyterhub_subdomain: jupyter
-profile::reverse_proxy::ipa_subdomain: ipa
-profile::reverse_proxy::mokey_subdomain: mokey
-
 profile::slurm::base::slurm_version: '21.08'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.2.3'
@@ -255,3 +251,10 @@ profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::reverse_proxy::subdomains:
+  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
+  jupyter: "https://127.0.0.1:8000"
+
+profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
+profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"

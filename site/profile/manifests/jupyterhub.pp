@@ -1,18 +1,16 @@
-class profile::jupyterhub::hub {
+class profile::jupyterhub::hub (
+  String $register_url = '', # lint:ignore:params_empty_string_assignment
+  String $reset_pw_url = '', # lint:ignore:params_empty_string_assignment
+) {
   contain jupyterhub
   include profile::sssd::service
 
   Yumrepo['epel'] -> Class['jupyterhub']
 
-  $enable_user_signup = lookup('profile::freeipa::mokey::enable_user_signup')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $mokey_subdomain = lookup('profile::reverse_proxy::mokey_subdomain')
-  $mokey_hostname = "${mokey_subdomain}.${domain_name}"
-
   file { '/etc/jupyterhub/templates/login.html':
     content => epp('profile/jupyterhub/login.html', {
-        'mokey_hostname'     => $mokey_hostname,
-        'enable_user_signup' => $enable_user_signup,
+        'register_url' => $register_url,
+        'reset_pw_url' => $reset_pw_url,
       }
     ),
   }

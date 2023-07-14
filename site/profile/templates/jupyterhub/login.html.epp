@@ -25,17 +25,21 @@ Powered by Magic Castle
 {% endblock %}
 
 {% block script %}
-<% if $enable_user_signup { -%>
+<% if $register_url != '' or $reset_pw_url != '' { -%>
 <script>
 $(".auth-form-body").after(`
 <div class="auth-form-footer">
+<% if $register_url != '' { -%>
   <div style="width: 45%; float:left">
-    <a href="https://<%= $mokey_hostname %>/auth/signup" target="_new">Create Account</a>
+    <a href="<%= $register_url %>" target="_new">Create Account</a>
   </div>
-  |
+<% } -%>
+<% if $register_url != '' and $reset_pw_url != '' { %> | <% } %>
+<% if $reset_pw_url != '' { -%>
   <div style="width: 45%; float:right">
-    <a href="https://<%= $mokey_hostname %>/auth/forgotpw" target="_new">Reset Password</a>
+    <a href="<%= $reset_pw_url %>" target="_new">Reset Password</a>
   </div>
+<% } -%>
 </div>`
 );
 </script>

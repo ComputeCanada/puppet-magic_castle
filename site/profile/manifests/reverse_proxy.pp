@@ -1,8 +1,7 @@
 class profile::reverse_proxy (
   String $domain_name,
-  String $jupyterhub_subdomain,
-  String $ipa_subdomain,
-  String $mokey_subdomain,
+  Hash[String, String] $subdomains,
+  String $main2sub_redir = 'jupyter',
 ) {
   selinux::boolean { 'httpd_can_network_connect': }
 
@@ -28,9 +27,6 @@ class profile::reverse_proxy (
     ensure  => 'installed',
     require => Yumrepo['caddy-copr-repo'],
   }
-
-  $ipa_server_ip = lookup('profile::freeipa::client::server_ip')
-  $mokey_port = lookup('profile::freeipa::mokey::port')
 
   if $domain_name in $::facts['letsencrypt'] {
     $fullchain_exists = $::facts['letsencrypt'][$domain_name]['fullchain']
@@ -82,64 +78,52 @@ import conf.d/*
 | EOT
   }
 
+  $host_conf_template = @("END")
+    ${domain_name} {
+      import tls
+    <% if '${main2sub_redir}' != '' { -%>
+      redir https://${main2sub_redir}.${domain_name}
+    <% } -%>
+    }
+    |END
+
   file { '/etc/caddy/conf.d/host.conf':
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => File['/etc/caddy/conf.d'],
-    content => @("END"),
-${domain_name} {
-  import tls
-  redir https://${jupyterhub_subdomain}.${domain_name}
-}
-END
+    content => inline_epp($host_conf_template),
   }
 
-  file { '/etc/caddy/conf.d/jupyter.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    seltype => 'httpd_config_t',
-    require => File['/etc/caddy/conf.d'],
-    content => @("END"),
-${jupyterhub_subdomain}.${domain_name} {
-  import tls
-  reverse_proxy ${jupyterhub::bind_url} {
-    transport http {
-      tls_insecure_skip_verify
+  $caddy_conf_template = @(EOT)
+    <%= $subdomain %>.<%= $domain %> {
+      import tls
+      reverse_proxy <%= $server %> <% if $server =~ /^https/ { %> {
+        transport http {
+          tls_insecure_skip_verify
+        }
+      }
+      <% } %>
     }
-  }
-}
-END
-  }
+    |EOT
 
-  file { '/etc/caddy/conf.d/mokey.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    seltype => 'httpd_config_t',
-    require => File['/etc/caddy/conf.d'],
-    content => @("END"),
-${mokey_subdomain}.${domain_name} {
-  import tls
-  reverse_proxy ${ipa_server_ip}:${mokey_port}
-}
-END
-  }
-
-  file { '/etc/caddy/conf.d/ipa.conf':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    seltype => 'httpd_config_t',
-    require => File['/etc/caddy/conf.d'],
-    content => @("END"),
-${ipa_subdomain}.${domain_name} {
-  import tls
-  reverse_proxy ${ipa_subdomain}.int.${domain_name}
-}
-END
+  $subdomains.each | $key, $value | {
+    file { "/etc/caddy/conf.d/${key}.conf":
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      seltype => 'httpd_config_t',
+      require => File['/etc/caddy/conf.d'],
+      content => inline_epp(
+        $caddy_conf_template,
+        {
+          'domain'    => $domain_name,
+          'subdomain' => $key,
+          'server'    => $value,
+        }
+      ),
+    }
   }
 
   service { 'caddy':
@@ -151,9 +135,6 @@ END
     subscribe => [
       File['/etc/caddy/Caddyfile'],
       File['/etc/caddy/conf.d/host.conf'],
-      File['/etc/caddy/conf.d/jupyter.conf'],
-      File['/etc/caddy/conf.d/mokey.conf'],
-      File['/etc/caddy/conf.d/ipa.conf'],
-    ],
+    ] + $subdomains.map |$key, $value| { File["/etc/caddy/conf.d/${key}.conf"] },
   }
 }
