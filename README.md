@@ -86,6 +86,13 @@ profile::accounts:::skel_archives:
 | `profile::freeipa::server::ds_password`| String  | Password of the directory server | |
 | `profile::freeipa::server::hbac_services`| Array[String]  | Name of services to control with HBAC rules | `['sshd', 'jupyterhub-login']` |
 
+## profile::jupyterhub
+
+| Variable | Type | Description | Default |
+| -------- | :--  | :---------- | ------- |
+| `profile::jupyterhub::hub::register_url` | String | URL to web page for user to register. Empty string removes the link on the hub login page. | "https://mokey.${domain_name}/auth/signup" |
+| `profile::jupyterhub::hub::reset_pw_url` | String | URL to web page for users to reset password. Empty string removes the link on the hub login page. | "https://mokey.${domain_name}/auth/forgotpw" |
+
 ## profile::nfs
 
 | Variable                           | Type   | Description                            | Default  |
@@ -98,9 +105,8 @@ profile::accounts:::skel_archives:
 | Variable                                       | Type   | Description                                                             | Default   |
 | ---------------------------------------------- | :----- | :---------------------------------------------------------------------- | --------- |
 | `profile::reverse_proxy::domain_name`          | String | Domain name corresponding to the main DNS record A registered           |           |
-| `profile::reverse_proxy::jupyterhub_subdomain` | String | Subdomain name used to create the vhost for JupyterHub                  | `jupyter` |
-| `profile::reverse_proxy::ipa_subdomain`        | String | Subdomain name used to create the vhost for FreeIPA                     | `ipa`     |
-| `profile::reverse_proxy::mokey_subdomain`      | String | Subdomain name used to create the vhost for Mokey                       | `mokey`   |
+| `profile::reverse_proxy::main2sub_redir` | String | Subdomain to which user should be redirected when hitting domain name directly. Empty string means no redirection | `'jupyter'` |
+| `profile::reverse_proxy::subdomains` | Hash[String, String] | Subdomain names used to create vhosts to arbitrary http endpoints in the cluster| `{"ipa": "ipa.int.${domain_name}", "mokey": "${mokey_ip}:${mokey_port}", "jupyter":"https://127.0.0.1:8000"}` |
 
 ## profile::slurm
 
