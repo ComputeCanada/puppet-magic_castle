@@ -589,8 +589,6 @@ class profile::freeipa::mokey (
     ],
   }
 
-  $mokey_subdomain = lookup('profile::reverse_proxy::mokey_subdomain')
-  $mokey_hostname = "${mokey_subdomain}.${domain_name}"
   file { '/etc/mokey/mokey.yaml':
     group   => 'mokey',
     mode    => '0640',
@@ -608,7 +606,7 @@ class profile::freeipa::mokey (
         'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${mokey_hostname}/",
+        'email_link_base'      => "https://${domain_name}/",
         'email_from'           => "admin@${domain_name}",
       }
     ),
