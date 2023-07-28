@@ -24,7 +24,7 @@ class profile::userportal::server (
         'cluster_name'    => lookup('profile::slurm::base::cluster_name'),
         'secret_key'      => seeded_rand_string(32, $password),
         'domain_name'     => $domain_name,
-        'subdomain'       => lookup('profile::reverse_proxy::userportal_subdomain'),
+        'subdomain'       => 'explore',
         'logins'          => $logins,
         'prometheus_ip'   => $prometheus_ip,
         'prometheus_port' => $prometheus_port,
