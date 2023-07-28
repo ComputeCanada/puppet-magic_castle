@@ -6,7 +6,7 @@ class profile::cvmfs::client (
   Array[String] $alien_cache_repositories = [],
   Hash[String, String] $extra_site_env_vars = {},
 ) {
-  include consul_template
+  include profile::consul
   include profile::cvmfs::local_user
   $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
   $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')

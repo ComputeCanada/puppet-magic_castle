@@ -2,10 +2,12 @@ class profile::accounts (
   String $project_regex,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],
 ) {
-  require profile::freeipa::server
-  require profile::freeipa::mokey
-  require profile::nfs::server
-  require profile::slurm::accounting
+  Service <| tag == profile::slurm |> -> Service['mkhome']
+  Service <| tag == profile::slurm |> -> Service['mkproject']
+  Service <| tag == profile::freeipa |> -> Service['mkhome']
+  Service <| tag == profile::freeipa |> -> Service['mkproject']
+  Mount <| |> -> Service['mkhome']
+  Mount <| |> -> Service['mkproject']
 
   $nfs_devices = lookup('profile::nfs::server::devices', undef, undef, {})
   $with_home = 'home' in $nfs_devices

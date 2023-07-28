@@ -1,78 +1,31 @@
-stage { ['first', 'second']: }
-Stage['first'] -> Stage['second'] -> Stage['main']
-
 node default {
   $instance_tags = lookup("terraform.instances.${facts['networking']['hostname']}.tags")
 
-  if 'puppet' in $instance_tags {
-    include profile::consul::server
+  $include_all = lookup('magic_castle::site::all', undef, undef, [])
+
+  $include_tags = flatten(
+    $instance_tags.map | $tag | {
+      lookup("magic_castle::site::tags.${tag}", undef, undef, [])
+    }
+  )
+
+  $include_not_tags = flatten(
+    lookup('magic_castle::site::not_tags', undef, undef, {}).map | $tag, $classes | {
+      if ! ($tag in $instance_tags) {
+        $classes
+      } else {
+        []
+      }
+    }
+  )
+
+  if lookup('magic_castle::site::enable_chaos', undef, undef, false) {
+    $classes = shuffle($include_all + $include_tags + $include_not_tags)
+    notify { 'Chaos order':
+      message => String($classes),
+    }
   } else {
-    include profile::consul::client
+    $classes = $include_all + $include_tags + $include_not_tags
   }
-
-  include profile::base
-  include profile::users::local
-  include profile::sssd::client
-  include profile::metrics::node_exporter
-
-  if 'login' in $instance_tags {
-    include profile::fail2ban
-    include profile::cvmfs::client
-    include profile::slurm::submitter
-    include profile::ssh::hostbased_auth::client
-  }
-
-  if 'mgmt' in $instance_tags {
-    include profile::freeipa::server
-
-    include profile::metrics::server
-    include profile::metrics::slurm_exporter
-    include profile::rsyslog::server
-    include profile::squid::server
-    include profile::slurm::controller
-
-    include profile::freeipa::mokey
-    include profile::slurm::accounting
-
-    include profile::accounts
-    include profile::users::ldap
-  } else {
-    include profile::freeipa::client
-    include profile::rsyslog::client
-  }
-
-  if 'node' in $instance_tags {
-    include profile::cvmfs::client
-    include profile::gpu
-    include profile::jupyterhub::node
-
-    include profile::slurm::node
-    include profile::ssh::hostbased_auth::client
-    include profile::ssh::hostbased_auth::server
-
-    include profile::metrics::slurm_job_exporter
-
-    Class['profile::nfs::client'] -> Service['slurmd']
-    Class['profile::gpu'] -> Service['slurmd']
-  }
-
-  if 'nfs' in $instance_tags {
-    include profile::nfs::server
-    include profile::cvmfs::alien_cache
-  } else {
-    include profile::nfs::client
-  }
-
-  if 'proxy' in $instance_tags {
-    include profile::jupyterhub::hub
-    include profile::reverse_proxy
-  }
-
-  if 'dtn' in $instance_tags {
-    include profile::globus
-  }
-
-  if 'mfa' in $instance_tags {
-    include profile::mfa
-  }
+  include($classes)
 }

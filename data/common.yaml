@@ -16,8 +16,12 @@ consul_template::config_hash:
     token: "%{hiera('profile::consul::acl_api_token')}"
 
 epel::epel_exclude: 'slurm*'
+epel::epel_source_managed: false
+epel::epel_debuginfo_managed: false
+epel::epel_testing_managed: false
+epel::epel_testing_source_managed: false
+epel::epel_testing_debuginfo_managed: false
 
-fail2ban::config_file_template: "fail2ban/CentOS/%{facts.os.release.major}/etc/fail2ban/jail.conf.epp"
 fail2ban::package_name: fail2ban-server
 fail2ban::jails: ['ssh-route', 'ssh-ban-root']
 fail2ban::custom_jails:
@@ -76,6 +80,20 @@ squid::extra_config_sections:
   general:
     config_entries:
       maximum_object_size: "131072 KB"
+
+swap_file::files:
+  default:
+    ensure: "present"
+    swapfile: "/mnt/swap"
+    swapfilesize: "1 GB"
+
+
+mysql::server::remove_default_accounts: true
+mysql::server::override_options:
+    mysqld:
+      innodb_buffer_pool_size: 1024M
+      innodb_log_file_size: 64M
+      innodb_lock_wait_timeout: 900
 
 prometheus::alerts:
   groups:
@@ -199,10 +217,6 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
-profile::reverse_proxy::jupyterhub_subdomain: jupyter
-profile::reverse_proxy::ipa_subdomain: ipa
-profile::reverse_proxy::mokey_subdomain: mokey
-
 profile::slurm::base::slurm_version: '21.08'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.2.3'
@@ -228,7 +242,7 @@ profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
-profile::consul::client::servers: "%{alias('terraform.tag_ip.puppet')}"
+profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 
 profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
@@ -237,3 +251,10 @@ profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::reverse_proxy::subdomains:
+  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
+  jupyter: "https://127.0.0.1:8000"
+
+profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
+profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"

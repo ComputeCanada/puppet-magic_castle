@@ -1,4 +1,6 @@
 class profile::fail2ban {
+  include epel
+
   class { 'fail2ban' :
     whitelist => ['127.0.0.1/8', profile::getcidr()] + lookup('fail2ban::ignoreip', undef, undef, []),
   }
@@ -12,7 +14,7 @@ class profile::fail2ban {
     require => Class['fail2ban::install'],
   }
 
-  Class['epel'] -> Class['fail2ban::install']
+  Yumrepo['epel'] -> Class['fail2ban::install']
 
   selinux::module { 'fail2ban_route':
     ensure    => 'present',

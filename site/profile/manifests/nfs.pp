@@ -28,29 +28,7 @@ class profile::nfs::server (
   String $domain_name,
   Variant[String, Hash[String, Array[String]]] $devices,
 ) {
-  require profile::base
-
   $nfs_domain  = "int.${domain_name}"
-
-  file { '/lib/systemd/system/clean-nfs-rbind.service':
-    mode   => '0644',
-    owner  => 'root',
-    group  => 'root',
-    source => 'puppet:///modules/profile/nfs/clean-nfs-rbind.service',
-  }
-
-  exec { 'clean-nfs-rbind-systemd-reload':
-    command     => 'systemctl daemon-reload',
-    path        => ['/usr/bin', '/bin', '/usr/sbin'],
-    refreshonly => true,
-    require     => File['/lib/systemd/system/clean-nfs-rbind.service'],
-  }
-
-  service { 'clean-nfs-rbind':
-    ensure  => running,
-    enable  => true,
-    require => Exec['clean-nfs-rbind-systemd-reload'],
-  }
 
   $cidr = profile::getcidr()
   class { 'nfs':
@@ -96,12 +74,6 @@ class profile::nfs::server (
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
       }
     }
-  }
-
-  exec { 'unexportfs_exportfs':
-    command => 'exportfs -ua; cat /proc/fs/nfs/exports; exportfs -a',
-    path    => ['/usr/sbin', '/usr/bin'],
-    unless  => 'grep -qvP "(^#|^/export\s)" /proc/fs/nfs/exports',
   }
 }
 

@@ -60,6 +60,8 @@ class profile::ceph::client (
 }
 
 class profile::ceph::client::install {
+  include epel
+
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,

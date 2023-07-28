@@ -17,6 +17,10 @@ class profile::slurm::base (
   Boolean $enable_x11_forwarding = true,
 )
 {
+  include epel
+  include profile::base::powertools
+  include profile::consul
+
   group { 'slurm':
     ensure => 'present',
     gid    =>  '2001'
@@ -45,6 +49,10 @@ class profile::slurm::base (
     comment => 'MUNGE Uid N Gid Emporium',
     shell   => '/sbin/nologin',
     before  => Package['munge']
+  }
+
+  package { 'xauth':
+    ensure => 'installed',
   }
 
   package { 'munge':
@@ -155,8 +163,11 @@ END
   package { 'slurm':
     ensure  => 'installed',
     name    => "slurm-${slurm_version}*",
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Exec['enable_powertools'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   package { ['slurm-contribs', 'slurm-perlapi' ]:
@@ -289,25 +300,7 @@ class profile::slurm::accounting(
   Hash[String, Array[String]] $users = {},
   Integer $dbd_port = 6819
 ) {
-
-  consul::service { 'slurmdbd':
-    port    => $dbd_port,
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
-  }
-
-  $override_options = {
-    'mysqld' => {
-      'innodb_buffer_pool_size' => '1024M',
-      'innodb_log_file_size' => '64M',
-      'innodb_lock_wait_timeout' => '900',
-    }
-  }
-
-  class { 'mysql::server':
-    remove_default_accounts => true,
-    override_options        => $override_options
-  }
+  include mysql::server
 
   mysql::db { 'slurm_acct_db':
     ensure   => present,
@@ -347,6 +340,12 @@ class profile::slurm::accounting(
       Mysql::Db['slurm_acct_db'],
     ],
     before    => Service['slurmctld']
+  }
+
+  consul::service { 'slurmdbd':
+    port    => $dbd_port,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
   }
 
   wait_for { 'slurmdbd_started':
@@ -643,6 +642,21 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  Exec <| tag == profile::cvmfs |> -> Service['slurmd']
+  Exec <| tag == profile::freeipa |> -> Service['slurmd']
+  Exec <| tag == profile::gpu |> -> Service['slurmd']
+  Exec <| tag == profile::jupyterhub |> -> Service['slurmd']
+  Kmod::Load <| |> -> Service['slurmd']
+  Mount <| |> -> Service['slurmd']
+  Selinux::Module <| |> -> Service['slurmd']
+  Selinux::Exec_restorecon <| |> -> Service['slurmd']
+  Selinux::Boolean <| |> -> Service['slurmd']
+  Service <| tag == prometheus |> -> Service['slurmd']
+  Service <| tag == profile::metrics |> -> Service['slurmd']
+  User <| |> -> Service['slurmd']
+  Group <| |> -> Service['slurmd']
+  Pam <| |> -> Service['slurmd']
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
@@ -656,7 +670,7 @@ class profile::slurm::node {
     require   => [
       Package['slurm-slurmd'],
       Wait_for['slurmctldhost_set'],
-    ]
+    ],
   }
 
   logrotate::rule { 'slurmd':

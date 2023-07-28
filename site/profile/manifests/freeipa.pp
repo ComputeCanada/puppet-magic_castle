@@ -34,6 +34,8 @@ class profile::freeipa::base (String $domain_name) {
 
 class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
+  include profile::sssd::service
+
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
   $admin_password = lookup('profile::freeipa::server::admin_password')
@@ -156,7 +158,7 @@ class profile::freeipa::client (String $server_ip) {
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     onlyif  => [
       'test -f /etc/ipa/default.conf',
-      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf); test $? -eq 35',
+      'curl --silent $(grep -oP "xmlrpc_uri = \K(.*)" /etc/ipa/default.conf) > /dev/null; test $? -eq 35',
     ],
     before  => Exec['ipa-install'],
   }
@@ -190,6 +192,7 @@ class profile::freeipa::server (
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
 ) {
+  include profile::base::etc_hosts
   include profile::freeipa::base
 
   file { 'kinit_wrapper':
@@ -464,6 +467,8 @@ class profile::freeipa::mokey (
   Boolean $require_verify_admin,
   Array[String] $access_tags,
 ) {
+  include mysql::server
+
   yumrepo { 'mokey-copr-repo':
     enabled             => true,
     descr               => 'Copr repo for mokey owned by cmdntrf',
@@ -584,8 +589,6 @@ class profile::freeipa::mokey (
     ],
   }
 
-  $mokey_subdomain = lookup('profile::reverse_proxy::mokey_subdomain')
-  $mokey_hostname = "${mokey_subdomain}.${domain_name}"
   file { '/etc/mokey/mokey.yaml':
     group   => 'mokey',
     mode    => '0640',
@@ -603,7 +606,7 @@ class profile::freeipa::mokey (
         'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${mokey_hostname}/",
+        'email_link_base'      => "https://${domain_name}/",
         'email_from'           => "admin@${domain_name}",
       }
     ),

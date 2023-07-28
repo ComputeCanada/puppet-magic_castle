@@ -2,7 +2,10 @@ class profile::users::ldap (
   Hash $users,
   Array[String] $access_tags,
 ) {
-  require profile::accounts
+  Exec <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
+  Exec <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
+  Service <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
+  Service <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
 
   file { '/sbin/ipa_create_user.py':
     source => 'puppet:///modules/profile/users/ipa_create_user.py',
@@ -68,6 +71,10 @@ define profile::users::ldap_user (
       environment => $environment,
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       timeout     => $timeout,
+      require     => [
+        File['kinit_wrapper'],
+        File['/sbin/ipa_create_user.py'],
+      ],
     }
 
     $access_tags.each |$tag| {

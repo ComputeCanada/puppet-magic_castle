@@ -1,8 +1,17 @@
+class profile::sssd::service {
+  service { 'sssd':
+    ensure => running,
+    enable => true,
+  }
+}
+
 class profile::sssd::client(
   Hash $domains = {},
   Array[String] $access_tags = ['login', 'node'],
   Optional[Boolean] $deny_access = undef,
 ){
+  include profile::sssd::service
+
   package { 'sssd-ldap': }
 
   if ! defined('$deny_access') {
@@ -62,10 +71,5 @@ EOT
     match   => "^domains = ${$ipa_domain}$",
     notify  => Service['sssd'],
     require => Exec['ipa-install'],
-  }
-
-  service { 'sssd':
-    ensure => running,
-    enable => true,
   }
 }

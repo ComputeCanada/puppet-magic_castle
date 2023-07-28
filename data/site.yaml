@@ -1,0 +1,60 @@
+---
+lookup_options:
+  magic_castle::site::all:
+    merge: 'first'
+  magic_castle::site::tags:
+    merge: 'hash'
+  magic_castle::site::not_tags:
+    merge: 'hash'
+
+magic_castle::site::all:
+  - profile::base
+  - profile::consul
+  - profile::users::local
+  - profile::sssd::client
+  - profile::metrics::node_exporter
+  - swap_file
+
+magic_castle::site::tags:
+  dtn:
+    - profile::globus
+  login:
+    - profile::fail2ban
+    - profile::cvmfs::client
+    - profile::slurm::submitter
+    - profile::ssh::hostbased_auth::client
+  mfa:
+    - profile::mfa
+  mgmt:
+    - mysql::server
+    - profile::freeipa::server
+    - profile::metrics::server
+    - profile::metrics::slurm_exporter
+    - profile::rsyslog::server
+    - profile::squid::server
+    - profile::slurm::controller
+    - profile::freeipa::mokey
+    - profile::slurm::accounting
+    - profile::accounts
+    - profile::users::ldap
+  node:
+    - profile::cvmfs::client
+    - profile::gpu
+    - profile::jupyterhub::node
+    - profile::slurm::node
+    - profile::ssh::hostbased_auth::client
+    - profile::ssh::hostbased_auth::server
+    - profile::metrics::slurm_job_exporter
+  nfs:
+    - profile::nfs::server
+    - profile::cvmfs::alien_cache
+  proxy:
+    - profile::jupyterhub::hub
+    - profile::reverse_proxy
+
+magic_castle::site::not_tags:
+  nfs:
+    - profile::nfs::client
+  mgmt:
+    - profile::freeipa::client
+    - profile::rsyslog::client

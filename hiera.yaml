@@ -32,3 +32,5 @@ hierarchy:
     options:
       pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/boot_private_key.pkcs7.pem
       pkcs7_public_key:  /etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
+  - name: "site.pp definition"
+    path: "site.yaml"

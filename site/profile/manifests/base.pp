@@ -3,94 +3,20 @@ class profile::base (
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
-  include consul_template
   include epel
   include selinux
-
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
-  $hostname = $facts['networking']['hostname']
-  $fqdn = "${hostname}.${int_domain_name}"
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  include profile::base::etc_hosts
+  include profile::base::powertools
+  include profile::ssh::base
 
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
-  }
-
-  # Ensure consul can read the state of agent_catalog_run.lock
-  file { '/opt/puppetlabs/puppet/cache':
-    ensure => directory,
-    mode   => '0751',
   }
 
   file { '/usr/sbin/prepare4image.sh':
     source => 'puppet:///modules/profile/base/prepare4image.sh',
     mode   => '0755',
   }
-
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    exec { 'enable_powertools':
-      command => 'dnf config-manager --set-enabled powertools',
-      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
-      path    => ['/usr/bin'],
-    }
-  }
-
-  # build /etc/hosts
-  # Make sure /etc/hosts entry for the current host is managed by Puppet or
-  # that at least it is in entered in the right format.
-  exec { 'sed_fqdn':
-    command => "sed -i '/^${ipaddress}\\s/d' /etc/hosts",
-    unless  => "grep -E '^${ipaddress}\\s+${fqdn}\\s+${hostname}$' /etc/hosts",
-    path    => ['/bin'],
-  }
-
-  $instances = lookup('terraform.instances')
-  $hosts_to_add = Hash($instances.map |$k, $v| {
-      [
-        "${k}.${int_domain_name}",
-        {
-          ip           => $v['local_ip'],
-          host_aliases => [$k],
-          require      => Exec['sed_fqdn'],
-          before       => Exec['sed_host_wo_fqdn'],
-        }
-      ]
-    }
-  )
-  ensure_resources('host', $hosts_to_add)
-
-  exec { 'sed_host_wo_fqdn':
-    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+[a-z0-9-]+$/d" /etc/hosts',
-    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+[a-z0-9-]+$" /etc/hosts',
-    path    => ['/bin'],
-  }
-
-  # building /etc/ssh/ssh_known_hosts
-  # for host based authentication
-  file { '/etc/ssh/ssh_known_hosts':
-    content => '# This file is managed by Puppet',
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
-    replace => false,
-  }
-
-  $type = 'ed25519'
-  $sshkey_to_add = Hash(
-    $instances.map |$k, $v| {
-      [
-        $k,
-        {
-          'key' => split($v['hostkeys'][$type], /\s/)[1],
-          'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],],
-          'require' => File['/etc/ssh/ssh_known_hosts'],
-        }
-      ]
-  })
-  ensure_resources('sshkey', $sshkey_to_add)
 
   if dig($::facts, 'os', 'release', 'major') == '7' {
     package { 'yum-plugin-priorities':
@@ -121,16 +47,6 @@ class profile::base (
 
   file { '/etc/puppetlabs/puppet/csr_attributes.yaml':
     ensure => absent,
-  }
-
-  class { 'swap_file':
-    files => {
-      '/mnt/swap' => {
-        ensure       => present,
-        swapfile     => '/mnt/swap',
-        swapfilesize => '1 GB',
-      },
-    },
   }
 
   package { 'pciutils':
@@ -182,88 +98,6 @@ class profile::base (
     require => Package['haveged'],
   }
 
-  package { 'xauth':
-    ensure => 'installed',
-  }
-
-  service { 'sshd':
-    ensure => running,
-    enable => true,
-  }
-
-  sshd_config { 'PermitRootLogin':
-    ensure => present,
-    value  => 'no',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'MACs':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'KexAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'HostKeyAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'HostKeyAlgorithms ssh-rsa',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'Ciphers':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
-    notify => Service['sshd'],
-  }
-
-  file { '/etc/ssh/ssh_host_ed25519_key':
-    mode  => '0640',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_ed25519_key.pub':
-    mode  => '0644',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_rsa_key':
-    mode  => '0640',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  file { '/etc/ssh/ssh_host_rsa_key.pub':
-    mode  => '0644',
-    owner => 'root',
-    group => 'ssh_keys',
-  }
-
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
-    # instead of modifying /etc/ssh/sshd_config
-    # https://sshaudit.com/hardening_guides.html#rhel8
-    # We replace the file in /usr/share/crypto-policies instead of
-    # /etc/crypto-policies as suggested by sshaudit.com, because the script
-    # update-crypto-policies can be called by RPM scripts and overwrites the
-    # config in /etc by what's in /usr/share. The files in /etc/crypto-policies
-    # are in just symlinks to /usr/share
-    file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
-      source => 'puppet:///modules/profile/base/opensshserver.config',
-      notify => Service['sshd'],
-    }
-  }
-
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
   }
@@ -293,5 +127,60 @@ class profile::base::azure {
     refreshonly => true,
     subscribe   => File['/etc/udev/rules.d/66-azure-storage.rules'],
     path        => ['/usr/bin'],
+  }
+}
+
+# build /etc/hosts
+class profile::base::etc_hosts {
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+  $hostname = $facts['networking']['hostname']
+  $fqdn = "${hostname}.${int_domain_name}"
+  $interface = profile::getlocalinterface()
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+
+  # build /etc/hosts
+  # Make sure /etc/hosts entry for the current host is managed by Puppet or
+  # that at least it is in entered in the right format.
+  exec { 'sed_fqdn':
+    command => "sed -i '/^${ipaddress}\\s/d' /etc/hosts",
+    unless  => "grep -E '^${ipaddress}\\s+${fqdn}\\s+${hostname}$' /etc/hosts",
+    path    => ['/bin'],
+  }
+
+  $instances = lookup('terraform.instances')
+  $hosts_to_add = Hash($instances.map |$k, $v| {
+      [
+        "${k}.${int_domain_name}",
+        {
+          ip           => $v['local_ip'],
+          host_aliases => [$k],
+          require      => Exec['sed_fqdn'],
+          before       => Exec['sed_host_wo_fqdn'],
+        }
+      ]
+    }
+  )
+  ensure_resources('host', $hosts_to_add)
+
+  exec { 'sed_host_wo_fqdn':
+    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+[a-z0-9-]+$/d" /etc/hosts',
+    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+[a-z0-9-]+$" /etc/hosts',
+    path    => ['/bin'],
+  }
+}
+
+class profile::base::powertools {
+  if dig($::facts, 'os', 'release', 'major') == '8' {
+    exec { 'enable_powertools':
+      command => 'dnf config-manager --set-enabled powertools',
+      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      path    => ['/usr/bin'],
+    }
+  } else {
+    exec { 'enable_powertools':
+      command     => '/bin/true',
+      refreshonly => true,
+    }
   }
 }
