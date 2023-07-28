@@ -105,9 +105,8 @@ class profile::userportal::server (
     ],
   }
 
-  $domain = lookup('profile::freeipa::base::domain_name')
   exec { 'userportal_apiuser':
-    command     => "manage.py createsuperuser --noinput --username root --email root@${domain}",
+    command     => "manage.py createsuperuser --noinput --username root --email root@${domain_name}",
     path        => [
       '/var/www/userportal',
       '/var/www/userportal-env/bin',
