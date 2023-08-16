@@ -1,4 +1,5 @@
 class profile::userportal::server (
+  String $root_api_token,
   String $password,
   String $prometheus_ip,
   Integer $prometheus_port,
@@ -116,36 +117,50 @@ class profile::userportal::server (
     returns     => [0, 1], # ignore error if user already exists
   }
 
+  $api_token_command = "echo 'from rest_framework.authtoken.models import Token; Token.objects.filter(user_id=1).update(key='${root_api_token}')' | manage.py shell"
+  exec { 'userportal_api_token':
+    command     => Sensitive($api_token_command),
+    subscribe   => [
+      Exec['userportal_apiuser'],
+    ],
+    refreshonly => true,
+    path        => [
+      '/var/www/userportal',
+      '/var/www/userportal-env/bin',
+      '/usr/bin',
+    ],
+  }
+
+  mysql::db { 'userportal':
+    ensure   => present,
+    user     => 'userportal',
+    password => $password,
+    host     => 'localhost',
+    grant    => ['ALL'],
+  }
+}
+
+class profile::userportal::slurm_jobscripts (
+  String $token
+) {
+  $slurm_jobscript_ini = @("EOT")
+    [slurm]
+    spool = /var/spool/slurm
+
+    [api]
+    host = http://localhost:8001
+    script_length = 100000
+    token = ${token}
+    | EOT
+
   file { '/etc/slurm/slurm_jobscripts.ini':
     ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     mode    => '0600',
     replace => false,
-    content => @(EOT),
-[slurm]
-spool = /var/spool/slurm
-
-[api]
-host = http://localhost:8001
-script_length = 100000
-|EOT
-  }
-
-  exec { 'userportal_api_token':
-    command   => 'manage.py drf_create_token root | awk \'{print "token = " $3}\' >> /etc/slurm/slurm_jobscripts.ini',
-    unless    => 'grep -q token /etc/slurm/slurm_jobscripts.ini',
-    require   => File['/etc/slurm/slurm_jobscripts.ini'],
-    subscribe => [
-      File['/etc/slurm/slurm_jobscripts.ini'],
-      Exec['userportal_apiuser'],
-    ],
-    notify    => Service['slurm_jobscripts'],
-    path      => [
-      '/var/www/userportal',
-      '/var/www/userportal-env/bin',
-      '/usr/bin',
-    ],
+    notify  => Service['slurm_jobscripts'],
+    content => $slurm_jobscript_ini,
   }
 
   file { '/etc/systemd/system/slurm_jobscripts.service':
@@ -155,17 +170,8 @@ script_length = 100000
   }
 
   service { 'slurm_jobscripts':
-    ensure  => 'running',
-    enable  => true,
-    require => Exec['userportal_api_token'],
-  }
-
-  mysql::db { 'userportal':
-    ensure   => present,
-    user     => 'userportal',
-    password => $password,
-    host     => 'localhost',
-    grant    => ['ALL'],
+    ensure => 'running',
+    enable => true,
   }
 }
 
