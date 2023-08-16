@@ -117,7 +117,7 @@ class profile::userportal::server (
     returns     => [0, 1], # ignore error if user already exists
   }
 
-  $api_token_command = "echo 'from rest_framework.authtoken.models import Token; Token.objects.filter(user_id=1).update(key='${root_api_token}')' | manage.py shell"
+  $api_token_command = "echo 'from rest_framework.authtoken.models import Token; Token.objects.create(user_id=1); Token.objects.filter(user_id=1).update(key='${root_api_token}')' | manage.py shell"
   exec { 'userportal_api_token':
     command     => Sensitive($api_token_command),
     subscribe   => [
