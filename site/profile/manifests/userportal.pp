@@ -143,6 +143,7 @@ class profile::userportal::server (
 class profile::userportal::slurm_jobscripts (
   String $token
 ) {
+  ensure_packages(['python3', 'python3-requests'])
   $slurm_jobscript_ini = @("EOT")
     [slurm]
     spool = /var/spool/slurm
@@ -169,6 +170,14 @@ class profile::userportal::slurm_jobscripts (
     notify => Service['slurm_jobscripts'],
   }
 
+  $portal_version = lookup('profile::userportal::install_tarball::version', undef, undef, '1.0.2')
+  file { '/opt/software/slurm/bin/slurm_jobscripts.py':
+    mode    => '0755',
+    source  => "https://raw.githubusercontent.com/guilbaults/TrailblazingTurtle/v${portal_version}/slurm_jobscripts/slurm_jobscripts.py",
+    notify  => Service['slurm_jobscripts'],
+    require => Package['slurm'],
+  }
+
   service { 'slurm_jobscripts':
     ensure => 'running',
     enable => true,
@@ -176,8 +185,8 @@ class profile::userportal::slurm_jobscripts (
 }
 
 class profile::userportal::install_tarball (String $version = '1.0.2') {
-  package { ['python38', 'python38-devel']: }
-  package { ['openldap-devel', 'gcc', 'mariadb-devel']: }
+  ensure_packages(['python38', 'python38-devel'])
+  ensure_packages(['openldap-devel', 'gcc', 'mariadb-devel'])
 
   # Using python3.8 with gunicorn
   exec { 'userportal_venv':
