@@ -128,7 +128,7 @@ class profile::userportal::server (
     |EOT
 
   file { '/var/www/userportal/.root_api_token.hash':
-    content => str2saltedsha512($root_api_token),
+    content => sha256($root_api_token),
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
