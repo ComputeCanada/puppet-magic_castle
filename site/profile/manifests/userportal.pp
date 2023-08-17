@@ -158,6 +158,7 @@ class profile::userportal::server (
 }
 
 class profile::userportal::slurm_jobscripts (
+  String $api_url,
   String $token
 ) {
   ensure_packages(['python3', 'python3-requests'])
@@ -166,7 +167,7 @@ class profile::userportal::slurm_jobscripts (
     spool = /var/spool/slurm
 
     [api]
-    host = http://localhost:8001
+    host = ${api_url}
     script_length = 100000
     token = ${token}
     | EOT
