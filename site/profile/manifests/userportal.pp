@@ -76,7 +76,7 @@ class profile::userportal::server (
     command     => 'manage.py migrate',
     path        => [
       '/var/www/userportal',
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
     ],
     refreshonly => true,
     subscribe   => [
@@ -92,7 +92,7 @@ class profile::userportal::server (
     command => 'manage.py collectstatic --noinput',
     path    => [
       '/var/www/userportal',
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
     ],
     require => [
       File['/var/www/userportal/userportal/settings/99-local.py'],
@@ -110,7 +110,7 @@ class profile::userportal::server (
     command     => "manage.py createsuperuser --noinput --username root --email root@${domain_name}",
     path        => [
       '/var/www/userportal',
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
     ],
     refreshonly => true,
     subscribe   => Exec['userportal_migrate'],
@@ -143,7 +143,7 @@ class profile::userportal::server (
     refreshonly => true,
     path        => [
       '/var/www/userportal',
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
       '/usr/bin',
     ],
   }
@@ -208,8 +208,8 @@ class profile::userportal::install_tarball (String $version = '1.0.2') {
 
   # Using python3.8 with gunicorn
   exec { 'userportal_venv':
-    command => '/usr/bin/python3.8 -m venv /var/www/userportal-env',
-    creates => '/var/www/userportal-env',
+    command => '/usr/bin/python3.8 -m venv /opt/software/userportal-env',
+    creates => '/opt/software/userportal-env',
     require => Package['python38'],
   }
 
@@ -234,11 +234,14 @@ class profile::userportal::install_tarball (String $version = '1.0.2') {
   exec { 'userportal_pip':
     command     => 'pip3 install -r /var/www/userportal/requirements.txt',
     path        => [
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
       '/usr/bin',
     ],
     refreshonly => true,
-    subscribe   => Archive['userportal'],
+    subscribe   => [
+      Archive['userportal'],
+      Exec['userportal_venv'],
+    ],
     require     => [
       Exec['userportal_venv'],
       Package['python38-devel'],
@@ -253,10 +256,10 @@ class profile::userportal::install_tarball (String $version = '1.0.2') {
   -> exec { 'pip install django-freeipa-auth':
     command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
     path    => [
-      '/var/www/userportal-env/bin',
+      '/opt/software/userportal-env/bin',
       '/usr/bin',
     ],
-    creates => '/var/www/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
+    creates => '/opt/software/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
     require => [Exec['userportal_venv']],
   }
 }
