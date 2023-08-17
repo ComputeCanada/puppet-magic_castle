@@ -5,6 +5,11 @@ class profile::reverse_proxy (
 ) {
   selinux::boolean { 'httpd_can_network_connect': }
 
+  selinux::module { 'caddy':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/reverse_proxy/caddy.pp',
+  }
+
   firewall { '200 httpd public':
     chain  => 'INPUT',
     dport  => [80, 443],
@@ -131,6 +136,7 @@ import conf.d/*
     enable    => true,
     require   => [
       Package['caddy'],
+      Selinux::Module['caddy'],
     ],
     subscribe => [
       File['/etc/caddy/Caddyfile'],

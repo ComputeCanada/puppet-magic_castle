@@ -1,0 +1,11 @@
+
+module caddy 1.0;
+
+require {
+	type sysctl_net_t;
+	type httpd_t;
+	class file { open read };
+}
+
+#============= httpd_t ==============
+allow httpd_t sysctl_net_t:file { open read };
