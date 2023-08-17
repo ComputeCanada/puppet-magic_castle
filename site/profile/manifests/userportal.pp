@@ -117,11 +117,28 @@ class profile::userportal::server (
     returns     => [0, 1], # ignore error if user already exists
   }
 
-  $api_token_command = "echo 'from rest_framework.authtoken.models import Token; Token.objects.create(user_id=1); Token.objects.filter(user_id=1).update(key=\"${root_api_token}\")' | manage.py shell"
+  $api_token_command = @("EOT")
+    echo 'from django.db.utils import IntegrityError
+    from rest_framework.authtoken.models import Token
+    try:
+      Token.objects.create(user_id=1)
+    except IntegrityError:
+      pass
+    Token.objects.filter(user_id=1).update(key="${root_api_token}")' | manage.py shell
+    |EOT
+
+  file { '/var/www/userportal/.root_api_token.hash':
+    content => str2saltedsha512($root_api_token),
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+  }
+
   exec { 'userportal_api_token':
     command     => Sensitive($api_token_command),
     subscribe   => [
       Exec['userportal_apiuser'],
+      File['/var/www/userportal/.root_api_token.hash'],
     ],
     refreshonly => true,
     path        => [
