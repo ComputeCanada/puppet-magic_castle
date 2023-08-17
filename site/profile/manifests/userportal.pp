@@ -176,7 +176,6 @@ class profile::userportal::slurm_jobscripts (
     owner   => 'slurm',
     group   => 'slurm',
     mode    => '0600',
-    replace => false,
     notify  => Service['slurm_jobscripts'],
     content => $slurm_jobscript_ini,
   }
