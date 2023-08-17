@@ -189,11 +189,11 @@ class profile::userportal::slurm_jobscripts (
 
   $portal_version = lookup('profile::userportal::install_tarball::version', undef, undef, '1.0.2')
   file { '/opt/software/slurm/bin/slurm_jobscripts.py':
-    mode     => '0755',
-    source   => "https://raw.githubusercontent.com/guilbaults/TrailblazingTurtle/v${portal_version}/slurm_jobscripts/slurm_jobscripts.py",
-    notify   => Service['slurm_jobscripts'],
-    require  => Package['slurm'],
-    checksum => 'mtime',
+    mode    => '0755',
+    source  => "https://raw.githubusercontent.com/guilbaults/TrailblazingTurtle/v${portal_version}/slurm_jobscripts/slurm_jobscripts.py",
+    notify  => Service['slurm_jobscripts'],
+    require => Package['slurm'],
+    replace => false, # avoid the file being replaced at every puppet transaction because its mtime as returned by GitHub has changed.
   }
 
   service { 'slurm_jobscripts':
