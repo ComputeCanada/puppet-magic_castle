@@ -292,6 +292,7 @@ profile::slurm::controller::autoscale_version: '0.7.0'
 profile::slurm::node::enable_tmpfs_mounts: true
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
+
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
