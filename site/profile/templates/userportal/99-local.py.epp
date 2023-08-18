@@ -12,7 +12,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'freeipa_auth',
+    'django_pam',
     'watchman',
 
     'pages',
@@ -68,20 +68,11 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/userportal-static/'
 
 AUTHENTICATION_BACKENDS = [
+    'django_pam.auth.backends.PAMBackend',
     'django.contrib.auth.backends.ModelBackend',
-    'freeipa_auth.backends.FreeIpaRpcAuthBackend',
 ]
 
 LOGIN_URL = '/accounts/login/' # So it does not use SAML2
-
-FREEIPA_AUTH_BACKEND_ENABLED = True
-FREEIPA_AUTH_SERVER = "ipa.int.<%= $domain_name %>"
-FREEIPA_AUTH_SSL_VERIFY = False#'/etc/pki/tls/certs/ca-bundle.crt'
-FREEIPA_AUTH_UPDATE_USER_GROUPS = True
-FREEIPA_AUTH_ALWAYS_UPDATE_USER = True
-FREEIPA_AUTH_USER_ATTRS_MAP = {"first_name": "givenname", "last_name": "sn", "email": "mail"}
-FREEIPA_AUTH_SERVER_TIMEOUT = 5
-FREEIPA_AUTH_STAFF_GROUPS = ['admins']
 
 EXPORTER_INSTALLED = [
     'slurm-job-exporter',

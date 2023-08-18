@@ -251,15 +251,13 @@ class profile::userportal::install_tarball (String $version = '1.0.2') {
     ],
   }
 
-  # Need to use this fork to manage is_staff correctly
-  # https://github.com/enervee/django-freeipa-auth/pull/9
-  -> exec { 'pip install django-freeipa-auth':
-    command => 'pip3 install https://github.com/88Ocelot/django-freeipa-auth/archive/d77df67c03a5af5923116afa2f4280b8264b4b5b.zip',
+  exec { 'pip install django-pam':
+    command => 'pip3 install django-pam',
     path    => [
       '/opt/software/userportal-env/bin',
       '/usr/bin',
     ],
-    creates => '/opt/software/userportal-env/lib/python3.8/site-packages/freeipa_auth/backends.py',
+    creates => '/opt/software/userportal-env/lib/python3.8/site-packages/django_pam/__init__.py',
     require => [Exec['userportal_venv']],
   }
 }
