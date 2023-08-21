@@ -187,7 +187,7 @@ class profile::userportal::slurm_jobscripts (
     notify => Service['slurm_jobscripts'],
   }
 
-  $portal_version = lookup('profile::userportal::install_tarball::version', undef, undef, '1.0.2')
+  $portal_version = lookup('profile::userportal::install_tarball::version')
   file { '/opt/software/slurm/bin/slurm_jobscripts.py':
     mode    => '0755',
     source  => "https://raw.githubusercontent.com/guilbaults/TrailblazingTurtle/v${portal_version}/slurm_jobscripts/slurm_jobscripts.py",
@@ -202,7 +202,7 @@ class profile::userportal::slurm_jobscripts (
   }
 }
 
-class profile::userportal::install_tarball (String $version = '1.0.2') {
+class profile::userportal::install_tarball (String $version) {
   ensure_packages(['python38', 'python38-devel'])
   ensure_packages(['openldap-devel', 'gcc', 'mariadb-devel'])
 
@@ -261,11 +261,3 @@ class profile::userportal::install_tarball (String $version = '1.0.2') {
     require => [Exec['userportal_venv']],
   }
 }
-
-# # podman command to run it in a container
-# podman run --network=host IMAGE_ID
-# podman cp 99-local.py CONTAINER_ID:/tbt/userportal/settings/99-local.py
-# # podman exec CONTAINER_ID /tbt/manage.py migrate
-# podman cp CONTAINER_ID:/tbt/static/custom.js /var/www/userportal-static/
-# podman cp CONTAINER_ID:/tbt/static/dashboard.css /var/www/userportal-static/
-# podman restart CONTAINER_ID
