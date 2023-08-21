@@ -38,6 +38,7 @@ magic_castle::site::tags:
     - profile::slurm::accounting
     - profile::accounts
     - profile::users::ldap
+    - profile::userportal::slurm_jobscripts
   node:
     - profile::gpu
     - profile::jupyterhub::node
@@ -52,7 +53,6 @@ magic_castle::site::tags:
     - profile::cvmfs::alien_cache
   portal:
     - profile::userportal::server
-    - profile::userportal::slurm_jobscripts
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
