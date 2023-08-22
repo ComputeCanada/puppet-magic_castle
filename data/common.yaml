@@ -296,6 +296,6 @@ profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}
 profile::userportal::server::prometheus_port: 9090
 profile::userportal::server::db_ip: 127.0.0.1
 profile::userportal::server::db_port: 3306
-profile::userportal::install_tarball::version: 1.1.0
+profile::userportal::install_tarball::version: 1.0.2
 profile::userportal::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
 profile::userportal::slurm_jobscripts::token: "%{alias('profile::userportal::server::root_api_token')}"
