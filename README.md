@@ -107,6 +107,7 @@ profile::accounts:::skel_archives:
 | `profile::reverse_proxy::domain_name`          | String | Domain name corresponding to the main DNS record A registered           |           |
 | `profile::reverse_proxy::main2sub_redir` | String | Subdomain to which user should be redirected when hitting domain name directly. Empty string means no redirection | `'jupyter'` |
 | `profile::reverse_proxy::subdomains` | Hash[String, String] | Subdomain names used to create vhosts to arbitrary http endpoints in the cluster| `{"ipa": "ipa.int.${domain_name}", "mokey": "${mokey_ip}:${mokey_port}", "jupyter":"https://127.0.0.1:8000"}` |
+| `profile::reverse_proxy::remote_ips` | Hash[String, Array[String]] | List of allowed ip addresses per subdomain. When left undefined, there are no restrictions on subdomain access. | `{}` |
 
 ## profile::slurm
 
