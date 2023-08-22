@@ -292,6 +292,7 @@ profile::reverse_proxy::subdomains:
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
 
+profile::metrics::slurm_job_exporter: 0.2.0
 profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::userportal::server::prometheus_port: 9090
 profile::userportal::server::db_ip: 127.0.0.1
