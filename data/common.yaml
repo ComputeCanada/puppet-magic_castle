@@ -347,6 +347,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-persistenced
   - nvidia-driver-cuda
 
+profile::metrics::slurm_job_exporter: 0.2.0
 profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::userportal::server::prometheus_port: 9090
 profile::userportal::server::db_ip: 127.0.0.1
