@@ -3,6 +3,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.0.0] UNRELEASED
+
+### Added
+
+- Added selinux module for Caddy read access to somaxconn
+- Added resource collectors to define requirements for service `slurmd`. The resource
+collector requirements only apply if their corresponding class is included in the site
+definition.
+- Added `include mysql::server`` in classes that needs a MySQL server.
+- Added missing sssd service include to jupyterhub::hub
+- Added include epel in fail2ban and ceph
+- Added include profile::gpu in profile::slurm::node
+
+### Changed
+
+- Refactored `profile::reverse_proxy` to allow arbitrary subdomain and proxy definition
+- Replaced `require profile::accounts` by resource collection in `ldap_users`
+- Replaced bootstrap.sh puppet command by application of all resources tagged as `mc_bootstrap`
+- Replaced require by resource collector in profile::accounts
+- Moved `mysql::server` out of `slurm::accounting` and in hieradata
+- Redirected output of ipa-client-uninstall_bad-hostname onlyif curl command to /dev/null
+- Udpated fail2ban module to 4.2.0
+- Moved swap file defintion from profile::base to common.yaml
+- Moved xauth from profile::base to profile::slurm::base
+- Moved puppet cache mode change from profile::base to profile::consul::puppet_watch
+- Moved ssh config and ssh_known_hosts from profile::base to their own classes
+- Moved consul_template from profile::base to profile::consul
+- Merged profile::consul::server and profile::consul::client classes
+- 
+
+### Removed
+- Removed service clean-nfs-rbind
+- Removed class profile::mfa
+- Removed `require profile::base` from profile::nfs::server
+- Disabled unused epel repos
+- 
+
 ## [12.6.0] 2023-06-29
 
 ### Added
