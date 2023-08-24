@@ -1,6 +1,7 @@
 class profile::reverse_proxy (
   String $domain_name,
   Hash[String, String] $subdomains,
+  Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
 ) {
   selinux::boolean { 'httpd_can_network_connect': }
@@ -101,18 +102,6 @@ import conf.d/*
     content => inline_epp($host_conf_template),
   }
 
-  $caddy_conf_template = @(EOT)
-    <%= $subdomain %>.<%= $domain %> {
-      import tls
-      reverse_proxy <%= $server %> <% if $server =~ /^https/ { %> {
-        transport http {
-          tls_insecure_skip_verify
-        }
-      }
-      <% } %>
-    }
-    |EOT
-
   $subdomains.each | $key, $value | {
     file { "/etc/caddy/conf.d/${key}.conf":
       owner   => 'root',
@@ -120,12 +109,13 @@ import conf.d/*
       mode    => '0644',
       seltype => 'httpd_config_t',
       require => File['/etc/caddy/conf.d'],
-      content => inline_epp(
-        $caddy_conf_template,
+      content => epp(
+        'profile/reverse_proxy/subdomain.conf',
         {
           'domain'    => $domain_name,
           'subdomain' => $key,
           'server'    => $value,
+          'remote_ip' => $remote_ips.get($key, ''),
         }
       ),
     }

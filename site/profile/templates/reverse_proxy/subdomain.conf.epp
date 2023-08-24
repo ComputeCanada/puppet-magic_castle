@@ -1,0 +1,19 @@
+<%= $subdomain %>.<%= $domain %> {
+  import tls
+<% if $remote_ip != '' { -%>
+  @allowed_ips remote_ip <%= join($remote_ip, ' ') %>
+<% } -%>
+  route <% if $remote_ip != '' { %>@allowed_ips <% } %>{
+    reverse_proxy <%= $server %> <% if $server =~ /^https/ { -%> {
+      transport http {
+        tls_insecure_skip_verify
+      }
+    }<% } %>
+  }
+<% if $remote_ip != '' { -%>
+  route {
+    respond "Unauthorized" 403
+  }
+<% } -%>
+}
+
