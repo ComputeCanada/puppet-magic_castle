@@ -15,6 +15,12 @@ definition.
 - Added missing sssd service include to jupyterhub::hub
 - Added include epel in fail2ban and ceph
 - Added include profile::gpu in profile::slurm::node
+- Added include epel to slurm::base
+- Added ensurance /etc/ssh/ssh_known_hosts exists
+- Added require Class['consul::reload_service'] to wait_for slurmctld host
+- Added missing include consul_template in cvmfs.pp
+- Added ability to add extra environment variables to CVMFS site.sh
+- Added ability for user to shuffle module include in site.yaml (`magic_castle::site::enable_chaos`)
 
 ### Changed
 
@@ -31,6 +37,12 @@ definition.
 - Moved ssh config and ssh_known_hosts from profile::base to their own classes
 - Moved consul_template from profile::base to profile::consul
 - Merged profile::consul::server and profile::consul::client classes
+- Moved CentOS powertools repo enabling to its own class
+- Moved /etc/hosts definition to its own class
+- Moved sssd service to its own class
+- Replaced site.pp by site.yaml
+- Fixed sed_fqdn onlyif
+- Replaced sed_host_puppet by sed_host_wo_fqdn
 - 
 
 ### Removed
@@ -38,6 +50,8 @@ definition.
 - Removed class profile::mfa
 - Removed `require profile::base` from profile::nfs::server
 - Disabled unused epel repos
+- Removed profile::nfs exec `exportfs -ua; cat...; exportfs -a`
+- Removed puppet alias from etc/hosts
 - 
 
 ## [12.6.0] 2023-06-29
