@@ -23,8 +23,6 @@ magic_castle::site::tags:
     - profile::cvmfs::client
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
-  mfa:
-    - profile::mfa
   mgmt:
     - mysql::server
     - profile::freeipa::server
