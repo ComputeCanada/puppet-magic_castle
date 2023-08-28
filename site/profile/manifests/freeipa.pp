@@ -93,13 +93,10 @@ class profile::freeipa::client (String $server_ip) {
     creates => '/etc/ipa/default.conf',
   }
 
-  # file_line { 'ssh_known_hosts':
-  #   ensure    => present,
-  #   path      => '/etc/ssh/ssh_config.d/04-ipa.conf',
-  #   match     => '^GlobalKnownHostsFile',
-  #   line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
-  #   subscribe => Exec['ipa-install'],
-  # }
+  file { '/etc/ssh/ssh_config.d/01-mc.conf':
+    content => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
+    mode    => '0644',
+  }
 
   # Configure default login selinux mapping
   exec { 'selinux_login_default':
