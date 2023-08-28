@@ -660,6 +660,16 @@ class profile::slurm::node {
   Group <| |> -> Service['slurmd']
   Pam <| |> -> Service['slurmd']
 
+  file { '/usr/lib/systemd/system/slurmd.service':
+    source  => 'puppet:///modules/profile/slurm/slurmd.service',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    require => Package['slurm-slurmd'],
+    notify  => Systemd::Daemon_reload['slurmd-service'],
+  }
+  ensure_resource('systemd::daemon_reload', 'slurmd-service')
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
@@ -672,7 +682,8 @@ class profile::slurm::node {
     ],
     require   => [
       Package['slurm-slurmd'],
-      # Wait_for['slurmctldhost_set'],
+      File['/usr/lib/systemd/system/slurmd.service'],
+      Systemd::Daemon_reload['slurmd-service'],
     ]
   }
 
@@ -691,13 +702,13 @@ class profile::slurm::node {
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
   }
 
-  $hostname = $facts['networking']['hostname']
-  exec { 'scontrol_update_state':
-    command   => "scontrol update nodename=${hostname} state=idle",
-    onlyif    => "sinfo -n ${hostname} -o %t -h | grep -E -q -w 'down|drain'",
-    path      => ['/usr/bin', '/opt/software/slurm/bin'],
-    subscribe => Service['slurmd']
-  }
+  # $hostname = $facts['networking']['hostname']
+  # exec { 'scontrol_update_state':
+  #   command   => "scontrol update nodename=${hostname} state=idle",
+  #   onlyif    => "sinfo -n ${hostname} -o %t -h | grep -E -q -w 'down|drain'",
+  #   path      => ['/usr/bin', '/opt/software/slurm/bin'],
+  #   subscribe => Service['slurmd']
+  # }
 
   # If slurmctld server is rebooted slurmd needs to be restarted.
   # Otherwise, slurmd keeps running, but the node is not in any partition
