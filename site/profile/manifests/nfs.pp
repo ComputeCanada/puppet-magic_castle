@@ -13,14 +13,23 @@ class profile::nfs::client (
   $devices = lookup('profile::nfs::server::devices', undef, undef, {})
   if $devices =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($devices)
-    $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,bg'
+    $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
       nfs::client::mount { "/${name}":
+        ensure        => present,
         server        => $server_ip,
         share         => $name,
         options_nfsv4 => $options_nfsv4,
+        notify        => Systemd::Daemon_reload['nfs-automount'],
       }
     }
+  }
+
+  ensure_resource('systemd::daemon_reload', 'nfs-automount')
+  exec { 'systemctl restart remote-fs.target':
+    subscribe   => Systemd::Daemon_reload['nfs-automount'],
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin'],
   }
 }
 
