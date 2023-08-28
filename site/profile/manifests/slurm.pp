@@ -412,8 +412,15 @@ class profile::slurm::controller (
   String $tfe_workspace = '',
   String $tfe_var_pool = 'pool',
 ) {
-  contain profile::slurm::base
+  include profile::slurm::base
   include profile::mail::server
+
+  consul::service { 'slurmctld':
+    port    => 6817,
+    require => Tcp_conn_validator['consul'],
+    token   => lookup('profile::consul::acl_api_token'),
+    before  => Wait_for['slurmctldhost_set'],
+  }
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',
@@ -503,13 +510,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     }
   }
 
-  consul::service { 'slurmctld':
-    port    => 6817,
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
-    before  => Wait_for['slurmctldhost_set'],
-  }
-
   package { 'slurm-slurmctld':
     ensure  => 'installed',
     require => Package['munge']
@@ -547,7 +547,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node {
-  contain profile::slurm::base
+  include profile::slurm::base
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
   if versioncmp($slurm_version, '22.05') >= 0 {
@@ -710,5 +710,5 @@ class profile::slurm::node {
 # and slurmctld but still need to be able to communicate with the slurm
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
-  contain profile::slurm::base
+  include profile::slurm::base
 }
