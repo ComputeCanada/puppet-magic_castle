@@ -673,6 +673,7 @@ class profile::slurm::node {
   service { 'slurmd':
     ensure    => 'running',
     enable    => true,
+    start     => 'systemctl start --no-block slurmd',
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
