@@ -208,6 +208,8 @@ class profile::freeipa::server (
     notify  => Service['systemd-logind'],
   }
 
+  Consul::Service <| |> -> Exec['ipa-install']
+
   file { '/var/log/ipaserver-install.log':
     mode  => '0600',
     owner => 'root',
