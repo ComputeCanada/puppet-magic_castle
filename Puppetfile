@@ -38,4 +38,4 @@ mod 'treydock-globus', '6.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v4.6.4'
+    :ref => 'v4.8.0'
