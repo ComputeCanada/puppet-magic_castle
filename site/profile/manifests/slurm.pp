@@ -470,7 +470,8 @@ export TFE_VAR_POOL=${tfe_var_pool}
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  ${autoscale_env_prefix}/bin/slurm_resume $@
+  export PATH=\$PATH:/opt/software/slurm/bin
+  ${autoscale_env_prefix}/bin/slurm_resume \$@
 } &>> /var/log/slurm/slurm_resume.log
 |EOT
   }
@@ -483,7 +484,8 @@ export TFE_VAR_POOL=${tfe_var_pool}
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  ${autoscale_env_prefix}/bin/slurm_suspend $@
+  export PATH=\$PATH:/opt/software/slurm/bin
+  ${autoscale_env_prefix}/bin/slurm_suspend \$@
 } &>> /var/log/slurm/slurm_suspend.log
 |EOT
   }
