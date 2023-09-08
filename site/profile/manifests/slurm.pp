@@ -466,12 +466,12 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ensure  => 'present',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @("EOT")
+    content => @("EOT"/$)
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  export PATH=$PATH:/opt/software/slurm/bin
-  ${autoscale_env_prefix}/bin/slurm_resume $@
+  export PATH=\$PATH:/opt/software/slurm/bin
+  ${autoscale_env_prefix}/bin/slurm_resume \$@
 } &>> /var/log/slurm/slurm_autoscale.log
 |EOT
   }
@@ -480,12 +480,12 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ensure  => 'present',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @("EOT")
+    content => @("EOT"/$)
 #!/bin/bash
 {
   source /etc/slurm/env.secrets
-  export PATH=$PATH:/opt/software/slurm/bin
-  ${autoscale_env_prefix}/bin/slurm_suspend $@
+  export PATH=\$PATH:/opt/software/slurm/bin
+  ${autoscale_env_prefix}/bin/slurm_suspend \$@
 } &>> /var/log/slurm/slurm_autoscale.log
 |EOT
   }
