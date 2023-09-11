@@ -43,7 +43,7 @@ definition.
 - Replaced site.pp by site.yaml
 - Fixed sed_fqdn onlyif
 - Replaced sed_host_puppet by sed_host_wo_fqdn
-- 
+- Fixed key used slurm_compute_weights to retrieve instances' memory ('ram' instead of 'realmemory')
 
 ### Removed
 - Removed service clean-nfs-rbind
