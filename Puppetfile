@@ -2,7 +2,6 @@
 
 forge "https://forgeapi.puppetlabs.com"
 
-mod 'camptocamp-kmod', '2.5.0'
 mod 'cmdntrf-consul_template', '2.3.4'
 mod 'derdanne-nfs', '2.1.11'
 mod 'heini-wait_for', '2.2.0'
@@ -18,6 +17,7 @@ mod 'puppet-epel', '3.0.1'
 mod 'puppet-extlib', '7.0.0'
 mod 'puppet-fail2ban', '4.2.0'
 mod 'puppet-healthcheck', '1.0.1'
+mod 'puppet-kmod', '4.0.0'
 mod 'puppet-logrotate', '5.0.0'
 mod 'puppet-prometheus', '12.5.0'
 mod 'puppet-selinux', '3.2.0'
