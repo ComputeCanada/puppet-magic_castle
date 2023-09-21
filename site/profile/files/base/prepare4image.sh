@@ -21,4 +21,37 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
   systemctl disable cloud-init
 fi
 cloud-init clean --logs
+
+# sysprep kerberos-hostkeytab
+rm -f /etc/krb5.keytab
+
+# sysprep machine-id
+rm -f /etc/machine-id
+
+# sysprep net-hwaddr
+sed -i '/HWADDR/d' /etc/sysconfig/network-scripts/ifcfg-* || true
+
+# sysprep package-manager-cache
+rm -rf /var/cache/{yum,dnf}/*
+
+# sysprep rpm-db
+rm -f /var/lib/rpm/__db.*
+
+# sysprep ssh-hostkeys
+rm -f /etc/ssh/*_host_*
+
+# sysprep ssh-userdir
+find / -maxdepth 2 -name .ssh -type d -exec rm -rf {} \;
+
+# sysprep sssd-db-log
+rm -f /var/lib/sss/db/*
+rm -f /var/log/sssd/*
+
+# sysprep tmp-files
+rm -rf /tmp/*
+rm -rf /var/tmp/*
+
+# sysprep udev-persistent-net
+rm -f /etc/udev/rules.d/70-persistent-net.rules
+
 halt -p
