@@ -1,0 +1,36 @@
+From 27e9181bdc684915a7f9f15631f4c3dd6ac5f884 Mon Sep 17 00:00:00 2001
+From: Christian Heimes <cheimes@redhat.com>
+Date: Apr 18 2023 10:13:47 +0000
+Subject: Speed up installer by restarting DS after DNA plugin
+
+
+DS does not enable plugins unless nsslapd-dynamic-plugins is enabled or
+DS is restarted. The DNA plugin creates its configuration entries with
+some delay after the plugin is enabled.
+
+DS is now restarted after the DNA plugin is enabled so it can create the
+entries while Dogtag and the rest of the system is installing. The
+updater `update_dna_shared_config` no longer blocks and waits for two
+times 60 seconds for `posix-ids` and `subordinate-ids`.
+
+Fixes: https://pagure.io/freeipa/issue/9358
+Signed-off-by: Christian Heimes <cheimes@redhat.com>
+Reviewed-By: Rob Crittenden <rcritten@redhat.com>
+
+---
+
+diff --git a/ipaserver/install/dsinstance.py b/ipaserver/install/dsinstance.py
+index 157e21e..cbacfae 100644
+--- a/ipaserver/install/dsinstance.py
++++ b/ipaserver/install/dsinstance.py
+@@ -269,6 +269,9 @@ class DsInstance(service.Service):
+         self.step("activating extdom plugin", self._add_extdom_plugin)
+ 
+         self.step("configuring directory to start on boot", self.__enable)
++        # restart to enable plugins
++        # speeds up creation of DNA plugin entries in cn=dna,cn=ipa,cn=etc
++        self.step("restarting directory server", self.__restart_instance)
+ 
+     def init_info(self, realm_name, fqdn, domain_name, dm_password,
+                   subject_base, ca_subject,
+
