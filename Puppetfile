@@ -18,7 +18,6 @@ mod 'puppet-extlib', '7.0.0'
 mod 'puppet-fail2ban', '4.2.0'
 mod 'puppet-healthcheck', '1.0.1'
 mod 'puppet-logrotate', '5.0.0'
-mod 'puppet-nodejs', '8.1.0'
 mod 'puppet-prometheus', '12.5.0'
 mod 'puppet-selinux', '3.2.0'
 mod 'puppet-squid', '3.0.0'
@@ -38,4 +37,4 @@ mod 'treydock-globus', '6.0.1'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v4.8.2'
+    :ref => 'v5.0.0'
