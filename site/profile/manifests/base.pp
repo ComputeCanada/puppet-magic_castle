@@ -177,7 +177,7 @@ class profile::base::powertools {
     } else {
       $repo_name = 'crb'
     }
-    exec { "enable_${$repo_name}":
+    exec { 'enable_powertools':
       command => "dnf config-manager --set-enabled ${$repo_name}",
       unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
       path    => ['/usr/bin'],
