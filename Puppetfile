@@ -3,7 +3,6 @@
 forge "https://forgeapi.puppetlabs.com"
 
 mod 'camptocamp-kmod', '2.5.0'
-mod 'camptocamp-systemd', '2.10.0'
 mod 'cmdntrf-consul_template', '2.3.3'
 mod 'derdanne-nfs', '2.1.6'
 mod 'heini-wait_for', '2.2.0'
@@ -24,6 +23,7 @@ mod 'puppet-prometheus', '12.5.0'
 mod 'puppet-selinux', '3.2.0'
 mod 'puppet-squid', '3.0.0'
 mod 'puppet-staging', '3.2.0'
+mod 'puppet-systemd', '3.10.0'
 mod 'puppet-yum', '4.3.0'
 mod 'puppetlabs-concat', '6.2.0'
 mod 'puppetlabs-firewall', '2.7.0'
