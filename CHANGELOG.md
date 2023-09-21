@@ -55,6 +55,16 @@ definition.
 - Removed puppet alias from etc/hosts
 - 
 
+## [12.6.2] 2023-09-21
+
+### Changed
+- Updated puppetlabs-mysql to 13.3.0 (#261)
+
+## [12.6.1] 2023-09-11
+
+### Changed
+- Fix `slurm_compute_weights` sort on ram instead of realmemory
+
 ## [12.6.0] 2023-06-29
 
 ### Added
