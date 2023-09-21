@@ -21,7 +21,7 @@ rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.s
 grep -v -P '(ext4|xfs|vfat|swap|^#|^$)' /etc/fstab | cut -f 2 | xargs umount
 grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab > /etc/fstab.new
 swapoff -a
-rm -f /mnt/swap
+grep -q "swap" /etc/fstab && rm -f $(grep "swap" /etc/fstab | cut -f 1)
 mv -f /etc/fstab.new /etc/fstab
 systemctl daemon-reload
 
