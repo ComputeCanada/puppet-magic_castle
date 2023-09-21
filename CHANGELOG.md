@@ -45,6 +45,7 @@ definition.
 - Replaced sed_host_puppet by sed_host_wo_fqdn
 - Fixed key used slurm_compute_weights to retrieve instances' memory ('ram' instead of 'realmemory')
 - Bumped slurm-autoscale-tfe version to v0.4.0
+- Improved prepare4image.sh script (#256)
 
 ### Removed
 - Removed service clean-nfs-rbind
