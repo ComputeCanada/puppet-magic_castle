@@ -27,7 +27,12 @@ class profile::cvmfs::client (
       name     => 'cvmfs-config-eessi',
       source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
     }
+    $consul_cvmfs_meta = {}
   } elsif $facts['software_stack'] == 'computecanada' {
+    if $facts['os']['architecture'] != 'x86_64' {
+      fail("Compute Canada software stack does not support: ${facts['os']['architecture']}")
+    }
+
     package { 'cc-cvmfs-repo':
       ensure   => 'installed',
       provider => 'rpm',
@@ -40,6 +45,22 @@ class profile::cvmfs::client (
       name    => 'cvmfs-config-computecanada',
       require => [Package['cc-cvmfs-repo']],
     }
+
+    file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
+      source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
+      notify => Service['consul-template'],
+    }
+
+    consul_template::watch { 'z-00-rsnt_arch.sh':
+      require     => File['/etc/consul-template/z-00-rsnt_arch.sh.ctmpl'],
+      config_hash => {
+        perms       => '0644',
+        source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
+        destination => '/etc/profile.d/z-00-rsnt_arch.sh',
+        command     => '/usr/bin/true',
+      },
+    }
+    $consul_cvmfs_meta = { arch => $facts['cpu_ext'] }
   }
 
   package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
@@ -69,14 +90,7 @@ class profile::cvmfs::client (
   consul::service { 'cvmfs':
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
-    meta    => {
-      arch => $facts['cpu_ext'],
-    },
-  }
-
-  file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
-    source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
-    notify => Service['consul-template'],
+    meta    => $consul_cvmfs_meta,
   }
 
   file { '/etc/profile.d/z-01-site.sh':
@@ -87,16 +101,6 @@ class profile::cvmfs::client (
         'extra_site_env_vars'  => $extra_site_env_vars,
       }
     ),
-  }
-
-  consul_template::watch { 'z-00-rsnt_arch.sh':
-    require     => File['/etc/consul-template/z-00-rsnt_arch.sh.ctmpl'],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
-      destination => '/etc/profile.d/z-00-rsnt_arch.sh',
-      command     => '/usr/bin/true',
-    },
   }
 
   consul_template::watch { '/etc/cvmfs/default.local':
