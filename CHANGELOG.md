@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.6.3] 2023-09-21
+
+### Changed
+- Bumped cmdntrf-consul_template to v2.3.5 to support aarch64
+- Fixed issue with CVMFS configuration when there are no `/scratch` NFS export (#262)
+
 ## [12.6.2] 2023-09-21
 
 ### Changed
