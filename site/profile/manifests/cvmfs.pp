@@ -155,8 +155,6 @@ class profile::cvmfs::alien_cache (
 
   # Ensure the alien cache parent folder exists
   ensure_resource('file', "/mnt/${alien_fs_root}", { 'ensure' => 'directory', 'seltype' => 'home_root_t' })
-  # Ensure that if the alien cache folder is being exported by NFS, that the folder was created after the volume
-  Profile::Nfs::Server::Export_volume <| |> -> File["/mnt/${alien_fs_root}"]
 
   file { "/mnt/${alien_fs_root}/${alien_folder_name}":
     ensure  => directory,
