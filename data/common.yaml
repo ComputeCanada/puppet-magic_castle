@@ -7,7 +7,7 @@ lookup_options:
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
 
-profile::base::version: 12.6.3
+profile::base::version: 12.6.4
 
 consul_template::version: 0.25.2
 consul::version: 1.15.2
