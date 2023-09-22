@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.6.4] 2023-09-22
+
+###
+- Added a `fail()` call if `computecanada` is being initialized on an instance with a non `x86-64` CPU.
+
+### Changed
+- Moved cvmfs.pp code related to `RSNT_ARCH` under if `computecanada` branch.
+
 ## [12.6.3] 2023-09-22
 
 ### Changed
