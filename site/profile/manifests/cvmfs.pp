@@ -30,7 +30,7 @@ class profile::cvmfs::client (
     $consul_cvmfs_meta = {}
   } elsif $facts['software_stack'] == 'computecanada' {
     if $facts['os']['architecture'] != 'x86_64' {
-      fail("Compute Canada software stack does not support: ${facts['architecture']}")
+      fail("Compute Canada software stack does not support: ${facts['os']['architecture']}")
     }
 
     package { 'cc-cvmfs-repo':
