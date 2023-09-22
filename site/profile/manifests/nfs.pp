@@ -112,10 +112,7 @@ define profile::nfs::server::export_volume (
 ) {
   $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
-  file { ["/mnt/${name}"]:
-    ensure  => directory,
-    seltype => $seltype,
-  }
+  ensure_resource('file', "/mnt/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
 
   $pool = $::facts['/dev/disk'].filter |$key, $values| {
     $regexes.any|$regex| {
@@ -171,10 +168,7 @@ define profile::nfs::server::export_volume (
     ],
   }
   if $root_bind_mount {
-    file { "/${name}":
-      ensure  => directory,
-      seltype => $seltype,
-    }
+    ensure_resource('file', "/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
     mount { "/${name}":
       ensure  => mounted,
       device  => "/mnt/${name}",
