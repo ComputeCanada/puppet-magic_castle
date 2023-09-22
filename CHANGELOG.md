@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.6.5] 2023-09-22
+
+### Changed
+- Fix regression introduced in #263
+
 ## [12.6.4] 2023-09-22
 
-###
+### Added
 - Added a `fail()` call if `computecanada` is being initialized on an instance with a non `x86-64` CPU.
 
 ### Changed
