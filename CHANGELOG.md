@@ -56,6 +56,25 @@ definition.
 - Removed puppet alias from etc/hosts
 - 
 
+## [12.6.5] 2023-09-22
+
+### Changed
+- Fix regression introduced in #263
+
+## [12.6.4] 2023-09-22
+
+### Added
+- Added a `fail()` call if `computecanada` is being initialized on an instance with a non `x86-64` CPU.
+
+### Changed
+- Moved cvmfs.pp code related to `RSNT_ARCH` under if `computecanada` branch.
+
+## [12.6.3] 2023-09-22
+
+### Changed
+- Bumped cmdntrf-consul_template to v2.3.5 to support aarch64
+- Fixed issue with CVMFS configuration when there are no `/scratch` NFS export (#262)
+
 ## [12.6.2] 2023-09-21
 
 ### Changed
