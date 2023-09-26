@@ -195,7 +195,7 @@ to an LDAP or a local users. Refer to [profile::users::ldap::users](#profileuser
 ### profile::users::ldap::users
 
 A batch of 10 LDAP users, user01 to user10, can be defined in hieradata as:
-```
+```yaml
 profile::users::ldap::users:
   user:
     count: 10
@@ -204,7 +204,7 @@ profile::users::ldap::users:
 ```
 
 A single LDAP user can be defined as:
-```
+```yaml
 profile::users::ldap::users:
   alice:
     passwd: user.password.is.easy.to.remember
@@ -219,7 +219,7 @@ longer corresponds to what is prescribed in the hieradata. To disable this featu
 ### profile::users::local::users
 
 A local user `bob` can be defined in hieradata as:
-```
+```yaml
 profile::users::local::users:
   bob:
     groups: ['group1', 'group2']
