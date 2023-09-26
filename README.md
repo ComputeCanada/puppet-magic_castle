@@ -128,9 +128,9 @@ profile::accounts:::skel_archives:
 | -------- | :------ | :---------- | -------- |
 | `profile::slurm::accounting::password` | String | Password used by for SlurmDBD to connect to MariaDB |  |
 | `profile::slurm::accounting::admins` | Array[String] | List of Slurm administrator usernames | `[]` |
-| `profile::slurm::accounting::accounts` | Hash[String, Hash] |  | `{}` |
-| `profile::slurm::accounting::users` | Hash[String, Array[String]] | | `{}` |
-| `profile::slurm::accounting::options` | Hash[String, Any] | | `{}` |
+| `profile::slurm::accounting::accounts` | Hash[String, Hash] | Define Slurm account name and [specifications](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | `{}` |
+| `profile::slurm::accounting::users` | Hash[String, Array[String]] | Define association between usernames and accounts | `{}` |
+| `profile::slurm::accounting::options` | Hash[String, Any] | Define additional global Slurm accounting options | `{}` |
 | `profile::slurm::accounting::dbd_port` | Integer | SlurmDBD service listening port | 6819 |
 
 Example of the definition of Slurm accounts and their association with users:
@@ -140,10 +140,13 @@ profile::slurm::accounting::admins: ['oppenheimer']
 profile::slurm::accounting::accounts:
   physics:
     Fairshare: 1
+    MaxJobs: 100
   engineering:
     Fairshare: 2
+    MaxJobs: 200
   humanities:
     Fairshare: 1
+    MaxJobs: 300
 
 profile::slurm::accounting::users:
   oppenheimer: ['physics']
