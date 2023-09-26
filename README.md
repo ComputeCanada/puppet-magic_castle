@@ -127,11 +127,33 @@ profile::accounts:::skel_archives:
 | Variable | Type    | Description | Default  |
 | -------- | :------ | :---------- | -------- |
 | `profile::slurm::accounting::password` | String | Password used by for SlurmDBD to connect to MariaDB |  |
-| `profile::slurm::accounting::admins` | Array[String] | | |
-| `profile::slurm::accounting::accounts` | Hash[String, Hash] | | |
-| `profile::slurm::accounting::users` | Hash[String, Array[String]] | | |
-| `profile::slurm::accounting::options` | Hash[String, Any] | | |
+| `profile::slurm::accounting::admins` | Array[String] | List of Slurm administrator usernames | `[]` |
+| `profile::slurm::accounting::accounts` | Hash[String, Hash] |  | `{}` |
+| `profile::slurm::accounting::users` | Hash[String, Array[String]] | | `{}` |
+| `profile::slurm::accounting::options` | Hash[String, Any] | | `{}` |
 | `profile::slurm::accounting::dbd_port` | Integer | SlurmDBD service listening port | 6819 |
+
+Example of the definition of Slurm accounts and their association with users:
+```yaml
+profile::slurm::accounting::admins: ['oppenheimer']
+
+profile::slurm::accounting::accounts:
+  physics:
+    Fairshare: 1
+  engineering:
+    Fairshare: 2
+  humanities:
+    Fairshare: 1
+
+profile::slurm::accounting::users:
+  oppenheimer: ['physics']
+  rutherford: ['physics', 'engineering']
+  sartre: ['humanities']
+```
+
+Each username in `profile::slurm::accounting::users` and `profile::slurm::accounting::admins` have to correspond
+to an LDAP or a local users. Refer to [profile::users::ldap::users](#profileusersldapusers) and
+[profile::users::local::users](#profileuserslocalusers) for more information.
 
 ### profile::slurm::controller
 
