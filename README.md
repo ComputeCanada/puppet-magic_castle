@@ -130,7 +130,7 @@ profile::accounts:::skel_archives:
 | `profile::slurm::accounting::admins` | Array[String] | List of Slurm administrator usernames | `[]` |
 | `profile::slurm::accounting::accounts` | Hash[String, Hash] | Define Slurm account name and [specifications](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | `{}` |
 | `profile::slurm::accounting::users` | Hash[String, Array[String]] | Define association between usernames and accounts | `{}` |
-| `profile::slurm::accounting::options` | Hash[String, Any] | Define additional global Slurm accounting options | `{}` |
+| `profile::slurm::accounting::options` | Hash[String, Any] | Define additional cluster's global [Slurm accounting options](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | `{}` |
 | `profile::slurm::accounting::dbd_port` | Integer | SlurmDBD service listening port | 6819 |
 
 Example of the definition of Slurm accounts and their association with users:
