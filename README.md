@@ -14,6 +14,111 @@ as a prefix. The class names correspond to the section name. For example, to def
 profile::accounts::project_regex: '(users-[0-9]*)'
 ```
 
+## magic_castle::site
+
+### parameters
+
+| Variable        | Description                                                                            | Type                |
+| :-------------- | :------------------------------------------------------------------------------------- | :-----------------  |
+| `all`           | List of classes that are included by all instances                                     | Array[String]       |
+| `tags`          | Mapping tag-classes - instances that **have** the tag include the classes              | Hash[Array[String]] |
+| `not_tags`      | Mapping tag-classes - instances that **do not have** the tag include the classes       | Hash[Array[String]] |
+| `enable_chaos`  | Shuffle class inclusion order - used for debugging purposes                            | Boolean             |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+magic_castle::site::all:
+  - profile::base
+  - profile::consul
+  - profile::users::local
+  - profile::sssd::client
+  - profile::metrics::node_exporter
+  - swap_file
+magic_castle::site::tags:
+  dtn:
+    - profile::globus
+  login:
+    - profile::fail2ban
+    - profile::cvmfs::client
+    - profile::slurm::submitter
+    - profile::ssh::hostbased_auth::client
+  mgmt:
+    - mysql::server
+    - profile::freeipa::server
+    - profile::metrics::server
+    - profile::metrics::slurm_exporter
+    - profile::rsyslog::server
+    - profile::squid::server
+    - profile::slurm::controller
+    - profile::freeipa::mokey
+    - profile::slurm::accounting
+    - profile::accounts
+    - profile::users::ldap
+  node:
+    - profile::cvmfs::client
+    - profile::gpu
+    - profile::jupyterhub::node
+    - profile::slurm::node
+    - profile::ssh::hostbased_auth::client
+    - profile::ssh::hostbased_auth::server
+    - profile::metrics::slurm_job_exporter
+  nfs:
+    - profile::nfs::server
+    - profile::cvmfs::alien_cache
+  proxy:
+    - profile::jupyterhub::hub
+    - profile::reverse_proxy
+magic_castle::site::not_tags:
+  nfs:
+    - profile::nfs::client
+  mgmt:
+    - profile::freeipa::client
+    - profile::rsyslog::client
+```
+</details>
+
+<details>
+<summary>example 1: enabling CephFS client in a complete Magic Castle cluster</summary>
+
+```yaml
+magic_castle::site::tags:
+  login:
+    - profile::ceph::client
+  node:
+    - profile::ceph::client
+```
+</details>
+
+<details>
+<summary>example 2: barebone Slurm cluster with external LDAP authentication</summary>
+
+```yaml
+magic_castle::site::all:
+  - profile::base
+  - profile::consul
+  - profile::sssd::client
+  - profile::users::local
+  - swap_file
+
+magic_castle::site::tags:
+  mgmt:
+    - profile::slurm::controller
+    - profile::nfs::server
+  login:
+    - profile::slurm::submitter
+    - profile::nfs::client
+  node:
+    - profile::slurm::node
+    - profile::nfs::client
+    - profile::gpu
+
+magic_castle::site::not_tags: {}
+```
+
+</details>
+
 ## profile::accounts
 
 This class configures two services to bridge LDAP users, Slurm accounts and users' folders in filesystems. The services are:
