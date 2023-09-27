@@ -45,7 +45,7 @@ class profile::cvmfs::client (
     exec { 'rm /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2':
       onlyif      => [
         'test -f /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2',
-        'echo 40c590a23fb56141a54a0bef445e4b8de9fbfda8ff10b1fc7158ff0559bd3d3d  /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2 | sha256sum --check',
+        'echo 35544d1e70fcd9c44729570c252b8a46596d9bf300043f310b368682c58344f7  /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2 | sha256sum --check',
       ],
       refreshonly => true,
       subscribe   => Package['cc-cvmfs-repo'],
