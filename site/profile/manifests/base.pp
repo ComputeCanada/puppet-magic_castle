@@ -9,6 +9,8 @@ class profile::base (
   include profile::base::powertools
   include profile::ssh::base
 
+  ensure_packages(['libselinux'], { ensure => latest })
+
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
