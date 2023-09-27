@@ -4,8 +4,6 @@ lookup_options:
     merge: 'first'
   magic_castle::site::tags:
     merge: 'hash'
-  magic_castle::site::not_tags:
-    merge: 'hash'
 
 magic_castle::site::all:
   - profile::base
@@ -18,11 +16,17 @@ magic_castle::site::all:
 magic_castle::site::tags:
   dtn:
     - profile::globus
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   login:
     - profile::fail2ban
     - profile::cvmfs::client
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   mgmt:
     - mysql::server
     - profile::freeipa::server
@@ -43,16 +47,14 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   nfs:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
-
-magic_castle::site::not_tags:
-  nfs:
-    - profile::nfs::client
-  mgmt:
     - profile::freeipa::client
     - profile::rsyslog::client

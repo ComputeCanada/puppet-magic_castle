@@ -22,7 +22,6 @@ profile::accounts::project_regex: '(users-[0-9]*)'
 | :-------------- | :------------------------------------------------------------------------------------- | :-----------------  |
 | `all`           | List of classes that are included by all instances                                     | Array[String]       |
 | `tags`          | Mapping tag-classes - instances that **have** the tag include the classes              | Hash[Array[String]] |
-| `not_tags`      | Mapping tag-classes - instances that **do not have** the tag include the classes       | Hash[Array[String]] |
 | `enable_chaos`  | Shuffle class inclusion order - used for debugging purposes                            | Boolean             |
 
 <details>
@@ -39,11 +38,17 @@ magic_castle::site::all:
 magic_castle::site::tags:
   dtn:
     - profile::globus
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   login:
     - profile::fail2ban
     - profile::cvmfs::client
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   mgmt:
     - mysql::server
     - profile::freeipa::server
@@ -64,16 +69,15 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
+    - profile::nfs::client
+    - profile::freeipa::client
+    - profile::rsyslog::client
   nfs:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
-magic_castle::site::not_tags:
-  nfs:
-    - profile::nfs::client
-  mgmt:
     - profile::freeipa::client
     - profile::rsyslog::client
 ```
@@ -84,11 +88,10 @@ magic_castle::site::not_tags:
 
 ```yaml
 magic_castle::site::tags:
-  login:
-    - profile::ceph::client
-  node:
+  cephfs:
     - profile::ceph::client
 ```
+Require adding `cephfs` tag  in `main.tf` to all instances that should mount the Ceph fileystem.
 </details>
 
 <details>
@@ -113,8 +116,6 @@ magic_castle::site::tags:
     - profile::slurm::node
     - profile::nfs::client
     - profile::gpu
-
-magic_castle::site::not_tags: {}
 ```
 
 </details>
