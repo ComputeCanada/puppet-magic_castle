@@ -696,9 +696,9 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ### parameters
 
-| Variable  | Description                                      | Type                                         |
-| :-------- | :----------------------------------------------- | :------------------------------------------- |
-| `devices` | Mapping between NFS share and devices to export. | Variant[String, Hash[String, Array[String]]] |
+| Variable  | Description                                      | Type                          |
+| :-------- | :----------------------------------------------- | :---------------------------- |
+| `devices` | Mapping between NFS share and devices to export. | Hash[String, Array[String]]   |
 
 
 <details>

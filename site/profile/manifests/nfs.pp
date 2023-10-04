@@ -35,7 +35,11 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   String $domain_name,
-  Variant[String, Hash[String, Array[String]]] $devices,
+  # $devices is an empty string (i.e.: String[0, 0]) when
+  # the key terraform.data.volumes.nfs does not exist because
+  # "A lookup resulting in an interpolation of `alias` referencing
+  # a non-existant key returns an empty string"
+  Variant[Hash[String, Array[String]], String[0, 0]] $devices,
 ) {
   $nfs_domain  = "int.${domain_name}"
 
