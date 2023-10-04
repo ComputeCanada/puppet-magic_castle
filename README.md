@@ -201,9 +201,9 @@ profile::base::admin_emain: "you@email.com"
 ### dependencies
 
 When `profile::base` is included, these classes are included too:
-- [`puppet-epel`](https://forge.puppet.com/modules/puppet/epel/readme)
-- [`puppet-selinux`](https://forge.puppet.com/modules/puppet/selinux/readme)
-- [`puppetlabs-stdlib`](https://forge.puppet.com/modules/puppetlabs/stdlib/readme)
+- [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
+- [`selinux`](https://forge.puppet.com/modules/puppet/selinux/readme)
+- [`stdlib`](https://forge.puppet.com/modules/puppetlabs/stdlib/readme)
 - [`profile::base::azure`](#profilebaseazure) (only when running in Microsoft Azure Cloud)
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
@@ -346,7 +346,7 @@ None
 ### dependencies
 
 When `profile::consul::puppet_watch` is included, this class is included too:
-- [puppet-epel](https://forge.puppet.com/modules/puppet/epel)
+- [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
 
 ## profile::cvmfs::client
 
@@ -694,6 +694,14 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## profile::nfs::server
 
+This class install NFS and configure an NFS server that will export all provided devices.
+The class also make sure that devices sharing a common export name form an LVM volume group
+that is exported as a single LVM logical volume formated as XFS.
+
+If a volume's size associated with an NFS server device is expanded after the initial configuration,
+the class will not expand the LVM volume automatically. These operations currently have to be
+accomplished manually.
+
 ### parameters
 
 | Variable  | Description                                      | Type                          |
@@ -709,6 +717,21 @@ profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
 ```
 </details>
 
+<details>
+<summary>example</summary>
+
+```yaml
+profile::nfs::server::devices:
+  home:
+    - /dev/disk/by-id/b0b686f6-62c8-11ee-8c99-0242ac120002
+    - /dev/disk/by-id/b65acc52-62c8-11ee-8c99-0242ac120002
+  scratch:
+    - bfd50252-62c8-11ee-8c99-0242ac120002
+  project:
+    - c3b99e00-62c8-11ee-8c99-0242ac120002
+```
+</details>
+
 ### dependency
 
 When `profile::nfs::server` is included, these classes are included too:
@@ -716,17 +739,33 @@ When `profile::nfs::server` is included, these classes are included too:
 
 ## profile::reverse_proxy
 
-| Variable                                       | Type   | Description                                                             | Default   |
-| ---------------------------------------------- | :----- | :---------------------------------------------------------------------- | --------- |
-| `domain_name`          | String | Domain name corresponding to the main DNS record A registered           |           |
-| `main2sub_redir` | String | Subdomain to which user should be redirected when hitting domain name directly. Empty string means no redirection | `'jupyter'` |
-| `subdomains` | Hash[String, String] | Subdomain names used to create vhosts to arbitrary http endpoints in the cluster| `{"ipa": "ipa.int.${domain_name}", "mokey": "${mokey_ip}:${mokey_port}", "jupyter":"https://127.0.0.1:8000"}` |
-| `remote_ips` | Hash[String, Array[String]] | List of allowed ip addresses per subdomain. When left undefined, there are no restrictions on subdomain access. | `{}` |
+> [Caddy](https://caddyserver.com/) is an extensible, cross-platform, open-source web
+server written in Go. [...] It is best known for its automatic HTTPS features.
+[reference](https://en.wikipedia.org/wiki/Caddy_(web_server))
+
+This class installs and configure Caddy as a reverse proxy to expose Magic Castle cluster
+internal services to the Internet.
+
+### parameters
+
+| Variable         | Description                                                                          | Type                        |
+| :--------------- | :---------------------------------------------------------------------------------   | :-------------------------- |
+| `domain_name`    | Domain name corresponding to the main DNS record A registered                        | String                      |
+| `main2sub_redir` | Subdomain to redirect to when hitting domain name directly. Empty means no redirect. | String                      |
+| `subdomains`     | Subdomain names used to create vhosts to internal http endpoints                     | Hash[String, String]        |
+| `remote_ips`     | List of allowed ip addresses per subdomain. Undef mean no restrictions.              | Hash[String, Array[String]] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::reverse_proxy::subdomains:
+  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
+  jupyter: "https://127.0.0.1:8000"
+profile::reverse_proxy::main2sub_redit: "jupyter"
+profile::reverse_proxy::remote_ips: {}
 ```
 </details>
 
@@ -734,62 +773,136 @@ When `profile::nfs::server` is included, these classes are included too:
 <summary>example</summary>
 
 ```yaml
+profile::reverse_proxy::remote_ips:
+  ipa:
+    - 132.203.0.0/16
 ```
 </details>
 
-## profile::slurm
+## profile::rsyslog::base
 
-### profile::slurm::base
+> [Rsyslog](https://www.rsyslog.com/) is an open-source software utility
+used on UNIX and Unix-like computer systems for forwarding log messages
+in an IP network.
+[reference](https://en.wikipedia.org/wiki/Rsyslog)
 
-| Variable | Type    | Description | Default  |
-| -------- | :------ | :---------- | -------- |
-| `cluster_name` | String  | Name of the cluster | |
-| `munge_key` | String  | Base64 encoded Munge key | |
-| `slurm_version` | Enum[20.11, 21.08, 22.05]  | Slurm version to install | 21.08 |
-| `os_reserved_memory` | Integer | Quantity of memory in MB reserved for the operating system on the compute nodes | 512 |
-| `suspend_time` | Integer | Nodes becomes eligible for suspension after being idle for this number of seconds. | 3600 |
-| `resume_timeout` | Integer | Maximum time permitted (in seconds) between when a node resume request is issued and when the node is actually available for use. | 3600 |
-| `force_slurm_in_path`  | Boolean  | When enabled, all users (local and LDAP) will have slurm binaries in their PATH | `false` |
-| `enable_x11_forwarding` | Boolean | Enable Slurm's built-in X11 forwarding capabilities | `true`| | |
+This class installs rsyslog and launch the service.
+
+## profile::rsyslog::client
+
+This class install and configures rsyslog service to forward the instance's
+logs to rsyslog servers. The rsyslog servers are discovered by the instance
+via Consul.
+
+### parameters
+
+None
+
+### dependencies
+
+When `profile::rsyslog::client` is included, these classes are included too:
+- [profile::consul](#profileconsul)
+- [profile::rsyslog::base](#profilersyslogbase)
+
+## profile::rsyslog::server
+
+This class install and configures rsyslog service to receives forwarded logs
+from all rsyslog client in the cluster.
+
+### parameters
+
+None
+
+### dependencies
+
+When `profile::rsyslog::server` is included, these classes are included too:
+- [profile::consul](#profileconsul)
+- [profile::rsyslog::base](#profilersyslogbase)
+
+## profile::slurm::base
+
+> The [Slurm](https://github.com/schedmd/slurm) Workload Manager, formerly
+known as Simple Linux Utility for Resource Management, or simply Slurm,
+is a free and open-source job scheduler for Linux and Unix-like kernels,
+used by many of the world's supercomputers and computer clusters.
+[reference](https://en.wikipedia.org/wiki/Slurm_Workload_Manager)
+
+> [MUNGE](https://github.com/dun/munge) (MUNGE Uid 'N' Gid Emporium) is
+an authentication service for creating and validating credentials. It is
+designed to be highly scalable for use in an HPC cluster environment.
+[reference](https://dun.github.io/munge/)
+
+This class installs base packages and config files that are essential
+to all Slurm's roles. It also installs and configure Munge service.
+
+### parameters
+
+| Variable                | Description              | Type    |
+| :---------------------- | :----------------------- | :------ |
+| `cluster_name`          | Name of the cluster      | String  |
+| `munge_key`             | Base64 encoded Munge key | String  |
+| `slurm_version`         | Slurm version to install | Enum[20.11, 21.08, 22.05, 23.02] |
+| `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
+| `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
+| `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
+| `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
+| `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
+profile::slurm::base::munge_key: ENC[PKCS7, ...]
+profile::slurm::base::slurm_version: '21.08'
+profile::slurm::base::os_reserved_memory: 512
+profile::slurm::base::suspend_time: 3600
+profile::slurm::base::resume_timeout: 3600
+profile::slurm::base::force_slurm_in_path: false
+profile::slurm::base::enable_x11_forwarding: true
 ```
 </details>
 
-<details>
-<summary>example</summary>
+### dependencies
 
-```yaml
-```
-</details>
+When `profile::slurm::base` is included, these classes are included too:
+- [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
+- [`profile::consul`](#profileconsul)
+- [`profile::base::powertools`](#profilebasepowertools)
 
-### profile::slurm::accounting
 
-| Variable | Type    | Description | Default  |
-| -------- | :------ | :---------- | -------- |
-| `password` | String | Password used by for SlurmDBD to connect to MariaDB |  |
-| `admins` | Array[String] | List of Slurm administrator usernames | `[]` |
-| `accounts` | Hash[String, Hash] | Define Slurm account name and [specifications](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | `{}` |
-| `users` | Hash[String, Array[String]] | Define association between usernames and accounts | `{}` |
-| `options` | Hash[String, Any] | Define additional cluster's global [Slurm accounting options](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | `{}` |
-| `dbd_port` | Integer | SlurmDBD service listening port | 6819 |
+## profile::slurm::accounting
+
+This class installs and configure the Slurm database daemon aka slurmdbd.
+This class also installs and configures MariaDB for slurmdbd to store its
+tables.
+
+### parameters
+
+| Variable   | Description                                         | Type    |
+| :-------   | :-------------------------------------------------  | :------ |
+| `password` | Password used by for SlurmDBD to connect to MariaDB | String  |
+| `admins`   | List of Slurm administrator usernames               | Array[String] |
+| `accounts` | Define Slurm account name and [specifications](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | Hash[String, Hash] |
+| `users`    | Define association between usernames and accounts    | Hash[String, Array[String]] |
+| `options`  | Define additional cluster's global [Slurm accounting options](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | Hash[String, Any] |
+| `dbd_port` | SlurmDBD service listening port | Integer |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::accounting::password: ENC[PKCS7, ...]
+profile::slurm::accounting::admin: ["centos"]
+profile::slurm::accounting::accounts: {}
+profile::slurm::accounting::users: {}
+profile::slurm::accounting::options: {}
+profile::slurm::accounting::dbd_port: 6869
 ```
 </details>
 
 <details>
 <summary>example</summary>
-
-```yaml
-```
-</details>
 
 Example of the definition of Slurm accounts and their association with users:
 ```yaml
@@ -815,6 +928,15 @@ profile::slurm::accounting::users:
 Each username in `profile::slurm::accounting::users` and `profile::slurm::accounting::admins` have to correspond
 to an LDAP or a local users. Refer to [profile::users::ldap::users](#profileusersldapusers) and
 [profile::users::local::users](#profileuserslocalusers) for more information.
+
+</details>
+
+### dependencies
+
+When `profile::slurm::accounting` is included, these classes are included too:
+- [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
+- [`mysql::server`](https://forge.puppet.com/modules/puppetlabs/mysql/readme)
+- [`profile::slurm::base`](#profileslurmbase)
 
 ### profile::slurm::controller
 
