@@ -83,15 +83,14 @@ class profile::accounts (
     path        => ['/bin/', '/usr/bin'],
   }
 
-  if $with_home or $with_scratch {
-    service { 'mkhome':
-      ensure    => running,
-      enable    => true,
-      subscribe => [
-        File['/sbin/mkhome.sh'],
-        File['mkhome.service'],
-      ],
-    }
+  $mkhome_running = $with_home or $with_scratch
+  service { 'mkhome':
+    ensure    => $mkhome_running,
+    enable    => $mkhome_running,
+    subscribe => [
+      File['/sbin/mkhome.sh'],
+      File['mkhome.service'],
+    ],
   }
 
   file { 'mkproject.service':
@@ -110,6 +109,8 @@ class profile::accounts (
     owner   => 'root',
   }
 
+  # mkproject is always running even if /project does not exist
+  # because it also handles the creation of Slurm accounts
   service { 'mkproject':
     ensure    => running,
     enable    => true,
