@@ -1087,9 +1087,6 @@ Some SSSD domain keys might also be missing. Refer to
 for more informations.
 </details>
 
-## profile::sssd::service
-
-
 ## profile::users
 
 | Variable                              | Type           | Description                                                                 | Default  |

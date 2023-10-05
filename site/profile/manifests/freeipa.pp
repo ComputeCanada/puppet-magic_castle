@@ -34,7 +34,7 @@ class profile::freeipa::base (String $domain_name) {
 
 class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
-  include profile::sssd::service
+  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
