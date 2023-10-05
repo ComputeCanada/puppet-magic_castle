@@ -1,5 +1,5 @@
 class profile::sssd::client(
-  Hash $domains = {},
+  Hash[String, Any] $domains = {},
   Array[String] $access_tags = ['login', 'node'],
   Optional[Boolean] $deny_access = undef,
 ){
