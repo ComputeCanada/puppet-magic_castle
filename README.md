@@ -873,7 +873,7 @@ When `profile::slurm::base` is included, these classes are included too:
 
 ## profile::slurm::accounting
 
-This class installs and configure the Slurm database daemon aka slurmdbd.
+This class installs and configure the Slurm database daemon - **slurmdbd**.
 This class also installs and configures MariaDB for slurmdbd to store its
 tables.
 
@@ -938,19 +938,29 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`mysql::server`](https://forge.puppet.com/modules/puppetlabs/mysql/readme)
 - [`profile::slurm::base`](#profileslurmbase)
 
-### profile::slurm::controller
+## profile::slurm::controller
 
-| Variable | Type    | Description | Default  |
-| -------- | :------ | :---------- | -------- |
-| `selinux_context` | String | SELinux context for jobs (used only with Slurm >= 21.08) | `user_u:user_r:user_t:s0` |
-| `tfe_token` | String | Terraform Cloud API Token. Required to enable autoscaling. | `''` |
-| `tfe_workspace` | String | Terraform Cloud workspace id. Required to enable autoscaling. | `''` |
-| `tfe_var_pool` | String | Named of the variable in Terraform Cloud workspace to control compute node pool | `'pool'` |
+This class installs and configure the Slurm controller daemon - **slurmctld**.
+
+### parameters
+
+| Variable            | Description                                                    | Type   |
+| :------------------ | :------------------------------------------------------------  | :----- |
+| `autoscale_version` | Version of Slurm Terraform cloud autoscale software to install | String |
+| `tfe_token`         | Terraform Cloud API Token. Required to enable autoscaling.     | String |
+| `tfe_workspace`     | Terraform Cloud workspace id. Required to enable autoscaling.  | String |
+| `tfe_var_pool`      | Variable name in Terraform Cloud workspace to control autoscaling pool | String |
+| `selinux_context`   | SELinux context for jobs (Slurm > 20.11) | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::controller::autoscale_version: "0.4.0"
+profile::slurm::controller::selinux_context: "user_u:user_r:user_t:s0"
+profile::slurm::controller::tfe_token: ""
+profile::slurm::controller::tfe_workspace: ""
+profile::slurm::controller::tfe_var_pool: "pool"
 ```
 </details>
 
@@ -958,22 +968,94 @@ When `profile::slurm::accounting` is included, these classes are included too:
 <summary>example</summary>
 
 ```yaml
+profile::slurm::controller::tfe_token: "7bf4bd10-1b62-4389-8cf0-28321fcb9df8"
+profile::slurm::controller::tfe_workspace: "ws-jE6Lq2hggNPyRJcJ"
 ```
+
+For more information on how to configure Slurm autoscaling with Terraform cloud,
+refer to the [Terraform Cloud](https://github.com/ComputeCanada/magic_castle/blob/main/docs/terraform_cloud.md) section of Magic Castle manual.
+
 </details>
 
-## profile::squid
+### dependencies
 
-| Variable                              | Type           | Description                                                                 | Default  |
-| ------------------------------------- | :------------- | :-------------------------------------------------------------------------- | -------- |
-| `port`                | Integer        | Squid service listening port                                                | 3128     |
-| `cache_size`          | Integer        | Amount of disk space (MB) that can be used by Squid service                 | 4096     |
-| `cvmfs_acl_regex`     | Array[String]  | List of regexes corresponding to CVMFS stratum users are allowed to access  | `['^(cvmfs-.*\.computecanada\.ca)$', '^(.*-cvmfs\.openhtc\.io)$', '^(cvmfs-.*\.genap\.ca)$']`     |
+When `profile::slurm::accounting` is included, these classes are included too:
+- [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
+- [`profile::slurm::base`](#profileslurmbase)
+- [`profile::mail::server`](#profilemailserver)
+
+## profile::squid::server
+
+> Squid is a caching and forwarding HTTP web proxy. It has a wide variety
+of uses, including speeding up a web server by caching repeated requests
+[reference](https://en.wikipedia.org/wiki/Squid_(software))
+
+This class configures and installs the Squid service. Its main usage is to
+act as an HTTP cache for CVMFS clients in the cluster.
+
+### parameters
+
+| Variable          | Description                               | Type          |
+| :---------------- | :---------------------------------------- | :------------ |
+| `port`            | Squid service listening port              | Integer       |
+| `cache_size`      | Amount of disk space (MB)                 | Integer       |
+| `cvmfs_acl_regex` | List of allowed CVMFS stratums as regexes | Array[String] |
 
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::squid::server::port: 3128
+profile::squid::server::cache_size: 4096
+```
+
+#### computecanada software stack
+```yaml
+profile::squid::server::cvmfs_acl_regex:
+  - '^(cvmfs-.*\.computecanada\.ca)$'
+  - '^(cvmfs-.*\.computecanada\.net)$'
+  - '^(.*-cvmfs\.openhtc\.io)$'
+  - '^(cvmfs-.*\.genap\.ca)$'
+```
+
+#### eessi software stack
+```yaml
+profile::squid::server::cvmfs_acl_regex:
+  - '^(.*\.cvmfs\.eessi-infra\.org)$'
+```
+</details>
+
+### dependencies
+
+When `profile::squid::server` is included, these classes are included too:
+- [`squid`](https://forge.puppet.com/modules/puppet/squid/readme)
+- [`profle::consul`](#profileconsul)
+
+## profile::sssd::client
+
+> The System Security Services Daemon is software originally developed
+for the Linux operating system that provides a set of daemons to manage
+access to remote directory services and authentication mechanisms.
+[reference](https://en.wikipedia.org/wiki/System_Security_Services_Daemon)
+
+This class configures external authentication domains
+
+### parameters
+
+| Variable      | Description                                                       | Type  |
+| :------------ | :---------------------------------------------------------------- | :---- |
+| `domains`     | Config dictionary of domains that can authenticate                | Hash[String, Any]  |
+| `access_tags` | List of host tags that domain user can connect to                 | Array[String] |
+| `deny_access` | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | Optional[Boolean] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::sssd::client::domains: { }
+profile::sssd::client::access_tags: ['login', 'node']
+profile::sssd::client::deny_access: ~
 ```
 </details>
 
@@ -981,30 +1063,32 @@ When `profile::slurm::accounting` is included, these classes are included too:
 <summary>example</summary>
 
 ```yaml
+profile::sssd::client::domains:
+  MyOrgLDAP:
+    id_provider: ldap
+    auth_provider: ldap
+    ldap_schema: rfc2307
+    ldap_uri:
+      - ldaps://server01.ldap.myorg.net
+      - ldaps://server02.ldap.myorg.net
+      - ldaps://server03.ldap.myorg.net
+    ldap_search_base: ou=People,dc=myorg,dc=net
+    ldap_group_search_base: ou=Group,dc=myorg,dc=net
+    ldap_id_use_start_tls: False
+    cache_credentials: true
+    ldap_tls_reqcert: never
+    access_provider: ldap
+    filter_groups: 'cvmfs-reserved'
 ```
+
+The domain's keys in this example are on an indicative basis and may not be mandatory.
+Some SSSD domain keys might also be missing. Refer to
+[domain sections in sssd.conf manual](https://man.archlinux.org/man/sssd.conf.5.en#DOMAIN_SECTIONS)
+for more informations.
 </details>
 
-## profile::sssd
+## profile::sssd::service
 
-| Variable | Type | Description | Default  |
-| -------- | :--- | :---------- | -------- |
-| `domains` | Hash | Dictionary of domain-config which can authenticate on the cluster | `{}` |
-| `access_tags` | Array[String] | List of host tags that domain user can connect to | `['login', 'node']` |
-| `deny_access` | Optional[Boolean] | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | `undef` |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
-```
-</details>
 
 ## profile::users
 
