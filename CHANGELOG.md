@@ -56,6 +56,16 @@ definition.
 - Removed puppet alias from etc/hosts
 - 
 
+## [12.6.7] 2023-09-29
+
+### Changed
+- Fixed VGPU identification facts when dealing with NVIDIA A100 and more than one gpus. (#268)
+
+## [12.6.6] 2023-09-29
+
+### Changed
+- Fixed Compute Canada CVMFS rpm package name and source.
+
 ## [12.6.5] 2023-09-22
 
 ### Changed
