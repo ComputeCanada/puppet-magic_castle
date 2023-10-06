@@ -655,6 +655,52 @@ When `profile::jupyterhub::node` is included, these classes are included too:
 - [jupyterhub::node](https://github.com/computecanada/puppet-jupyterhub)
 - [jupyterhub::kernel::venv](https://github.com/computecanada/puppet-jupyterhub)
 
+## profile::metrics::node_exporter
+
+> [Prometheus](https://prometheus.io/) is a free software application used for 
+event monitoring and alerting. It records metrics in a time series database built
+using an HTTP pull model, with flexible queries and real-time alerting.
+[reference](https://en.wikipedia.org/wiki/Prometheus_(software))
+
+This class configures a Prometheus exporter that exports server usage metrics, for example
+CPU and memory usage. It should be included on every instances of the cluster.
+
+## profile::metrics::slurm_job_exporter
+
+This class configures a Prometheus exporter that exports the Slurm
+compute node metrics, for example:
+- job memory usage
+- job memory max
+- job memory limit
+- job core usage total
+- job process count
+- job threads count
+- job power gpu
+
+This exporter needs to run on compute nodes.
+
+### parameter
+
+| Variable  | Description                                      | Type    |
+| --------- | :----------------------------------------------- | :------ |
+| `version` | The version of the slurm job exporter to install | String  |
+
+### dependency
+
+When `profile::metrics::slurm_job_exporter` is included, these classes are included too:
+- [profile::consul](#profileconsul)
+
+## profile::metrics::slurm_exporter
+
+This class configures a Prometheus exporter that exports the Slurm scheduling metrics, for example:
+- allocated nodes
+- allocated gpus
+- pending jobs
+- completed jobs
+
+This exporter typically runs on the Slurm controller server, but it can run on any server
+with a functional Slurm command-line installation.
+
 ## profile::nfs::client
 
 > Network File System (NFS) is a distributed file system protocol [...]

@@ -88,7 +88,3 @@ class profile::metrics::slurm_exporter {
     ],
   }
 }
-
-class profile::metrics::server {
-  include prometheus::server
-}

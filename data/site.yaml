@@ -29,8 +29,8 @@ magic_castle::site::tags:
     - profile::rsyslog::client
   mgmt:
     - mysql::server
+    - prometheus::server
     - profile::freeipa::server
-    - profile::metrics::server
     - profile::metrics::slurm_exporter
     - profile::rsyslog::server
     - profile::squid::server
