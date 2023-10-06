@@ -665,6 +665,12 @@ using an HTTP pull model, with flexible queries and real-time alerting.
 This class configures a Prometheus exporter that exports server usage metrics, for example
 CPU and memory usage. It should be included on every instances of the cluster.
 
+### dependencies
+
+When `profile::metrics::node_exporter` is included, these classes are included too:
+- [prometheus::node_exporter](https://forge.puppet.com/modules/puppet/prometheus)
+- [profile::consul](#profileconsul)
+
 ## profile::metrics::slurm_job_exporter
 
 This class configures a Prometheus exporter that exports the Slurm
@@ -687,7 +693,7 @@ This exporter needs to run on compute nodes.
 
 ### dependency
 
-When `profile::metrics::slurm_job_exporter` is included, these classes are included too:
+When `profile::metrics::slurm_job_exporter` is included, this class is included too:
 - [profile::consul](#profileconsul)
 
 ## profile::metrics::slurm_exporter
