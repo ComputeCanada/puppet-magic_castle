@@ -3,6 +3,7 @@
 # - memory usage
 # It should run on every server of the cluster.
 class profile::metrics::node_exporter {
+  include profile::consul
   include prometheus::node_exporter
   consul::service { 'node-exporter':
     port  => 9100,
@@ -22,6 +23,8 @@ class profile::metrics::node_exporter {
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
 class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
+  include profile::consul
+
   consul::service { 'slurm-job-exporter':
     port  => 9798,
     tags  => ['slurm-job-exporter'],
@@ -55,6 +58,8 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
 # This exporter typically runs on the Slurm controller server, but it can run on any server
 # with a functional Slurm command-line installation.
 class profile::metrics::slurm_exporter {
+  include profile::consul
+
   consul::service { 'slurm-exporter':
     port  => 8081,
     tags  => ['slurm-exporter'],
