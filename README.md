@@ -691,6 +691,15 @@ This exporter needs to run on compute nodes.
 | --------- | :----------------------------------------------- | :------ |
 | `version` | The version of the slurm job exporter to install | String  |
 
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::metrics::slurm_job_exporter::version: '0.0.10'
+```
+</details>
+
+
 ### dependency
 
 When `profile::metrics::slurm_job_exporter` is included, this class is included too:
