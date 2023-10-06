@@ -216,28 +216,16 @@ This class ensures Microsoft Azure Linux Guest Agent is not installed as it tend
 with Magic Castle configuration. The class also install Azure udev storage rules that would
 normally be provided by the Linux Guest Agent.
 
-### parameters
-
-None
-
 ## profile::base::etc_hosts
 
 This class ensures that each instance declared in Magic Castle `main.tf` have an entry
 in `/etc/hosts`. The ip addresses, fqdns and short hostnames are taken from the `terraform.instances`
 datastructure provided by `/etc/puppetlabs/data/terraform_data.yaml`.
 
-### parameters
-
-None
-
 ## profile::base::powertools
 
 This class ensures the DNF Powertools repo is enabled when using EL8. For all other EL versions, this
 class does nothing.
-
-### parameters
-
-None
 
 ## profile::ceph::client
 
@@ -337,11 +325,6 @@ When `profile::consul` is included, these classes are included too:
 This class configure a consul watch event that when triggered restart the Puppet agent.
 It is used mainly by Terraform to restart all Puppet agents across the cluster when
 the hieradata source files uploaded by Terraform are updated.
-
-### parameters
-
-None
-
 
 ### dependencies
 
@@ -620,6 +603,19 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 ```
 </details>
 
+## profile::gpu
+
+This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
+is detected. The class configures nvidia-persistenced and nvidia-dcgm daemons
+when the GPU is connected via PCI passthrough, or configures nvidia-gridd when
+dealing with an NVIDIA VGPU.
+
+For PCI passthrough, the class installs the latest CUDA drivers available
+on NVIDIA yum repos.
+For VGPU, the driver source is cloud provider specific and has to be specified
+via either `profile::gpu::install::vgpu::rpm::source` for rpms or
+`profile::gpu::install::vgpu::bin::source` for binary installer.
+
 ## profile::jupyterhub::hub
 
 > JupyterHub is a multi-user server for Jupyter Notebooks. It is designed to support many users by
@@ -652,10 +648,6 @@ When `profile::jupyterhub::hub` is included, this class is included too:
 ## profile::jupyterhub::node
 
 This class installs and configure the _single-user notebook_ part of JupyterHub.
-
-### parameters
-
-None
 
 ### dependency
 
@@ -794,10 +786,6 @@ This class install and configures rsyslog service to forward the instance's
 logs to rsyslog servers. The rsyslog servers are discovered by the instance
 via Consul.
 
-### parameters
-
-None
-
 ### dependencies
 
 When `profile::rsyslog::client` is included, these classes are included too:
@@ -808,10 +796,6 @@ When `profile::rsyslog::client` is included, these classes are included too:
 
 This class install and configures rsyslog service to receives forwarded logs
 from all rsyslog client in the cluster.
-
-### parameters
-
-None
 
 ### dependencies
 
@@ -1087,31 +1071,96 @@ Some SSSD domain keys might also be missing. Refer to
 for more informations.
 </details>
 
-## profile::users
+## profile::ssh::base
 
-| Variable                              | Type           | Description                                                                 | Default  |
-| ------------------------------------- | :------------- | :-------------------------------------------------------------------------- | -------- |
-| `profile::users::ldap::users` | Hash[Hash] | Dictionary of users to be created in LDAP | |
-| `profile::users::ldap::access_tags` | Array[String] | List of string of the form `'tag:service'` that LDAP user can connect to  | `['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']` |
-| `profile::users::local::users` | Hash[Hash] | Dictionary of users to be created locally | |
+This class optimizer ssh server daemon (sshd) configuration to achieve an A+ audit score on
+[https://www.sshaudit.com/](https://www.sshaudit.com/).
+
+## profile::ssh::known_hosts
+
+This class populates the file `/etc/ssh/ssh_known_hosts` with the cluster's instance ed25519
+hostkeys using data provided by Terraform.
+
+## profile::ssh::hostbased_auth::client
+
+This class allows instances to connect with SSH to instances including
+[profile::ssh::hostbased_auth::server](#profilesshhostbased_authserver)
+using [SSH hostbased authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Host-based_Authentication).
+
+## profile::ssh::hostbased_auth::server
+
+This class enables [SSH hostbased authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Host-based_Authentication)
+on the instance including it.
+
+### parameter
+
+| Variable      | Description                                                                     | Type          |
+| :------------ | :------------------------------------------------------------------------------ | :------------ |
+| `shosts_tags` | Tags of instances that can connect this server using hostbased authentication   | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::ssh::hostbased_auth::server::shosts_tags: ['login', 'node']
 ```
+</details>
+
+### dependency
+
+When `profile::ssh::hostbased_auth::server` is included, this class is included too:
+- [profile::ssh::known_hosts](#profilesshknown_hosts)
+
+## profile::users::ldap
+
+This class allows the definition of FreeIPA users directly in YAML. The alternatives being
+to use [FreeIPA command-line](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_identity_management/managing-user-accounts-using-the-command-line_configuring-and-managing-idm),
+to use the [FreeIPA web interface](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_identity_management/managing-user-accounts-using-the-idm-web-ui_configuring-and-managing-idm)
+or to use [Mokey](#profilefreeipamokey).
+
+### parameters
+
+| Variable      | Description                                               | Type                            |
+| ------------- | :-------------------------------------------------------- | :------------------------------ |
+| `users`       | Dictionary of users to be created in LDAP                 | Hash[profile::users::ldap_user] |
+| `access_tags` | List of `'tag:service'` that LDAP user can connect to     | Array[String]                   |
+
+A `profile::users::ldap_user` is defined as a dictionary with the following keys:
+| Variable          | Description                                               | Type                            | Optional ? |
+| ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
+| `groups`          | List of groups the user has to be part of                 | Array[String]                   | No         |
+| `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
+| `passwd`          | User's password                                           | String                          | Yes        |
+| `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
+
+
+By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
+longer match to what is prescribed in YAML. To disable this feature, add
+`manage_password: false` to the user(s) definition.
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::users::ldap::users:
+  'user':
+    count: "%{alias('terraform.data.nb_users')}"
+    passwd: "%{alias('terraform.data.guest_passwd')}"
+    groups: ['def-sponsor00']
+    manage_password: true
+
+profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+```
+
+If `profile::users::ldap::users` is present in more than one YAML file in the hierarchy,
+all hashes for that parameter will be combined using Puppet's
+[deep merge strategy](https://www.puppet.com/docs/puppet/7/hiera_merging.html#merge_behaviors-deep).
 </details>
 
 <details>
-<summary>example</summary>
+<summary>examples</summary>
 
-```yaml
-```
-</details>
-
-### profile::users::ldap::users
-
-A batch of 10 LDAP users, user01 to user10, can be defined in hieradata as:
+A batch of 10 users, user01 to user10, can be defined as:
 ```yaml
 profile::users::ldap::users:
   user:
@@ -1120,20 +1169,64 @@ profile::users::ldap::users:
     groups: ['def-sponsor00']
 ```
 
-A single LDAP user can be defined as:
+A single user `alice` which can authenticate with SSH public key only can be defined as:
 ```yaml
 profile::users::ldap::users:
   alice:
-    passwd: user.password.is.easy.to.remember
     groups: ['def-sponsor00']
-    public_keys: ['ssh-rsa ... user@local', 'ssh-ecdsa ...']
+    public_keys: ['ssh-rsa ... user@local', 'ssh-ed25519 ...']
 ```
 
-By default, Puppet will manage the LDAP user(s) password and change it in ldap if it no
-longer corresponds to what is prescribed in the hieradata. To disable this feature, add
-`manage_password: false` to the user(s) definition.
+Allowing LDAP users to connect to the cluster only via JupyterHub:
+```yaml
+profile::users::ldap::access_tags: ['proxy:jupyterhub-login']
+```
 
-### profile::users::local::users
+</details>
+
+## profile::users::local
+
+This class allows the definition of local users outside of FreeIPA realm.
+
+Local user's home is local to the machine where it is created and can be
+found at the root of the filesytem i.e.: `/username`. Local users are the
+only type of users in Magic Castle allowed to be sudoers.
+
+### parameters
+
+| Variable | Description                               | Type                             |
+| :------- | :---------------------------------------- | :------------------------------- |
+| `users`  | Dictionary of users to be created locally | Hash[profile::users::local_user] |
+
+A `profile::users::local_user` is defined as a dictionary with the following keys:
+| Variable          | Description                                     | Type            | Optional ? |
+| ----------------- | :-----------------------------------------------| :-------------- | ---------  |
+| `groups`          | List of groups the user has to be part of       | Array[String]   | No         |
+| `public_keys`     | List of ssh authorized keys for the user        | Array[String]   | No         |
+| `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes        |
+| `selinux_user`    | SELinux context for the user                    | String          | Yes        |
+| `mls_range`       | MLS Range for the user                          | String          | Yes        |
+
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::users::local::users:
+  "%{alias('terraform.data.sudoer_username')}":
+    public_keys: "%{alias('terraform.data.public_keys')}"
+    groups: ['adm', 'wheel', 'systemd-journal']
+    sudoer: true
+```
+
+If `profile::users::local::users` is present in more than one YAML file in the hierarchy,
+all hashes for that parameter will be combined using Puppet's
+[deep merge strategy](https://www.puppet.com/docs/puppet/7/hiera_merging.html#merge_behaviors-deep).
+</details>
+
+
+<details>
+<summary>examples</summary>
 
 A local user `bob` can be defined in hieradata as:
 ```yaml
@@ -1145,3 +1238,4 @@ profile::users::local::users:
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
 ```
+</details>
