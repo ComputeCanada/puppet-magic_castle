@@ -64,12 +64,17 @@ EOT
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $ipa_domain = "int.${domain_name}"
   $domain_list = join([$ipa_domain] + keys($domains), ',')
-  file_line { 'sssd_domains':
+  file { '/etc/sssd/conf.d/sssd-provider.conf':
     ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    line    => "domains = ${domain_list}",
-    match   => "^domains = ${$ipa_domain}$",
+    content => @("EOT"),
+      [sssd]
+      services = nss, pam, ssh, sudo
+      domains = ${domain_list}
+      | EOT
     notify  => Service['sssd'],
-    require => Exec['ipa-install'],
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    seltype => 'sssd_conf_t',
   }
 }

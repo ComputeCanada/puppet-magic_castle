@@ -59,43 +59,6 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
-  $ipa_records = [
-    "_kerberos-master._tcp.${int_domain_name} SRV",
-    "_kerberos-master._udp.${int_domain_name} SRV",
-    "_kerberos._tcp.${int_domain_name} SRV",
-    "_kerberos._udp.${int_domain_name} SRV",
-    "_kpasswd._tcp.${int_domain_name} SRV",
-    "_kpasswd._udp.${int_domain_name} SRV",
-    "_ldap._tcp.${int_domain_name} SRV",
-    "ipa-ca.${int_domain_name} A",
-  ]
-
-  wait_for { 'ipa_records':
-    query             => sprintf('dig +short %s | wc -l', join($ipa_records, ' ')),
-    regex             => String(length($ipa_records)),
-    polling_frequency => 10,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => [
-      Package['ipa-client'],
-      Exec['ipa-client-uninstall_bad-hostname'],
-      Exec['ipa-client-uninstall_bad-server'],
-    ],
-  }
-
-  # Check if the FreeIPA HTTPD service is consistently available
-  # over a period of 2sec * 15 times = 30 seconds. If a single
-  # test of availability fails, we wait for 5 seconds, then try
-  # again.
-  wait_for { 'ipa-ca_https':
-    query             => "for i in {1..15}; do curl --insecure -L --silent --output /dev/null https://ipa-ca.${int_domain_name}/ && sleep 2 || exit 1; done",
-    exit_code         => 0,
-    polling_frequency => 5,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => Wait_for['ipa_records'],
-  }
-
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
     unless  => "/usr/bin/test `hostname` = ${fqdn}",
@@ -107,6 +70,7 @@ class profile::freeipa::client (String $server_ip) {
   }
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
+    /usr/bin/nohup \
     /sbin/mc-ipa-client-install \
     --domain ${int_domain_name} \
     --hostname ${fqdn} \
@@ -115,29 +79,23 @@ class profile::freeipa::client (String $server_ip) {
     --unattended \
     --force-join \
     -p admin \
-    -w ${admin_password}
+    -w ${admin_password} \
+    &> /dev/null &
     | IPACLIENTINSTALL
 
   exec { 'ipa-install':
-    command   => Sensitive($ipa_client_install_cmd),
-    tries     => 2,
-    try_sleep => 60,
-    require   => [
+    command => Sensitive($ipa_client_install_cmd),
+    require => [
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa-ca_https'],
     ],
-    creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind'],
+    creates => '/etc/ipa/default.conf',
   }
 
-  file_line { 'ssh_known_hosts':
-    ensure    => present,
-    path      => '/etc/ssh/ssh_config.d/04-ipa.conf',
-    match     => '^GlobalKnownHostsFile',
-    line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
-    subscribe => Exec['ipa-install'],
+  file { '/etc/ssh/ssh_config.d/01-mc.conf':
+    content => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
+    mode    => '0644',
   }
 
   # Configure default login selinux mapping
@@ -145,7 +103,6 @@ class profile::freeipa::client (String $server_ip) {
     command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
     unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Exec['ipa-install'],
   }
 
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
@@ -177,14 +134,14 @@ class profile::freeipa::client (String $server_ip) {
   # This can cause serious slow down when multiple
   # concurrent users try to login at the same time
   # since the rebuilt is done for each user sequentially.
-  file_line { 'selinux_provider':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    after   => 'id_provider = ipa',
-    line    => 'selinux_provider = none',
-    require => Exec['ipa-install'],
-    notify  => Service['sssd'],
-  }
+  # file_line { 'selinux_provider':
+  #   ensure  => present,
+  #   path    => '/etc/sssd/sssd.conf',
+  #   after   => 'id_provider = ipa',
+  #   line    => 'selinux_provider = none',
+  #   require => Exec['ipa-install'],
+  #   notify  => Service['sssd'],
+  # }
 }
 
 class profile::freeipa::server (
@@ -257,7 +214,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${int_domain_name} \
-    --no_hbac_allow
+    --no_hbac_allow &>> /var/log/ipaserver-install.log
     | IPASERVERINSTALL
 
   exec { 'ipa-install':
@@ -267,8 +224,17 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       Host[$fqdn],
+      File['/var/log/ipaserver-install.log'],
     ],
     notify  => Service['systemd-logind'],
+  }
+
+  Consul::Service <| |> -> Exec['ipa-install']
+
+  file { '/var/log/ipaserver-install.log':
+    mode  => '0600',
+    owner => 'root',
+    group => 'root',
   }
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
