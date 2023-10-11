@@ -12,9 +12,9 @@ class profile::rsyslog::client {
   include profile::rsyslog::base
 
   $remote_host_conf = @(EOT)
-    {{ with node }}
+    {{ with $local := node -}}
     {{ range service "rsyslog" -}}
-    {{ if ne .Node.Address .Address }}
+    {{ if ne $local.Node.Address .Address -}}
     *.* @@{{.Address}}:{{.Port}}
     {{ end -}}
     {{ end -}}
