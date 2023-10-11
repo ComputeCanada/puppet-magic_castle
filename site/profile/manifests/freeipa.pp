@@ -1,3 +1,15 @@
+class profile::freeipa {
+  $server_ip = lookup('profile::freeipa::client::server_ip')
+  $interface = profile::getlocalinterface()
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+
+  if $ipaddress == $server_ip {
+    include profile::freeipa::server
+  } else {
+    include profile::freeipa::client
+  }
+}
+
 class profile::freeipa::base (String $domain_name) {
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':

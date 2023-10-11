@@ -501,11 +501,25 @@ profile::fail2ban::ignoreip:
 When `profile::fail2ban` is included, these classes are included too:
 - [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban)
 
-## profile::freeipa::base
+## profile::freeipa
 
 > [FreeIPA](https://www.freeipa.org/) is a free and open source identity management system.
 FreeIPA is the upstream open-source project for Red Hat Identity Management.
 [reference](https://en.wikipedia.org/wiki/FreeIPA)
+
+This class configures either the instance as a FreeIPA client or a server based on the value
+of `profile::freeipa::client::server_ip`. If this value matches the instance local IP address, the
+server class is included - [profile::freeipa::server](#profilefreeipaserver), otherwise the
+client class is included - [profile::freeipa::client](#profilefreeipaclient).
+
+### dependencies
+
+When `profile::freeipa` is included, theses classes can be included too:
+- [profile::freeipa::base](#profilefreeipabase)
+- [profile::freeipa::client](#profilefreeipaclient)
+- [profile::freeipa::server](#profilefreeipaserver)
+
+## profile::freeipa::base
 
 This class configures files and services that are common to FreeIPA client and FreeIPA server.
 

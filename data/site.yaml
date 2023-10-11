@@ -8,6 +8,7 @@ lookup_options:
 magic_castle::site::all:
   - profile::base
   - profile::consul
+  - profile::freeipa
   - profile::users::local
   - profile::sssd::client
   - profile::metrics::node_exporter
@@ -17,7 +18,6 @@ magic_castle::site::tags:
   dtn:
     - profile::globus
     - profile::nfs::client
-    - profile::freeipa::client
     - profile::rsyslog::client
   login:
     - profile::fail2ban
@@ -25,12 +25,10 @@ magic_castle::site::tags:
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
     - profile::nfs::client
-    - profile::freeipa::client
     - profile::rsyslog::client
   mgmt:
     - mysql::server
     - prometheus::server
-    - profile::freeipa::server
     - profile::metrics::slurm_exporter
     - profile::rsyslog::server
     - profile::squid::server
@@ -48,7 +46,6 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
     - profile::nfs::client
-    - profile::freeipa::client
     - profile::rsyslog::client
   nfs:
     - profile::nfs::server
@@ -56,5 +53,4 @@ magic_castle::site::tags:
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
-    - profile::freeipa::client
     - profile::rsyslog::client
