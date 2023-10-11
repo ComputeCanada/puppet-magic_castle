@@ -22,6 +22,7 @@ class profile::rsyslog::client {
     | EOT
   file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
     content => $remote_host_conf,
+    notify  => Service['consul-template'],
   }
 
   consul_template::watch { 'remote_host.conf.ctmpl':
