@@ -17,14 +17,14 @@ magic_castle::site::all:
 magic_castle::site::tags:
   dtn:
     - profile::globus
-    - profile::nfs::client
+    - profile::nfs
     - profile::rsyslog::client
   login:
     - profile::fail2ban
     - profile::cvmfs::client
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
-    - profile::nfs::client
+    - profile::nfs
     - profile::rsyslog::client
   mgmt:
     - mysql::server

@@ -1,3 +1,15 @@
+class profile::nfs {
+  $server_ip = lookup('profile::nfs::client::server_ip')
+  $interface = profile::getlocalinterface()
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+
+  if $ipaddress == $server_ip {
+    include profile::nfs::server
+  } else {
+    include profile::nfs::client
+  }
+}
+
 class profile::nfs::client (
   String $server_ip,
   String $domain_name,

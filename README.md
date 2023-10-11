@@ -671,7 +671,7 @@ When `profile::jupyterhub::node` is included, these classes are included too:
 
 ## profile::metrics::node_exporter
 
-> [Prometheus](https://prometheus.io/) is a free software application used for 
+> [Prometheus](https://prometheus.io/) is a free software application used for
 event monitoring and alerting. It records metrics in a time series database built
 using an HTTP pull model, with flexible queries and real-time alerting.
 [reference](https://en.wikipedia.org/wiki/Prometheus_(software))
@@ -730,12 +730,19 @@ This class configures a Prometheus exporter that exports the Slurm scheduling me
 This exporter typically runs on the Slurm controller server, but it can run on any server
 with a functional Slurm command-line installation.
 
-## profile::nfs::client
+## profile::nfs
 
 > Network File System (NFS) is a distributed file system protocol [...]
 allowing a user on a client computer to access files over a computer
 network much like local storage is accessed.
 [reference](https://en.wikipedia.org/wiki/Network_File_System)
+
+This class instantiates either an NFS client or an NFS server.
+If `profile::nfs::client::server_ip`matches the instance's local ip address, the
+server class is included - [profile::nfs::server](#profilenfsserver), otherwise the
+client class is included - [profile::nfs::client](#profilenfsclient).
+
+## profile::nfs::client
 
 This class install NFS and configure the client to mount all shares exported
 by a single NFS server identified via its ip address.
