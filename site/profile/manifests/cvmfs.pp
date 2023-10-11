@@ -40,19 +40,6 @@ class profile::cvmfs::client (
       source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-2.0-1.noarch.rpm',
     }
 
-    # Remove old SHA1 key that cannot be imported in EL9
-    # The key should be removed in next release of computecanada-release-latest
-    exec { 'rm /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2':
-      onlyif      => [
-        'test -f /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2',
-        'echo 35544d1e70fcd9c44729570c252b8a46596d9bf300043f310b368682c58344f7  /etc/pki/rpm-gpg/RPM-GPG-KEY-CC-CVMFS-2 | sha256sum --check',
-      ],
-      refreshonly => true,
-      subscribe   => Package['cc-cvmfs-repo'],
-      before      => Package['stack'],
-      path        => ['/usr/bin'],
-    }
-
     package { 'stack':
       ensure  => 'installed',
       name    => 'cvmfs-config-computecanada',
