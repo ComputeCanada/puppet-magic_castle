@@ -71,7 +71,7 @@ class profile::ceph::client::install {
     repo_gpgcheck => 0,
   }
 
-  if ($::facts['os']['release']['major'] == '8') {
+  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
     $argparse_pkgname = 'python3-ceph-argparse'
   } else {
     $argparse_pkgname = 'python-ceph-argparse'

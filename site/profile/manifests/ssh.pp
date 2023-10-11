@@ -10,34 +10,6 @@ class profile::ssh::base {
     notify => Service['sshd'],
   }
 
-  file_line { 'MACs':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'KexAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'HostKeyAlgorithms':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'HostKeyAlgorithms ssh-rsa',
-    notify => Service['sshd'],
-  }
-
-  file_line { 'Ciphers':
-    ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
-    notify => Service['sshd'],
-  }
-
   file { '/etc/ssh/ssh_host_ed25519_key':
     mode  => '0640',
     owner => 'root',
@@ -62,8 +34,8 @@ class profile::ssh::base {
     group => 'ssh_keys',
   }
 
-  if dig($::facts, 'os', 'release', 'major') == '8' {
-    # sshd hardening in CentOS 8 requires fidgetting with crypto-policies
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # sshd hardening in RedHat 8 requires fidgetting with crypto-policies
     # instead of modifying /etc/ssh/sshd_config
     # https://sshaudit.com/hardening_guides.html#rhel8
     # We replace the file in /usr/share/crypto-policies instead of
@@ -73,6 +45,42 @@ class profile::ssh::base {
     # are in just symlinks to /usr/share
     file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
       source => 'puppet:///modules/profile/base/opensshserver.config',
+      notify => Service['sshd'],
+    }
+  } elsif versioncmp($::facts['os']['release']['major'], '8') >= 1 {
+    # In RedHat 9, the sshd policies are defined as an include that of the
+    # crypto policies. Parameters defined before the include supersede
+    # the crypto policy. The include is done in a file named 50-redhat.conf.
+    file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
+      source => 'puppet:///modules/profile/base/opensshserver-9.config',
+      notify => Service['sshd'],
+    }
+  } elsif versioncmp($::facts['os']['release']['major'], '8') < 0 {
+    file_line { 'MACs':
+      ensure => present,
+      path   => '/etc/ssh/sshd_config',
+      line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
+      notify => Service['sshd'],
+    }
+
+    file_line { 'KexAlgorithms':
+      ensure => present,
+      path   => '/etc/ssh/sshd_config',
+      line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
+      notify => Service['sshd'],
+    }
+
+    file_line { 'HostKeyAlgorithms':
+      ensure => present,
+      path   => '/etc/ssh/sshd_config',
+      line   => 'HostKeyAlgorithms ssh-rsa',
+      notify => Service['sshd'],
+    }
+
+    file_line { 'Ciphers':
+      ensure => present,
+      path   => '/etc/ssh/sshd_config',
+      line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
       notify => Service['sshd'],
     }
   }

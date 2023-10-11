@@ -63,9 +63,16 @@ class profile::cvmfs::client (
     $consul_cvmfs_meta = { arch => $facts['cpu_ext'] }
   }
 
-  package { ['cvmfs', 'cvmfs-config-default', 'cvmfs-auto-setup']:
+  package { 'cvmfs':
     ensure  => 'installed',
     require => [Package['cvmfs-repo'], Package['stack']],
+  }
+
+  exec { 'cvmfs_config setup':
+    notify  => Service['autofs'],
+    creates => '/etc/auto.master.d/cvmfs.autofs',
+    path    => ['/usr/bin', '/bin'],
+    require => Package['cvmfs'],
   }
 
   file { '/etc/cvmfs/default.local.ctmpl':

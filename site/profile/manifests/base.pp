@@ -171,10 +171,15 @@ class profile::base::etc_hosts {
 }
 
 class profile::base::powertools {
-  if dig($::facts, 'os', 'release', 'major') == '8' {
+  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
+    if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+      $repo_name = 'powertools'
+    } else {
+      $repo_name = 'crb'
+    }
     exec { 'enable_powertools':
-      command => 'dnf config-manager --set-enabled powertools',
-      unless  => 'dnf config-manager --dump powertools | grep -q \'enabled = 1\'',
+      command => "dnf config-manager --set-enabled ${$repo_name}",
+      unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
       path    => ['/usr/bin'],
     }
   } else {

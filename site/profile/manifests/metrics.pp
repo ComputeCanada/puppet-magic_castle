@@ -21,7 +21,7 @@ class profile::metrics::node_exporter {
 # - job power gpu
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
-class profile::metrics::slurm_job_exporter (String $version = '0.0.10') {
+class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
   consul::service { 'slurm-job-exporter':
     port  => 9798,
     tags  => ['slurm-job-exporter'],

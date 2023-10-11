@@ -26,7 +26,7 @@ class profile::jupyterhub::hub (
 class profile::jupyterhub::node {
   if lookup('jupyterhub::node::prefix', String, undef, '') !~ /^\/cvmfs.*/ {
     include jupyterhub::node
-    if lookup('jupyterhub::kernel::setup') == 'venv' {
+    if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
       Class['profile::cvmfs::client'] -> Class['jupyterhub::kernel::venv']
     }
   }
