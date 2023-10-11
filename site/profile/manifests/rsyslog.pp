@@ -12,8 +12,12 @@ class profile::rsyslog::client {
   include profile::rsyslog::base
 
   $remote_host_conf = @(EOT)
+    {{ with node }}
     {{ range service "rsyslog" -}}
+    {{ if ne .Node.Address .Address }}
     *.* @@{{.Address}}:{{.Port}}
+    {{ end -}}
+    {{ end -}}
     {{ end -}}
     | EOT
   file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
