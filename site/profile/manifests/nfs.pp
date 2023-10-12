@@ -86,10 +86,15 @@ class profile::nfs::server (
   if $devices =~ Hash[String, Array[String]] {
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
+    $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
     $users_tags = unique(
       flatten(
         lookup('profile::users::ldap::users').map|$key,$values| {
-          pick($values['access_tags'], lookup('profile::users::ldap::access_tags'))
+          if has_key($values, 'access_tags') {
+            $values['access_tags'].map|$tag| { split($tag, /:/)[0] }
+          } else {
+            $ldap_access_tags
+          }
         }
       )
     )
