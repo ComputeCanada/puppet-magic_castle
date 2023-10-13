@@ -9,23 +9,13 @@ node default {
     }
   )
 
-  $include_not_tags = flatten(
-    lookup('magic_castle::site::not_tags', undef, undef, {}).map | $tag, $classes | {
-      if ! ($tag in $instance_tags) {
-        $classes
-      } else {
-        []
-      }
-    }
-  )
-
   if lookup('magic_castle::site::enable_chaos', undef, undef, false) {
-    $classes = shuffle($include_all + $include_tags + $include_not_tags)
+    $classes = shuffle($include_all + $include_tags)
     notify { 'Chaos order':
       message => String($classes),
     }
   } else {
-    $classes = $include_all + $include_tags + $include_not_tags
+    $classes = $include_all + $include_tags
   }
   include($classes)
 }

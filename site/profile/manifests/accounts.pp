@@ -1,3 +1,6 @@
+# @summary Class configuring services to bridge LDAP users, Slurm accounts and users' folders in filesystems
+# @param project_regex Regex identifying FreeIPA groups that require a corresponding Slurm account
+# @param skel_archives Archives extracted in each FreeIPA user's home when created
 class profile::accounts (
   String $project_regex,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],

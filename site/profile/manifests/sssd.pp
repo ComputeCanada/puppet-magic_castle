@@ -1,16 +1,9 @@
-class profile::sssd::service {
-  service { 'sssd':
-    ensure => running,
-    enable => true,
-  }
-}
-
 class profile::sssd::client(
-  Hash $domains = {},
+  Hash[String, Any] $domains = {},
   Array[String] $access_tags = ['login', 'node'],
   Optional[Boolean] $deny_access = undef,
 ){
-  include profile::sssd::service
+  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
 
   package { 'sssd-ldap': }
 

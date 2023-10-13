@@ -3,6 +3,8 @@ class profile::squid::server (
   Integer $cache_size,
   Array[String] $cvmfs_acl_regex,
 ) {
+  include profile::consul
+
   class { 'squid': }
   squid::http_port { String($port): }
   squid::acl { 'SSL_ports':

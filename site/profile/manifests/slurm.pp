@@ -301,6 +301,7 @@ class profile::slurm::accounting(
   Integer $dbd_port = 6819
 ) {
   include mysql::server
+  include profile::slurm::base
 
   mysql::db { 'slurm_acct_db':
     ensure   => present,

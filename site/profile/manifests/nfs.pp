@@ -1,3 +1,15 @@
+class profile::nfs {
+  $server_ip = lookup('profile::nfs::client::server_ip')
+  $interface = profile::getlocalinterface()
+  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+
+  if $ipaddress == $server_ip {
+    include profile::nfs::server
+  } else {
+    include profile::nfs::client
+  }
+}
+
 class profile::nfs::client (
   String $server_ip,
   String $domain_name,
@@ -35,7 +47,11 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   String $domain_name,
-  Variant[String, Hash[String, Array[String]]] $devices,
+  # $devices is an empty string (i.e.: String[0, 0]) when
+  # the key terraform.data.volumes.nfs does not exist because
+  # "A lookup resulting in an interpolation of `alias` referencing
+  # a non-existant key returns an empty string"
+  Variant[Hash[String, Array[String]], String[0, 0]] $devices,
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -70,10 +86,15 @@ class profile::nfs::server (
   if $devices =~ Hash[String, Array[String]] {
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
+    $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
     $users_tags = unique(
       flatten(
         lookup('profile::users::ldap::users').map|$key,$values| {
-          pick($values['access_tags'], lookup('profile::users::ldap::access_tags'))
+          if has_key($values, 'access_tags') {
+            $values['access_tags'].map|$tag| { split($tag, /:/)[0] }
+          } else {
+            $ldap_access_tags
+          }
         }
       )
     )
