@@ -21,6 +21,7 @@ definition.
 - Added missing include consul_template in cvmfs.pp
 - Added ability to add extra environment variables to CVMFS site.sh
 - Added ability for user to shuffle module include in site.yaml (`magic_castle::site::enable_chaos`)
+- Added support for Rocky / Alma Linux 9
 
 ### Changed
 
