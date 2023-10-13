@@ -17,11 +17,12 @@ rm -rf /etc/puppetlabs
 rm -rf /opt/puppetlabs/puppet/cache
 rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
 
-# Unmount filesystems and turn off swap
-grep -v -P '(ext4|xfs|vfat|swap|^#|^$)' /etc/fstab | cut -f 2 | xargs umount
-grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab > /etc/fstab.new
+# Turn off swap
 swapoff -a
 grep -q "swap" /etc/fstab && rm -f $(grep "swap" /etc/fstab | cut -f 1)
+# Unmount filesystems
+grep -v -P '(ext4|xfs|vfat|swap|^#|^$)' /etc/fstab | cut -f 2 | xargs umount
+grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab > /etc/fstab.new
 mv -f /etc/fstab.new /etc/fstab
 systemctl daemon-reload
 
