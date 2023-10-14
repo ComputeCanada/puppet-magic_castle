@@ -30,7 +30,7 @@ class profile::rsyslog::client {
     config_hash => {
       perms       => '0644',
       source      => '/etc/rsyslog.d/remote_host.conf.ctmpl',
-      destination => '/etc/rsyslog.d/remote_host.conf',
+      destination => '/etc/rsyslog.d/99-remote_host.conf',
       command     => 'systemctl restart rsyslog || true',
     },
   }
@@ -43,6 +43,15 @@ class profile::rsyslog::server {
     port    => 514,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
+  }
+
+  file { '/etc/rsyslog.d/98-remotelogs.conf':
+    notify  => Service['rsyslog'],
+    content => @(EOT)
+      $template RemoteLogs,"/var/log/%HOSTNAME%/%PROGRAMNAME%.log"
+      if $fromhost-ip != '127.0.0.1' then -?RemoteLogs
+      & stop
+      |EOT
   }
 
   file_line { 'rsyslog_modload_imtcp':
