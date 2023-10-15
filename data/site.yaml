@@ -12,20 +12,19 @@ magic_castle::site::all:
   - profile::users::local
   - profile::sssd::client
   - profile::metrics::node_exporter
+  - profile::rsyslog::client
   - swap_file
 
 magic_castle::site::tags:
   dtn:
     - profile::globus
     - profile::nfs
-    - profile::rsyslog::client
   login:
     - motd
     - profile::fail2ban
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
     - profile::nfs
-    - profile::rsyslog::client
     - profile::software_stack
   mgmt:
     - mysql::server
@@ -46,7 +45,6 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
     - profile::nfs::client
-    - profile::rsyslog::client
     - profile::software_stack
   nfs:
     - profile::nfs::server
@@ -54,4 +52,3 @@ magic_castle::site::tags:
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
-    - profile::rsyslog::client
