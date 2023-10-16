@@ -81,7 +81,10 @@ class profile::gpu::install (
   }
 }
 
-class profile::gpu::install::passthrough (Array[String] $packages) {
+class profile::gpu::install::passthrough (
+  Array[String] $packages,
+  String $mig_manager_version = '0.5.4',
+) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
   if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
@@ -94,6 +97,36 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
     command => "${repo_config_cmd} --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
     creates => "/etc/yum.repos.d/cuda-${os}.repo",
     path    => ['/usr/bin'],
+  }
+
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig_profile")
+  if $mig_profile {
+    package { 'nvidia-mig-manager':
+      ensure   => 'latest',
+      provider => 'rpm',
+      name     => 'nvidia-mig-manager',
+      source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
+    }
+    file { '/etc/nvidia-mig-manager/config.yaml':
+      require => Package['nvidia-mig-manager'],
+      content => @("EOT")
+        version: v1
+        mig-configs:
+          default:
+            - devices: all
+              mig-enabled: true
+              mig-devices:
+              ${to_yaml($mig_profile, { indentation => 8 })}
+        |EOT
+    }
+    exec { 'nvidia-mig-parted apply':
+      unless  => 'nvidia-mig-parted assert -c default',
+      require => [
+        Package['nvidia-mig-manager'],
+        File['/etc/nvidia-mig-manager/config.yaml'],
+      ],
+      path    => ['/usr/bin'],
+    }
   }
 
   package { $packages:
