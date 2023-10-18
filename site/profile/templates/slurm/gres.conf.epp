@@ -6,7 +6,7 @@ AutoDetect=off
 <% if $attr['specs']['gpus'] > 0 { -%>
 <% if $attr['specs']['mig'] { -%>
 <% $attr['specs']['mig'].map|$key,$value| { -%>
-NodeName=<%= $name %> Name=gpu Type=<%= $key %> Count=<%= $value %> File=<%= join( range(0, $value-1).map|$i| { "/dev/nvidia${i}" } , ',') %>
+NodeName=<%= $name %> Name=gpu Type=<%= $key %> Count=<%= $value * $attr['specs']['gpus'] %> File=<%= join( range(0, ($value-1) * $attr['specs']['gpus']).map|$i| { "/dev/nvidia${i}" } , ',') %>
 <% }} else { -%>
 NodeName=<%= $name %> Name=gpu Count=<%= $attr['specs']['gpus'] %> File=<%= join( range(0, $attr['specs']['gpus']-1).map|$i| { "/dev/nvidia${i}" } , ',') %>
 <% }}} -%>
