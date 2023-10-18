@@ -412,6 +412,7 @@ class profile::slurm::controller (
   contain profile::slurm::base
   include profile::mail::server
 
+  $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
   file { '/etc/slurm/gres.conf':
     ensure  => 'present',
