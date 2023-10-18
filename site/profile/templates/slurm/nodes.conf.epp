@@ -14,5 +14,3 @@ NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['s
 NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=<%= if $attr['specs']['gpus'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
-
-# <%= if $attr['specs']['gpu'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %>
