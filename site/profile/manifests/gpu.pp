@@ -118,7 +118,7 @@ class profile::gpu::install::passthrough (
               mig-devices: ${to_json($mig_profile)}
         |EOT
     }
-    exec { 'nvidia-mig-parted apply':
+    exec { 'nvidia-mig-parted apply -f /etc/nvidia-mig-manager/config.yaml -c default':
       unless  => 'nvidia-mig-parted assert -c default',
       require => [
         Package['nvidia-mig-manager'],
