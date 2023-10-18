@@ -257,18 +257,6 @@ class profile::slurm::base (
       }),
   }
 
-  file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => epp('profile/slurm/gres.conf',
-      {
-        'nodes' => $nodes,
-      }
-    ),
-    seltype => 'etc_t'
-  }
-
   file { '/opt/software/slurm/bin/cond_restart_slurm_services':
     require => Package['slurm'],
     mode    => '0755',
@@ -423,6 +411,18 @@ class profile::slurm::controller (
 ) {
   contain profile::slurm::base
   include profile::mail::server
+
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/gres.conf',
+      {
+        'nodes' => $nodes,
+      }
+    ),
+    seltype => 'etc_t'
+  }
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',
@@ -654,6 +654,16 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  if $facts['nvidia_gpu_count'] > 0 {
+    file { '/etc/slurm/gres.conf':
+      notify  => Service['slurmd'],
+      seltype => 'etc_t',
+      content => @(EOT)
+        AutoDetect=nvml
+        |EOT
+    }
+  }
+
   Exec <| tag == profile::cvmfs |> -> Service['slurmd']
   Exec <| tag == profile::freeipa |> -> Service['slurmd']
   Exec <| tag == profile::gpu |> -> Service['slurmd']
@@ -678,7 +688,6 @@ class profile::slurm::node {
       File['/etc/slurm/slurm.conf'],
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
-      File['/etc/slurm/gres.conf'],
     ],
     require   => [
       Package['slurm-slurmd'],
