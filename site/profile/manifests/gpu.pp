@@ -115,8 +115,7 @@ class profile::gpu::install::passthrough (
           default:
             - devices: all
               mig-enabled: true
-              mig-devices:
-              ${to_yaml($mig_profile, { indentation => 8 })}
+              mig-devices: ${to_json($mig_profile)}
         |EOT
     }
     exec { 'nvidia-mig-parted apply':
