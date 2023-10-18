@@ -4,14 +4,14 @@ NodeName=DEFAULT MemSpecLimit=<%= $memlimit %> State=CLOUD
 # Always online computes nodes
 <% $nodes.each |$name, $attr| { -%>
 <% if !('pool' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=<%= if $attr['specs']['gpu'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %> Weight=<%= $weights[$name] %>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=<%= if $attr['specs']['gpus'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
 
 # On-demand pool compute nodes
 <% $nodes.each |$name, $attr| { -%>
 <% if 'pool' in $attr['tags']  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=<%= if $attr['specs']['gpu'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %> Weight=<%= $weights[$name] %>
+NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=<%= if $attr['specs']['gpus'] > 0 { if $attr['specs']['mig'] { join(['gpu', join($attr['specs']['mig'].map|$key,$value| { "gpu:${key}:${value}" }, ',')], ':') } else { "gpu:${attr['specs']['gpus']}" } } else { "gpu:0" } %> Weight=<%= $weights[$name] %>
 <% } -%>
 <% } -%>
 
