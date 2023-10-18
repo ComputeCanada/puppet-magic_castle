@@ -99,7 +99,7 @@ class profile::gpu::install::passthrough (
     path    => ['/usr/bin'],
   }
 
-  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig_profile")
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
   if $mig_profile {
     package { 'nvidia-mig-manager':
       ensure   => 'latest',
