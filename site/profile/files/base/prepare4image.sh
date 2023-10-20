@@ -41,6 +41,11 @@ if [ -f /etc/cloud/cloud-init.disabled ]; then
 fi
 cloud-init clean --logs
 rm -rf /var/lib/cloud
+
+# Remove all internal domain host entries
+grep -v $(hostname -d) /etc/hosts > /etc/hosts.clean
+mv /etc/hosts.clean /etc/hosts
+
 rm -f /etc/hostname
 rm -f /etc/udev/rules.d/70-persistent-net.rules
 : > /etc/sysconfig/network
