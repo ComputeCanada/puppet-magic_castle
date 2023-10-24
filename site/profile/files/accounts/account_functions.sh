@@ -4,7 +4,7 @@ wait_id () {
     local USERNAME=$1
     local FOUND=0
     for i in $(seq 1 12); do
-        if ! SSS_NSS_USE_MEMCACHE=no id $USERNAME; then
+        if ! SSS_NSS_USE_MEMCACHE=no id $USERNAME &> /dev/null; then
             sleep 5
         else
             FOUND=1
@@ -13,9 +13,11 @@ wait_id () {
     done
     if [ $FOUND -eq 0 ]; then
         systemctl restart sssd
+        sleep 5
+        id $USERNAME &> /dev/null
+        return $?
     fi
-    id $USERNAME
-    return $?
+    return 0
 }
 
 mkhome () {
