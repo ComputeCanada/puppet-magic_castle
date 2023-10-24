@@ -23,7 +23,7 @@ mkhome () {
     
     wait_id $USERNAME
 
-    if ! $?; then
+    if [ ! $? -eq 0 ]; then
         echo "$USERNAME is not showing up in SSSD after 1min - cannot make its home."
     fi
 
@@ -46,7 +46,7 @@ mkscratch () {
 
     wait_id $USERNAME
 
-    if ! $?; then
+    if [ ! $? -eq 0 ]; then
         echo "$USERNAME is not showing up in SSSD after 1min - cannot make its scratch."
     fi
 
