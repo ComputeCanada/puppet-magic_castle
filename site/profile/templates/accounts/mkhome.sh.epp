@@ -1,5 +1,5 @@
 #!/bin/bash
-source account_functions.sh
+source /sbin/account_functions.sh
 
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
