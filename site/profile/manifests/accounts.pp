@@ -22,7 +22,7 @@ class profile::accounts (
   }
 
   file { 'account_functions.sh':
-    path   => '/sbin',
+    path   => '/sbin/account_functions.sh',
     source => 'puppet:///modules/profile/accounts/account_functions.sh',
   }
 
