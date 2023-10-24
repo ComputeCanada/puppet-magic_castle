@@ -22,25 +22,33 @@ wait_id () {
 
 mkhome () {
     local USERNAME=$1
-    
+
     wait_id $USERNAME
 
     if [ ! $? -eq 0 ]; then
-        echo "$USERNAME is not showing up in SSSD after 1min - cannot make its home."
+        echo "ERROR - ${USERNAME} is not showing up in SSSD after 1min - cannot make its home."
         return 1
     fi
 
     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
     local MNT_USER_HOME="/mnt${USER_HOME}"
+    local RSYNC_DONE=0
     for i in $(seq 1 5); do
         rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
         if [ $? -eq 0 ]; then
+            RSYNC_DONE=1
             break
         else
             sleep 5
         fi
     done
-    restorecon -F -R ${MNT_USER_HOME}    
+    if [ ! $RSYNC_DONE -eq 1 ]; then
+        echo "ERROR - Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
+        return 1
+    else
+        echo "SUCCESS - ${USERNAME} home initialized in ${MNT_USER_HOME}"
+    fi
+    restorecon -F -R ${MNT_USER_HOME}
 }
 
 mkscratch () {
@@ -60,13 +68,14 @@ mkscratch () {
         mkdir -p ${MNT_USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
             local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-            local MNT_USER_HOME="/mnt${USER_HOME}"        
+            local MNT_USER_HOME="/mnt${USER_HOME}"
             ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
             chown -h ${USERNAME}:${USERNAME} "${MNT_USER_HOME}/scratch"
         fi
         chown -h ${USERNAME}:${USERNAME} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
+        echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
     fi
 }
 
