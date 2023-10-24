@@ -79,8 +79,9 @@ while read CONN OP GROUP; do
             for USERNAME in $USERNAMES; do
                 wait_id $USERNAME
 
-                if ! $?; then
+                if [ ! $? -eq 0 ]; then
                     echo "$USERNAME is not showing up in SSSD after 1min - cannot make its project."
+                    continue
                 fi
 
                 USER_HOME="/mnt/home/${USERNAME}"
