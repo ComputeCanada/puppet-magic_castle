@@ -97,6 +97,7 @@ class profile::accounts (
     enable    => $mkhome_running,
     subscribe => [
       File['/sbin/mkhome.sh'],
+      File['/sbin/account_functions.sh'],
       File['mkhome.service'],
     ],
   }
@@ -124,6 +125,7 @@ class profile::accounts (
     enable    => true,
     subscribe => [
       File['/sbin/mkproject.sh'],
+      File['/sbin/account_functions.sh'],
       File['mkproject.service'],
     ],
   }
