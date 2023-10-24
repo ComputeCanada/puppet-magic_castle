@@ -134,39 +134,19 @@ class profile::base::azure {
 class profile::base::etc_hosts {
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
-  $hostname = $facts['networking']['hostname']
-  $fqdn = "${hostname}.${int_domain_name}"
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $instances = lookup('terraform.instances')
 
   # build /etc/hosts
   # Make sure /etc/hosts entry for the current host is managed by Puppet or
   # that at least it is in entered in the right format.
-  exec { 'sed_fqdn':
-    command => "sed -i '/^${ipaddress}\\s/d' /etc/hosts",
-    unless  => "grep -E '^${ipaddress}\\s+${fqdn}\\s+${hostname}$' /etc/hosts",
-    path    => ['/bin'],
-  }
-
-  $instances = lookup('terraform.instances')
-  $hosts_to_add = Hash($instances.map |$k, $v| {
-      [
-        "${k}.${int_domain_name}",
-        {
-          ip           => $v['local_ip'],
-          host_aliases => [$k],
-          require      => Exec['sed_fqdn'],
-          before       => Exec['sed_host_wo_fqdn'],
-        }
-      ]
-    }
-  )
-  ensure_resources('host', $hosts_to_add)
-
-  exec { 'sed_host_wo_fqdn':
-    command => 'sed -i -E "/^[0-9]{1,3}(\\.[0-9]{1,3}){3}\\s+[a-z0-9-]+$/d" /etc/hosts',
-    onlyif  => 'grep -E "^([0-9]{1,3}[\\.]){3}[0-9]{1,3}\\s+[a-z0-9-]+$" /etc/hosts',
-    path    => ['/bin'],
+  file { '/etc/hosts':
+    mode    => '0644',
+    content => epp('profile/base/hosts',
+      {
+        'instances'       => $instances,
+        'int_domain_name' => $int_domain_name,
+      }
+    ),
   }
 }
 
