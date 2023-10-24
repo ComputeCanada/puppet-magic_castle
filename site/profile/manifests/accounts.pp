@@ -21,6 +21,11 @@ class profile::accounts (
     ensure => 'installed',
   }
 
+  file { 'account_functions.sh':
+    path   => '/sbin',
+    source => 'puppet:///modules/profile/accounts/account_functions.sh',
+  }
+
   file { '/sbin/mkhome.sh':
     content => epp('profile/accounts/mkhome.sh',
       {

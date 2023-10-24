@@ -22,6 +22,8 @@
 PROJECT_REGEX="<%= $project_regex %>"
 PREV_CONN=""
 
+source /sbin/account_functions.sh
+
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
 sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
@@ -76,7 +78,11 @@ while read CONN OP GROUP; do
             MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
 <% if $with_folder { -%>
             for USERNAME in $USERNAMES; do
-                while ! id $USERNAME; do sss_cache -u $USERNAME; sleep 5; done
+                wait_id $USERNAME
+
+                if ! $?; then
+                    echo "$USERNAME is not showing up in SSSD after 1min - cannot make its project."
+                fi
 
                 USER_HOME="/mnt/home/${USERNAME}"
 
