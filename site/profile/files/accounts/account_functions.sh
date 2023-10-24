@@ -25,6 +25,7 @@ mkhome () {
 
     if [ ! $? -eq 0 ]; then
         echo "$USERNAME is not showing up in SSSD after 1min - cannot make its home."
+        return 1
     fi
 
     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
@@ -48,6 +49,7 @@ mkscratch () {
 
     if [ ! $? -eq 0 ]; then
         echo "$USERNAME is not showing up in SSSD after 1min - cannot make its scratch."
+        return 1
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
