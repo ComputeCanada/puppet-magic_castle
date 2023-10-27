@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.1.0] 2023-10-27
+
+### Added
+
+- Added ability to define login node MOTD using puppetlabs-motd
+
+### Changed
+
+- Moved mkhome and mkscratch logic in bash functions.
+- Removed infinite while loop in mhome (#281)
+- File `/etc/hosts` is now generated from a template instead of appending hosts (#282)
+- prepare4image.sh now removes cluster specific content from /etc/hosts (#277)
+
 ## [13.0.0] 2023-10-13
 
 ### Added
