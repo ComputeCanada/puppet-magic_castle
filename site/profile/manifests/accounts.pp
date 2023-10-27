@@ -21,6 +21,11 @@ class profile::accounts (
     ensure => 'installed',
   }
 
+  file { 'account_functions.sh':
+    path   => '/sbin/account_functions.sh',
+    source => 'puppet:///modules/profile/accounts/account_functions.sh',
+  }
+
   file { '/sbin/mkhome.sh':
     content => epp('profile/accounts/mkhome.sh',
       {
@@ -92,6 +97,7 @@ class profile::accounts (
     enable    => $mkhome_running,
     subscribe => [
       File['/sbin/mkhome.sh'],
+      File['/sbin/account_functions.sh'],
       File['mkhome.service'],
     ],
   }
@@ -119,6 +125,7 @@ class profile::accounts (
     enable    => true,
     subscribe => [
       File['/sbin/mkproject.sh'],
+      File['/sbin/account_functions.sh'],
       File['mkproject.service'],
     ],
   }

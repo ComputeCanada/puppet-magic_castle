@@ -1,34 +1,13 @@
 #!/bin/bash
+source /sbin/account_functions.sh
+
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
 while read USERNAME; do
 <% if $with_home { -%>
-    while ! id $USERNAME; do sss_cache -u $USERNAME; sleep 5; done
-    USER_HOME=$(getent passwd $USERNAME | cut -d: -f6)
-    MNT_USER_HOME="/mnt${USER_HOME}"
-    for i in $(seq 1 5); do
-        rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
-        if [ $? -eq 0 ]; then
-            break
-        else
-            sleep 5
-        fi
-    done
-    restorecon -F -R ${MNT_USER_HOME}
+    mkhome $USERNAME
 <% } -%>
-
 <% if $with_scratch { -%>
-    USER_SCRATCH="/scratch/${USERNAME}"
-    MNT_USER_SCRATCH="/mnt/${USER_SCRATCH}"
-    if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
-        mkdir -p ${MNT_USER_SCRATCH}
-<% if $with_home { -%>
-        ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
-        chown -h ${USERNAME}:${USERNAME} "${MNT_USER_HOME}/scratch"
-<% } -%>
-        chown -h ${USERNAME}:${USERNAME} ${MNT_USER_SCRATCH}
-        chmod 750 ${MNT_USER_SCRATCH}
-        restorecon -F -R ${MNT_USER_SCRATCH}
-    fi
+    mkscratch $USERNAME <%= $with_home %>
 <% } -%>
 done
