@@ -278,7 +278,7 @@ class profile::freeipa::server (
     timeout => 0,
     require => [
       Package['ipa-server-dns'],
-      Host[$fqdn],
+      File['/etc/hosts'],
     ],
     notify  => Service['systemd-logind'],
   }
