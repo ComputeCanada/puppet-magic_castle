@@ -20,6 +20,7 @@ magic_castle::site::tags:
     - profile::nfs
     - profile::rsyslog::client
   login:
+    - motd
     - profile::fail2ban
     - profile::cvmfs::client
     - profile::slurm::submitter
