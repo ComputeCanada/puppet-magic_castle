@@ -5,51 +5,51 @@ the roles of the instances in a Magic Castle cluster.
 
 Roles are attributed to instance based on their tags. For each tag, a list of
 classes to include is define. This mechanism is explained in section
-[magic_castle::site](#magic_castlesite).
+[`magic_castle::site`](#magic_castlesite).
 
 The parameters of the classes can be customized by defined values in the hieradata.
 The `profile::` sections list the available classes, their role and their parameters.
-- [profile::accounts](#profileaccounts)
-- [profile::base](#profilebase)
-- [profile::base::azure](#profilebaseazure)
-- [profile::base::etc_hosts](#profilebaseetc_hosts)
-- [profile::base::powertools](#profilebasepowertools)
-- [profile::ceph::client](#profilecephclient)
-- [profile::consul](#profileconsul)
-- [profile::consul::puppet_watch](#profileconsulpuppet_watch)
-- [profile::cvmfs::client](#profilecvmfsclient)
-- [profile::cvmfs::local_user](#profilecvmfslocal_user)
-- [profile::cvmfs::alien_cache](#profilecvmfsalien_cache)
-- [profile::fail2ban](#profilefail2ban)
-- [profile::freeipa](#profilefreeipa)
-- [profile::freeipa::base](#profilefreeipabase)
-- [profile::freeipa::client](#profilefreeipaclient)
-- [profile::freeipa::server](#profilefreeipaserver)
-- [profile::freeipa::mokey](#profilefreeipamokey)
-- [profile::gpu](#profilegpu)
-- [profile::jupyterhub::hub](#profilejupyterhubhub)
-- [profile::jupyterhub::node](#profilejupyterhubnode)
-- [profile::metrics::node_exporter](#profilemetricsnode_exporter)
-- [profile::metrics::slurm_job_exporter](#profilemetricsslurm_job_exporter)
-- [profile::metrics::slurm_exporter](#profilemetricsslurm_exporter)
-- [profile::nfs](#profilenfs)
-- [profile::nfs::client](#profilenfsclient)
-- [profile::nfs::server](#profilenfsserver)
-- [profile::reverse_proxy](#profilereverse_proxy)
-- [profile::rsyslog::base](#profilersyslogbase)
-- [profile::rsyslog::client](#profilersyslogclient)
-- [profile::rsyslog::server](#profilersyslogserver)
-- [profile::slurm::base](#profileslurmbase)
-- [profile::slurm::accounting](#profileslurmaccounting)
-- [profile::slurm::controller](#profileslurmcontroller)
-- [profile::squid::server](#profilesquidserver)
-- [profile::sssd::client](#profilesssdclient)
-- [profile::ssh::base](#profilesshbase)
-- [profile::ssh::known_hosts](#profilesshknown_hosts)
-- [profile::ssh::hostbased_auth::client](#profilesshhostbased_authclient)
-- [profile::ssh::hostbased_auth::server](#profilesshhostbased_authserver)
-- [profile::users::ldap](#profileusersldap)
-- [profile::users::local](#profileuserslocal)
+- [`profile::accounts`](#profileaccounts)
+- [`profile::base`](#profilebase)
+- [`profile::base::azure`](#profilebaseazure)
+- [`profile::base::etc_hosts`](#profilebaseetc_hosts)
+- [`profile::base::powertools`](#profilebasepowertools)
+- [`profile::ceph::client`](#profilecephclient)
+- [`profile::consul`](#profileconsul)
+- [`profile::consul::puppet_watch`](#profileconsulpuppet_watch)
+- [`profile::cvmfs::client`](#profilecvmfsclient)
+- [`profile::cvmfs::local_user`](#profilecvmfslocal_user)
+- [`profile::cvmfs::alien_cache`](#profilecvmfsalien_cache)
+- [`profile::fail2ban`](#profilefail2ban)
+- [`profile::freeipa`](#profilefreeipa)
+- [`profile::freeipa::base`](#profilefreeipabase)
+- [`profile::freeipa::client`](#profilefreeipaclient)
+- [`profile::freeipa::server`](#profilefreeipaserver)
+- [`profile::freeipa::mokey`](#profilefreeipamokey)
+- [`profile::gpu`](#profilegpu)
+- [`profile::jupyterhub::hub`](#profilejupyterhubhub)
+- [`profile::jupyterhub::node`](#profilejupyterhubnode)
+- [`profile::metrics::node_exporter`](#profilemetricsnode_exporter)
+- [`profile::metrics::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
+- [`profile::metrics::slurm_exporter`](#profilemetricsslurm_exporter)
+- [`profile::nfs`](#profilenfs)
+- [`profile::nfs::client`](#profilenfsclient)
+- [`profile::nfs::server`](#profilenfsserver)
+- [`profile::reverse_proxy`](#profilereverse_proxy)
+- [`profile::rsyslog::base`](#profilersyslogbase)
+- [`profile::rsyslog::client`](#profilersyslogclient)
+- [`profile::rsyslog::server`](#profilersyslogserver)
+- [`profile::slurm::base`](#profileslurmbase)
+- [`profile::slurm::accounting`](#profileslurmaccounting)
+- [`profile::slurm::controller`](#profileslurmcontroller)
+- [`profile::squid::server`](#profilesquidserver)
+- [`profile::sssd::client`](#profilesssdclient)
+- [`profile::ssh::base`](#profilesshbase)
+- [`profile::ssh::known_hosts`](#profilesshknown_hosts)
+- [`profile::ssh::hostbased_auth::client`](#profilesshhostbased_authclient)
+- [`profile::ssh::hostbased_auth::server`](#profilesshhostbased_authserver)
+- [`profile::users::ldap`](#profileusersldap)
+- [`profile::users::local`](#profileuserslocal)
 
 For classes with parameters, a folded **default values** subsection provides the default
 value of each parameter as it would be defined in hieradata. For some parameters, the value is
@@ -59,7 +59,7 @@ on the Puppet server initial boot. These values are stored in
 `/etc/puppetlabs/code/environment/data/bootstrap.yaml` - a file also created on Puppet server
 initial boot.
 
-## magic_castle::site
+## `magic_castle::site`
 
 ### parameters
 
@@ -165,7 +165,7 @@ magic_castle::site::tags:
 
 </details>
 
-## profile::accounts
+## `profile::accounts`
 
 This class configures two services to bridge LDAP users, Slurm accounts and users' folders in filesystems. The services are:
 - `mkhome`: monitor new uid entries in slapd access logs and create their corresponding /home and optionally /scratch folders.
@@ -206,7 +206,7 @@ This class works at its full potential if these classes are also included:
 - [`profile::nfs::server`](#profilenfsserver)
 - [`profile::slurm::base`](#profileslurmbase)
 
-## profile::base
+## `profile::base`
 
 This class install packages, creates files and install services that have yet
 justified the creation of a class of their own but are very useful to Magic Castle
@@ -246,27 +246,27 @@ When `profile::base` is included, these classes are included too:
 - [`profile::base::azure`](#profilebaseazure) (only when running in Microsoft Azure Cloud)
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
-- `profile::ssh::base`
-- `profile::mail::server` (when parameter `admin_email` is defined)
+- [`profile::ssh::base`](#profilesshbase)
+- [`profile::mail::server`](#profilemailserver) (when parameter `admin_email` is defined)
 
-## profile::base::azure
+## `profile::base::azure`
 
 This class ensures Microsoft Azure Linux Guest Agent is not installed as it tends to interfere
 with Magic Castle configuration. The class also install Azure udev storage rules that would
 normally be provided by the Linux Guest Agent.
 
-## profile::base::etc_hosts
+## `profile::base::etc_hosts`
 
 This class ensures that each instance declared in Magic Castle `main.tf` have an entry
 in `/etc/hosts`. The ip addresses, fqdns and short hostnames are taken from the `terraform.instances`
 datastructure provided by `/etc/puppetlabs/data/terraform_data.yaml`.
 
-## profile::base::powertools
+## `profile::base::powertools`
 
 This class ensures the DNF Powertools repo is enabled when using EL8. For all other EL versions, this
 class does nothing.
 
-## profile::ceph::client
+## `profile::ceph::client`
 
 > [Ceph](https://ceph.io/en/) is a free and open-source software-defined storage platform
 that provides object storage, block storage, and file storage built on a common distributed
@@ -317,7 +317,7 @@ profile::ceph::client::binds_fcontext_equivalence: '/home'
 ```
 </details>
 
-## profile::consul
+## `profile::consul`
 
 > [Consul](https://www.consul.io/) is a service networking platform developed by HashiCorp.
 [reference](https://en.wikipedia.org/wiki/Consul_(software))
@@ -359,7 +359,7 @@ When `profile::consul` is included, these classes are included too:
 - [puppet-consul_template](https://github.com/cmd-ntrf/puppet-consul_template)
 - [profile::consul::puppet_watch]()
 
-## profile::consul::puppet_watch
+## `profile::consul::puppet_watch`
 
 This class configure a consul watch event that when triggered restart the Puppet agent.
 It is used mainly by Terraform to restart all Puppet agents across the cluster when
@@ -370,7 +370,7 @@ the hieradata source files uploaded by Terraform are updated.
 When `profile::consul::puppet_watch` is included, this class is included too:
 - [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
 
-## profile::cvmfs::client
+## `profile::cvmfs::client`
 
 > The [CernVM File System (CVMFS)](https://cernvm.cern.ch/fs/) provides a scalable, reliable and
 low-maintenance software distribution service. It was developed to assist High Energy Physics (HEP)
@@ -454,10 +454,10 @@ profile::cvmfs::client::lmod_default_modules:
 ### dependencies
 
 When `profile::cvmfs::client` is included, these classes are included too:
-- [profile::consul](#profileconsul)
-- [profile::cvmfs::local_user](#profilecvmfslocal_user)
+- [`profile::consul`](#profileconsul)
+- [`profile::cvmfs::local_user`](#profilecvmfslocal_user)
 
-## profile::cvmfs::local_user
+## `profile::cvmfs::local_user`
 
 This class configures a `cvmfs` local user.
 This guarantees a consistent UID and GID for user cvmfs across
@@ -481,7 +481,7 @@ profile::cvmfs::local_user::cvmfs_group: "cvmfs-reserved"
 ```
 </details>
 
-## profile::cvmfs::alien_cache
+## `profile::cvmfs::alien_cache`
 
 This class determines the location of the CVMFS alien cache.
 
@@ -501,7 +501,7 @@ profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
 ```
 </details>
 
-## profile::fail2ban
+## `profile::fail2ban`
 
 > [Fail2ban](https://github.com/fail2ban/fail2ban) is an intrusion prevention software framework.
 Written in the Python programming language, it is designed to prevent brute-force attacks.
@@ -540,7 +540,7 @@ profile::fail2ban::ignoreip:
 When `profile::fail2ban` is included, these classes are included too:
 - [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban)
 
-## profile::freeipa
+## `profile::freeipa`
 
 > [FreeIPA](https://www.freeipa.org/) is a free and open source identity management system.
 FreeIPA is the upstream open-source project for Red Hat Identity Management.
@@ -548,17 +548,17 @@ FreeIPA is the upstream open-source project for Red Hat Identity Management.
 
 This class configures either the instance as a FreeIPA client or a server based on the value
 of `profile::freeipa::client::server_ip`. If this value matches the instance local IP address, the
-server class is included - [profile::freeipa::server](#profilefreeipaserver), otherwise the
-client class is included - [profile::freeipa::client](#profilefreeipaclient).
+server class is included - [`profile::freeipa::server`](#profilefreeipaserver), otherwise the
+client class is included - [`profile::freeipa::client`](#profilefreeipaclient).
 
 ### dependencies
 
 When `profile::freeipa` is included, theses classes can be included too:
-- [profile::freeipa::base](#profilefreeipabase)
-- [profile::freeipa::client](#profilefreeipaclient)
-- [profile::freeipa::server](#profilefreeipaserver)
+- [`profile::freeipa::base`](#profilefreeipabase)
+- [`profile::freeipa::client`](#profilefreeipaclient)
+- [`profile::freeipa::server`](#profilefreeipaserver)
 
-## profile::freeipa::base
+## `profile::freeipa::base`
 
 This class configures files and services that are common to FreeIPA client and FreeIPA server.
 
@@ -576,7 +576,7 @@ profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 ```
 </details>
 
-## profile::freeipa::client
+## `profile::freeipa::client`
 
 This class install packages, and configures files and services of a FreeIPA client.
 
@@ -597,7 +597,7 @@ profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 ```
 </details>
 
-## profile::freeipa::server
+## `profile::freeipa::server`
 
 This class configures files and services of a FreeIPA server.
 
@@ -620,7 +620,7 @@ profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
 
 </details>
 
-## profile::freeipa::mokey
+## `profile::freeipa::mokey`
 
 > [mokey](https://github.com/ubccr/mokey) is web application that provides self-service
 user account management tools for FreeIPA. [reference](https://github.com/ubccr/mokey)
@@ -656,7 +656,7 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 ```
 </details>
 
-## profile::gpu
+## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
 is detected. The class configures nvidia-persistenced and nvidia-dcgm daemons
@@ -669,7 +669,7 @@ For VGPU, the driver source is cloud provider specific and has to be specified
 via either `profile::gpu::install::vgpu::rpm::source` for rpms or
 `profile::gpu::install::vgpu::bin::source` for binary installer.
 
-## profile::jupyterhub::hub
+## `profile::jupyterhub::hub`
 
 > JupyterHub is a multi-user server for Jupyter Notebooks. It is designed to support many users by
 spawning, managing, and proxying many singular Jupyter Notebook servers.
@@ -698,7 +698,7 @@ profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.
 When `profile::jupyterhub::hub` is included, this class is included too:
 - [jupyterhub](https://github.com/computecanada/puppet-jupyterhub)
 
-## profile::jupyterhub::node
+## `profile::jupyterhub::node`
 
 This class installs and configure the _single-user notebook_ part of JupyterHub.
 
@@ -708,7 +708,7 @@ When `profile::jupyterhub::node` is included, these classes are included too:
 - [jupyterhub::node](https://github.com/computecanada/puppet-jupyterhub)
 - [jupyterhub::kernel::venv](https://github.com/computecanada/puppet-jupyterhub)
 
-## profile::metrics::node_exporter
+## `profile::metrics::node_exporter`
 
 > [Prometheus](https://prometheus.io/) is a free software application used for
 event monitoring and alerting. It records metrics in a time series database built
@@ -721,10 +721,10 @@ CPU and memory usage. It should be included on every instances of the cluster.
 ### dependencies
 
 When `profile::metrics::node_exporter` is included, these classes are included too:
-- [prometheus::node_exporter](https://forge.puppet.com/modules/puppet/prometheus)
-- [profile::consul](#profileconsul)
+- [`prometheus::node_exporter`](https://forge.puppet.com/modules/puppet/prometheus)
+- [`profile::consul`](#profileconsul)
 
-## profile::metrics::slurm_job_exporter
+## `profile::metrics::slurm_job_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm
 compute node metrics, for example:
@@ -756,9 +756,9 @@ profile::metrics::slurm_job_exporter::version: '0.0.10'
 ### dependency
 
 When `profile::metrics::slurm_job_exporter` is included, this class is included too:
-- [profile::consul](#profileconsul)
+- `[profile::consul`](#profileconsul)
 
-## profile::metrics::slurm_exporter
+## `profile::metrics::slurm_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm scheduling metrics, for example:
 - allocated nodes
@@ -769,7 +769,7 @@ This class configures a Prometheus exporter that exports the Slurm scheduling me
 This exporter typically runs on the Slurm controller server, but it can run on any server
 with a functional Slurm command-line installation.
 
-## profile::nfs
+## `profile::nfs`
 
 > Network File System (NFS) is a distributed file system protocol [...]
 allowing a user on a client computer to access files over a computer
@@ -778,10 +778,10 @@ network much like local storage is accessed.
 
 This class instantiates either an NFS client or an NFS server.
 If `profile::nfs::client::server_ip`matches the instance's local ip address, the
-server class is included - [profile::nfs::server](#profilenfsserver), otherwise the
-client class is included - [profile::nfs::client](#profilenfsclient).
+server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
+client class is included - [`profile::nfs::client`](#profilenfsclient).
 
-## profile::nfs::client
+## `profile::nfs::client`
 
 This class install NFS and configure the client to mount all shares exported
 by a single NFS server identified via its ip address.
@@ -805,7 +805,7 @@ profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 When `profile::nfs::client` is included, these classes are included too:
 - [nfs](https://forge.puppet.com/modules/derdanne/nfs/readme) (`client_enabled => true`)
 
-## profile::nfs::server
+## `profile::nfs::server`
 
 This class install NFS and configure an NFS server that will export all provided devices.
 The class also make sure that devices sharing a common export name form an LVM volume group
@@ -850,7 +850,7 @@ profile::nfs::server::devices:
 When `profile::nfs::server` is included, these classes are included too:
 - [nfs](https://forge.puppet.com/modules/derdanne/nfs/readme) (`server_enabled => true`)
 
-## profile::reverse_proxy
+## `profile::reverse_proxy`
 
 > [Caddy](https://caddyserver.com/) is an extensible, cross-platform, open-source web
 server written in Go. [...] It is best known for its automatic HTTPS features.
@@ -892,7 +892,7 @@ profile::reverse_proxy::remote_ips:
 ```
 </details>
 
-## profile::rsyslog::base
+## `profile::rsyslog::base`
 
 > [Rsyslog](https://www.rsyslog.com/) is an open-source software utility
 used on UNIX and Unix-like computer systems for forwarding log messages
@@ -901,7 +901,7 @@ in an IP network.
 
 This class installs rsyslog and launch the service.
 
-## profile::rsyslog::client
+## `profile::rsyslog::client`
 
 This class install and configures rsyslog service to forward the instance's
 logs to rsyslog servers. The rsyslog servers are discovered by the instance
@@ -913,7 +913,7 @@ When `profile::rsyslog::client` is included, these classes are included too:
 - [profile::consul](#profileconsul)
 - [profile::rsyslog::base](#profilersyslogbase)
 
-## profile::rsyslog::server
+## `profile::rsyslog::server`
 
 This class install and configures rsyslog service to receives forwarded logs
 from all rsyslog client in the cluster.
@@ -924,7 +924,7 @@ When `profile::rsyslog::server` is included, these classes are included too:
 - [profile::consul](#profileconsul)
 - [profile::rsyslog::base](#profilersyslogbase)
 
-## profile::slurm::base
+## `profile::slurm::base`
 
 > The [Slurm](https://github.com/schedmd/slurm) Workload Manager, formerly
 known as Simple Linux Utility for Resource Management, or simply Slurm,
@@ -976,7 +976,7 @@ When `profile::slurm::base` is included, these classes are included too:
 - [`profile::base::powertools`](#profilebasepowertools)
 
 
-## profile::slurm::accounting
+## `profile::slurm::accounting`
 
 This class installs and configure the Slurm database daemon - **slurmdbd**.
 This class also installs and configures MariaDB for slurmdbd to store its
@@ -1031,8 +1031,8 @@ profile::slurm::accounting::users:
 ```
 
 Each username in `profile::slurm::accounting::users` and `profile::slurm::accounting::admins` have to correspond
-to an LDAP or a local users. Refer to [profile::users::ldap::users](#profileusersldapusers) and
-[profile::users::local::users](#profileuserslocalusers) for more information.
+to an LDAP or a local users. Refer to [`profile::users::ldap::users`](#profileusersldapusers) and
+[`profile::users::local::users`](#profileuserslocalusers) for more information.
 
 </details>
 
@@ -1043,7 +1043,7 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`mysql::server`](https://forge.puppet.com/modules/puppetlabs/mysql/readme)
 - [`profile::slurm::base`](#profileslurmbase)
 
-## profile::slurm::controller
+## `profile::slurm::controller`
 
 This class installs and configure the Slurm controller daemon - **slurmctld**.
 
@@ -1089,7 +1089,7 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::mail::server`](#profilemailserver)
 
-## profile::squid::server
+## `profile::squid::server`
 
 > Squid is a caching and forwarding HTTP web proxy. It has a wide variety
 of uses, including speeding up a web server by caching repeated requests
@@ -1137,7 +1137,7 @@ When `profile::squid::server` is included, these classes are included too:
 - [`squid`](https://forge.puppet.com/modules/puppet/squid/readme)
 - [`profle::consul`](#profileconsul)
 
-## profile::sssd::client
+## `profile::sssd::client`
 
 > The System Security Services Daemon is software originally developed
 for the Linux operating system that provides a set of daemons to manage
@@ -1192,23 +1192,23 @@ Some SSSD domain keys might also be missing. Refer to
 for more informations.
 </details>
 
-## profile::ssh::base
+## `profile::ssh::base`
 
 This class optimizer ssh server daemon (sshd) configuration to achieve an A+ audit score on
 [https://www.sshaudit.com/](https://www.sshaudit.com/).
 
-## profile::ssh::known_hosts
+## `profile::ssh::known_hosts`
 
 This class populates the file `/etc/ssh/ssh_known_hosts` with the cluster's instance ed25519
 hostkeys using data provided by Terraform.
 
-## profile::ssh::hostbased_auth::client
+## `profile::ssh::hostbased_auth::client`
 
 This class allows instances to connect with SSH to instances including
-[profile::ssh::hostbased_auth::server](#profilesshhostbased_authserver)
+[`profile::ssh::hostbased_auth::server`](#profilesshhostbased_authserver)
 using [SSH hostbased authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Host-based_Authentication).
 
-## profile::ssh::hostbased_auth::server
+## `profile::ssh::hostbased_auth::server`
 
 This class enables [SSH hostbased authentication](https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Host-based_Authentication)
 on the instance including it.
@@ -1230,9 +1230,9 @@ profile::ssh::hostbased_auth::server::shosts_tags: ['login', 'node']
 ### dependency
 
 When `profile::ssh::hostbased_auth::server` is included, this class is included too:
-- [profile::ssh::known_hosts](#profilesshknown_hosts)
+- [`profile::ssh::known_hosts`](#profilesshknown_hosts)
 
-## profile::users::ldap
+## `profile::users::ldap`
 
 This class allows the definition of FreeIPA users directly in YAML. The alternatives being
 to use [FreeIPA command-line](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_identity_management/managing-user-accounts-using-the-command-line_configuring-and-managing-idm),
@@ -1305,7 +1305,7 @@ profile::users::ldap::access_tags: ['proxy:jupyterhub-login']
 
 </details>
 
-## profile::users::local
+## `profile::users::local`
 
 This class allows the definition of local users outside of FreeIPA realm.
 
