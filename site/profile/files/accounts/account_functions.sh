@@ -91,23 +91,28 @@ mkproject() {
             echo "SUCCESS - ${GROUP} account created in SlurmDB"
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
-            # We ignore the SSSD cache before recovering the group GID.
-            # Using the cache would be problematic if the group existed before with a different gid.
-            GID=""
-            while [ -z "$GID" ]; do
-                sleep 5
-                GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
-            done
-
-            # Then we create the project folder
-            MNT_PROJECT_GID="/mnt/project/$GID"
             MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-            mkdir -p ${MNT_PROJECT_GID}
-            chown root:"$GROUP" ${MNT_PROJECT_GID}
-            chmod 2770 ${MNT_PROJECT_GID}
-            ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
-            restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-            echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GROUP}"
+            if [ ! -d ${MNT_PROJECT_GROUP} ]; then
+                # We ignore the SSSD cache before recovering the group GID.
+                # Using the cache would be problematic if the group existed before with a different gid.
+                GID=""
+                while [ -z "$GID" ]; do
+                    sleep 5
+                    GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
+                done
+
+                # Then we create the project folder
+                MNT_PROJECT_GID="/mnt/project/$GID"
+
+                mkdir -p ${MNT_PROJECT_GID}
+                chown root:"$GROUP" ${MNT_PROJECT_GID}
+                chmod 2770 ${MNT_PROJECT_GID}
+                ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
+                restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
+                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GROUP}"
+            else
+                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GROUP} already exists"
+            fi
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
