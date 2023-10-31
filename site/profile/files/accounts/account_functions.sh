@@ -63,7 +63,7 @@ mkscratch () {
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
-    local MNT_USER_SCRATCH="/mnt/${USER_SCRATCH}"
+    local MNT_USER_SCRATCH="/mnt${USER_SCRATCH}"
     if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
         mkdir -p ${MNT_USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
@@ -82,26 +82,30 @@ mkscratch () {
 mkproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
-    # A new group has been created
-    # We create the associated account in slurm
-    /opt/software/slurm/bin/sacctmgr add account $GROUP -i
-    if [ "$WITH_FOLDER" == "true" ]; then
-        # We ignore the SSSD cache before recovering the group GID.
-        # Using the cache would be problematic if the group existed before with a different gid.
-        GID=""
-        while [ -z "$GID" ]; do
-            sleep 5
-            GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
-        done
 
-        # Then we create the project folder
-        MNT_PROJECT_GID="/mnt/project/$GID"
-        MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-        mkdir -p ${MNT_PROJECT_GID}
-        chown root:"$GROUP" ${MNT_PROJECT_GID}
-        chmod 2770 ${MNT_PROJECT_GID}
-        ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
-        restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
+    if mkdir /var/lock/mkproject.$GROUP.lock; then
+        # A new group has been created
+        # We create the associated account in slurm
+        /opt/software/slurm/bin/sacctmgr add account $GROUP -i
+        if [ "$WITH_FOLDER" == "true" ]; then
+            # We ignore the SSSD cache before recovering the group GID.
+            # Using the cache would be problematic if the group existed before with a different gid.
+            GID=""
+            while [ -z "$GID" ]; do
+                sleep 5
+                GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
+            done
+
+            # Then we create the project folder
+            MNT_PROJECT_GID="/mnt/project/$GID"
+            MNT_PROJECT_GROUP="/mnt/project/$GROUP"
+            mkdir -p ${MNT_PROJECT_GID}
+            chown root:"$GROUP" ${MNT_PROJECT_GID}
+            chmod 2770 ${MNT_PROJECT_GID}
+            ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
+            restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
+        fi
+        rmdir /var/lock/mkproject.$GROUP.lock
     fi
 }
 
