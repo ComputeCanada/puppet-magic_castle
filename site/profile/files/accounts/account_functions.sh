@@ -86,7 +86,10 @@ mkproject() {
     if mkdir /var/lock/mkproject.$GROUP.lock; then
         # A new group has been created
         # We create the associated account in slurm
-        /opt/software/slurm/bin/sacctmgr add account $GROUP -i
+        /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "SUCCESS - ${GROUP} account created in SlurmDB"
+        fi
         if [ "$WITH_FOLDER" == "true" ]; then
             # We ignore the SSSD cache before recovering the group GID.
             # Using the cache would be problematic if the group existed before with a different gid.
@@ -104,6 +107,7 @@ mkproject() {
             chmod 2770 ${MNT_PROJECT_GID}
             ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
             restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
+            echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GROUP}"
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
@@ -140,9 +144,13 @@ modproject() {
                 chmod 0755 "${USER_HOME}/projects"
                 chmod 2700 "${PRO_USER}"
                 restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
+                echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${MNT_PROJECT}/${USERNAME}"
             done
         fi
-        /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
+        /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "SUCCESS - ${USERNAMES} added to ${GROUP} account in SlurmDB"
+        fi
     else
         # If group has been modified but no uid were found in the log, it means
         # user(s) have been removed from the groups.
