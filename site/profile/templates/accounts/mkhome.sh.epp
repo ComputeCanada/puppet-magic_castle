@@ -1,7 +1,7 @@
 #!/bin/bash
 source /sbin/account_functions.sh
 
-local PROJECT_REGEX="<%= $project_regex %>"
+PROJECT_REGEX="<%= $project_regex %>"
 
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
