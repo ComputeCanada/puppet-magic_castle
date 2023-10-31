@@ -1,6 +1,8 @@
 #!/bin/bash
 source /sbin/account_functions.sh
 
+local PROJECT_REGEX="<%= $project_regex %>"
+
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
 while read USERNAME; do
@@ -10,4 +12,9 @@ while read USERNAME; do
 <% if $with_scratch { -%>
     mkscratch $USERNAME <%= $with_home %>
 <% } -%>
+
+    for PROJECT in $(SSS_NSS_USE_MEMCACHE=no groups ${USERNAME} | cut -d':' -f2 | grep -P -o "${PROJECT_REGEX}"); do
+        mkproject ${PROJECT} <%= $with_project %>
+        modproject ${PROJECT} <%= $with_project %> ${USERNAME}
+    done
 done

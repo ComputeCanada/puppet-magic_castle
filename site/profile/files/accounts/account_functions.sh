@@ -79,3 +79,100 @@ mkscratch () {
     fi
 }
 
+mkproject() {
+    local GROUP=$1
+    local WITH_FOLDER=$2
+    # A new group has been created
+    # We create the associated account in slurm
+    /opt/software/slurm/bin/sacctmgr add account $GROUP -i
+    if [ "$WITH_FOLDER" == "true" ]; then
+        # We ignore the SSSD cache before recovering the group GID.
+        # Using the cache would be problematic if the group existed before with a different gid.
+        GID=""
+        while [ -z "$GID" ]; do
+            sleep 5
+            GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
+        done
+
+        # Then we create the project folder
+        MNT_PROJECT_GID="/mnt/project/$GID"
+        MNT_PROJECT_GROUP="/mnt/project/$GROUP"
+        mkdir -p ${MNT_PROJECT_GID}
+        chown root:"$GROUP" ${MNT_PROJECT_GID}
+        chmod 2770 ${MNT_PROJECT_GID}
+        ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
+        restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
+    fi
+}
+
+modproject() {
+    local GROUP=$1
+    local WITH_FOLDER=$2
+    local USERNAMES="${@:3}"
+
+    # The operation that add users to a group would have operations with a uid.
+    # If we found none, $USERNAMES will be empty, and it means we don't have
+    # anything to add to Slurm and /project
+    if [[ ! -z "${USERNAMES}" ]]; then
+        local MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
+        if [ "$WITH_FOLDER" == "true" ]; then
+            for USERNAME in $USERNAMES; do
+                wait_id $USERNAME
+
+                if [ ! $? -eq 0 ]; then
+                    echo "$USERNAME is not showing up in SSSD after 1min - cannot make its project."
+                    continue
+                fi
+
+                local USER_HOME="/mnt/home/${USERNAME}"
+
+                local PRO_USER="${MNT_PROJECT}/${USERNAME}"
+                mkdir -p ${PRO_USER}
+                mkdir -p "${USER_HOME}/projects"
+                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
+
+                chgrp "${USERNAME}" "${USER_HOME}/projects"
+                chown "${USERNAME}" "${PRO_USER}"
+                chmod 0755 "${USER_HOME}/projects"
+                chmod 2700 "${PRO_USER}"
+                restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
+            done
+        fi
+        /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
+    else
+        # If group has been modified but no uid were found in the log, it means
+        # user(s) have been removed from the groups.
+        # We identify which ones by comparing Slurm account with group.
+        local USER_GROUP=$(sleep 5 && SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
+        local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
+        local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
+        if [[ ! -z "$USERNAMES" ]]; then
+            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+            if [ "$WITH_FOLDER" == "true" ]; then
+                for USERNAME in $USERNAMES; do
+                    local USER_HOME="/mnt/home/$USERNAME"
+                    rm "$USER_HOME/projects/$GROUP"
+                done
+            fi
+        fi
+    fi
+}
+
+delproject() {
+    local GROUP=$1
+    local WITH_FOLDER=$2
+
+    # A group has been removed.
+    # Since we do not want to delete any data we only remove the
+    # symlinks and remove the users from the slurm account.
+    local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
+    if [[ ! -z "$USERNAMES" ]]; then
+        /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+        if [ "$WITH_FOLDER" == "true" ]; then
+            for USERNAME in $USERNAMES; do
+                USER_HOME="/mnt/home/$USERNAME"
+                rm "$USER_HOME/projects/$GROUP"
+            done
+        fi
+    fi
+}

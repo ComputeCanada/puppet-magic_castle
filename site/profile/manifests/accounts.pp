@@ -29,8 +29,10 @@ class profile::accounts (
   file { '/sbin/mkhome.sh':
     content => epp('profile/accounts/mkhome.sh',
       {
-        with_home    => $with_home,
-        with_scratch => $with_scratch,
+        with_home     => $with_home,
+        with_scratch  => $with_scratch,
+        project_regex => $project_regex,
+        with_project  => $with_project,
       }
     ),
     mode    => '0755',
