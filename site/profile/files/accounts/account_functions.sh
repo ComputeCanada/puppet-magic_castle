@@ -133,18 +133,21 @@ modproject() {
                 fi
 
                 local USER_HOME="/mnt/home/${USERNAME}"
-
                 local PRO_USER="${MNT_PROJECT}/${USERNAME}"
-                mkdir -p ${PRO_USER}
-                mkdir -p "${USER_HOME}/projects"
-                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
+                if [ ! -d "${MNT_PROJECT}/${USERNAME}" ]; then
+                    mkdir -p ${PRO_USER}
+                    mkdir -p "${USER_HOME}/projects"
+                    ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
 
-                chgrp "${USERNAME}" "${USER_HOME}/projects"
-                chown "${USERNAME}" "${PRO_USER}"
-                chmod 0755 "${USER_HOME}/projects"
-                chmod 2700 "${PRO_USER}"
-                restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
-                echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${MNT_PROJECT}/${USERNAME}"
+                    chgrp "${USERNAME}" "${USER_HOME}/projects"
+                    chown "${USERNAME}" "${PRO_USER}"
+                    chmod 0755 "${USER_HOME}/projects"
+                    chmod 2700 "${PRO_USER}"
+                    restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
+                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${MNT_PROJECT}/${USERNAME}"
+                else
+                    echo "WARNING - ${USERNAME} project ${GROUP} in ${MNT_PROJECT}/${USERNAME} already exists"
+                fi
             done
         fi
         /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null

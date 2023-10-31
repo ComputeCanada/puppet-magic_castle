@@ -14,7 +14,6 @@ while read USERNAME; do
 <% } -%>
 
     for PROJECT in $(SSS_NSS_USE_MEMCACHE=no groups ${USERNAME} | cut -d':' -f2 | grep -P -o "${PROJECT_REGEX}"); do
-        mkproject ${PROJECT} <%= $with_project %>
         modproject ${PROJECT} <%= $with_project %> ${USERNAME}
     done
 done
