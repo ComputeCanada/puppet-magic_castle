@@ -143,6 +143,7 @@ modproject() {
         # If group has been modified but no uid were found in the log, it means
         # user(s) have been removed from the groups.
         # We identify which ones by comparing Slurm account with group.
+        sss_cache -g$GROUP
         local USER_GROUP=$(sleep 5 && SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
         local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
         local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
