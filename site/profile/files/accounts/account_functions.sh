@@ -92,7 +92,7 @@ mkproject() {
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
             MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-            if [ ! -d ${MNT_PROJECT_GROUP} ]; then
+            if [ ! -L ${MNT_PROJECT_GROUP} ]; then
                 # We ignore the SSSD cache before recovering the group GID.
                 # Using the cache would be problematic if the group existed before with a different gid.
                 GID=""
