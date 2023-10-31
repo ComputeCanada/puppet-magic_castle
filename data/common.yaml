@@ -9,6 +9,8 @@ lookup_options:
 
 profile::base::version: 13.1.0
 
+motd::content: ""
+
 consul_template::version: 0.25.2
 consul::version: 1.15.2
 consul_template::config_hash:
