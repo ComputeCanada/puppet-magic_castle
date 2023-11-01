@@ -48,8 +48,11 @@ while read CONN OP GROUP; do
     elif [[ "$OP" == "MOD" ]]; then
         # A group has been modified
         # We grep the log for all operations related to request $CONN that contain a uid
-        USERNAMES=$(grep -oP "conn=$CONN op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
-        modproject $GROUP <%= $with_folder %> $USERNAMES
+        USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
+        GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access)
+        for GROUP in $GROUPS; do
+            modproject $GROUP <%= $with_folder %> $USERNAMES
+        done
     elif [[ "$OP" == "DEL" ]]; then
         delproject $GROUP <%= $with_folder %>
     fi
