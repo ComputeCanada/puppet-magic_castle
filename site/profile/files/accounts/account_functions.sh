@@ -163,18 +163,31 @@ modproject() {
         # If group has been modified but no uid were found in the log, it means
         # user(s) have been removed from the groups.
         # We identify which ones by comparing Slurm account with group.
-        sss_cache -g$GROUP
-        local USER_GROUP=$(sleep 5 && SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
-        local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
-        local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
+        sss_cache -g $GROUP
+        local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
+        for i in $(seq 1 12); do
+            local USER_GROUP=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
+            local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
+            if [[ -z "$USERNAMES" ]]; then
+                sleep 5
+            fi
+        done
         if [[ ! -z "$USERNAMES" ]]; then
-            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
+            if [ $? -eq 0 ]; then
+                echo "SUCCESS - removed ${USERNAMES} from ${GROUP} account in SlurmDB"
+            else
+                echo "ERROR - removing ${USERNAMES} from ${GROUP} account in SlurmDB"
+            fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
                     local USER_HOME="/mnt/home/$USERNAME"
                     rm "$USER_HOME/projects/$GROUP"
+                    echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
                 done
             fi
+        else
+            echo "WARNING - Could not find username to remove from project ${GROUP}"
         fi
     fi
 }
@@ -186,7 +199,7 @@ delproject() {
     # A group has been removed.
     # Since we do not want to delete any data we only remove the
     # symlinks and remove the users from the slurm account.
-    local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
+    local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
     if [[ ! -z "$USERNAMES" ]]; then
         /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
         if [ "$WITH_FOLDER" == "true" ]; then
