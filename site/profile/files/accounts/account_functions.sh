@@ -138,18 +138,19 @@ modproject() {
                 fi
 
                 local USER_HOME="/mnt/home/${USERNAME}"
-                local PRO_USER="${MNT_PROJECT}/${USERNAME}"
-                if [ ! -d "${MNT_PROJECT}/${USERNAME}" ]; then
-                    mkdir -p ${PRO_USER}
-                    mkdir -p "${USER_HOME}/projects"
-                    ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
+                mkdir -p "${USER_HOME}/projects"
+                chgrp "${USERNAME}" "${USER_HOME}/projects"
+                chmod 0755 "${USER_HOME}/projects"
+                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
 
-                    chgrp "${USERNAME}" "${USER_HOME}/projects"
+                local PRO_USER="${MNT_PROJECT}/${USERNAME}"
+                if [ ! -d "${PRO_USER}" ]; then
+                    mkdir -p ${PRO_USER}
+
                     chown "${USERNAME}" "${PRO_USER}"
-                    chmod 0755 "${USER_HOME}/projects"
                     chmod 2700 "${PRO_USER}"
-                    restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
-                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${MNT_PROJECT}/${USERNAME}"
+                    restorecon -F -R "${PRO_USER}"
+                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PRO_USER}"
                 else
                     echo "WARNING - ${USERNAME} project ${GROUP} in ${MNT_PROJECT}/${USERNAME} already exists"
                 fi
