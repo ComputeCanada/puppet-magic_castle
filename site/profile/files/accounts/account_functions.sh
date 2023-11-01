@@ -176,15 +176,19 @@ modproject() {
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
             if [ $? -eq 0 ]; then
-                echo "SUCCESS - removed ${USERNAMES} from ${GROUP} account in SlurmDB"
+                echo "SUCCESS - removed ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
             else
-                echo "ERROR - removing ${USERNAMES} from ${GROUP} account in SlurmDB"
+                echo "ERROR - removing ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
             fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
                     local USER_HOME="/mnt/home/$USERNAME"
-                    rm "$USER_HOME/projects/$GROUP"
-                    echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                    rm "$USER_HOME/projects/$GROUP" &> /dev/null
+                    if [ $? -eq 0 ]; then
+                        echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                    else
+                        echo "ERROR - could not remove ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                    fi
                 done
             fi
         else
