@@ -46,8 +46,8 @@ while read CONN OP GROUP; do
         # One or more groups have been modified
         # We grep the log for all operations related to request $CONN that contain a uid
         USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
-        # We grep all groups that have been modified
-        MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access)
+        # We grep all unique groups that have been modified
+        MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
         for GROUP in $MOD_GROUPS; do
             modproject $GROUP <%= $with_folder %> $USERNAMES
         done
