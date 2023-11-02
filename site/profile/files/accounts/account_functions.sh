@@ -122,12 +122,20 @@ modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
     local USERNAMES="${@:3}"
-
+    # mkproject is currently running, we skip adding more folder under the project
+    if [ -d /var/lock/mkproject.$GROUP.lock ]; then
+        return
+    fi
+    local GROUP_LINK=$(readlink /mnt/project/${GROUP})
+    # mkproject has yet been ran for this group, skip it
+    if [[ -z "${GROUP_LINK}" ]]; then
+        return
+    fi
     # The operation that add users to a group would have operations with a uid.
     # If we found none, $USERNAMES will be empty, and it means we don't have
     # anything to add to Slurm and /project
     if [[ ! -z "${USERNAMES}" ]]; then
-        local MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
+        local MNT_PROJECT="/mnt${GROUP_LINK}"
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
                 wait_id $USERNAME
