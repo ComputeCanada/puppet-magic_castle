@@ -93,13 +93,12 @@ mkproject() {
         if [ "$WITH_FOLDER" == "true" ]; then
             MNT_PROJECT_GROUP="/mnt/project/$GROUP"
             if [ ! -L ${MNT_PROJECT_GROUP} ]; then
-                # We ignore the SSSD cache before recovering the group GID.
-                # Using the cache would be problematic if the group existed before with a different gid.
-                GID=""
-                while [ -z "$GID" ]; do
-                    sleep 5
-                    GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
-                done
+                TMP_KRB_CACHE=$(mktemp)
+                GID=$(
+                    kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
+                    KRB5CCNAME=${TMP_KRB_CACHE} ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)' &&
+                    kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
+                )
 
                 # Then we create the project folder
                 MNT_PROJECT_GID="/mnt/project/$GID"
