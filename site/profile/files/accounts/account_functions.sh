@@ -23,18 +23,19 @@ wait_id () {
 mkhome () {
     local USERNAME=$1
 
-    wait_id $USERNAME
+    TMP_KRB_CACHE=$(mktemp)
+    local USER_INFO=$(
+        kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
+        KRB5CCNAME=${TMP_KRB_CACHE} ipa user-show ${USERNAME} &&
+        kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
+    )
 
-    if [ ! $? -eq 0 ]; then
-        echo "ERROR - ${USERNAME} is not showing up in SSSD after 1min - cannot make its home."
-        return 1
-    fi
-
-    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
     local MNT_USER_HOME="/mnt${USER_HOME}"
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
-        rsync -opg -r -u --chown=$USERNAME:$USERNAME --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
+        rsync -opg -r -u --chown=$USER_UID:$USER_UID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
         if [ $? -eq 0 ]; then
             RSYNC_DONE=1
             break
@@ -55,24 +56,26 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
-    wait_id $USERNAME
+    TMP_KRB_CACHE=$(mktemp)
+    local USER_INFO=$(
+        kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
+        KRB5CCNAME=${TMP_KRB_CACHE} ipa user-show ${USERNAME} &&
+        kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
+    )
 
-    if [ ! $? -eq 0 ]; then
-        echo "$USERNAME is not showing up in SSSD after 1min - cannot make its scratch."
-        return 1
-    fi
+    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
 
     local USER_SCRATCH="/scratch/${USERNAME}"
     local MNT_USER_SCRATCH="/mnt${USER_SCRATCH}"
     if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
         mkdir -p ${MNT_USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
-            local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+            local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
             local MNT_USER_HOME="/mnt${USER_HOME}"
             ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
-            chown -h ${USERNAME}:${USERNAME} "${MNT_USER_HOME}/scratch"
+            chown -h ${USER_UID}:${USER_UID} "${MNT_USER_HOME}/scratch"
         fi
-        chown -h ${USERNAME}:${USERNAME} ${MNT_USER_SCRATCH}
+        chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
         echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
