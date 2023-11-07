@@ -5,6 +5,7 @@ kexec () {
     kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
     KRB5CCNAME=${TMP_KRB_CACHE} ${@} &&
     kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
+    rm -f $TMP_KRB_CACHE
 }
 
 mkhome () {
