@@ -258,3 +258,5 @@ profile::reverse_proxy::subdomains:
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
+
+profile::additionalsoftware::packages: []
