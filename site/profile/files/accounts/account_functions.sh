@@ -1,5 +1,12 @@
 #!/bin/bash
 
+kexec () {
+    local TMP_KRB_CACHE=$(mktemp)
+    kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
+    KRB5CCNAME=${TMP_KRB_CACHE} ${@} &&
+    kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
+}
+
 wait_id () {
     local USERNAME=$1
     local FOUND=0
@@ -23,13 +30,7 @@ wait_id () {
 mkhome () {
     local USERNAME=$1
 
-    TMP_KRB_CACHE=$(mktemp)
-    local USER_INFO=$(
-        kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
-        KRB5CCNAME=${TMP_KRB_CACHE} ipa user-show ${USERNAME} &&
-        kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
-    )
-
+    local USER_INFO=$(kexec ipa user-show ${USERNAME})
     local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
     local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
     local MNT_USER_HOME="/mnt${USER_HOME}"
@@ -56,13 +57,7 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
-    TMP_KRB_CACHE=$(mktemp)
-    local USER_INFO=$(
-        kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
-        KRB5CCNAME=${TMP_KRB_CACHE} ipa user-show ${USERNAME} &&
-        kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
-    )
-
+    local USER_INFO=$(kexec ipa user-show ${USERNAME})
     local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
 
     local USER_SCRATCH="/scratch/${USERNAME}"
