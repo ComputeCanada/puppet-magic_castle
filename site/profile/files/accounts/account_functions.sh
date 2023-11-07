@@ -7,26 +7,6 @@ kexec () {
     kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
 }
 
-wait_id () {
-    local USERNAME=$1
-    local FOUND=0
-    for i in $(seq 1 12); do
-        if ! SSS_NSS_USE_MEMCACHE=no id $USERNAME &> /dev/null; then
-            sleep 5
-        else
-            FOUND=1
-            break
-        fi
-    done
-    if [ $FOUND -eq 0 ]; then
-        systemctl restart sssd
-        sleep 5
-        id $USERNAME &> /dev/null
-        return $?
-    fi
-    return 0
-}
-
 mkhome () {
     local USERNAME=$1
 
@@ -135,24 +115,22 @@ modproject() {
         local MNT_PROJECT="/mnt${GROUP_LINK}"
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
-                wait_id $USERNAME
 
-                if [ ! $? -eq 0 ]; then
-                    echo "$USERNAME is not showing up in SSSD after 1min - cannot make its project."
-                    continue
-                fi
+                local USER_INFO=$(kexec ipa user-show ${USERNAME})
+                local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+                local MNT_USER_HOME="/mnt${USER_HOME}"
 
-                local USER_HOME="/mnt/home/${USERNAME}"
-                mkdir -p "${USER_HOME}/projects"
-                chgrp "${USERNAME}" "${USER_HOME}/projects"
-                chmod 0755 "${USER_HOME}/projects"
-                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
+                mkdir -p "${MNT_USER_HOME}/projects"
+                chgrp "${USER_UID}" "${MNT_USER_HOME}/projects"
+                chmod 0755 "${MNT_USER_HOME}/projects"
+                ln -sfT "/project/${GROUP}" "${MNT_USER_HOME}/projects/${GROUP}"
 
                 local PRO_USER="${MNT_PROJECT}/${USERNAME}"
                 if [ ! -d "${PRO_USER}" ]; then
                     mkdir -p ${PRO_USER}
 
-                    chown "${USERNAME}" "${PRO_USER}"
+                    chown "${USER_UID}" "${PRO_USER}"
                     chmod 2700 "${PRO_USER}"
                     restorecon -F -R "${PRO_USER}"
                     echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PRO_USER}"
@@ -169,15 +147,9 @@ modproject() {
         # If group has been modified but no uid were found in the log, it means
         # user(s) have been removed from the groups.
         # We identify which ones by comparing Slurm account with group.
-        sss_cache -g $GROUP
         local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
-        for i in $(seq 1 12); do
-            local USER_GROUP=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
-            local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
-            if [[ -z "$USERNAMES" ]]; then
-                sleep 5
-            fi
-        done
+        local USER_GROUP=$(kexec ipa group-show ${GROUP} --raw | grep -oP 'uid=\K([a-z0-9]*)' | sort)
+        local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
             if [ $? -eq 0 ]; then
