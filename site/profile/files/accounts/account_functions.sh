@@ -72,17 +72,13 @@ mkproject() {
             MNT_PROJECT_GROUP="/mnt/project/$GROUP"
             if [ ! -L ${MNT_PROJECT_GROUP} ]; then
                 TMP_KRB_CACHE=$(mktemp)
-                GID=$(
-                    kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
-                    KRB5CCNAME=${TMP_KRB_CACHE} ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)' &&
-                    kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
-                )
+                GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
 
                 # Then we create the project folder
                 MNT_PROJECT_GID="/mnt/project/$GID"
 
                 mkdir -p ${MNT_PROJECT_GID}
-                chown root:"$GROUP" ${MNT_PROJECT_GID}
+                chown root:${GID} ${MNT_PROJECT_GID}
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
