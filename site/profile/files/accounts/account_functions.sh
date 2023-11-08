@@ -171,8 +171,14 @@ modproject() {
             fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
-                    local USER_HOME="/mnt/home/$USERNAME"
-                    rm "$USER_HOME/projects/$GROUP" &> /dev/null
+                    if id $USERNAME &> /dev/null; then
+                        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                    else
+                        local USER_INFO=$(kexec ipa user-show ${USERNAME})
+                        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                    fi
+                    local MNT_USER_HOME="/mnt${USER_HOME}"
+                    rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
                         echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
                     else
@@ -195,11 +201,22 @@ delproject() {
     # symlinks and remove the users from the slurm account.
     local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
     if [[ ! -z "$USERNAMES" ]]; then
-        /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
+        /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "SUCCESS - removed ${USERNAMES} from ${GROUP} account in SlurmDB"
+        else
+            echo "ERROR - could not remove ${USERNAME} from ${GROUP} account in SlurmDB"
+        fi
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
-                USER_HOME="/mnt/home/$USERNAME"
-                rm "$USER_HOME/projects/$GROUP"
+                if id $USERNAME &> /dev/null; then
+                    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                else
+                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
+                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                fi
+                local MNT_USER_HOME="/mnt${USER_HOME}"
+                rm "${MNT_USER_HOME}/projects/$GROUP"
             done
         fi
     fi
