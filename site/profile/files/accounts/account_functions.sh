@@ -81,24 +81,21 @@ mkproject() {
             echo "SUCCESS - ${GROUP} account created in SlurmDB"
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
-            MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-            if [ ! -L ${MNT_PROJECT_GROUP} ]; then
-                GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
-                if [ $? -eq 0 ]; then
-                    GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
-                fi
-
-                # Then we create the project folder
-                MNT_PROJECT_GID="/mnt/project/$GID"
-
+            GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
+            if [ $? -eq 0 ]; then
+                GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
+            fi
+            MNT_PROJECT_GID="/mnt/project/$GID"
+            if [ ! -d ${MNT_PROJECT_GID} ]; then
+                MNT_PROJECT_GROUP="/mnt/project/$GROUP"
                 mkdir -p ${MNT_PROJECT_GID}
                 chown root:${GID} ${MNT_PROJECT_GID}
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GROUP}"
+                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GID}"
             else
-                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GROUP} already exists"
+                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GID} already exists"
             fi
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
