@@ -11,9 +11,15 @@ kexec () {
 mkhome () {
     local USERNAME=$1
 
-    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+    if id $USERNAME; then
+        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+        local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+    else
+        local USER_INFO=$(kexec ipa user-show ${USERNAME})
+        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+        local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+    fi
+
     local MNT_USER_HOME="/mnt${USER_HOME}"
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
@@ -38,15 +44,20 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
-    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+    if id $USERNAME; then
+        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+        local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+    else
+        local USER_INFO=$(kexec ipa user-show ${USERNAME})
+        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+        local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+    fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
     local MNT_USER_SCRATCH="/mnt${USER_SCRATCH}"
     if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
         mkdir -p ${MNT_USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
-            local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
             local MNT_USER_HOME="/mnt${USER_HOME}"
             ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
             chown -h ${USER_UID}:${USER_UID} "${MNT_USER_HOME}/scratch"
@@ -72,8 +83,10 @@ mkproject() {
         if [ "$WITH_FOLDER" == "true" ]; then
             MNT_PROJECT_GROUP="/mnt/project/$GROUP"
             if [ ! -L ${MNT_PROJECT_GROUP} ]; then
-                TMP_KRB_CACHE=$(mktemp)
-                GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
+                GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
+                if [ $? -eq 0 ]; then
+                    GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
+                fi
 
                 # Then we create the project folder
                 MNT_PROJECT_GID="/mnt/project/$GID"
@@ -113,9 +126,14 @@ modproject() {
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
 
-                local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-                local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+                if id $USERNAME; then
+                    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                    local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+                else
+                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
+                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+                fi
                 local MNT_USER_HOME="/mnt${USER_HOME}"
 
                 mkdir -p "${MNT_USER_HOME}/projects"
