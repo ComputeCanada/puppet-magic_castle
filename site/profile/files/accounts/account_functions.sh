@@ -11,7 +11,7 @@ kexec () {
 mkhome () {
     local USERNAME=$1
 
-    if id $USERNAME; then
+    if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
     else
@@ -44,7 +44,7 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
-    if id $USERNAME; then
+    if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
     else
@@ -126,7 +126,7 @@ modproject() {
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
 
-                if id $USERNAME; then
+                if id $USERNAME &> /dev/null; then
                     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
                     local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
                 else
