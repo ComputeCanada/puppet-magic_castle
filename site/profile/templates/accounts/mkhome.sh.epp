@@ -13,7 +13,7 @@ while read USERNAME; do
     mkscratch $USERNAME <%= $with_home %>
 <% } -%>
 
-    for PROJECT in $(kexec ipa user-show ${USERNAME} | grep 'Member of groups:' | grep -P -o "${PROJECT_REGEX}"); do
+    for PROJECT in $((id -Gn ${USERNAME} || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
         modproject ${PROJECT} <%= $with_project %> ${USERNAME}
     done
 done
