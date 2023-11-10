@@ -75,11 +75,6 @@ mkproject() {
 
     if mkdir /var/lock/mkproject.$GROUP.lock; then
         # A new group has been created
-        # We create the associated account in slurm
-        /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
-        if [ $? -eq 0 ]; then
-            echo "SUCCESS - ${GROUP} account created in SlurmDB"
-        fi
         if [ "$WITH_FOLDER" == "true" ]; then
             GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
             if [ $? -eq 0 ]; then
@@ -98,6 +93,11 @@ mkproject() {
                 echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GID} already exists"
             fi
         fi
+        # We create the associated account in slurm
+        /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "SUCCESS - ${GROUP} account created in SlurmDB"
+        fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
 }
@@ -112,8 +112,14 @@ modproject() {
     fi
     local GROUP_LINK=$(readlink /mnt/project/${GROUP})
     # mkproject has yet been ran for this group, skip it
-    if [[ -z "${GROUP_LINK}" ]]; then
-        return
+    if [[ "${WITH_FOLDER}" == "true" ]]; then
+        if [[ -z "${GROUP_LINK}" ]]; then
+            return
+        fi
+    else
+        if [[ $(/opt/software/slurm/bin/sacctmgr -n list account Name=${GROUP} | wc -l) -eq 0 ]]; then
+            return
+        fi
     fi
     # The operation that add users to a group would have operations with a uid.
     # If we found none, $USERNAMES will be empty, and it means we don't have
