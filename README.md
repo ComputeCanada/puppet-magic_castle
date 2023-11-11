@@ -50,7 +50,6 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::ssh::hostbased_auth::server`](#profilesshhostbased_authserver)
 - [`profile::users::ldap`](#profileusersldap)
 - [`profile::users::local`](#profileuserslocal)
-- [`profile::additionalsoftware`](#profileadditionalsoftware)
 
 For classes with parameters, a folded **default values** subsection provides the default
 value of each parameter as it would be defined in hieradata. For some parameters, the value is
@@ -1359,33 +1358,5 @@ profile::users::local::users:
     # sudoer: false
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
-```
-</details>
-
-## `profile::additionalsoftware`
-
-This class allows the option to install additional OS packages on the login and compute nodes.
-
-### parameters
-
-| Variable       | Description                                                                            | Type            |
-| :------------- | :------------------------------------------------------------------------------------- | :-------------- |
-| `packages`     | List of additional OS packages that should be installed                                | Array[String]   |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::additionalsoftware::packages: []
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
-profile::additionalsoftware::packages:
-  - gcc-c++
-  - make
 ```
 </details>

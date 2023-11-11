@@ -27,7 +27,6 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::nfs
     - profile::rsyslog::client
-    - profile::additionalsoftware
   mgmt:
     - mysql::server
     - prometheus::server
@@ -49,7 +48,6 @@ magic_castle::site::tags:
     - profile::metrics::slurm_job_exporter
     - profile::nfs::client
     - profile::rsyslog::client
-    - profile::additionalsoftware
   nfs:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
