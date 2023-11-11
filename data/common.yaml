@@ -8,6 +8,7 @@ lookup_options:
     merge: 'deep'
 
 profile::base::version: 13.1.0
+profile::base::packages: []
 
 consul_template::version: 0.25.2
 consul::version: 1.15.2
