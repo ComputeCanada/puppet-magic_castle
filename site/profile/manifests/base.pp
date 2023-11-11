@@ -99,7 +99,7 @@ class profile::base (
     require => Package['haveged'],
   }
 
-  ensure_packages($packages, { ensure => 'installed' })
+  ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
