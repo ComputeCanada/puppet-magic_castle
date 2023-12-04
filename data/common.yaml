@@ -221,7 +221,7 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 
 profile::slurm::base::slurm_version: '22.05'
 profile::slurm::base::os_reserved_memory: 512
-profile::slurm::controller::autoscale_version: '0.4.0'
+profile::slurm::controller::autoscale_version: '0.5.1'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
 profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
