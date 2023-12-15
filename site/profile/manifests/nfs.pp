@@ -22,7 +22,8 @@ class profile::nfs::client (
     nfs_v4_idmap_domain => $nfs_domain,
   }
 
-  $devices = lookup('profile::nfs::server::devices', undef, undef, {})
+  $nfs_server = keys(lookup('terraform.instances').filter| $key, $values | { $values['local_ip'] == $server_ip })[0]
+  $devices = lookup("terraform.instances.${nfs_server}.volumes.nfs", Hash[String, Array[String]], 'first', {})
   if $devices =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($devices)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
@@ -47,11 +48,11 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   String $domain_name,
-  # $devices is an empty string (i.e.: String[0, 0]) when
-  # the key terraform.data.volumes.nfs does not exist because
-  # "A lookup resulting in an interpolation of `alias` referencing
-  # a non-existant key returns an empty string"
-  Variant[Hash[String, Array[String]], String[0, 0]] $devices,
+  Hash[String, Array[String]] $devices = lookup(
+    "terraform.instances.${facts['networking']['hostname']}.volumes.nfs",
+    Hash[String, Array[String]],
+    'first', {}
+  ),
 ) {
   $nfs_domain  = "int.${domain_name}"
 
