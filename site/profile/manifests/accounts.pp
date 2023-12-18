@@ -1,8 +1,14 @@
 # @summary Class configuring services to bridge LDAP users, Slurm accounts and users' folders in filesystems
 # @param project_regex Regex identifying FreeIPA groups that require a corresponding Slurm account
+# @param manage_home
+# @param manage_scratch
+# @param manage_project
 # @param skel_archives Archives extracted in each FreeIPA user's home when created
 class profile::accounts (
   String $project_regex,
+  Boolean $manage_home = true,
+  Boolean $manage_scratch = true,
+  Boolean $manage_project = true,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],
 ) {
   Service <| tag == profile::slurm |> -> Service['mkhome']
@@ -11,11 +17,6 @@ class profile::accounts (
   Service <| tag == profile::freeipa |> -> Service['mkproject']
   Mount <| |> -> Service['mkhome']
   Mount <| |> -> Service['mkproject']
-
-  $nfs_devices = lookup('profile::nfs::server::devices', undef, undef, {})
-  $with_home = 'home' in $nfs_devices
-  $with_project = 'project' in $nfs_devices
-  $with_scratch = 'scratch' in $nfs_devices
 
   package { 'rsync':
     ensure => 'installed',
@@ -29,10 +30,10 @@ class profile::accounts (
   file { '/sbin/mkhome.sh':
     content => epp('profile/accounts/mkhome.sh',
       {
-        with_home     => $with_home,
-        with_scratch  => $with_scratch,
-        project_regex => $project_regex,
-        with_project  => $with_project,
+        manage_home    => $manage_home,
+        manage_scratch => $manage_scratch,
+        project_regex  => $project_regex,
+        manage_project => $manage_project,
       }
     ),
     mode    => '0755',
@@ -93,7 +94,7 @@ class profile::accounts (
     path        => ['/bin/', '/usr/bin'],
   }
 
-  $mkhome_running = $with_home or $with_scratch
+  $mkhome_running = $manage_home or $manage_scratch
   service { 'mkhome':
     ensure    => $mkhome_running,
     enable    => $mkhome_running,
@@ -113,7 +114,7 @@ class profile::accounts (
     content => epp('profile/accounts/mkproject.sh',
       {
         project_regex => $project_regex,
-        with_folder   => $with_project,
+        manage_folder => $manage_project,
       }
     ),
     mode    => '0755',
