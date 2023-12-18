@@ -54,16 +54,16 @@ class profile::nfs::server (
     Hash[String, Array[String]],
     'first', {}
   ),
+  Array[String] $no_root_squash_tags = ['mgmt']
 ) {
   $nfs_domain  = "int.${domain_name}"
 
-  $cidr = profile::getcidr()
   class { 'nfs':
     server_enabled             => true,
     nfs_v4                     => true,
     storeconfigs_enabled       => false,
     nfs_v4_export_root         => '/export',
-    nfs_v4_export_root_clients => "${cidr}(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
+    nfs_v4_export_root_clients => "*.${nfs_domain}(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
     nfs_v4_idmap_domain        => $nfs_domain,
   }
 
@@ -86,6 +86,9 @@ class profile::nfs::server (
   }
 
   if $devices =~ Hash[String, Array[String]] {
+    # The following line try to figure out if the NFS volumes need
+    # to also bind mounted on the NFS server. This decision is based
+    # on wether LDAP users have access to this NFS server host.
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
     $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
@@ -100,8 +103,14 @@ class profile::nfs::server (
         }
       )
     )
+    # Allow instances with specific tags to mount NFS without root squash
+    $instances = lookup('terraform.instances')
+    $prefixes  = $instances.filter|$key, $values| { ! intersection($values['tags'], $no_root_squash_tags ).empty }.map|$key, $values| { $values['prefix'] }.unique
+    $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(rw,async,no_root_squash,no_all_squash,security_label)" }.join(' ')
+    $clients = "${prefix_rules} *.${nfs_domain}(rw,async,root_squash,no_all_squash,security_label)"
     $devices.each | String $key, $glob | {
       profile::nfs::server::export_volume { $key:
+        clients         => $clients,
         glob            => $glob,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
       }
@@ -110,6 +119,7 @@ class profile::nfs::server (
 }
 
 define profile::nfs::server::export_volume (
+  String $clients,
   Array[String] $glob,
   Boolean $root_bind_mount = false,
   String $seltype = 'home_root_t',
@@ -161,10 +171,9 @@ define profile::nfs::server::export_volume (
 
   selinux::exec_restorecon { "/mnt/${name}": }
 
-  $cidr = profile::getcidr()
   nfs::server::export { "/mnt/${name}":
     ensure  => 'mounted',
-    clients => "${cidr}(rw,async,root_squash,no_all_squash,security_label)",
+    clients => $clients,
     notify  => Service[$nfs::server_service_name],
     require => [
       Mount["/mnt/${name}"],
