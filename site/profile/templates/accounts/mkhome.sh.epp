@@ -21,20 +21,20 @@ fi
     tail -F ${MKHOME_RETRY_PIPE}
 ) |
 while read USERNAME; do
-    <% if $with_home { -%>
+    <% if $manage_home { -%>
     if ! mkhome $USERNAME; then
         echo $USERNAME > ${MKHOME_RETRY_PIPE} &
         continue
     fi
     <% } -%>
-    <% if $with_scratch { -%>
-    if ! mkscratch $USERNAME <%= $with_home %>; then
+    <% if $manage_scratch { -%>
+    if ! mkscratch $USERNAME <%= $manage_home %>; then
         echo $USERNAME > ${MKHOME_RETRY_PIPE} &
         continue
     fi
     <% } -%>
 
     for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
-        echo 0 ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
+        echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
     done
 done

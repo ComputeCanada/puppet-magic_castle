@@ -22,10 +22,11 @@ class profile::nfs::client (
     nfs_v4_idmap_domain => $nfs_domain,
   }
 
-  $nfs_server = keys(lookup('terraform.instances').filter| $key, $values | { $values['local_ip'] == $server_ip })[0]
-  $devices = lookup("terraform.instances.${nfs_server}.volumes.nfs", Hash[String, Array[String]], 'first', {})
-  if $devices =~ Hash[String, Array[String]] {
-    $nfs_export_list = keys($devices)
+  $instances = lookup('terraform.instances')
+  $nfs_server = keys($instances.filter| $key, $values | { $values['local_ip'] == $server_ip })[0]
+  $nfs_volumes = $instances[$nfs_server]['volumes']['nfs']
+  if $nfs_volumes =~ Hash[String, Array[String]] {
+    $nfs_export_list = keys($nfs_volumes)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
       nfs::client::mount { "/${name}":
