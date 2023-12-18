@@ -92,27 +92,27 @@ class profile::nfs::server (
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
     $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
-    $users_tags = unique(
-      flatten(
-        lookup('profile::users::ldap::users').map|$key,$values| {
-          if has_key($values, 'access_tags') {
-            $values['access_tags'].map|$tag| { split($tag, /:/)[0] }
-          } else {
-            $ldap_access_tags
-          }
-        }
-      )
-    )
+    $users_tags = lookup('profile::users::ldap::users').map|$key,$values| {
+      if has_key($values, 'access_tags') {
+        $values['access_tags'].map|$tag| { split($tag, /:/)[0] }
+      } else {
+        $ldap_access_tags
+      }
+    }.flatten.unique
+
+    $root_bind_mount = ! intersection($instance_tags, $users_tags).empty
+
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
+    $common_options = 'rw,async,no_all_squash,security_label'
     $prefixes  = $instances.filter|$key, $values| { ! intersection($values['tags'], $no_root_squash_tags ).empty }.map|$key, $values| { $values['prefix'] }.unique
-    $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(rw,async,no_root_squash,no_all_squash,security_label)" }.join(' ')
-    $clients = "${prefix_rules} *.${nfs_domain}(rw,async,root_squash,no_all_squash,security_label)"
+    $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(${common_options},no_root_squash)" }.join(' ')
+    $clients = "${prefix_rules} *.${nfs_domain}(${common_options},root_squash)"
     $devices.each | String $key, $glob | {
       profile::nfs::server::export_volume { $key:
         clients         => $clients,
         glob            => $glob,
-        root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
+        root_bind_mount => $root_bind_mount,
       }
     }
   }
