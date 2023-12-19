@@ -20,10 +20,9 @@ mkhome () {
         local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
     fi
 
-    local MNT_USER_HOME="/mnt${USER_HOME}"
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
-        rsync -opg -r -u --chown=$USER_UID:$USER_UID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${MNT_USER_HOME}
+        rsync -opg -r -u --chown=$USER_UID:$USER_UID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
         if [ $? -eq 0 ]; then
             RSYNC_DONE=1
             break
@@ -32,12 +31,12 @@ mkhome () {
         fi
     done
     if [ ! $RSYNC_DONE -eq 1 ]; then
-        echo "ERROR - Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
+        echo "ERROR - Could not rsync /etc/skel.ipa in ${USER_HOME}"
         return 1
     else
-        echo "SUCCESS - ${USERNAME} home initialized in ${MNT_USER_HOME}"
+        echo "SUCCESS - ${USERNAME} home initialized in ${USER_HOME}"
     fi
-    restorecon -F -R ${MNT_USER_HOME}
+    restorecon -F -R ${USER_HOME}
 }
 
 mkscratch () {
@@ -54,43 +53,41 @@ mkscratch () {
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
-    local MNT_USER_SCRATCH="/mnt${USER_SCRATCH}"
-    if [[ ! -d "${MNT_USER_SCRATCH}" ]]; then
-        mkdir -p ${MNT_USER_SCRATCH}
+    if [[ ! -d "${USER_SCRATCH}" ]]; then
+        mkdir -p ${USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
-            local MNT_USER_HOME="/mnt${USER_HOME}"
-            ln -sfT ${USER_SCRATCH} "${MNT_USER_HOME}/scratch"
-            chown -h ${USER_UID}:${USER_UID} "${MNT_USER_HOME}/scratch"
+            ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch"
+            chown -h ${USER_UID}:${USER_UID} "${USER_HOME}/scratch"
         fi
-        chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
-        chmod 750 ${MNT_USER_SCRATCH}
-        restorecon -F -R ${MNT_USER_SCRATCH}
-        echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
+        chown -h ${USER_UID}:${USER_UID} ${USER_SCRATCH}
+        chmod 750 ${USER_SCRATCH}
+        restorecon -F -R ${USER_SCRATCH}
+        echo "SUCCESS - ${USERNAME} scratch initialized in ${USER_SCRATCH}"
     fi
 }
 
 mkproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
+    local PROJECT_GROUP="/project/$GROUP"
 
     if mkdir /var/lock/mkproject.$GROUP.lock; then
         # A new group has been created
         if [ "$WITH_FOLDER" == "true" ]; then
-            GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
+            local GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
             if [ $? -eq 0 ]; then
-                GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
+                local GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
             fi
-            MNT_PROJECT_GID="/mnt/project/$GID"
-            if [ ! -d ${MNT_PROJECT_GID} ]; then
-                MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-                mkdir -p ${MNT_PROJECT_GID}
-                chown root:${GID} ${MNT_PROJECT_GID}
-                chmod 2770 ${MNT_PROJECT_GID}
-                ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
-                restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GID}"
+            local PROJECT_GID="/project/$GID"
+            if [ ! -d ${PROJECT_GID} ]; then
+                mkdir -p ${PROJECT_GID}
+                chown root:${GID} ${PROJECT_GID}
+                chmod 2770 ${PROJECT_GID}
+                ln -sfT ${PROJECT_GID} ${PROJECT_GROUP}
+                restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
+                echo "SUCCESS - ${GROUP} project folder initialized in ${PROJECT_GID}"
             else
-                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GID} already exists"
+                echo "WARNING - ${GROUP} project folder ${PROJECT_GID} already exists"
             fi
         fi
         # We create the associated account in slurm
@@ -106,11 +103,12 @@ modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
     local USERNAMES="${@:3}"
+    local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
     if [ -d /var/lock/mkproject.$GROUP.lock ]; then
         return
     fi
-    local GROUP_LINK=$(readlink /mnt/project/${GROUP})
+    local GROUP_LINK=$(readlink /project/${GROUP})
     # mkproject has yet been ran for this group, skip it
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         if [[ -z "${GROUP_LINK}" ]]; then
@@ -125,7 +123,6 @@ modproject() {
     # If we found none, $USERNAMES will be empty, and it means we don't have
     # anything to add to Slurm and /project
     if [[ ! -z "${USERNAMES}" ]]; then
-        local MNT_PROJECT="/mnt${GROUP_LINK}"
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
 
@@ -137,23 +134,22 @@ modproject() {
                     local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
                     local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
                 fi
-                local MNT_USER_HOME="/mnt${USER_HOME}"
 
-                mkdir -p "${MNT_USER_HOME}/projects"
-                chgrp "${USER_UID}" "${MNT_USER_HOME}/projects"
-                chmod 0755 "${MNT_USER_HOME}/projects"
-                ln -sfT "/project/${GROUP}" "${MNT_USER_HOME}/projects/${GROUP}"
+                mkdir -p "${USER_HOME}/projects"
+                chgrp "${USER_UID}" "${USER_HOME}/projects"
+                chmod 0755 "${USER_HOME}/projects"
+                ln -sfT "${PROJECT_GROUP}" "${USER_HOME}/projects/${GROUP}"
 
-                local PRO_USER="${MNT_PROJECT}/${USERNAME}"
-                if [ ! -d "${PRO_USER}" ]; then
-                    mkdir -p ${PRO_USER}
+                local PROJECT_USER="${PROJECT_GROUP}/${USERNAME}"
+                if [ ! -d "${PROJECT_USER}" ]; then
+                    mkdir -p ${PROJECT_USER}
 
-                    chown "${USER_UID}" "${PRO_USER}"
-                    chmod 2700 "${PRO_USER}"
-                    restorecon -F -R "${PRO_USER}"
-                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PRO_USER}"
+                    chown "${USER_UID}" "${PROJECT_USER}"
+                    chmod 2700 "${PROJECT_USER}"
+                    restorecon -F -R "${PROJECT_USER}"
+                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PROJECT_USER}"
                 else
-                    echo "WARNING - ${USERNAME} project ${GROUP} in ${MNT_PROJECT}/${USERNAME} already exists"
+                    echo "WARNING - ${USERNAME} project ${GROUP} in ${PROJECT_USER} already exists"
                 fi
             done
         fi
@@ -183,8 +179,7 @@ modproject() {
                         local USER_INFO=$(kexec ipa user-show ${USERNAME})
                         local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
                     fi
-                    local MNT_USER_HOME="/mnt${USER_HOME}"
-                    rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
+                    rm "${USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
                         echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
                     else
@@ -221,8 +216,7 @@ delproject() {
                     local USER_INFO=$(kexec ipa user-show ${USERNAME})
                     local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
                 fi
-                local MNT_USER_HOME="/mnt${USER_HOME}"
-                rm "${MNT_USER_HOME}/projects/$GROUP"
+                rm "${USER_HOME}/projects/$GROUP"
             done
         fi
     fi
