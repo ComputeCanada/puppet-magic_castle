@@ -86,22 +86,6 @@ class profile::nfs::server (
   }
 
   if $devices =~ Hash[String, Array[String]] {
-    # The following line try to figure out if the NFS volumes need
-    # to also bind mounted on the NFS server. This decision is based
-    # on wether LDAP users have access to this NFS server host.
-    $hostname = $facts['networking']['hostname']
-    $instance_tags = lookup("terraform.instances.${hostname}.tags")
-    $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
-    $users_tags = lookup('profile::users::ldap::users').map|$key,$values| {
-      if has_key($values, 'access_tags') {
-        $values['access_tags'].map|$tag| { split($tag, /:/)[0] }
-      } else {
-        $ldap_access_tags
-      }
-    }.flatten.unique
-
-    $root_bind_mount = ! intersection($instance_tags, $users_tags).empty
-
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
     $common_options = 'rw,async,no_all_squash,security_label'
@@ -112,7 +96,7 @@ class profile::nfs::server (
       profile::nfs::server::export_volume { $key:
         clients         => $clients,
         glob            => $glob,
-        root_bind_mount => $root_bind_mount,
+        root_bind_mount => true,
       }
     }
   }
