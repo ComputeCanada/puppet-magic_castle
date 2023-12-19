@@ -37,6 +37,7 @@ magic_castle::site::tags:
     - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
+    - profile::nfs
     - profile::users::ldap
   node:
     - profile::gpu
