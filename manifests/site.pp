@@ -1,5 +1,5 @@
 node default {
-  $instance_tags = lookup("terraform.instances.${facts['networking']['hostname']}.tags")
+  $instance_tags = lookup('terraform.self.tags')
 
   $include_all = lookup('magic_castle::site::all', undef, undef, [])
 
