@@ -4,6 +4,8 @@ lookup_options:
     merge: 'first'
   magic_castle::site::tags:
     merge: 'hash'
+  terraform:
+    merge: 'hash'
 
 magic_castle::site::all:
   - profile::base

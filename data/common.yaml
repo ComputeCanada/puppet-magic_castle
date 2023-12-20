@@ -280,6 +280,7 @@ profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::server::devices: "%{alias('terraform.self.volumes.nfs')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:

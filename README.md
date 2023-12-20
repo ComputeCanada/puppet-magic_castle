@@ -825,13 +825,14 @@ accomplished manually.
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `devices` | Mapping between NFS share and devices to export. | Hash[String, Array[String]]   |
-
+| `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
+profile::nfs::server::devices: "%{alias('terraform.self.volumes.nfs')}"
+profile::nfs::server::no_root_squash_tags: ['mgmt']
 ```
 </details>
 

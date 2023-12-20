@@ -1,7 +1,6 @@
 class profile::nfs {
   $server_ip = lookup('profile::nfs::client::server_ip')
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $ipaddress = lookup('terraform.self.local_ip')
 
   if $ipaddress == $server_ip {
     include profile::nfs::server
@@ -49,11 +48,7 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   String $domain_name,
-  Hash[String, Array[String]] $devices = lookup(
-    "terraform.instances.${facts['networking']['hostname']}.volumes.nfs",
-    Hash[String, Array[String]],
-    'first', {}
-  ),
+  Hash[String, Array[String]] $devices,
   Array[String] $no_root_squash_tags = ['mgmt']
 ) {
   $nfs_domain  = "int.${domain_name}"
