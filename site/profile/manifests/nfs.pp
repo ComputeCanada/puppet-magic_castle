@@ -22,7 +22,7 @@ class profile::nfs::client (
   }
 
   $instances = lookup('terraform.instances')
-  $nfs_server = keys($instances.filter| $key, $values | { $values['local_ip'] == $server_ip })[0]
+  $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   $nfs_volumes = $instances[$nfs_server]['volumes']['nfs']
   if $nfs_volumes =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($nfs_volumes)
