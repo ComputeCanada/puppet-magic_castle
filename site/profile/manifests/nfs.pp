@@ -22,8 +22,17 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = $instances.filter| $key, $values | { $values['local_ip'] == $server_ip }.map | $key, $values | { $values }
-  $nfs_volumes = $nfs_server.get('0.volumes.nfs', {})
   $shares_to_mount = keys($nfs_volumes) + $share_names
+
+  if $nfs_server {
+    $nfs_volumes = $nfs_server.get('0.volumes.nfs', {})
+    $shares_to_mount = keys($nfs_volumes) + $share_names
+    $nfs_options     = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+  } else {
+    # The NFS server is not an instance created by Magic Castle and managed by Terraform.
+    $shares_to_mount = $share_names
+    $nfs_options     = 'nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport'
+  }
 
   $self_volumes = lookup('terraform.self.volumes')
   if $facts['virtual'] =~ /^(container|lxc).*$/ {
@@ -44,7 +53,7 @@ class profile::nfs::client (
     path        => ['/bin', '/usr/bin'],
   }
 
-  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,_netdev,${mount_options}"
+  $options_nfsv4 = "${nfs_options},${mount_options}"
   $shares_to_mount.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
