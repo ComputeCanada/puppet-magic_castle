@@ -312,16 +312,16 @@ profile::ceph::client::mon_host:
   - 192.168.2.3:6789
   - 192.168.3.3:6789
 profile::ceph::client::shares:
-  home: 
-    
+  home:
+
   project:
-    
+
 ```
 </details>
 
 ## profile::ceph::client::install
 
-This class only installs the Ceph packages. 
+This class only installs the Ceph packages.
 
 ## `profile::consul`
 
@@ -761,8 +761,8 @@ profile::mail::base::authorized_submit_users: ["root", "slurm"]
 ## `profile::mail::dkim`
 
 > DomainKeys Identified Mail (DKIM) is an email authentication method that
-permits a person, role, or organization that owns the signing domain to 
-claim some responsibility for a message by associating the domain 
+permits a person, role, or organization that owns the signing domain to
+claim some responsibility for a message by associating the domain
 with the message.
 
 This class installs and configures OpenDKIM daemon.
@@ -890,7 +890,7 @@ network much like local storage is accessed.
 [reference](https://en.wikipedia.org/wiki/Network_File_System)
 
 This class instantiates either an NFS client or an NFS server.
-If `profile::nfs::client::server_ip`matches the instance's local ip address, the
+If `profile::nfs::client::server` matches the instance's local IP address or FQDN, the
 server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
 client class is included - [`profile::nfs::client`](#profilenfsclient).
 
@@ -910,20 +910,32 @@ profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
 
 ## `profile::nfs::client`
 
-This class install NFS and configure the client to mount all shares exported
-by a single NFS server identified via its ip address.
+This class installs NFS and configures the client to mount shares exported
+by a single NFS server identified via its IP address or FQDN. The shares to mount are
+infered from the list of volumes with an `nfs` tag in the the `terraform.instances`
+datastructure. Additional shares can be mounted by providing a list of
+names with `share_names` variable.
+
+`share_names` is can also be used to specify
+which shares to mount when there `terraform.instances` datastructure does not
+include any volume with the `nfs` tag.
+
+This class is compatible with [Amazon Elastic Filesystem](https://docs.aws.amazon.com/efs/).
+The variable `server` can be set to an EFS filesystem DNS name or IP address.
 
 ### parameters
 
-| Variable      | Description                  | Type    |
-| ------------- | :--------------------------- | :------ |
-| `server_ip`   | IP address of the NFS server | String  |
+| Variable      | Description                            | Type           |
+| ------------- | :------------------------------------- | :------------- |
+| `server`      | IP address or FQDN of the NFS server   | String         |
+| `share_names` | Names of the exported shares to mount  | Array[String]  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::client::server: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::client::share_names: []
 ```
 </details>
 
@@ -934,7 +946,8 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class install NFS and configure an NFS server that will export all volumes tagged as `nfs`.
+This class installs NFS and configure an NFS server that will export all volumes tagged as `nfs`.
+It can also export addditional paths specified by the variable `export_paths`.
 
 ### parameters
 
@@ -942,6 +955,7 @@ This class install NFS and configure an NFS server that will export all volumes 
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
 | `enable_client_quotas` | Enable query of quotas on NFS clients | Boolean |
+| `export_paths` | List of paths to export in addition to volumes with `nfs` tag | Array[String] |
 
 <details>
 <summary>default values</summary>
@@ -949,6 +963,7 @@ This class install NFS and configure an NFS server that will export all volumes 
 ```yaml
 profile::nfs::server::no_root_squash_tags: ['mgmt']
 profile::nfs::server::enable_client_quotas: false
+profile::nfs::server::export_paths: []
 ```
 </details>
 
