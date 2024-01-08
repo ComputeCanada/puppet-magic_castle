@@ -13,6 +13,7 @@ jupyterhub::jupyterhub_config_hash:
 
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
+  - software.eessi.io
 
 profile::cvmfs::client::initial_profile: "/cvmfs/software.eessi.io/versions/2023.06/init/Magic_Castle/bash"
 
