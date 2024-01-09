@@ -83,7 +83,7 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $mig_manager_version = '0.5.4',
+  String $mig_manager_version = '0.5.5',
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
