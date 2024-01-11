@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [12.6.9] 2024-01-11
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [12.6.8] 2023-10-05
+
+### Changed
+- Bump version of cmdntrf-consul_template to 2.3.6
+
 ## [12.6.7] 2023-09-29
 
 ### Changed
