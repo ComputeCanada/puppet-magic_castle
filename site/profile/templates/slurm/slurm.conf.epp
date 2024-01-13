@@ -81,3 +81,5 @@ JobSubmitPlugins=lua
 # Not needed for Slurm >= 23.02
 PrivateData=cloud
 <% } -%>
+
+include /etc/slurm/slurm-addendum.conf

@@ -928,6 +928,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
+| `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 
 <details>
 <summary>default values</summary>
@@ -941,6 +942,7 @@ profile::slurm::base::suspend_time: 3600
 profile::slurm::base::resume_timeout: 3600
 profile::slurm::base::force_slurm_in_path: false
 profile::slurm::base::enable_x11_forwarding: true
+profile::slurm::base::config_addendum: ''
 ```
 </details>
 

@@ -15,6 +15,7 @@ class profile::slurm::base (
   Integer $resume_timeout = 3600,
   Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
+  String  $config_addendum = '',
 )
 {
   include epel
@@ -201,6 +202,20 @@ END
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
       }),
+    group   => 'slurm',
+    owner   => 'slurm',
+    mode    => '0644',
+    require => File['/etc/slurm'],
+  }
+
+  file { '/etc/slurm/slurm-addendum.conf':
+    ensure  => present,
+    content => @("EOF"),
+      # FILE MANAGED BY PUPPET, DO NOT EDIT DIRECTLY.
+      # Content of this file has been specified via profile::slurm::base::config_addendum.
+      # It has not been validated.
+      ${config_addendum}
+      |EOF
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
