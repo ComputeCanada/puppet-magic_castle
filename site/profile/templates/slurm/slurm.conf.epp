@@ -75,3 +75,9 @@ LaunchParameters=use_interactive_step,disable_send_gids
 <% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 JobSubmitPlugins=lua
 <% } -%>
+
+<% if versioncmp($slurm_version, '23.02') < 0 { -%>
+# The autoscaling compute nodes are not showed by sinfo unless we set PrivateData=cloud
+# Not needed for Slurm >= 23.02
+PrivateData=cloud
+<% } -%>
