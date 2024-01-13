@@ -17,6 +17,7 @@ GresTypes=gpu
 TreeWidth=<%= $nb_nodes %>
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
+ResumeFailProgram=/usr/bin/slurm_suspend
 ResumeTimeout=<%= $resume_timeout %>
 SuspendTime=<%= $suspend_time %>
 SuspendRate=20
