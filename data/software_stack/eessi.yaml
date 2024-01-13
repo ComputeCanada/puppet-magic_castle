@@ -1,4 +1,4 @@
-jupyterhub::kernel::venv::python: /cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/eessi_pilot_python3
+jupyterhub::kernel::venv::python: /cvmfs/software.eessi.io/versions/2023.06/init/Magic_Castle/eessi_python3
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: ""
   PIP_CONFIG_FILE: ""
@@ -13,8 +13,9 @@ jupyterhub::jupyterhub_config_hash:
 
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
+  - software.eessi.io
 
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/bash"
+profile::cvmfs::client::initial_profile: "/cvmfs/software.eessi.io/versions/2023.06/init/Magic_Castle/bash"
 
 profile::slurm::base::force_slurm_in_path: true
 
@@ -23,5 +24,4 @@ profile::cvmfs::client::lmod_default_modules:
 
 profile::squid::server::cvmfs_acl_regex:
   - '^(.*\.cvmfs\.eessi-infra\.org)$'
-
-profile::gpu::install::lib_symlink_path: '/opt/eessi/lib'
+  - '^(.*s1\.eessi\.science)$'
