@@ -15,6 +15,7 @@ SelectTypeParameters=CR_Core_Memory
 GresTypes=gpu
 
 TreeWidth=<%= $nb_nodes %>
+ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
 ResumeFailProgram=/usr/bin/slurm_suspend
