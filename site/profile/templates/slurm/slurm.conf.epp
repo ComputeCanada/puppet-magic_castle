@@ -15,8 +15,10 @@ SelectTypeParameters=CR_Core_Memory
 GresTypes=gpu
 
 TreeWidth=<%= $nb_nodes %>
+ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
+ResumeFailProgram=/usr/bin/slurm_suspend
 ResumeTimeout=<%= $resume_timeout %>
 SuspendTime=<%= $suspend_time %>
 SuspendRate=20
@@ -31,7 +33,8 @@ CommunicationParameters=NoAddrCache
 
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
-PartitionName=cpubase_bycore_b1 Nodes=ALL Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
+PartitionName=DEFAULT Default=YES DefaultTime=1:00:00 DefMemPerCPU=256 OverSubscribe=YES
+PartitionName=cpubase_bycore_b1 Nodes=ALL
 <% $partitions.map|$name, $values| { -%>
 PartitionName=<%= $name %> Nodes=<%= join($values['nodes'], ',') %>
 <% } -%>
@@ -73,3 +76,11 @@ LaunchParameters=use_interactive_step,disable_send_gids
 <% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 JobSubmitPlugins=lua
 <% } -%>
+
+<% if versioncmp($slurm_version, '23.02') < 0 { -%>
+# The autoscaling compute nodes are not showed by sinfo unless we set PrivateData=cloud
+# Not needed for Slurm >= 23.02
+PrivateData=cloud
+<% } -%>
+
+include /etc/slurm/slurm-addendum.conf

@@ -15,6 +15,7 @@ class profile::slurm::base (
   Integer $resume_timeout = 3600,
   Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
+  String  $config_addendum = '',
 )
 {
   include epel
@@ -201,6 +202,20 @@ END
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
       }),
+    group   => 'slurm',
+    owner   => 'slurm',
+    mode    => '0644',
+    require => File['/etc/slurm'],
+  }
+
+  file { '/etc/slurm/slurm-addendum.conf':
+    ensure  => present,
+    content => @("EOF"),
+      # FILE MANAGED BY PUPPET, DO NOT EDIT DIRECTLY.
+      # Content of this file has been specified via profile::slurm::base::config_addendum.
+      # It has not been validated.
+      ${config_addendum}
+      |EOF
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
@@ -527,6 +542,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ],
     subscribe => [
       File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/gres.conf'],
       File['/etc/slurm/nodes.conf'],
     ]
@@ -667,6 +683,7 @@ class profile::slurm::node {
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
       File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
       File['/etc/slurm/gres.conf'],
     ],
@@ -692,12 +709,6 @@ class profile::slurm::node {
   }
 
   $hostname = $facts['networking']['hostname']
-  exec { 'scontrol_update_state':
-    command   => "scontrol update nodename=${hostname} state=idle",
-    onlyif    => "sinfo -n ${hostname} -o %t -h | grep -E -q -w 'down|drain'",
-    path      => ['/usr/bin', '/opt/software/slurm/bin'],
-    subscribe => Service['slurmd']
-  }
 
   # If slurmctld server is rebooted slurmd needs to be restarted.
   # Otherwise, slurmd keeps running, but the node is not in any partition
