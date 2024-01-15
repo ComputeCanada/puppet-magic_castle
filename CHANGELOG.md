@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Defined a value for ResumeFailProgram in slurm.conf (#291)
 - Defined PrivateData=cloud in slurm.conf for Slurm < 23.02 (#293)
 
+### Removed
+
+- Removed scontrol_update_state resource from profile::slurm::node
+
 ## [13.2.1] 2024-01-12
 
 No changes to Puppet code.
