@@ -709,12 +709,6 @@ class profile::slurm::node {
   }
 
   $hostname = $facts['networking']['hostname']
-  exec { 'scontrol_update_state':
-    command   => "scontrol update nodename=${hostname} state=idle",
-    onlyif    => "sinfo -n ${hostname} -o %t -h | grep -E -q -w 'down|drain'",
-    path      => ['/usr/bin', '/opt/software/slurm/bin'],
-    subscribe => Service['slurmd']
-  }
 
   # If slurmctld server is rebooted slurmd needs to be restarted.
   # Otherwise, slurmd keeps running, but the node is not in any partition
