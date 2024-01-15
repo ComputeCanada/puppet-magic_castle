@@ -542,6 +542,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ],
     subscribe => [
       File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/gres.conf'],
       File['/etc/slurm/nodes.conf'],
     ]
@@ -682,6 +683,7 @@ class profile::slurm::node {
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
       File['/etc/slurm/slurm.conf'],
+      File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
       File['/etc/slurm/gres.conf'],
     ],
