@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.3.0] 2024-01-15
+
+### Changed
+- Update EESSI for software.eessi.io (#294)
+- Moved default partition parameters to DEFAULT
+
+### Added
+- Added a parameter to configure slurm.conf addendum (#257)
+- Defined a value for ReturnToService in slurm.conf (#288)
+- Defined a value for ResumeFailProgram in slurm.conf (#291)
+- Defined PrivateData=cloud in slurm.conf for Slurm < 23.02 (#293)
+
 ## [13.2.1] 2024-01-12
 
 No changes to Puppet code.
