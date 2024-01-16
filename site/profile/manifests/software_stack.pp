@@ -4,6 +4,7 @@ class profile::software_stack (
   Integer $min_uid,
   Hash[String, String] $extra_site_env_vars = {},
 ) {
+  include consul
   include profile::cvmfs::client
 
   package { 'cvmfs-config-eessi':

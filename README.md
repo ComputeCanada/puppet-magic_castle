@@ -1069,8 +1069,13 @@ profile::software_stack::extra_site_env_vars: {}
 profile::software_stack::lmod_default_modules:
   - GCC
 ```
-
 </details>
+
+### dependencies
+
+When `profile::software_stack` is included, these classes are included too:
+- [`profile::consul`](#profileconsul)
+- [`profile::cvmfs::client`](#profilecvmfsclient)
 
 ## `profile::squid::server`
 
