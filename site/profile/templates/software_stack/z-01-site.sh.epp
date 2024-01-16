@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $UID -gt <%= $::uid_max %> ]]; then
+if [[ $UID -ge <%= $min_uid %> ]]; then
     export LMOD_SYSTEM_DEFAULT_MODULES="<%= $lmod_default_modules.join(' ') %>"
 
 <% $extra_site_env_vars.each | $key, $value| { -%>

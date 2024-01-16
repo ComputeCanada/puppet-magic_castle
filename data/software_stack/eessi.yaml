@@ -14,5 +14,3 @@ jupyterhub::jupyterhub_config_hash:
         modules: ['RStudio-Server']
       code-server:
         modules: ['code-server']
-
-profile::slurm::base::force_slurm_in_path: true

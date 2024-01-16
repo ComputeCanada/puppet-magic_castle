@@ -1,6 +1,7 @@
 class profile::software_stack (
   String $initial_profile,
   Array[String] $lmod_default_modules,
+  Integer $min_uid,
   Hash[String, String] $extra_site_env_vars = {},
 ) {
   include profile::cvmfs::client
@@ -51,6 +52,7 @@ class profile::software_stack (
   file { '/etc/profile.d/z-01-site.sh':
     content => epp('profile/software_stack/z-01-site.sh',
       {
+        'min_uid'              => $min_uid,
         'lmod_default_modules' => $lmod_default_modules,
         'initial_profile'      => $initial_profile,
         'extra_site_env_vars'  => $extra_site_env_vars,

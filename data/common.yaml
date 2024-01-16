@@ -231,6 +231,9 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
+profile::freeipa::server::id_start: 60001
+profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
+
 profile::slurm::base::slurm_version: '22.05'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.5.1'
