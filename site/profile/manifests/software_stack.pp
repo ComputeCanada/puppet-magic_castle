@@ -1,7 +1,7 @@
 class profile::software_stack (
-  String $initial_profile,
-  Array[String] $lmod_default_modules,
-  Integer $min_uid,
+  Integer $min_uid = 1000,
+  String $initial_profile = '',
+  Array[String] $lmod_default_modules = [],
   Hash[String, String] $extra_site_env_vars = {},
 ) {
   include consul
@@ -26,9 +26,7 @@ class profile::software_stack (
     require => [Package['computecanada-release-2.0-1.noarch']],
   }
 
-  if $facts['software_stack'] == 'eessi' {
-    $software_stack_meta = {}
-  } elsif $facts['software_stack'] == 'computecanada' {
+  if $facts['software_stack'] == 'computecanada' {
     if $facts['os']['architecture'] != 'x86_64' {
       fail("Compute Canada software stack does not support: ${facts['os']['architecture']}")
     }
@@ -48,9 +46,14 @@ class profile::software_stack (
       },
     }
     $software_stack_meta = { arch => $facts['cpu_ext'] }
+  } else {
+    $software_stack_meta = {}
   }
 
+  $ensure_stack = $facts['software_stack'] != '' ? { true => 'present' , false => 'absent' }
+
   file { '/etc/profile.d/z-01-site.sh':
+    ensure  => $ensure_stack,
     content => epp('profile/software_stack/z-01-site.sh',
       {
         'min_uid'              => $min_uid,
@@ -62,6 +65,7 @@ class profile::software_stack (
   }
 
   consul::service { 'software_stack':
+    ensure  => $ensure_stack,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
     meta    => $software_stack_meta,
