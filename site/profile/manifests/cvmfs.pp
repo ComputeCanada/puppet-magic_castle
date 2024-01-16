@@ -1,10 +1,7 @@
 class profile::cvmfs::client (
   Integer $quota_limit,
-  String $initial_profile,
   Array[String] $repositories,
-  Array[String] $lmod_default_modules,
   Array[String] $alien_cache_repositories = [],
-  Hash[String, String] $extra_site_env_vars = {},
 ) {
   include profile::consul
   include profile::cvmfs::local_user
@@ -20,52 +17,9 @@ class profile::cvmfs::client (
     source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
   }
 
-  if $facts['software_stack'] == 'eessi' {
-    package { 'stack':
-      ensure   => 'latest',
-      provider => 'rpm',
-      name     => 'cvmfs-config-eessi',
-      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
-    }
-    $consul_cvmfs_meta = {}
-  } elsif $facts['software_stack'] == 'computecanada' {
-    if $facts['os']['architecture'] != 'x86_64' {
-      fail("Compute Canada software stack does not support: ${facts['os']['architecture']}")
-    }
-
-    package { 'cc-cvmfs-repo':
-      ensure   => 'installed',
-      provider => 'rpm',
-      name     => 'computecanada-release-2.0-1.noarch',
-      source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-2.0-1.noarch.rpm',
-    }
-
-    package { 'stack':
-      ensure  => 'installed',
-      name    => 'cvmfs-config-computecanada',
-      require => [Package['cc-cvmfs-repo']],
-    }
-
-    file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
-      source => 'puppet:///modules/profile/cvmfs/z-00-rsnt_arch.sh.ctmpl',
-      notify => Service['consul-template'],
-    }
-
-    consul_template::watch { 'z-00-rsnt_arch.sh':
-      require     => File['/etc/consul-template/z-00-rsnt_arch.sh.ctmpl'],
-      config_hash => {
-        perms       => '0644',
-        source      => '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl',
-        destination => '/etc/profile.d/z-00-rsnt_arch.sh',
-        command     => '/usr/bin/true',
-      },
-    }
-    $consul_cvmfs_meta = { arch => $facts['cpu_ext'] }
-  }
-
   package { 'cvmfs':
     ensure  => 'installed',
-    require => [Package['cvmfs-repo'], Package['stack']],
+    require => [Package['cvmfs-repo']],
   }
 
   exec { 'cvmfs_config setup':
@@ -92,22 +46,6 @@ class profile::cvmfs::client (
       }),
       require => Package['cvmfs'],
     }
-  }
-
-  consul::service { 'cvmfs':
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
-    meta    => $consul_cvmfs_meta,
-  }
-
-  file { '/etc/profile.d/z-01-site.sh':
-    content => epp('profile/cvmfs/z-01-site.sh',
-      {
-        'lmod_default_modules' => $lmod_default_modules,
-        'initial_profile'      => $initial_profile,
-        'extra_site_env_vars'  => $extra_site_env_vars,
-      }
-    ),
   }
 
   consul_template::watch { '/etc/cvmfs/default.local':

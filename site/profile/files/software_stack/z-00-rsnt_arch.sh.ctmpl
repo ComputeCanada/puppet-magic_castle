@@ -11,7 +11,7 @@
 
 {{ scratch.Set "arch_index" 5 -}}
 
-{{ range service "cvmfs" -}}
+{{ range service "software_stack" -}}
 {{ scratch.Set "arch_index" ( minimum (scratch.Get "arch_index") (scratch.Get .ServiceMeta.arch) ) -}}
 {{ end -}}
 
