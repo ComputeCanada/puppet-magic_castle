@@ -114,7 +114,7 @@ class profile::slurm::base (
   }
 
   $slurm_path = @(END)
-  if [[ ! ":$PATH:" == *":$/opt/software/slurm/bin:"* ]]; then
+  if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
     export SLURM_HOME=/opt/software/slurm
     export PATH=$SLURM_HOME/bin:$PATH
     export MANPATH=$SLURM_HOME/share/man:$MANPATH
