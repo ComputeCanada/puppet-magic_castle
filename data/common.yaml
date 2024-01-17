@@ -7,7 +7,7 @@ lookup_options:
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
 
-profile::base::version: 13.3.1
+profile::base::version: 13.3.2
 
 motd::content: ""
 
