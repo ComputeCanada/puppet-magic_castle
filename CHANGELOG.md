@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.3.1] 2024-01-17
+
+### Changed
+- Moved Default=YES from PartitionName=DEFAULT to PartitionName=cpubase_by_core1 in slurm.conf
+
 ## [13.3.0] 2024-01-15
 
 ### Changed
