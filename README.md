@@ -547,6 +547,7 @@ This class configures files and services of a FreeIPA server.
 
 | Variable         | Description                                 | Type           |
 | :--------------  | :------------------------------------------ | :------------- |
+| `id_start`       | Starting user and group id number           | Integer        |
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
@@ -555,6 +556,7 @@ This class configures files and services of a FreeIPA server.
 <summary>default values</summary>
 
 ```yaml
+profile::freeipa::server::id_start: 60001
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
@@ -1042,12 +1044,17 @@ variable [`software_stack`](https://github.com/ComputeCanada/magic_castle/tree/m
 
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
-| `initial_profile`         | Path to shell script initializing software stack environment variables | String |
+| `min_uid`                 | Mininum UID value required to load the software environment init script on login | Integer |
+| `initial_profile`         | Path to shell script initializing software environment variables | String |
 | `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
 | `lmod_default_modules`    | List of lmod default modules |Array[String] |
 
 <details>
 <summary>default values</summary>
+
+```yaml
+profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
+```
 
 ### `computecanada` software stack
 
