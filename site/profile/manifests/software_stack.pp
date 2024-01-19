@@ -26,9 +26,9 @@ class profile::software_stack (
     require => [Package['computecanada-release-2.0-1.noarch']],
   }
 
-  if $facts['software_stack'] == 'computecanada' {
+  if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
     if $facts['os']['architecture'] != 'x86_64' {
-      fail("Compute Canada software stack does not support: ${facts['os']['architecture']}")
+      fail("${facts['software_stack']} software stack does not support: ${facts['os']['architecture']}")
     }
 
     file { '/etc/consul-template/z-00-rsnt_arch.sh.ctmpl':
