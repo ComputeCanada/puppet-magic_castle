@@ -47,6 +47,9 @@ class profile::software_stack (
     }
     $software_stack_meta = { arch => $facts['cpu_ext'] }
   } else {
+    file { '/etc/profile.d/z-00-rsnt_arch.sh':
+      ensure => 'absent',
+    }
     $software_stack_meta = {}
   }
 
