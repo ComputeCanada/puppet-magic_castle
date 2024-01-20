@@ -1,8 +1,8 @@
 class profile::software_stack (
   Integer $min_uid = 1000,
-  String $initial_profile = '',
-  Array[String] $lmod_default_modules = [],
-  Hash[String, String] $extra_site_env_vars = {},
+  Optional[String] $initial_profile = undef,
+  Optional[Array[String]] $lmod_default_modules = undef,
+  Optional[Hash[String, String]] $extra_site_env_vars = undef,
 ) {
   include consul
   include profile::cvmfs::client
