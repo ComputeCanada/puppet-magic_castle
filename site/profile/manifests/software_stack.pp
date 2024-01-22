@@ -53,7 +53,12 @@ class profile::software_stack (
     $software_stack_meta = {}
   }
 
-  $ensure_stack = ($facts['software_stack'] and $facts['software_stack'] != '') ? { true => 'present' , false => 'absent' }
+  $ensure_stack = $facts['software_stack'] ? {
+    'computecanada' => 'present',
+    'alliance'      => 'present',
+    'eessi'         => 'present',
+    default         => 'absent',
+  }
 
   file { '/etc/profile.d/z-01-site.sh':
     ensure  => $ensure_stack,
