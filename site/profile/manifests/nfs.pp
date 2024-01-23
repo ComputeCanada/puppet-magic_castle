@@ -166,7 +166,7 @@ define profile::nfs::server::export_volume (
   }
 
   if $quota_value {
-    exec { "apply_quota":
+    exec { "apply-quota-${name}":
       command => "xfs_quota -x -c 'limit bsoft=${quota_value} bhard=${quota_value} -d' /mnt/${name}",
       require => Mount["/mnt/${name}"],
       path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
