@@ -107,7 +107,7 @@ class profile::nfs::server (
     )
     $devices.each | String $key, $data | {
       profile::nfs::server::export_volume { $key:
-        volume            => $data,
+        volume          => $data,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
       }
     }
@@ -162,7 +162,7 @@ define profile::nfs::server::export_volume (
     fs_type           => 'xfs',
     mountpath         => "/mnt/${name}",
     mountpath_require => true,
-    options => "defaults${quota_setting}"
+    options           => "defaults${quota_setting}"
   }
 
   if $quota_value {
