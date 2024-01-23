@@ -148,6 +148,7 @@ define profile::nfs::server::export_volume (
     fs_type           => 'xfs',
     mountpath         => "/mnt/${name}",
     mountpath_require => true,
+    options => 'defaults,usrquota',
   }
 
   selinux::fcontext::equivalence { "/mnt/${name}":
