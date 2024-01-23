@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ $UID -ge <%= $min_uid %> ]]; then
+<% if $lmod_default_modules { -%>
+    export LMOD_SYSTEM_DEFAULT_MODULES="<%= $lmod_default_modules.join(' ') %>"
+<% } -%>
+<% if $extra_site_env_vars { $extra_site_env_vars.each | $key, $value| { -%>
+    export <%= $key %>=<%= $value %>
+<% }} -%>
+<% if $initial_profile { -%>
+    if [[ -r <%= $initial_profile %>  ]]; then
+        source <%= $initial_profile %>
+    fi
+<% } -%>
+fi

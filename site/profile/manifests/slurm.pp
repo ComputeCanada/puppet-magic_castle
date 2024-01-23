@@ -13,7 +13,6 @@ class profile::slurm::base (
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
-  Boolean $force_slurm_in_path = false,
   Boolean $enable_x11_forwarding = true,
   String  $config_addendum = '',
 )
@@ -115,23 +114,17 @@ class profile::slurm::base (
   }
 
   $slurm_path = @(END)
-<% if ! $force_slurm_in_path { %>if [[ $UID -lt <%= $uid_max %> ]]; then<% } %>
-  export SLURM_HOME=/opt/software/slurm
-  export PATH=$SLURM_HOME/bin:$PATH
-  export MANPATH=$SLURM_HOME/share/man:$MANPATH
-  export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-<% if ! $force_slurm_in_path { %>fi<% } %>
-END
+  if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
+    export SLURM_HOME=/opt/software/slurm
+    export PATH=$SLURM_HOME/bin:$PATH
+    export MANPATH=$SLURM_HOME/share/man:$MANPATH
+    export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+  fi
+  |END
 
-  file { '/etc/profile.d/z-00-slurm.sh':
+  file { '/etc/profile.d/z-02-slurm.sh':
     ensure  => 'present',
-    content => inline_epp(
-      $slurm_path,
-      {
-        'force_slurm_in_path' => $force_slurm_in_path,
-        'uid_max'             => $facts['uid_max'],
-      }
-    ),
+    content => $slurm_path,
   }
 
   file { '/etc/munge/munge.key':

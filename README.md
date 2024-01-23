@@ -42,6 +42,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
+- [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
 - [`profile::ssh::base`](#profilesshbase)
@@ -380,55 +381,28 @@ user space (a FUSE module). Files and directories are hosted on standard web ser
 in the universal namespace `/cvmfs`.
 [reference](https://cernvm.cern.ch/fs/)
 
-This class installs CVMFS client and configure repositories. Since CVMFS is providing the scientific
-software stack, this class also configures the initial shell profile that user will load on login and
-the default set of Lmod modules that will be loaded.
+This class installs CVMFS client and configure repositories.
 
 ### parameters
 
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `initial_profile`         | Path to shell script initializing software stack environment variables | String |
-| `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
 | `repositories`            | List of CVMFS repositories to mount  | Array[String] |
 | `alien_cache_repositories`| List of CVMFS repositories that need an alien cache | Array[String] |
-| `lmod_default_modules`    | List of lmod default modules |Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
-profile::cvmfs::client::extra_site_env_vars: { }
-profile::cvmfs::client::alien_cache_repositories: [ ]
-```
-
-#### computecanada software stack
-
-```yaml
-profile::cvmfs::client::repositories:
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
-profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-profile::cvmfs::client::lmod_default_modules:
-  - gentoo/2020
-  - imkl/2020.1.217
-  - gcc/9.3.0
-  - openmpi/4.0.3
-```
-
-#### eessi software stack
-
-```yaml
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/bash"
-profile::cvmfs::client::lmod_default_modules:
-  - GCC
+  - software.eessi.io
+  - cvmfs-config.computecanada.ca
+  - soft.computecanada.ca
+profile::cvmfs::client::alien_cache_repositories: [ ]
 ```
-
-
 </details>
 
 <details>
@@ -436,18 +410,10 @@ profile::cvmfs::client::lmod_default_modules:
 
 ```yaml
 profile::cvmfs::client::quota_limit: 8192
-profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-profile::cvmfs::client::extra_site_env_vars:
-  CC_CLUSTER: beluga
 profile::cvmfs::client::repositories:
   - atlas.cern.ch
 profile::cvmfs::client::alien_cache_repositories:
   - grid.cern.ch
-profile::cvmfs::client::lmod_default_modules:
-  - gentoo/2020
-  - imkl/2020.1.217
-  - gcc/9.3.0
-  - openmpi/4.0.3
 ```
 </details>
 
@@ -581,6 +547,7 @@ This class configures files and services of a FreeIPA server.
 
 | Variable         | Description                                 | Type           |
 | :--------------  | :------------------------------------------ | :------------- |
+| `id_start`       | Starting user and group id number           | Integer        |
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
@@ -589,6 +556,7 @@ This class configures files and services of a FreeIPA server.
 <summary>default values</summary>
 
 ```yaml
+profile::freeipa::server::id_start: 60001
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
@@ -1067,6 +1035,55 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::mail::server`](#profilemailserver)
 
+## `profile::software_stack`
+
+This class configures the initial shell profile that user will load on login and
+the default set of Lmod modules that will be loaded. The software stack selected
+depends on the Puppet fact `software_stack` which is set by Magic Castle Terraform
+variable [`software_stack`](https://github.com/ComputeCanada/magic_castle/tree/main/docs#416-software_stack-optional).
+
+| Variable                  | Description                                    | Type        |
+| :------------------------ | :--------------------------------------------- | -------------- |
+| `min_uid`                 | Mininum UID value required to load the software environment init script on login | Integer |
+| `initial_profile`         | Path to shell script initializing software environment variables | String |
+| `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
+| `lmod_default_modules`    | List of lmod default modules |Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
+```
+
+### `computecanada` software stack
+
+```yaml
+profile::software_stack::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
+profile::software_stack::extra_site_env_vars: {}
+profile::software_stack::lmod_default_modules:
+    - gentoo/2020
+    - imkl/2020.1.217
+    - gcc/9.3.0
+    - openmpi/4.0.3
+```
+
+### `eessi` software stack
+
+```yaml
+profile::software_stack::initial_profile: "/cvmfs/software.eessi.io/versions/2023.06/init/Magic_Castle/bash"
+profile::software_stack::extra_site_env_vars: {}
+profile::software_stack::lmod_default_modules:
+  - GCC
+```
+</details>
+
+### dependencies
+
+When `profile::software_stack` is included, these classes are included too:
+- [`profile::consul`](#profileconsul)
+- [`profile::cvmfs::client`](#profilecvmfsclient)
+
 ## `profile::squid::server`
 
 > Squid is a caching and forwarding HTTP web proxy. It has a wide variety
@@ -1091,23 +1108,14 @@ act as an HTTP cache for CVMFS clients in the cluster.
 ```yaml
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
-```
-
-#### computecanada software stack
-```yaml
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
-```
-
-#### eessi software stack
-```yaml
-profile::squid::server::cvmfs_acl_regex:
   - '^(.*\.cvmfs\.eessi-infra\.org)$'
+  - '^(.*s1\.eessi\.science)$'
 ```
-</details>
 
 ### dependencies
 

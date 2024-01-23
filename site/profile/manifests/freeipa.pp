@@ -200,6 +200,7 @@ class profile::freeipa::client (String $server_ip) {
 }
 
 class profile::freeipa::server (
+  Integer $id_start,
   String $admin_password,
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
@@ -248,14 +249,13 @@ class profile::freeipa::server (
   $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
-  $idstart = Integer($facts['uid_max']) + 1
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
     /sbin/ipa-server-install \
     --setup-dns \
     --hostname ${fqdn} \
     --ds-password ${ds_password} \
     --admin-password ${admin_password} \
-    --idstart=${idstart} \
+    --idstart=${id_start} \
     --ssh-trust-dns \
     --unattended \
     --auto-forwarders \
