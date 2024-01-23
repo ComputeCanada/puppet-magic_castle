@@ -10,6 +10,13 @@ class profile::nfs {
   }
 }
 
+type Volume = Struct[{
+    'devices' => Array[String],
+    'quota' => Optional[String],
+}]
+type Volumes = Hash[String, Volume]
+
+
 class profile::nfs::client (
   String $server_ip,
   String $domain_name,
@@ -23,7 +30,7 @@ class profile::nfs::client (
   }
 
   $devices = lookup('profile::nfs::server::devices', undef, undef, {})
-  if $devices =~ Hash[String, Array[String]] {
+  if $devices =~ Volumes {
     $nfs_export_list = keys($devices)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
@@ -51,7 +58,7 @@ class profile::nfs::server (
   # the key terraform.data.volumes.nfs does not exist because
   # "A lookup resulting in an interpolation of `alias` referencing
   # a non-existant key returns an empty string"
-  Variant[Hash[String, Array[String]], String[0, 0]] $devices,
+  Variant[Volumes, String[0, 0]] $devices,
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -83,7 +90,7 @@ class profile::nfs::server (
     ensure => installed,
   }
 
-  if $devices =~ Hash[String, Array[String]] {
+  if $devices =~ Volumes {
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
     $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
@@ -98,9 +105,9 @@ class profile::nfs::server (
         }
       )
     )
-    $devices.each | String $key, $glob | {
+    $devices.each | String $key, $data | {
       profile::nfs::server::export_volume { $key:
-        glob            => $glob,
+        volume            => $data,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
       }
     }
@@ -108,10 +115,11 @@ class profile::nfs::server (
 }
 
 define profile::nfs::server::export_volume (
-  Array[String] $glob,
+  Volume $volume,
   Boolean $root_bind_mount = false,
   String $seltype = 'home_root_t',
 ) {
+  $glob = $volume['devices']
   $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
   ensure_resource('file', "/mnt/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
@@ -142,13 +150,27 @@ define profile::nfs::server::export_volume (
     followsymlinks   => true,
   }
 
+  $quota_value = $volume['quota']
+  $quota_setting = $quota_value ? {
+    undef   => '',
+    default => ',usrquota',
+  }
+
   lvm::logical_volume { $name:
     ensure            => present,
     volume_group      => "${name}_vg",
     fs_type           => 'xfs',
     mountpath         => "/mnt/${name}",
     mountpath_require => true,
-    options => 'defaults,usrquota',
+    options => "defaults${quota_setting}"
+  }
+
+  if $quota_value {
+    exec { "apply_quota":
+      command => "xfs_quota -x -c 'limit bsoft=${quota_value} bhard=${quota_value} -d' /mnt/${name}",
+      require => Mount["/mnt/${name}"],
+      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+    }
   }
 
   selinux::fcontext::equivalence { "/mnt/${name}":
@@ -181,3 +203,4 @@ define profile::nfs::server::export_volume (
     }
   }
 }
+
