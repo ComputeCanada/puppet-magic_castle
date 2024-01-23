@@ -35,7 +35,7 @@ class profile::cvmfs::client (
         'repositories' => $repositories + $alien_cache_repositories,
     }),
     notify  => Service['consul-template'],
-    require => Package['cvmfs'],
+    require => Package['cvmfs'], # 'cvmfs' packages provides /etc/cvmfs
   }
 
   $alien_cache_repositories.each |$repo| {
@@ -44,7 +44,7 @@ class profile::cvmfs::client (
           'alien_fs_root'     => $alien_fs_root,
           'alien_folder_name' => $alien_folder_name,
       }),
-      require => Package['cvmfs'],
+      require => Package['cvmfs'], # 'cvmfs' packages provides /etc/cvmfs/config.d
     }
   }
 
