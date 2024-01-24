@@ -1117,6 +1117,8 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(.*s1\.eessi\.science)$'
 ```
 
+</details>
+
 ### dependencies
 
 When `profile::squid::server` is included, these classes are included too:
