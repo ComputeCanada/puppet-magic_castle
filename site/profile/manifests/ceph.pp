@@ -1,5 +1,6 @@
 type CephFS = Struct[
   {
+    'share_name' => String,
     'access_key' => String,
     'export_path' => String,
     'mount_binds' => Optional[Array[Tuple[String, String]]],
@@ -59,6 +60,7 @@ class profile::ceph::client::install {
 }
 
 define profile::ceph::client::share (
+  String $share_name,
   Array[String] $mon_host,
   String $access_key,
   String $export_path,
@@ -93,7 +95,7 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${name},secretfile=/etc/ceph/client.keyonly.${name}",
+    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name}",
     require => File['/etc/ceph/ceph.conf'],
   }
 
