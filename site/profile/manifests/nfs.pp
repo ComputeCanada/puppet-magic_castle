@@ -10,13 +10,6 @@ class profile::nfs {
   }
 }
 
-type Volume = Struct[{
-    'devices' => Array[String],
-    'quota' => Optional[String],
-}]
-type Volumes = Hash[String, Volume]
-
-
 class profile::nfs::client (
   String $server_ip,
   String $domain_name,
@@ -30,7 +23,7 @@ class profile::nfs::client (
   }
 
   $devices = lookup('profile::nfs::server::devices', undef, undef, {})
-  if $devices =~ Volumes {
+  if $devices =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($devices)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
@@ -58,7 +51,8 @@ class profile::nfs::server (
   # the key terraform.data.volumes.nfs does not exist because
   # "A lookup resulting in an interpolation of `alias` referencing
   # a non-existant key returns an empty string"
-  Variant[Volumes, String[0, 0]] $devices,
+  Variant[Hash[String, Array[String]], String[0, 0]] $devices,
+  Variant[Hash[String, String], String[0, 0]] $quotas,
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -90,7 +84,7 @@ class profile::nfs::server (
     ensure => installed,
   }
 
-  if $devices =~ Volumes {
+  if $devices =~ Hash[String, Array[String]] {
     $hostname = $facts['networking']['hostname']
     $instance_tags = lookup("terraform.instances.${hostname}.tags")
     $ldap_access_tags = lookup('profile::users::ldap::access_tags').map|$tag| { split($tag, /:/)[0] }
@@ -105,21 +99,22 @@ class profile::nfs::server (
         }
       )
     )
-    $devices.each | String $key, $data | {
+    $devices.each | String $key, $glob | {
       profile::nfs::server::export_volume { $key:
-        volume          => $data,
+        glob            => $glob,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
+        quota           => $quotas[$key],
       }
     }
   }
 }
 
 define profile::nfs::server::export_volume (
-  Volume $volume,
+  Array[String] $glob,
+  Optional[String] $quota = undef,
   Boolean $root_bind_mount = false,
   String $seltype = 'home_root_t',
 ) {
-  $glob = $volume['devices']
   $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
   ensure_resource('file', "/mnt/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
@@ -150,8 +145,7 @@ define profile::nfs::server::export_volume (
     followsymlinks   => true,
   }
 
-  $quota_value = $volume['quota']
-  $quota_setting = $quota_value ? {
+  $quota_setting = $quota ? {
     undef   => '',
     default => ',usrquota',
   }
@@ -165,9 +159,9 @@ define profile::nfs::server::export_volume (
     options           => "defaults${quota_setting}"
   }
 
-  if $quota_value {
+  if $quota {
     exec { "apply-quota-${name}":
-      command => "xfs_quota -x -c 'limit bsoft=${quota_value} bhard=${quota_value} -d' /mnt/${name}",
+      command => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
       require => Mount["/mnt/${name}"],
       path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
     }
@@ -203,4 +197,3 @@ define profile::nfs::server::export_volume (
     }
   }
 }
-
