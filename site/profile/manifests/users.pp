@@ -130,7 +130,7 @@ define profile::users::local_user (
   String $mls_range = 's0-s0:c0.c1023',
   Boolean $manage_home = true,
   Boolean $purge_ssh_keys = true,
-  Optional[String] $shell = "/bin/bash",
+  Optional[String] $shell = '/bin/bash',
   Optional[Integer] $uid = undef,
   Optional[Integer] $gid = undef,
   Optional[String] $group = $name,
