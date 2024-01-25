@@ -3,7 +3,7 @@ type CephFS = Struct[
     'share_name' => String,
     'access_key' => String,
     'export_path' => String,
-    'mount_binds' => Optional[Array[Tuple[String, String]]],
+    'mount_binds' => Optional[Array[Variant[Tuple[String, String], Tuple[String,String,String]]]],
     'binds_fcontext_equivalence' => Optional[String],
   }
 ]
@@ -64,7 +64,7 @@ define profile::ceph::client::share (
   Array[String] $mon_host,
   String $access_key,
   String $export_path,
-  Array[Tuple[String, String]] $mount_binds,
+  Array[Variant[Tuple[String, String], Tuple[String,String,String]]] $mount_binds,
   Optional[String] $binds_fcontext_equivalence = undef,
 ) {
   $client_fullkey = @("EOT")
@@ -85,9 +85,14 @@ define profile::ceph::client::share (
     owner   => 'root',
     group   => 'root',
   }
-
+  if length($tuple) > 2 {
+    $type = $tuple[2]
+  }
+  else {
+    $type = directory
+  }
   file { "/mnt/${name}":
-    ensure => directory,
+    ensure => $type,
   }
 
   $mon_host_string = join($mon_host, ',')
