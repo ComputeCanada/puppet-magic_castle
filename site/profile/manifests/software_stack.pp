@@ -10,7 +10,8 @@ class profile::software_stack (
   package { 'cvmfs-config-eessi':
     ensure   => 'installed',
     provider => 'rpm',
-    before   => Package['cvmfs'],
+    require  => Package['cvmfs'],
+    notify   => Service['autofs'],
     source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
   }
 
@@ -22,8 +23,11 @@ class profile::software_stack (
 
   package { 'cvmfs-config-computecanada':
     ensure  => 'installed',
-    before  => Package['cvmfs'],
-    require => [Package['computecanada-release-2.0-1.noarch']],
+    require => [
+      Package['cvmfs'],
+      Package['computecanada-release-2.0-1.noarch']
+    ],
+    notify  => Service['autofs'],
   }
 
   if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
