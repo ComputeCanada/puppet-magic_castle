@@ -65,7 +65,7 @@ define profile::ceph::client::share (
   String $access_key,
   String $export_path,
   Array[Tuple[String, String]] $mount_binds,
-  String $binds_fcontext_equivalence = undef,
+  Optional[String] $binds_fcontext_equivalence = undef,
 ) {
   $client_fullkey = @("EOT")
     [client.${name}]
