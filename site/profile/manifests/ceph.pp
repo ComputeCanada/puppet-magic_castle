@@ -85,14 +85,8 @@ define profile::ceph::client::share (
     owner   => 'root',
     group   => 'root',
   }
-  if length($tuple) > 2 {
-    $type = $tuple[2]
-  }
-  else {
-    $type = directory
-  }
   file { "/mnt/${name}":
-    ensure => $type,
+    ensure => directory,
   }
 
   $mon_host_string = join($mon_host, ',')
@@ -107,8 +101,15 @@ define profile::ceph::client::share (
   $mount_binds.each |$tuple| {
     $src = $tuple[0]
     $dst = $tuple[1]
+    if length($tuple) > 2 {
+      $mount_type = $tuple[2]
+    }
+    else {
+      $mount_type = directory
+    }
+
     file { "/${dst}":
-      ensure  => directory,
+      ensure  => $mount_type,
     }
     mount { "/${dst}":
       ensure  => 'mounted',
