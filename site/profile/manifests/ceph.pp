@@ -25,7 +25,7 @@ class profile::ceph::client (
     content => $ceph_conf,
   }
 
-  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'mount_binds' => [], 'binds_fcontext_equivalence' => '' })
+  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'mount_binds' => [] })
 }
 
 class profile::ceph::client::install {
@@ -65,7 +65,7 @@ define profile::ceph::client::share (
   String $access_key,
   String $export_path,
   Array[Tuple[String, String]] $mount_binds,
-  String $binds_fcontext_equivalence,
+  String $binds_fcontext_equivalence = undef,
 ) {
   $client_fullkey = @("EOT")
     [client.${name}]
@@ -116,14 +116,12 @@ define profile::ceph::client::share (
       ],
     }
 
-    if ($binds_fcontext_equivalence != '' and $binds_fcontext_equivalence != "/${dst}") {
+    if ($binds_fcontext_equivalence and $binds_fcontext_equivalence != "/${dst}") {
       selinux::fcontext::equivalence { "/${dst}":
         ensure  => 'present',
         target  => $binds_fcontext_equivalence,
         require => Mount["/${dst}"],
-        notify  => Selinux::Exec_restorecon["/${dst}"],
       }
-      selinux::exec_restorecon { "/${dst}": }
     }
   }
 }
