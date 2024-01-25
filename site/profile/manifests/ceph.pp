@@ -25,7 +25,7 @@ class profile::ceph::client (
     content => $ceph_conf,
   }
 
-  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'mount_binds' => [], 'binds_fcontext_equivalence' => '/home' })
+  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'mount_binds' => [], 'binds_fcontext_equivalence' => '' })
 }
 
 class profile::ceph::client::install {
