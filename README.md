@@ -764,6 +764,7 @@ accomplished manually.
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `devices` | Mapping between NFS share and devices to export. | Hash[String, Array[String]]   |
+| `usrquotas` | Mapping between NFS share and the user quotas.  Values in bytes and multipliers defined by XFS are supported.  | Optional[Hash[String, String]]   |
 
 
 <details>
@@ -771,6 +772,7 @@ accomplished manually.
 
 ```yaml
 profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
+profile::nfs::server::usrquotas: ~ #undef
 ```
 </details>
 
@@ -786,6 +788,9 @@ profile::nfs::server::devices:
     - bfd50252-62c8-11ee-8c99-0242ac120002
   project:
     - c3b99e00-62c8-11ee-8c99-0242ac120002
+profile::nfs::server::usrquotas:
+  home: 10g
+  project: 50g
 ```
 </details>
 
