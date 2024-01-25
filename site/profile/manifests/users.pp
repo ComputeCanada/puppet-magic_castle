@@ -146,7 +146,7 @@ define profile::users::local_user (
     ensure         => present,
     forcelocal     => true,
     uid            => $uid,
-    gidi           => $gid,
+    gid            => $gid,
     groups         => $groups,
     home           => $home,
     purge_ssh_keys => $purge_ssh_keys,
