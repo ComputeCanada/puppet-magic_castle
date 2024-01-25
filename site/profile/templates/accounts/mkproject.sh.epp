@@ -14,10 +14,7 @@
 # - DEL trigger the removal of all users from the associated Slurm account
 #   and the removal of the symlink to the project from all previous member
 #   home folders.
-#
-# The script is currently unable to detect changes to groups when done via
-# the 389-sd automember plugin, because these automember plugin actions
-# produce no trace in 389-ds access logs.
+
 
 PROJECT_REGEX="<%= $project_regex %>"
 PREV_CONN=""
@@ -44,93 +41,18 @@ while read CONN OP GROUP; do
 
     # We support three operations : ADD, MOD or DEL
     if [[ "$OP" == "ADD" ]]; then
-        # A new group has been created
-        # We create the associated account in slurm
-        /opt/software/slurm/bin/sacctmgr add account $GROUP -i
-<% if $with_folder { %>
-        # We ignore the SSSD cache before recovering the group GID.
-        # Using the cache would be problematic if the group existed before with a different gid.
-        GID=""
-        while [ -z "$GID" ]; do
-            sleep 5
-            GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f3)
-        done
-
-        # Then we create the project folder
-        MNT_PROJECT_GID="/mnt/project/$GID"
-        MNT_PROJECT_GROUP="/mnt/project/$GROUP"
-        mkdir -p ${MNT_PROJECT_GID}
-        chown root:"$GROUP" ${MNT_PROJECT_GID}
-        chmod 2770 ${MNT_PROJECT_GID}
-        ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
-        restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-<% } %>
+        mkproject $GROUP <%= $with_folder %>
     elif [[ "$OP" == "MOD" ]]; then
-        # A group has been modified
+        # One or more groups have been modified
         # We grep the log for all operations related to request $CONN that contain a uid
-        USERNAMES=$(grep -oP "conn=$CONN op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
-
-        # The operation that add users to a group would have operations with a uid.
-        # If we found none, $USERNAMES will be empty, and it means we don't have
-        # anything to add to Slurm and /project
-        if [[ ! -z "${USERNAMES}" ]]; then
-            MNT_PROJECT="/mnt$(readlink /mnt/project/${GROUP})"
-<% if $with_folder { -%>
-            for USERNAME in $USERNAMES; do
-                wait_id $USERNAME
-
-                if [ ! $? -eq 0 ]; then
-                    echo "$USERNAME is not showing up in SSSD after 1min - cannot make its project."
-                    continue
-                fi
-
-                USER_HOME="/mnt/home/${USERNAME}"
-
-                PRO_USER="${MNT_PROJECT}/${USERNAME}"
-                mkdir -p ${PRO_USER}
-                mkdir -p "${USER_HOME}/projects"
-                ln -sfT "/project/${GROUP}" "${USER_HOME}/projects/${GROUP}"
-
-                chgrp "${USERNAME}" "${USER_HOME}/projects"
-                chown "${USERNAME}" "${PRO_USER}"
-                chmod 0755 "${USER_HOME}/projects"
-                chmod 2700 "${PRO_USER}"
-                restorecon -F -R "${MNT_PROJECT}/${USERNAME}"
-            done
-<% } -%>
-            /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i
-        else
-            # If group has been modified but no uid were found in the log, it means
-            # user(s) have been removed from the groups.
-            # We identify which ones by comparing Slurm account with group.
-            USER_GROUP=$(sleep 5 && SSS_NSS_USE_MEMCACHE=no getent group $GROUP | cut -d: -f4 | tr "," "\n" | sort)
-            SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
-            USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
-            if [[ ! -z "$USERNAMES" ]]; then
-                /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
-<% if $with_folder { -%>
-                for USERNAME in $USERNAMES; do
-                    USER_HOME="/mnt/home/$USERNAME"
-                    rm "$USER_HOME/projects/$GROUP"
-                done
-<% } -%>
-            fi
-        fi
+        USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
+        # We grep all unique groups that have been modified
+        MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
+        for GROUP in $MOD_GROUPS; do
+            modproject $GROUP <%= $with_folder %> $USERNAMES
+        done
     elif [[ "$OP" == "DEL" ]]; then
-        # A group has been removed.
-        # Since we do not want to delete any data we only remove the
-        # symlinks and remove the users from the slurm account.
-        USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -p | cut -d'|' -f1 | awk NF | sort)
-        if [[ ! -z "$USERNAMES" ]]; then
-            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i
-<% if $with_folder { -%>
-            for USERNAME in $USERNAMES; do
-                USER_HOME="/mnt/home/$USERNAME"
-                rm "$USER_HOME/projects/$GROUP"
-            done
-<% } -%>
-        fi
+        delproject $GROUP <%= $with_folder %>
     fi
-
     PREV_CONN="$CONN"
 done

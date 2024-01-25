@@ -42,6 +42,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
+- [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
 - [`profile::ssh::base`](#profilesshbase)
@@ -385,55 +386,28 @@ user space (a FUSE module). Files and directories are hosted on standard web ser
 in the universal namespace `/cvmfs`.
 [reference](https://cernvm.cern.ch/fs/)
 
-This class installs CVMFS client and configure repositories. Since CVMFS is providing the scientific
-software stack, this class also configures the initial shell profile that user will load on login and
-the default set of Lmod modules that will be loaded.
+This class installs CVMFS client and configure repositories.
 
 ### parameters
 
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `initial_profile`         | Path to shell script initializing software stack environment variables | String |
-| `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
 | `repositories`            | List of CVMFS repositories to mount  | Array[String] |
 | `alien_cache_repositories`| List of CVMFS repositories that need an alien cache | Array[String] |
-| `lmod_default_modules`    | List of lmod default modules |Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
-profile::cvmfs::client::extra_site_env_vars: { }
-profile::cvmfs::client::alien_cache_repositories: [ ]
-```
-
-#### computecanada software stack
-
-```yaml
-profile::cvmfs::client::repositories:
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
-profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-profile::cvmfs::client::lmod_default_modules:
-  - gentoo/2020
-  - imkl/2020.1.217
-  - gcc/9.3.0
-  - openmpi/4.0.3
-```
-
-#### eessi software stack
-
-```yaml
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
-profile::cvmfs::client::initial_profile: "/cvmfs/pilot.eessi-hpc.org/latest/init/Magic_Castle/bash"
-profile::cvmfs::client::lmod_default_modules:
-  - GCC
+  - software.eessi.io
+  - cvmfs-config.computecanada.ca
+  - soft.computecanada.ca
+profile::cvmfs::client::alien_cache_repositories: [ ]
 ```
-
-
 </details>
 
 <details>
@@ -441,18 +415,10 @@ profile::cvmfs::client::lmod_default_modules:
 
 ```yaml
 profile::cvmfs::client::quota_limit: 8192
-profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-profile::cvmfs::client::extra_site_env_vars:
-  CC_CLUSTER: beluga
 profile::cvmfs::client::repositories:
   - atlas.cern.ch
 profile::cvmfs::client::alien_cache_repositories:
   - grid.cern.ch
-profile::cvmfs::client::lmod_default_modules:
-  - gentoo/2020
-  - imkl/2020.1.217
-  - gcc/9.3.0
-  - openmpi/4.0.3
 ```
 </details>
 
@@ -514,31 +480,7 @@ Written in the Python programming language, it is designed to prevent brute-forc
 
 This class installs and configures fail2ban.
 
-### parameters
-
-| Variable          | Description      | Type    |
-| :---------------- | :--------------- | :------ |
-| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
-| `service_ensure`  | Enable fail2ban service                                                        | Enum['running', 'stopped'] |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::fail2ban::ignoreip: []
-profile::fail2ban::service_ensure: "running"
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
-profile::fail2ban::ignoreip:
-  - 132.203.0.0/16
-  - 10.0.0.0/8
-```
-</details>
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for parameters to configure.
 
 ### dependencies
 
@@ -610,6 +552,7 @@ This class configures files and services of a FreeIPA server.
 
 | Variable         | Description                                 | Type           |
 | :--------------  | :------------------------------------------ | :------------- |
+| `id_start`       | Starting user and group id number           | Integer        |
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
@@ -618,6 +561,7 @@ This class configures files and services of a FreeIPA server.
 <summary>default values</summary>
 
 ```yaml
+profile::freeipa::server::id_start: 60001
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
@@ -957,6 +901,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
+| `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 
 <details>
 <summary>default values</summary>
@@ -970,6 +915,7 @@ profile::slurm::base::suspend_time: 3600
 profile::slurm::base::resume_timeout: 3600
 profile::slurm::base::force_slurm_in_path: false
 profile::slurm::base::enable_x11_forwarding: true
+profile::slurm::base::config_addendum: ''
 ```
 </details>
 
@@ -1094,6 +1040,55 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::mail::server`](#profilemailserver)
 
+## `profile::software_stack`
+
+This class configures the initial shell profile that user will load on login and
+the default set of Lmod modules that will be loaded. The software stack selected
+depends on the Puppet fact `software_stack` which is set by Magic Castle Terraform
+variable [`software_stack`](https://github.com/ComputeCanada/magic_castle/tree/main/docs#416-software_stack-optional).
+
+| Variable                  | Description                                    | Type        |
+| :------------------------ | :--------------------------------------------- | -------------- |
+| `min_uid`                 | Mininum UID value required to load the software environment init script on login | Integer |
+| `initial_profile`         | Path to shell script initializing software environment variables | String |
+| `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
+| `lmod_default_modules`    | List of lmod default modules |Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
+```
+
+### `computecanada` software stack
+
+```yaml
+profile::software_stack::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
+profile::software_stack::extra_site_env_vars: {}
+profile::software_stack::lmod_default_modules:
+    - gentoo/2020
+    - imkl/2020.1.217
+    - gcc/9.3.0
+    - openmpi/4.0.3
+```
+
+### `eessi` software stack
+
+```yaml
+profile::software_stack::initial_profile: "/cvmfs/software.eessi.io/versions/2023.06/init/Magic_Castle/bash"
+profile::software_stack::extra_site_env_vars: {}
+profile::software_stack::lmod_default_modules:
+  - GCC
+```
+</details>
+
+### dependencies
+
+When `profile::software_stack` is included, these classes are included too:
+- [`profile::consul`](#profileconsul)
+- [`profile::cvmfs::client`](#profilecvmfsclient)
+
 ## `profile::squid::server`
 
 > Squid is a caching and forwarding HTTP web proxy. It has a wide variety
@@ -1118,22 +1113,15 @@ act as an HTTP cache for CVMFS clients in the cluster.
 ```yaml
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
-```
-
-#### computecanada software stack
-```yaml
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
+  - '^(.*\.cvmfs\.eessi-infra\.org)$'
+  - '^(.*s1\.eessi\.science)$'
 ```
 
-#### eessi software stack
-```yaml
-profile::squid::server::cvmfs_acl_regex:
-  - '^(.*\.cvmfs\.eessi-infra\.org)$'
-```
 </details>
 
 ### dependencies

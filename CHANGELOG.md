@@ -3,6 +3,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.3.1] 2024-01-17
+
+### Changed
+- Moved Default=YES from PartitionName=DEFAULT to PartitionName=cpubase_by_core1 in slurm.conf
+
+## [13.3.0] 2024-01-15
+
+### Changed
+- Update EESSI for software.eessi.io (#294)
+- Moved default partition parameters to DEFAULT
+
+### Added
+- Added a parameter to configure slurm.conf addendum (#257)
+- Defined a value for ReturnToService in slurm.conf (#288)
+- Defined a value for ResumeFailProgram in slurm.conf (#291)
+- Defined PrivateData=cloud in slurm.conf for Slurm < 23.02 (#293)
+
+### Removed
+
+- Removed scontrol_update_state resource from profile::slurm::node
+
+## [13.2.1] 2024-01-12
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [13.2.0] 2024-01-09
+
+### Added
+
+- Added support for FreeIPA automembership rule (#287)
+
+### Changed
+
+- Bumped Slurm autoscale TFE version to 0.5.1 (#296)
+- Changed default MOTD to an empty string
+- Moved mkhome and mkproject logic to bash function (#287)
+
 ## [13.1.0] 2023-10-27
 
 ### Added

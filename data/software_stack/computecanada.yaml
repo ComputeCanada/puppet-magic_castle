@@ -1,4 +1,12 @@
+profile::software_stack::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
+profile::software_stack::lmod_default_modules:
+    - gentoo/2020
+    - imkl/2020.1.217
+    - gcc/9.3.0
+    - openmpi/4.0.3
+
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2020/%{facts.cpu_ext}/Core/python/3.9.6/bin/python
+jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/custom/python/site-packages"
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-%{facts.cpu_ext}-gentoo.conf"
@@ -11,22 +19,4 @@ jupyterhub::jupyterhub_config_hash:
       code-server:
         modules: ['code-server']
 
-profile::cvmfs::client::repositories:
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
-
-profile::cvmfs::client::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
-
-profile::squid::server::cvmfs_acl_regex:
-  - '^(cvmfs-.*\.computecanada\.ca)$'
-  - '^(cvmfs-.*\.computecanada\.net)$'
-  - '^(.*-cvmfs\.openhtc\.io)$'
-  - '^(cvmfs-.*\.genap\.ca)$'
-
 profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
-
-profile::cvmfs::client::lmod_default_modules:
-    - gentoo/2020
-    - imkl/2020.1.217
-    - gcc/9.3.0
-    - openmpi/4.0.3

@@ -200,6 +200,7 @@ class profile::freeipa::client (String $server_ip) {
 }
 
 class profile::freeipa::server (
+  Integer $id_start,
   String $admin_password,
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
@@ -248,14 +249,13 @@ class profile::freeipa::server (
   $interface = profile::getlocalinterface()
   $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
 
-  $idstart = Integer($facts['uid_max']) + 1
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
     /sbin/ipa-server-install \
     --setup-dns \
     --hostname ${fqdn} \
     --ds-password ${ds_password} \
     --admin-password ${admin_password} \
-    --idstart=${idstart} \
+    --idstart=${id_start} \
     --ssh-trust-dns \
     --unattended \
     --auto-forwarders \
@@ -549,7 +549,10 @@ class profile::freeipa::mokey (
     ],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
+    subscribe   => [
+      Exec['ipa-install'],
+      Package['mokey'],
+    ],
   }
 
   exec { 'ipa_mokey_role_add_privilege':
@@ -599,7 +602,7 @@ class profile::freeipa::mokey (
   # TODO: Fix server hostname to ipa.${int_domain_name}
   exec { 'ipa_getkeytab_mokeyapp':
     command     => 'kinit_wrapper ipa-getkeytab -s $(grep -m1 -oP \'(host|server) = \K.+\' /etc/ipa/default.conf) -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
-    refreshonly => true,
+    creates     => '/etc/mokey/keytab/mokeyapp.keytab',
     require     => [
       File['kinit_wrapper'],
       File['/etc/mokey/keytab']

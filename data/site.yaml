@@ -22,11 +22,11 @@ magic_castle::site::tags:
   login:
     - motd
     - profile::fail2ban
-    - profile::cvmfs::client
     - profile::slurm::submitter
     - profile::ssh::hostbased_auth::client
     - profile::nfs
     - profile::rsyslog::client
+    - profile::software_stack
   mgmt:
     - mysql::server
     - prometheus::server
@@ -39,7 +39,6 @@ magic_castle::site::tags:
     - profile::accounts
     - profile::users::ldap
   node:
-    - profile::cvmfs::client
     - profile::gpu
     - profile::jupyterhub::node
     - profile::slurm::node
@@ -48,6 +47,7 @@ magic_castle::site::tags:
     - profile::metrics::slurm_job_exporter
     - profile::nfs::client
     - profile::rsyslog::client
+    - profile::software_stack
   nfs:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
