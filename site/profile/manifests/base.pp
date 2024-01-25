@@ -1,7 +1,7 @@
 class profile::base (
   String $version,
-  Optional[String] $admin_email = undef,
   Array[String] $packages,
+  Optional[String] $admin_email = undef,
 ) {
   include stdlib
   include epel
