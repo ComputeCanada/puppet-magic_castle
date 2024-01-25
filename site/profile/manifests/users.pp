@@ -134,7 +134,7 @@ define profile::users::local_user (
   Optional[Integer] $uid = undef,
   Optional[Integer] $gid = undef,
   Optional[String] $group = $name,
-  String $home = "/$name",
+  String $home = "/${name}",
 ) {
   group { $group:
     ensure     => present,
@@ -156,7 +156,7 @@ define profile::users::local_user (
   }
 
   if $manage_home {
-    selinux::exec_restorecon { "$home":
+    selinux::exec_restorecon { "${home}":
       subscribe=> User[$name]
     }
   }
