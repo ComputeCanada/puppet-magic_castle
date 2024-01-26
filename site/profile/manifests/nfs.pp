@@ -52,6 +52,7 @@ class profile::nfs::server (
   # "A lookup resulting in an interpolation of `alias` referencing
   # a non-existant key returns an empty string"
   Variant[Hash[String, Array[String]], String[0, 0]] $devices,
+  Hash[String, String] $usrquotas = {},
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -102,6 +103,7 @@ class profile::nfs::server (
       profile::nfs::server::export_volume { $key:
         glob            => $glob,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
+        quota           => $usrquotas[$key],
       }
     }
   }
@@ -109,6 +111,7 @@ class profile::nfs::server (
 
 define profile::nfs::server::export_volume (
   Array[String] $glob,
+  Optional[String] $quota = undef,
   Boolean $root_bind_mount = false,
   String $seltype = 'home_root_t',
 ) {
@@ -142,12 +145,27 @@ define profile::nfs::server::export_volume (
     followsymlinks   => true,
   }
 
+  $quota_setting = $quota ? {
+    undef   => '',
+    default => ',usrquota',
+  }
+
   lvm::logical_volume { $name:
     ensure            => present,
     volume_group      => "${name}_vg",
     fs_type           => 'xfs',
     mountpath         => "/mnt/${name}",
     mountpath_require => true,
+    options           => "defaults${quota_setting}"
+  }
+
+  if $quota {
+    exec { "apply-quota-${name}":
+      command     => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
+      require     => Mount["/mnt/${name}"],
+      path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      refreshonly => true,
+    }
   }
 
   selinux::fcontext::equivalence { "/mnt/${name}":
