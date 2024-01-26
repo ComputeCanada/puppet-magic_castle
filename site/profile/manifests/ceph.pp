@@ -15,7 +15,7 @@ type CephFS = Struct[
 ]
 
 class profile::ceph::client (
-  Array[Stdlib::IP::Address] $mon_host,
+  Array[String] $mon_host,
   Hash[String, CephFS] $shares,
 ) {
   require profile::ceph::client::install
@@ -66,7 +66,7 @@ class profile::ceph::client::install {
 }
 
 define profile::ceph::client::share (
-  Array[Stdlib::IP::Address] $mon_host,
+  Array[String] $mon_host,
   String $share_name,
   String $access_key,
   Stdlib::Unixpath $export_path,
