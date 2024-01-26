@@ -1,15 +1,21 @@
+type BindMount = Struct[{
+    'src'  => Stdlib::Unixpath,
+    'dst'  => Stdlib::Unixpath,
+    'type' => Optional[Enum['file', 'directory']],
+}]
+
 type CephFS = Struct[
   {
     'share_name' => String,
     'access_key' => String,
-    'export_path' => String,
-    'mount_binds' => Optional[Array[Variant[Tuple[String, String], Tuple[String,String,String]]]],
-    'binds_fcontext_equivalence' => Optional[String],
+    'export_path' => Stdlib::Unixpath,
+    'bind_mounts' => Optional[Array[BindMount]],
+    'binds_fcontext_equivalence' => Optional[Stdlib::Unixpath],
   }
 ]
 
 class profile::ceph::client (
-  Array[String] $mon_host,
+  Array[Stdlib::IP::Address] $mon_host,
   Hash[String, CephFS] $shares,
 ) {
   require profile::ceph::client::install
@@ -60,12 +66,12 @@ class profile::ceph::client::install {
 }
 
 define profile::ceph::client::share (
+  Array[Stdlib::IP::Address] $mon_host,
   String $share_name,
-  Array[String] $mon_host,
   String $access_key,
-  String $export_path,
-  Array[Variant[Tuple[String, String], Tuple[String,String,String]]] $mount_binds,
-  Optional[String] $binds_fcontext_equivalence = undef,
+  Stdlib::Unixpath $export_path,
+  Array[BindMount] $bind_mounts,
+  Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
 ) {
   $client_fullkey = @("EOT")
     [client.${name}]
@@ -98,35 +104,26 @@ define profile::ceph::client::share (
     require => File['/etc/ceph/ceph.conf'],
   }
 
-  $mount_binds.each |$tuple| {
-    $src = $tuple[0]
-    $dst = $tuple[1]
-    if length($tuple) > 2 {
-      $mount_type = $tuple[2]
+  $bind_mounts.each |$mount| {
+    file { $mount['dst']:
+      ensure  => pick($mount['type'], 'directory'),
     }
-    else {
-      $mount_type = directory
-    }
-
-    file { "/${dst}":
-      ensure  => $mount_type,
-    }
-    mount { "/${dst}":
+    mount { $mount['dst']:
       ensure  => 'mounted',
       fstype  => 'none',
       options => 'rw,bind',
-      device  => "/mnt/${name}/${src}",
+      device  => "/mnt/${name}${mount['src']}",
       require => [
-        File["/${dst}"],
+        File[$mount['dst']],
         Mount["/mnt/${name}"]
       ],
     }
 
-    if ($binds_fcontext_equivalence and $binds_fcontext_equivalence != "/${dst}") {
-      selinux::fcontext::equivalence { "/${dst}":
+    if ($binds_fcontext_equivalence and $binds_fcontext_equivalence != $mount['dst']) {
+      selinux::fcontext::equivalence { $mount['dst']:
         ensure  => 'present',
         target  => $binds_fcontext_equivalence,
-        require => Mount["/${dst}"],
+        require => Mount[$mount['dst']],
       }
     }
   }
