@@ -31,7 +31,7 @@ class profile::ceph::client (
     content => $ceph_conf,
   }
 
-  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'mount_binds' => [] })
+  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'bind_mounts' => [] })
 }
 
 class profile::ceph::client::install {
