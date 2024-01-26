@@ -128,11 +128,10 @@ define profile::nfs::server::export_volume (
   }.unique
 
   exec { "vgchange-${name}_vg":
-    command     => "vgchange -ay ${name}_vg",
-    onlyif      => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
-    require     => [Package['lvm2']],
-    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-    refreshonly => true,
+    command => "vgchange -ay ${name}_vg",
+    onlyif  => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
+    require => [Package['lvm2']],
+    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
   physical_volume { $pool:
@@ -162,9 +161,10 @@ define profile::nfs::server::export_volume (
 
   if $quota {
     exec { "apply-quota-${name}":
-      command => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
-      require => Mount["/mnt/${name}"],
-      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      command     => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
+      require     => Mount["/mnt/${name}"],
+      path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      refreshonly => true,
     }
   }
 
