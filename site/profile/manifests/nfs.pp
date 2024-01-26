@@ -52,7 +52,7 @@ class profile::nfs::server (
   # "A lookup resulting in an interpolation of `alias` referencing
   # a non-existant key returns an empty string"
   Variant[Hash[String, Array[String]], String[0, 0]] $devices,
-  Variant[Hash[String, String], String[0, 0]] $quotas,
+  Hash[String, String] $usrquotas = {},
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -103,7 +103,7 @@ class profile::nfs::server (
       profile::nfs::server::export_volume { $key:
         glob            => $glob,
         root_bind_mount => ! intersection($instance_tags, $users_tags).empty,
-        quota           => $quotas[$key],
+        quota           => $usrquotas[$key],
       }
     }
   }
@@ -128,10 +128,11 @@ define profile::nfs::server::export_volume (
   }.unique
 
   exec { "vgchange-${name}_vg":
-    command => "vgchange -ay ${name}_vg",
-    onlyif  => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
-    require => [Package['lvm2']],
-    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+    command     => "vgchange -ay ${name}_vg",
+    onlyif      => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
+    require     => [Package['lvm2']],
+    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+    refreshonly => true,
   }
 
   physical_volume { $pool:
