@@ -683,7 +683,7 @@ class profile::slurm::node {
 
   service { 'slurmd':
     ensure    => 'running',
-    enable    => true,
+    enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
