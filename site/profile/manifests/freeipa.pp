@@ -187,11 +187,12 @@ class profile::freeipa::client (String $server_ip) {
   # This can cause serious slow down when multiple
   # concurrent users try to login at the same time
   # since the rebuilt is done for each user sequentially.
-  file_line { 'selinux_provider':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    after   => 'id_provider = ipa',
-    line    => 'selinux_provider = none',
+  augeas { 'selinux_provider':
+    lens    => 'sssd.lns',
+    incl    => '/etc/sssd/sssd.conf',
+    changes => [
+      "set target[ . = 'domain/${int_domain_name}']/selinux_provider none",
+    ],
     require => Exec['ipa-install'],
     notify  => Service['sssd'],
   }
