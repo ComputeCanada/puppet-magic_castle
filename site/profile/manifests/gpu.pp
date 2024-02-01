@@ -107,6 +107,13 @@ class profile::gpu::install::passthrough (
       name     => 'nvidia-mig-manager',
       source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
     }
+
+    service { 'nvidia-mig-manager':
+      ensure  => stopped,
+      enable  => false,
+      require => Package['nvidia-mig-manager'],
+    }
+
     file { '/etc/nvidia-mig-manager/config.yaml':
       require => Package['nvidia-mig-manager'],
       content => @("EOT")
