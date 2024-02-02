@@ -180,7 +180,7 @@ class profile::gpu::install::mig {
     require     => [
       Package[$packages],
       Package['nvidia-mig-manager'],
-      File['/etc/nvidia-mig-manager/config.yaml'],
+      File['/etc/nvidia-mig-manager/puppet-config.yaml'],
     ],
     environment => [
       'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/puppet-config.yaml',
