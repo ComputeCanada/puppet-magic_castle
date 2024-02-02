@@ -83,7 +83,6 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $mig_manager_version = '0.5.5',
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -138,7 +137,9 @@ class profile::gpu::install::passthrough (
   }
 }
 
-class profile::gpu::install::mig {
+class profile::gpu::install::mig (
+  String $mig_manager_version = '0.5.5',
+) {
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
 
   package { 'nvidia-mig-manager':
@@ -178,7 +179,6 @@ class profile::gpu::install::mig {
   exec { 'nvidia-mig-parted apply':
     unless      => 'nvidia-mig-parted assert',
     require     => [
-      Package[$packages],
       Package['nvidia-mig-manager'],
       File['/etc/nvidia-mig-manager/puppet-config.yaml'],
     ],
@@ -189,6 +189,8 @@ class profile::gpu::install::mig {
     ],
     path        => ['/usr/bin'],
   }
+
+  Package <| tag == profile::gpu::install::passthrough |> -> Exec['nvidia-mig-parted apply']
 }
 
 class profile::gpu::install::vgpu (
