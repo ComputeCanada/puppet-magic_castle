@@ -101,39 +101,7 @@ class profile::gpu::install::passthrough (
 
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
   if $mig_profile {
-    package { 'nvidia-mig-manager':
-      ensure   => 'latest',
-      provider => 'rpm',
-      name     => 'nvidia-mig-manager',
-      source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
-    }
-
-    service { 'nvidia-mig-manager':
-      ensure  => stopped,
-      enable  => false,
-      require => Package['nvidia-mig-manager'],
-    }
-
-    file { '/etc/nvidia-mig-manager/config.yaml':
-      require => Package['nvidia-mig-manager'],
-      content => @("EOT")
-        version: v1
-        mig-configs:
-          default:
-            - devices: all
-              mig-enabled: true
-              mig-devices: ${to_json($mig_profile)}
-        |EOT
-    }
-    exec { 'nvidia-mig-parted apply -f /etc/nvidia-mig-manager/config.yaml -c default':
-      unless  => 'nvidia-mig-parted assert -f /etc/nvidia-mig-manager/config.yaml -c default ',
-      require => [
-        Package[$packages],
-        Package['nvidia-mig-manager'],
-        File['/etc/nvidia-mig-manager/config.yaml'],
-      ],
-      path    => ['/usr/bin'],
-    }
+    include profile::gpu::install::mig
   }
 
   package { $packages:
@@ -167,6 +135,59 @@ class profile::gpu::install::passthrough (
   file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
     content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
     mode    => '0644',
+  }
+}
+
+class profile::gpu::install::mig {
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
+
+  package { 'nvidia-mig-manager':
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => 'nvidia-mig-manager',
+    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
+  }
+
+  service { 'nvidia-mig-manager':
+    ensure  => stopped,
+    enable  => false,
+    require => Package['nvidia-mig-manager'],
+  }
+
+  file { '/etc/nvidia-mig-manager/config.yaml':
+    require => Package['nvidia-mig-manager'],
+    content => @("EOT")
+      version: v1
+      mig-configs:
+        default:
+          - devices: all
+            mig-enabled: true
+            mig-devices: ${to_json($mig_profile)}
+      |EOT
+  }
+
+  # This resource tries to apply the MIG config without
+  # resetting the GPU and without running the mig-parted hooks
+  # (i.e.: MIG_PARTED_HOOKS_FILE is not set). This means
+  # Puppet cannot be used to enable MIG mode. It must be enabled
+  # prior to the execution of this resource. Trying to apply
+  # this resource with MIG mode disabled will produce the following error in Puppet log:
+  # "Error applying MIG configuration with hooks: unable to apply MIG config with MIG mode disabled"
+  # In Magic Castle, MIG mode is enabled during cloud-init if a MIG profile
+  # was defined during the first boot of the instance.
+  exec { 'nvidia-mig-parted apply':
+    unless      => 'nvidia-mig-parted assert',
+    require     => [
+      Package[$packages],
+      Package['nvidia-mig-manager'],
+      File['/etc/nvidia-mig-manager/config.yaml'],
+    ],
+    environment => [
+      'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/config.yaml',
+      'MIG_PARTED_SELECTED_CONFIG=default',
+      'MIG_PARTED_SKIP_RESET=true',
+    ],
+    path        => ['/usr/bin'],
   }
 }
 
