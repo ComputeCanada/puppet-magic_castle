@@ -239,7 +239,7 @@ profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.5.1'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login', 'portal:login']
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
@@ -272,6 +272,16 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
+  explore: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
+
+profile::metrics::slurm_job_exporter::version: 0.2.0
+profile::userportal::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::userportal::server::prometheus_port: 9090
+profile::userportal::server::db_ip: 127.0.0.1
+profile::userportal::server::db_port: 3306
+profile::userportal::install_tarball::version: 1.0.2
+profile::userportal::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
+profile::userportal::slurm_jobscripts::token: "%{alias('profile::userportal::server::root_api_token')}"

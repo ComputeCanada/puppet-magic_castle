@@ -1,0 +1,128 @@
+SECRET_KEY = '<%= $secret_key %>'
+DEBUG = False
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['<%= $subdomain %>.<%= $domain_name %>']
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'django_pam',
+    'watchman',
+
+    'pages',
+    'slurm',
+    'notes',
+
+    'jobstats',
+    'top',
+
+    'ccldap',
+
+    # system modules
+    'rest_framework',
+    'rest_framework.authtoken',
+    'bootstrap_pagination',
+]
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'userportal',
+        'USER': 'userportal',
+        'PASSWORD': '<%= $password %>',
+        'HOST': '<%= $db_ip %>',
+        'PORT': '<%= $db_port %>',
+    },
+    'slurm': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'slurm_acct_db',
+        'USER': 'slurm',
+        'PASSWORD': '<%= $slurm_password %>',
+        'HOST': '<%= $db_ip %>',
+        'PORT': '<%= $db_port %>',
+    },
+    'ldap': {
+        'ENGINE': 'ldapdb.backends.ldap',
+        'NAME': 'ldaps://ipa.int.<%= $domain_name %>/',
+        'USER': 'uid=admin,cn=users,cn=accounts,<%= $base_dn %>',
+        'PASSWORD': '<%= $ldap_password %>',
+    },
+}
+
+import ldap
+ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_ALLOW)
+
+PROMETHEUS = {
+    'url': 'http://<%= $prometheus_ip %>:<%= $prometheus_port %>',
+    'headers': {},
+    'filter': "",
+}
+
+STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/userportal-static/'
+
+AUTHENTICATION_BACKENDS = [
+    'django_pam.auth.backends.PAMBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+LOGIN_URL = '/accounts/login/' # So it does not use SAML2
+
+EXPORTER_INSTALLED = [
+    'slurm-job-exporter',
+    'node_exporter',
+    'slurm_exporter',
+]
+
+EXPORTER_SAMPLING_RATE = {
+    'slurm-job-exporter': 10,
+    'node_exporter': 10,
+    'slurm_exporter': 10,
+}
+
+CLUSTER_NAME = '<%= $cluster_name %>'  # used for slurm DB name
+LUSTRE_FS_NAMES = None
+LOGINS = {
+<% $logins.each |$key, $values| { -%>
+    '<%= $key %>': {
+        'network_interface': 'eth0',
+    },
+<% } -%>
+}
+DTNS = None
+
+AMORTIZATION_YEARS = None
+CPU_CORE_COST_PER_HOUR = None
+GPU_COST_PER_HOUR = None
+
+ELECTRICITY_COST_PER_KWH = None
+COOLING_COST_PER_KWH = None
+CO2_KG_PER_MWH = None
+ELECTRIC_CAR_RANGE_KM_PER_KWH = None
+
+CLOUD_CPU_CORE_COST_PER_HOUR = None
+CLOUD_GPU_COST_PER_HOUR = None
+
+# Used to set reasonable thresholds for the mem usage in the "top compute" page
+NORMAL_MEM_BY_CORE = 256/64 * 1024 * 1024 * 1024  # 256GB for 64 cores
+NORMAL_MEM_BY_GPU = 512 / 4 * 1024 * 1024 * 1024  # 512GB for 4 GPUs
+NORMAL_CORES_BY_GPU = 48 / 4  # 48 cores for 4 GPUs
+
+SLURM_TRES = {
+    '1001=': 'NVIDIA A100-SXM4-40GB',
+}
+
+CLUSTER_NAME_TITLE = '<%= $cluster_name %>'
+FAVICON = 'https://object-arbutus.cloud.computecanada.ca/userportal-public/mc.png'
+
+CLUSTER_INTRO = """
+<p><%= $cluster_name %>'s cluster</p>
+"""
+
+BASE_DN = '<%= $base_dn %>'
