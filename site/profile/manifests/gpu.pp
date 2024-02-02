@@ -154,7 +154,7 @@ class profile::gpu::install::mig {
     require => Package['nvidia-mig-manager'],
   }
 
-  file { '/etc/nvidia-mig-manager/config.yaml':
+  file { '/etc/nvidia-mig-manager/puppet-config.yaml':
     require => Package['nvidia-mig-manager'],
     content => @("EOT")
       version: v1
@@ -183,7 +183,7 @@ class profile::gpu::install::mig {
       File['/etc/nvidia-mig-manager/config.yaml'],
     ],
     environment => [
-      'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/config.yaml',
+      'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/puppet-config.yaml',
       'MIG_PARTED_SELECTED_CONFIG=default',
       'MIG_PARTED_SKIP_RESET=true',
     ],
