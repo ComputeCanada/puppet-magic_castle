@@ -167,6 +167,14 @@ class profile::gpu::install::mig (
       |EOT
   }
 
+  file_line { 'nvidia-persistenced.service':
+    ensure  => present,
+    path    => '/etc/nvidia-mig-manager/hooks.sh',
+    after   => 'driver_services=(',
+    line    => '        nvidia-persistenced.service',
+    require => Package['nvidia-mig-manager'],
+  }
+
   file { '/etc/nvidia-mig-manager/puppet-hooks.yaml':
     require => Package['nvidia-mig-manager'],
     content => @("EOT")
