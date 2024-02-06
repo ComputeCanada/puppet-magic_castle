@@ -167,25 +167,37 @@ class profile::gpu::install::mig (
       |EOT
   }
 
-  # This resource tries to apply the MIG config without
-  # resetting the GPU and without running the mig-parted hooks
-  # (i.e.: MIG_PARTED_HOOKS_FILE is not set). This means
-  # Puppet cannot be used to enable MIG mode. It must be enabled
-  # prior to the execution of this resource. Trying to apply
-  # this resource with MIG mode disabled will produce the following error in Puppet log:
-  # "Error applying MIG configuration with hooks: unable to apply MIG config with MIG mode disabled"
-  # In Magic Castle, MIG mode is enabled during cloud-init if a MIG profile
-  # was defined during the first boot of the instance.
+  file { '/etc/nvidia-mig-manager/puppet-hooks.yaml':
+    require => Package['nvidia-mig-manager'],
+    content => @("EOT")
+      version: v1
+      hooks:
+        pre-apply-mode:
+        - workdir: "/etc/nvidia-mig-manager"
+          command: "/bin/bash"
+          args: ["-x", "-c", "source hooks.sh; stop_driver_services"]
+        - workdir: "/etc/nvidia-mig-manager"
+          command: "/bin/sh"
+          args: ["-c", "systemctl -q is-active slurmd && systemctl stop slurmd || true"]
+        apply-exit:
+        - workdir: "/etc/nvidia-mig-manager"
+          command: "/bin/bash"
+          args: ["-x", "-c", "source hooks.sh; start_driver_services"]
+      |EOT
+  }
+
   exec { 'nvidia-mig-parted apply':
     unless      => 'nvidia-mig-parted assert',
     require     => [
       Package['nvidia-mig-manager'],
       File['/etc/nvidia-mig-manager/puppet-config.yaml'],
+      File['/etc/nvidia-mig-manager/puppet-hooks.yaml'],
     ],
     environment => [
       'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/puppet-config.yaml',
+      'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
       'MIG_PARTED_SELECTED_CONFIG=default',
-      'MIG_PARTED_SKIP_RESET=true',
+      'MIG_PARTED_SKIP_RESET=false',
     ],
     path        => ['/usr/bin'],
   }
