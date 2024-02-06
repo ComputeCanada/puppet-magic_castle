@@ -187,10 +187,6 @@ class profile::gpu::install::mig (
         - workdir: "/etc/nvidia-mig-manager"
           command: "/bin/sh"
           args: ["-c", "systemctl -q is-active slurmd && systemctl stop slurmd || true"]
-        apply-exit:
-        - workdir: "/etc/nvidia-mig-manager"
-          command: "/bin/bash"
-          args: ["-x", "-c", "source hooks.sh; start_driver_services"]
       |EOT
   }
 
@@ -208,6 +204,10 @@ class profile::gpu::install::mig (
       'MIG_PARTED_SKIP_RESET=false',
     ],
     path        => ['/usr/bin'],
+    notify      => [
+      Service['nvidia-persistenced'],
+      Service['nvidia-dcgm'],
+    ],
   }
 
   Package <| tag == profile::gpu::install::passthrough |> -> Exec['nvidia-mig-parted apply']
