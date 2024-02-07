@@ -29,6 +29,7 @@ magic_castle::site::tags:
   mgmt:
     - mysql::server
     - prometheus::server
+    - prometheus::alertmanager
     - profile::metrics::slurm_exporter
     - profile::rsyslog::server
     - profile::squid::server

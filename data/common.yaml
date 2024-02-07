@@ -210,6 +210,11 @@ prometheus::storage_retention_size: '5GB'
 
 prometheus::alertmanager::version: '0.26.0'
 
+prometheus::alertmanagers_config:
+  - static_configs:
+    - targets:
+      - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
+
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 profile::squid::server::cvmfs_acl_regex:
