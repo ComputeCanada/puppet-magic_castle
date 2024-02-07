@@ -141,6 +141,7 @@ class profile::gpu::install::mig (
   String $mig_manager_version = '0.5.5',
 ) {
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
+  $arch = $::facts['os']['architecture']
 
   package { 'nvidia-mig-manager':
     ensure   => 'latest',
@@ -170,7 +171,7 @@ class profile::gpu::install::mig (
   file_line { 'nvidia-persistenced.service':
     ensure  => present,
     path    => '/etc/nvidia-mig-manager/hooks.sh',
-    after   => 'driver_services=(',
+    after   => 'driver_services=\(',
     line    => '        nvidia-persistenced.service',
     require => Package['nvidia-mig-manager'],
   }
