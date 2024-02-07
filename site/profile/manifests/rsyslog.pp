@@ -1,11 +1,4 @@
 class profile::rsyslog::base {
-  package { 'rsyslog':
-    ensure => 'installed',
-  }
-  service { 'rsyslog':
-    ensure => running,
-    enable => true,
-  }
 }
 
 class profile::rsyslog::client {
