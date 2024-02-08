@@ -7,6 +7,7 @@ class profile::rsyslog::base {
 
 class profile::rsyslog::client {
   include profile::rsyslog::base
+  include rsyslog::config
 
   $remote_host_conf = @(EOT)
     {{ with $local := node -}}
