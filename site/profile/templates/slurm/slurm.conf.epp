@@ -12,7 +12,7 @@ SelectType=select/cons_tres
 SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
-GresTypes=gpu
+GresTypes=gpu,shard
 
 TreeWidth=<%= $nb_nodes %>
 ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
