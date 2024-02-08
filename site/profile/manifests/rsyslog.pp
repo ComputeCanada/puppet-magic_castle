@@ -1,4 +1,8 @@
 class profile::rsyslog::base {
+  class { 'rsyslog':
+    purge_config_files      => false,
+    override_default_config => false,
+  }
 }
 
 class profile::rsyslog::client {
