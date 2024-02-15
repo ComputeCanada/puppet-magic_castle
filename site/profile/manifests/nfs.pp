@@ -48,9 +48,9 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   String $domain_name,
-  Hash[String, Array[String]] $devices,
   Array[String] $no_root_squash_tags = ['mgmt']
 ) {
+  include profile::volumes
   $nfs_domain  = "int.${domain_name}"
 
   class { 'nfs':
@@ -76,10 +76,7 @@ class profile::nfs::server (
     notify => Service[$nfs::server_service_name],
   }
 
-  package { 'lvm2':
-    ensure => installed,
-  }
-
+  $devices = lookup('terraform.self.volumes.nfs')
   if $devices =~ Hash[String, Array[String]] {
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
@@ -88,85 +85,15 @@ class profile::nfs::server (
     $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(${common_options},no_root_squash)" }.join(' ')
     $clients = "${prefix_rules} *.${nfs_domain}(${common_options},root_squash)"
     $devices.each | String $key, $glob | {
-      profile::nfs::server::export_volume { $key:
-        clients         => $clients,
-        glob            => $glob,
-        root_bind_mount => true,
+      nfs::server::export { "/mnt/nfs/${key}":
+        ensure  => 'mounted',
+        clients => $clients,
+        notify  => Service[$nfs::server_service_name],
+        require => [
+          Profile::Volumes::Volume["nfs-${key}"],
+          Class['nfs'],
+        ],
       }
-    }
-  }
-}
-
-define profile::nfs::server::export_volume (
-  String $clients,
-  Array[String] $glob,
-  Boolean $root_bind_mount = false,
-  String $seltype = 'home_root_t',
-) {
-  $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
-
-  ensure_resource('file', "/mnt/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
-
-  $pool = $::facts['/dev/disk'].filter |$key, $values| {
-    $regexes.any|$regex| {
-      $key =~ Regexp($regex)
-    }
-  }.map |$key, $values| {
-    $values
-  }.unique
-
-  exec { "vgchange-${name}_vg":
-    command => "vgchange -ay ${name}_vg",
-    onlyif  => ["test ! -d /dev/${name}_vg", "vgscan -t | grep -q '${name}_vg'"],
-    require => [Package['lvm2']],
-    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-  }
-
-  physical_volume { $pool:
-    ensure => present,
-  }
-
-  volume_group { "${name}_vg":
-    ensure           => present,
-    physical_volumes => $pool,
-    createonly       => true,
-    followsymlinks   => true,
-  }
-
-  lvm::logical_volume { $name:
-    ensure            => present,
-    volume_group      => "${name}_vg",
-    fs_type           => 'xfs',
-    mountpath         => "/mnt/${name}",
-    mountpath_require => true,
-  }
-
-  selinux::fcontext::equivalence { "/mnt/${name}":
-    ensure  => 'present',
-    target  => '/home',
-    require => Mount["/mnt/${name}"],
-    notify  => Selinux::Exec_restorecon["/mnt/${name}"],
-  }
-
-  selinux::exec_restorecon { "/mnt/${name}": }
-
-  nfs::server::export { "/mnt/${name}":
-    ensure  => 'mounted',
-    clients => $clients,
-    notify  => Service[$nfs::server_service_name],
-    require => [
-      Mount["/mnt/${name}"],
-      Class['nfs'],
-    ],
-  }
-  if $root_bind_mount {
-    ensure_resource('file', "/${name}", { 'ensure' => 'directory', 'seltype' => $seltype })
-    mount { "/${name}":
-      ensure  => mounted,
-      device  => "/mnt/${name}",
-      fstype  => none,
-      options => 'rw,bind',
-      require => File["/${name}"],
     }
   }
 }

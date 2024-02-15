@@ -15,6 +15,7 @@ magic_castle::site::all:
   - profile::sssd::client
   - profile::metrics::node_exporter
   - profile::rsyslog::client
+  - profile::volumes
   - swap_file
 
 magic_castle::site::tags:
