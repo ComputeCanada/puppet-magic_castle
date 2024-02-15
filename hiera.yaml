@@ -7,13 +7,20 @@ defaults:
   # See https://puppet.com/docs/puppet/latest/environments_about.html for further details on environments.
   # datadir: data
   # data_hash: yaml_data
+  #
+  # Global: *.yaml au root du dossier
+  # Prefix: prefix/%{facts.prefix}.yaml
+  # Hostname: hsotname/%{facts.netwroking.hostname}.yaml
+  # Tags: mapped_paths: ["%{facts.tags}", "tag", "tags/%{tag}.yaml"]
 hierarchy:
-  - name: "User data per node (prefix)"
-    data_hash: prefix_lookup
-    paths:
-      - "prefix.yaml"
-    options:
-      node_prefix: "%{facts.prefix}"
+  - name: "User data"
+    glob: "hieradata/*.yaml"
+  - name: "Prefix data"
+    path: "hieradata/prefix/%{facts.prefix}.yaml"
+  - name: "Hostname data"
+    path: "hieradata/hostname/%{facts.networking.hostname}.yaml"
+  - name: "Tags data"
+    mapped_paths: ["%{facts.tags}", "tag", "hieradata/tags/%{tag}.yaml"]
   - name: "Terraform and user data"
     lookup_key: eyaml_lookup_key # eyaml backend
     paths:
