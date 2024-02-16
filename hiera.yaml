@@ -19,8 +19,6 @@ hierarchy:
     path: "hieradata/prefix/%{facts.prefix}.yaml"
   - name: "Hostname data"
     path: "hieradata/hostname/%{facts.networking.hostname}.yaml"
-  - name: "Tags data"
-    mapped_paths: ["%{facts.tags}", "tag", "hieradata/tags/%{tag}.yaml"]
   - name: "Terraform and user data"
     lookup_key: eyaml_lookup_key # eyaml backend
     paths:
