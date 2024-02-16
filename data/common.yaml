@@ -209,11 +209,18 @@ prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
 prometheus::alertmanager::version: '0.26.0'
+# The default value has a syntax issue in the original puppet-prometheus
+# https://github.com/voxpupuli/puppet-prometheus/pull/540
+prometheus::alertmanager::receivers:
+  - name: 'Admin'
+    email_configs:
+      - to: 'root@localhost'
 
 prometheus::alertmanagers_config:
   - static_configs:
     - targets:
       - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
+
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
