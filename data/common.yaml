@@ -6,6 +6,8 @@ lookup_options:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
+  prometheus::alerts:
+    merge: 'deep'
 
 profile::base::version: 13.3.2
 
@@ -96,10 +98,6 @@ mysql::server::override_options:
       innodb_buffer_pool_size: 1024M
       innodb_log_file_size: 64M
       innodb_lock_wait_timeout: 900
-
-lookup_options:
-  prometheus::alerts:
-    merge: 'deep'
 
 prometheus::alerts:
   groups:
