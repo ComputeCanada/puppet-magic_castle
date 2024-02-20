@@ -14,10 +14,22 @@ mkhome () {
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+        local METHOD="getent/id"
     else
         local USER_INFO=$(kexec ipa user-show ${USERNAME})
         local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
         local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+        local METHOD="ipa"
+    fi
+
+    if [ -z "${USER_HOME}" ]; then
+        echo "ERROR - ${USERNAME} HOME was not initialized. Could not retrieve its home path (${METHOD})."
+        return 1
+    fi
+
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR - ${USERNAME} HOME was not initialized. Could not retrieve its UID (${METHOD})."
+        return 1
     fi
 
     local MNT_USER_HOME="/mnt${USER_HOME}"
@@ -47,10 +59,22 @@ mkscratch () {
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+        local METHOD="getent/id"
     else
         local USER_INFO=$(kexec ipa user-show ${USERNAME})
         local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
         local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+        local METHOD="ipa"
+    fi
+
+    if [ -z "${USER_HOME}" ]; then
+        echo "ERROR - ${USERNAME} scratch was not initialized. Could not retrieve its home path (${METHOD})."
+        return 1
+    fi
+
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR - ${USERNAME} scratch was not initialized. Could not retrieve its UID (${METHOD})."
+        return 1
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
@@ -67,6 +91,7 @@ mkscratch () {
         restorecon -F -R ${MNT_USER_SCRATCH}
         echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
     fi
+    return 0
 }
 
 mkproject() {
