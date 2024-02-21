@@ -61,6 +61,11 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
+    if [ -z "${USERNAME}" ]; then
+        echo "mkscratch[ERROR] - username unspecified."
+        return 1
+    fi
+
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
@@ -73,12 +78,12 @@ mkscratch () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR - ${USERNAME} scratch was not initialized. Could not retrieve its home path (${METHOD})."
+        echo "mkscratch[ERROR]: ${USERNAME} - Could not retrieve home path (${METHOD})."
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR - ${USERNAME} scratch was not initialized. Could not retrieve its UID (${METHOD})."
+        echo "mkscratch[ERROR]: ${USERNAME} - Could not retrieve UID (${METHOD})."
         return 1
     fi
 
@@ -94,7 +99,7 @@ mkscratch () {
         chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
-        echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
+        echo "mkscratch[SUCCESS]: ${USERNAME} - scratch initialized in ${MNT_USER_SCRATCH}"
     fi
     return 0
 }
