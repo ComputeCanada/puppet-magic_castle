@@ -108,6 +108,11 @@ mkproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
 
+    if [ -z "${GROUP}" ]; then
+        echo "mkproject[ERROR] - group unspecified."
+        return 1
+    fi
+
     if mkdir /var/lock/mkproject.$GROUP.lock; then
         # A new group has been created
         if [ "$WITH_FOLDER" == "true" ]; then
