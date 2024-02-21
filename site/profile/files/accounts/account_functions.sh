@@ -123,15 +123,15 @@ mkproject() {
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GID}"
+                echo "mkproject[SUCCESS]: ${GROUP} - created ${MNT_PROJECT_GID}"
             else
-                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GID} already exists"
+                echo "mkproject[WARNING]: ${GROUP} - ${MNT_PROJECT_GID} already exists"
             fi
         fi
         # We create the associated account in slurm
         /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - ${GROUP} account created in SlurmDB"
+            echo "mkproject[SUCCESS]: ${GROUP} - SlurmDB account created"
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
