@@ -120,6 +120,12 @@ mkproject() {
             if [ $? -eq 0 ]; then
                 GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
             fi
+
+            if [ -z "${GID}" ]; then
+                echo "ERROR account_functions::${FUNCNAME} ${GROUP}: GID not defined"
+                return 1
+            fi
+
             MNT_PROJECT_GID="/mnt/project/$GID"
             if [ ! -d ${MNT_PROJECT_GID} ]; then
                 MNT_PROJECT_GROUP="/mnt/project/$GROUP"
