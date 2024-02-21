@@ -11,6 +11,11 @@ kexec () {
 mkhome () {
     local USERNAME=$1
 
+    if [ -z "${USERNAME}" ]; then
+        echo "mkhome[ERROR] - username unspecified."
+        return 1
+    fi
+
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
@@ -23,12 +28,12 @@ mkhome () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR - ${USERNAME} HOME was not initialized. Could not retrieve its home path (${METHOD})."
+        echo "mkhome[ERROR]: ${USERNAME} - Could not retrieve home path (${METHOD})."
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR - ${USERNAME} HOME was not initialized. Could not retrieve its UID (${METHOD})."
+        echo "mkhome[ERROR]: ${USERNAME} - Could not retrieve UID (${METHOD})."
         return 1
     fi
 
@@ -44,10 +49,10 @@ mkhome () {
         fi
     done
     if [ ! $RSYNC_DONE -eq 1 ]; then
-        echo "ERROR - Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
+        echo "mkhome[ERROR]: ${USERNAME} - Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
         return 1
     else
-        echo "SUCCESS - ${USERNAME} home initialized in ${MNT_USER_HOME}"
+        echo "mkhome[SUCCESS]: ${USERNAME} - home initialized in ${MNT_USER_HOME}"
     fi
     restorecon -F -R ${MNT_USER_HOME}
 }
