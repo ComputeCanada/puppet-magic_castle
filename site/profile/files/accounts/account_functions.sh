@@ -189,6 +189,17 @@ modproject() {
                     local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
                     local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
                 fi
+
+                if [ -z "${USER_HOME}" ]; then
+                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    return 1
+                fi
+
+                if [ -z "${USER_UID}" ]; then
+                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+                    return 1
+                fi
+
                 local MNT_USER_HOME="/mnt${USER_HOME}"
 
                 mkdir -p "${MNT_USER_HOME}/projects"
@@ -203,15 +214,15 @@ modproject() {
                     chown "${USER_UID}" "${PRO_USER}"
                     chmod 2700 "${PRO_USER}"
                     restorecon -F -R "${PRO_USER}"
-                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PRO_USER}"
+                    echo "INFO account_functions::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PRO_USER}"
                 else
-                    echo "WARNING - ${USERNAME} project ${GROUP} in ${MNT_PROJECT}/${USERNAME} already exists"
+                    echo "WARN account_functions::${FUNCNAME} ${GROUP} ${USERNAME}: ${PRO_USER} already exists"
                 fi
             done
         fi
         /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - ${USERNAMES} added to ${GROUP} account in SlurmDB"
+            echo "INFO account_functions::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
         fi
     else
         # If group has been modified but no uid were found in the log, it means
@@ -223,9 +234,9 @@ modproject() {
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
             if [ $? -eq 0 ]; then
-                echo "SUCCESS - removed ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
+                echo "INFO account_functions::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             else
-                echo "ERROR - removing ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
+                echo "ERROR account_functions::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
@@ -238,14 +249,14 @@ modproject() {
                     local MNT_USER_HOME="/mnt${USER_HOME}"
                     rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
-                        echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                        echo "INFO account_functions::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
-                        echo "ERROR - could not remove ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                        echo "ERROR account_functions::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
                     fi
                 done
             fi
         else
-            echo "WARNING - Could not find username to remove from project ${GROUP}"
+            echo "WARN account_functions::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
         fi
     fi
 }
@@ -261,9 +272,9 @@ delproject() {
     if [[ ! -z "$USERNAMES" ]]; then
         /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - removed ${USERNAMES} from ${GROUP} account in SlurmDB"
+            echo "INFO account_functions::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
         else
-            echo "ERROR - could not remove ${USERNAME} from ${GROUP} account in SlurmDB"
+            echo "ERROR account_functions::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
@@ -273,6 +284,12 @@ delproject() {
                     local USER_INFO=$(kexec ipa user-show ${USERNAME})
                     local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
                 fi
+
+                if [ -z "${USER_HOME}" ]; then
+                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    return 1
+                fi
+
                 local MNT_USER_HOME="/mnt${USER_HOME}"
                 rm "${MNT_USER_HOME}/projects/$GROUP"
             done
