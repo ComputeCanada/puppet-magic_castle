@@ -12,7 +12,7 @@ mkhome () {
     local USERNAME=$1
 
     if [ -z "${USERNAME}" ]; then
-        echo "ERROR account_functions::${FUNCNAME}: username unspecified"
+        echo "ERROR::${FUNCNAME}: username unspecified"
         return 1
     fi
 
@@ -28,12 +28,12 @@ mkhome () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
         return 1
     fi
 
@@ -49,10 +49,10 @@ mkhome () {
         fi
     done
     if [ ! $RSYNC_DONE -eq 1 ]; then
-        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${MNT_USER_HOME}"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${MNT_USER_HOME}"
         return 1
     else
-        echo "INFO account_functions::${FUNCNAME} ${USERNAME}: created ${MNT_USER_HOME}"
+        echo "INFO::${FUNCNAME} ${USERNAME}: created ${MNT_USER_HOME}"
     fi
     restorecon -F -R ${MNT_USER_HOME}
 }
@@ -62,7 +62,7 @@ mkscratch () {
     local WITH_HOME=$2
 
     if [ -z "${USERNAME}" ]; then
-        echo "ERROR account_functions::${FUNCNAME}: username unspecified"
+        echo "ERROR::${FUNCNAME}: username unspecified"
         return 1
     fi
 
@@ -78,12 +78,12 @@ mkscratch () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
         return 1
     fi
 
@@ -99,7 +99,7 @@ mkscratch () {
         chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
-        echo "INFO account_functions::${FUNCNAME} ${USERNAME}: created ${MNT_USER_SCRATCH}"
+        echo "INFO::${FUNCNAME} ${USERNAME}: created ${MNT_USER_SCRATCH}"
     fi
     return 0
 }
@@ -109,7 +109,7 @@ mkproject() {
     local WITH_FOLDER=$2
 
     if [ -z "${GROUP}" ]; then
-        echo "ERROR account_functions::${FUNCNAME}: group unspecified"
+        echo "ERROR::${FUNCNAME}: group unspecified"
         return 1
     fi
 
@@ -122,7 +122,7 @@ mkproject() {
             fi
 
             if [ -z "${GID}" ]; then
-                echo "ERROR account_functions::${FUNCNAME} ${GROUP}: GID not defined"
+                echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
                 return 1
             fi
 
@@ -134,15 +134,15 @@ mkproject() {
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "INFO account_functions::${FUNCNAME} ${GROUP}: created ${MNT_PROJECT_GID}"
+                echo "INFO::${FUNCNAME} ${GROUP}: created ${MNT_PROJECT_GID}"
             else
-                echo "WARN account_functions::${FUNCNAME} ${GROUP}: ${MNT_PROJECT_GID} already exists"
+                echo "WARN::${FUNCNAME} ${GROUP}: ${MNT_PROJECT_GID} already exists"
             fi
         fi
         # We create the associated account in slurm
         /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "INFO account_functions::${FUNCNAME} ${GROUP}: SlurmDB account created"
+            echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
@@ -154,7 +154,7 @@ modproject() {
     local USERNAMES="${@:3}"
 
     if [ -z "${GROUP}" ]; then
-        echo "ERROR account_functions::${FUNCNAME}: group unspecified"
+        echo "ERROR::${FUNCNAME}: group unspecified"
         return 1
     fi
 
@@ -193,12 +193,12 @@ modproject() {
                 fi
 
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
                     return 1
                 fi
 
                 if [ -z "${USER_UID}" ]; then
-                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
                     return 1
                 fi
 
@@ -216,15 +216,15 @@ modproject() {
                     chown "${USER_UID}" "${PRO_USER}"
                     chmod 2700 "${PRO_USER}"
                     restorecon -F -R "${PRO_USER}"
-                    echo "INFO account_functions::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PRO_USER}"
+                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PRO_USER}"
                 else
-                    echo "WARN account_functions::${FUNCNAME} ${GROUP} ${USERNAME}: ${PRO_USER} already exists"
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: ${PRO_USER} already exists"
                 fi
             done
         fi
         /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "INFO account_functions::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
         fi
     else
         # If group has been modified but no uid were found in the log, it means
@@ -236,9 +236,9 @@ modproject() {
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
             if [ $? -eq 0 ]; then
-                echo "INFO account_functions::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             else
-                echo "ERROR account_functions::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
@@ -251,14 +251,14 @@ modproject() {
                     local MNT_USER_HOME="/mnt${USER_HOME}"
                     rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
-                        echo "INFO account_functions::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
+                        echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
-                        echo "ERROR account_functions::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                        echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
                     fi
                 done
             fi
         else
-            echo "WARN account_functions::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
+            echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
         fi
     fi
 }
@@ -274,9 +274,9 @@ delproject() {
     if [[ ! -z "$USERNAMES" ]]; then
         /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "INFO account_functions::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
+            echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
         else
-            echo "ERROR account_functions::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
+            echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
@@ -290,7 +290,7 @@ delproject() {
                 fi
 
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
                     return 1
                 fi
 
