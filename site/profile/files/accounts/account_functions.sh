@@ -12,7 +12,7 @@ mkhome () {
     local USERNAME=$1
 
     if [ -z "${USERNAME}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - username unspecified."
+        echo "ERROR account_functions::${FUNCNAME}: username unspecified"
         return 1
     fi
 
@@ -28,12 +28,12 @@ mkhome () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - ${USERNAME}: Could not retrieve home path (${METHOD})."
+        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - ${USERNAME}: Could not retrieve UID (${METHOD})."
+        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
         return 1
     fi
 
@@ -49,10 +49,10 @@ mkhome () {
         fi
     done
     if [ ! $RSYNC_DONE -eq 1 ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - ${USERNAME}: Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
+        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${MNT_USER_HOME}"
         return 1
     else
-        echo "INFO - account_functions::${FUNCNAME} - ${USERNAME}: home initialized in ${MNT_USER_HOME}"
+        echo "INFO account_functions::${FUNCNAME} ${USERNAME}: created ${MNT_USER_HOME}"
     fi
     restorecon -F -R ${MNT_USER_HOME}
 }
@@ -62,7 +62,7 @@ mkscratch () {
     local WITH_HOME=$2
 
     if [ -z "${USERNAME}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - username unspecified."
+        echo "ERROR account_functions::${FUNCNAME}: username unspecified"
         return 1
     fi
 
@@ -78,12 +78,12 @@ mkscratch () {
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - ${USERNAME}: Could not retrieve home path (${METHOD})."
+        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
         return 1
     fi
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - ${USERNAME}: Could not retrieve UID (${METHOD})."
+        echo "ERROR account_functions::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
         return 1
     fi
 
@@ -99,7 +99,7 @@ mkscratch () {
         chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
-        echo "INFO - account_functions::${FUNCNAME} - ${USERNAME}: scratch initialized in ${MNT_USER_SCRATCH}"
+        echo "INFO account_functions::${FUNCNAME} ${USERNAME}: created ${MNT_USER_SCRATCH}"
     fi
     return 0
 }
@@ -109,7 +109,7 @@ mkproject() {
     local WITH_FOLDER=$2
 
     if [ -z "${GROUP}" ]; then
-        echo "ERROR - account_functions::${FUNCNAME} - group unspecified."
+        echo "ERROR account_functions::${FUNCNAME}: group unspecified"
         return 1
     fi
 
@@ -128,15 +128,15 @@ mkproject() {
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "INFO - account_functions::${FUNCNAME} - ${GROUP}: created ${MNT_PROJECT_GID}"
+                echo "INFO account_functions::${FUNCNAME} ${GROUP}: created ${MNT_PROJECT_GID}"
             else
-                echo "WARN - account_functions::${FUNCNAME} - ${GROUP}: ${MNT_PROJECT_GID} already exists"
+                echo "WARN account_functions::${FUNCNAME} ${GROUP}: ${MNT_PROJECT_GID} already exists"
             fi
         fi
         # We create the associated account in slurm
         /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "INFO - account_functions::${FUNCNAME} - ${GROUP}: SlurmDB account created"
+            echo "INFO account_functions::${FUNCNAME} ${GROUP}: SlurmDB account created"
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
