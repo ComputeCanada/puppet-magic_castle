@@ -152,6 +152,12 @@ modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
     local USERNAMES="${@:3}"
+
+    if [ -z "${GROUP}" ]; then
+        echo "ERROR account_functions::${FUNCNAME}: group unspecified"
+        return 1
+    fi
+
     # mkproject is currently running, we skip adding more folder under the project
     if [ -d /var/lock/mkproject.$GROUP.lock ]; then
         return
