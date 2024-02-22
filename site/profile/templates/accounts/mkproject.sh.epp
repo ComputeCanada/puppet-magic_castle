@@ -46,6 +46,7 @@ fi
 ) |
 while read GROUP WITH_FOLDER USERNAMES; do
     if ! modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}; then
+        sleep 5
         echo "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
     fi
 done &
