@@ -28,11 +28,11 @@ MKHOME_MOPPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
 trap "rm -f ${MOPPROJECT_PIPE}; rm -f ${MODPROJECT_RETRY_PIPE}" EXIT
 
 if [[ ! -p ${MOPPROJECT_PIPE} ]]; then
-    mkfifo ${MOPPROJECT_PIPE}
+    mkfifo -m=600 ${MOPPROJECT_PIPE}
 fi
 
 if [[ ! -p ${MODPROJECT_RETRY_PIPE} ]]; then
-    mkfifo ${MODPROJECT_RETRY_PIPE}
+    mkfifo -m=600 ${MODPROJECT_RETRY_PIPE}
 fi
 
 # Loop over three sources of project modification

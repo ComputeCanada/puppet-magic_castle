@@ -9,11 +9,11 @@ MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
 trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
 
 if [[ ! -p ${MKHOME_RETRY_PIPE} ]]; then
-    mkfifo ${MKHOME_RETRY_PIPE}
+    mkfifo -m=600 ${MKHOME_RETRY_PIPE}
 fi
 
 if [[ ! -p ${MKHOME_MODPROJECT_PIPE} ]]; then
-    mkfifo ${MKHOME_MODPROJECT_PIPE}
+    mkfifo -m=600 ${MKHOME_MODPROJECT_PIPE}
 fi
 
 (

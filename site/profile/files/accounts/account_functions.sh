@@ -236,15 +236,21 @@ modproject() {
                     if id $USERNAME &> /dev/null; then
                         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
                     else
-                        local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                        local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
                     fi
+
+                    if [ -z "${USER_HOME}" ]; then
+                        echo "ERROR::${FUNCNAME} ${GROUP}: ${USERNAME} home path not defined"
+                        return 1
+                    fi
+
                     local MNT_USER_HOME="/mnt${USER_HOME}"
                     rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
                         echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
                         echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                        return 1
                     fi
                 done
             fi
@@ -275,8 +281,7 @@ delproject() {
                     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
                     local METHOD="getent/id"
                 else
-                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                    local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
                     local METHOD="ipa"
                 fi
 
