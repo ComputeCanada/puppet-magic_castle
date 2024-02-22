@@ -92,7 +92,7 @@ define profile::users::ldap_user (
       }
     }
 
-    if $manage_password {
+    if $manage_password and $passwd {
       $ds_password = lookup('profile::freeipa::server::ds_password')
       $domain_name = lookup('profile::freeipa::base::domain_name')
       $int_domain_name = "int.${domain_name}"
