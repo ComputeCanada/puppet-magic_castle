@@ -182,15 +182,14 @@ modproject() {
             for USERNAME in $USERNAMES; do
                 # Slurm needs the UID to be available via SSSD
                 local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-                local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
-
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
                     return 1
                 fi
 
+                local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME 2> /dev/null)
                 if [ -z "${USER_UID}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
                     return 1
                 fi
 
