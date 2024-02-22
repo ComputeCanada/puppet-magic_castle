@@ -180,17 +180,9 @@ modproject() {
         local MNT_PROJECT="/mnt${GROUP_LINK}"
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
-
-                if id $USERNAME &> /dev/null; then
-                    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-                    local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
-                    local METHOD="getent/id"
-                else
-                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-                    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
-                    local METHOD="ipa"
-                fi
+                # Slurm needs the UID to be available via SSSD
+                local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
 
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
