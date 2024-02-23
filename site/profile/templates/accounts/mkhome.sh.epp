@@ -3,17 +3,38 @@ source /sbin/account_functions.sh
 
 PROJECT_REGEX="<%= $project_regex %>"
 
-tail -F /var/log/dirsrv/slapd-*/access |
-grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' |
+MKHOME_RETRY_PIPE=/var/tmp/mkhome_retry_pipe
+MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
+
+trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
+
+if [[ ! -p ${MKHOME_RETRY_PIPE} ]]; then
+    mkfifo -m=600 ${MKHOME_RETRY_PIPE}
+fi
+
+if [[ ! -p ${MKHOME_MODPROJECT_PIPE} ]]; then
+    mkfifo -m=600 ${MKHOME_MODPROJECT_PIPE}
+fi
+
+(
+    tail -F /var/log/dirsrv/slapd-*/access | grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' &
+    tail -F ${MKHOME_RETRY_PIPE}
+) |
 while read USERNAME; do
-<% if $with_home { -%>
-    mkhome $USERNAME
-<% } -%>
-<% if $with_scratch { -%>
-    mkscratch $USERNAME <%= $with_home %>
-<% } -%>
+    <% if $with_home { -%>
+    if ! mkhome $USERNAME; then
+        echo $USERNAME > ${MKHOME_RETRY_PIPE} &
+        continue
+    fi
+    <% } -%>
+    <% if $with_scratch { -%>
+    if ! mkscratch $USERNAME <%= $with_home %>; then
+        echo $USERNAME > ${MKHOME_RETRY_PIPE} &
+        continue
+    fi
+    <% } -%>
 
     for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
-        modproject ${PROJECT} <%= $with_project %> ${USERNAME}
+        echo ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
     done
 done

@@ -11,13 +11,30 @@ kexec () {
 mkhome () {
     local USERNAME=$1
 
+    if [ -z "${USERNAME}" ]; then
+        echo "ERROR::${FUNCNAME}: username unspecified"
+        return 1
+    fi
+
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+        local METHOD="getent/id"
     else
         local USER_INFO=$(kexec ipa user-show ${USERNAME})
         local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
         local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+        local METHOD="ipa"
+    fi
+
+    if [ -z "${USER_HOME}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+        return 1
+    fi
+
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        return 1
     fi
 
     local MNT_USER_HOME="/mnt${USER_HOME}"
@@ -32,10 +49,10 @@ mkhome () {
         fi
     done
     if [ ! $RSYNC_DONE -eq 1 ]; then
-        echo "ERROR - Could not rsync /etc/skel.ipa in ${MNT_USER_HOME}"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${MNT_USER_HOME}"
         return 1
     else
-        echo "SUCCESS - ${USERNAME} home initialized in ${MNT_USER_HOME}"
+        echo "INFO::${FUNCNAME} ${USERNAME}: created ${MNT_USER_HOME}"
     fi
     restorecon -F -R ${MNT_USER_HOME}
 }
@@ -44,13 +61,30 @@ mkscratch () {
     local USERNAME=$1
     local WITH_HOME=$2
 
+    if [ -z "${USERNAME}" ]; then
+        echo "ERROR::${FUNCNAME}: username unspecified"
+        return 1
+    fi
+
     if id $USERNAME &> /dev/null; then
         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
         local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
+        local METHOD="getent/id"
     else
         local USER_INFO=$(kexec ipa user-show ${USERNAME})
         local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
         local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+        local METHOD="ipa"
+    fi
+
+    if [ -z "${USER_HOME}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+        return 1
+    fi
+
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        return 1
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
@@ -65,13 +99,19 @@ mkscratch () {
         chown -h ${USER_UID}:${USER_UID} ${MNT_USER_SCRATCH}
         chmod 750 ${MNT_USER_SCRATCH}
         restorecon -F -R ${MNT_USER_SCRATCH}
-        echo "SUCCESS - ${USERNAME} scratch initialized in ${MNT_USER_SCRATCH}"
+        echo "INFO::${FUNCNAME} ${USERNAME}: created ${MNT_USER_SCRATCH}"
     fi
+    return 0
 }
 
 mkproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
+
+    if [ -z "${GROUP}" ]; then
+        echo "ERROR::${FUNCNAME}: group unspecified"
+        return 1
+    fi
 
     if mkdir /var/lock/mkproject.$GROUP.lock; then
         # A new group has been created
@@ -80,6 +120,12 @@ mkproject() {
             if [ $? -eq 0 ]; then
                 GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
             fi
+
+            if [ -z "${GID}" ]; then
+                echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+                return 1
+            fi
+
             MNT_PROJECT_GID="/mnt/project/$GID"
             if [ ! -d ${MNT_PROJECT_GID} ]; then
                 MNT_PROJECT_GROUP="/mnt/project/$GROUP"
@@ -88,15 +134,15 @@ mkproject() {
                 chmod 2770 ${MNT_PROJECT_GID}
                 ln -sfT "/project/$GID" ${MNT_PROJECT_GROUP}
                 restorecon -F -R ${MNT_PROJECT_GID} ${MNT_PROJECT_GROUP}
-                echo "SUCCESS - ${GROUP} project folder initialized in ${MNT_PROJECT_GID}"
+                echo "INFO::${FUNCNAME} ${GROUP}: created ${MNT_PROJECT_GID}"
             else
-                echo "WARNING - ${GROUP} project folder ${MNT_PROJECT_GID} already exists"
+                echo "WARN::${FUNCNAME} ${GROUP}: ${MNT_PROJECT_GID} already exists"
             fi
         fi
         # We create the associated account in slurm
         /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - ${GROUP} account created in SlurmDB"
+            echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
@@ -106,6 +152,12 @@ modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
     local USERNAMES="${@:3}"
+
+    if [ -z "${GROUP}" ]; then
+        echo "ERROR::${FUNCNAME}: group unspecified"
+        return 1
+    fi
+
     # mkproject is currently running, we skip adding more folder under the project
     if [ -d /var/lock/mkproject.$GROUP.lock ]; then
         return
@@ -128,15 +180,19 @@ modproject() {
         local MNT_PROJECT="/mnt${GROUP_LINK}"
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
-
-                if id $USERNAME &> /dev/null; then
-                    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-                    local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
-                else
-                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-                    local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
+                # Slurm needs the UID to be available via SSSD
+                local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                if [ -z "${USER_HOME}" ]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
+                    return 1
                 fi
+
+                local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME 2> /dev/null)
+                if [ -z "${USER_UID}" ]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
+                    return 1
+                fi
+
                 local MNT_USER_HOME="/mnt${USER_HOME}"
 
                 mkdir -p "${MNT_USER_HOME}/projects"
@@ -151,15 +207,15 @@ modproject() {
                     chown "${USER_UID}" "${PRO_USER}"
                     chmod 2700 "${PRO_USER}"
                     restorecon -F -R "${PRO_USER}"
-                    echo "SUCCESS - ${USERNAME} project ${GROUP} folder initialized in ${PRO_USER}"
+                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PRO_USER}"
                 else
-                    echo "WARNING - ${USERNAME} project ${GROUP} in ${MNT_PROJECT}/${USERNAME} already exists"
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: ${PRO_USER} already exists"
                 fi
             done
         fi
         /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - ${USERNAMES} added to ${GROUP} account in SlurmDB"
+            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
         fi
     else
         # If group has been modified but no uid were found in the log, it means
@@ -171,29 +227,35 @@ modproject() {
         if [[ ! -z "$USERNAMES" ]]; then
             /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
             if [ $? -eq 0 ]; then
-                echo "SUCCESS - removed ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
+                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             else
-                echo "ERROR - removing ${USERNAMES//[$'\n']/ } from ${GROUP} account in SlurmDB"
+                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             fi
             if [ "$WITH_FOLDER" == "true" ]; then
                 for USERNAME in $USERNAMES; do
                     if id $USERNAME &> /dev/null; then
                         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
                     else
-                        local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                        local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
                     fi
+
+                    if [ -z "${USER_HOME}" ]; then
+                        echo "ERROR::${FUNCNAME} ${GROUP}: ${USERNAME} home path not defined"
+                        return 1
+                    fi
+
                     local MNT_USER_HOME="/mnt${USER_HOME}"
                     rm "${MNT_USER_HOME}/projects/$GROUP" &> /dev/null
                     if [ $? -eq 0 ]; then
-                        echo "SUCCESS - removed ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                        echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
-                        echo "ERROR - could not remove ${USERNAME} project symlink $USER_HOME/projects/$GROUP"
+                        echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                        return 1
                     fi
                 done
             fi
         else
-            echo "WARNING - Could not find username to remove from project ${GROUP}"
+            echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
         fi
     fi
 }
@@ -209,18 +271,25 @@ delproject() {
     if [[ ! -z "$USERNAMES" ]]; then
         /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
         if [ $? -eq 0 ]; then
-            echo "SUCCESS - removed ${USERNAMES} from ${GROUP} account in SlurmDB"
+            echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
         else
-            echo "ERROR - could not remove ${USERNAME} from ${GROUP} account in SlurmDB"
+            echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
         fi
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
                 if id $USERNAME &> /dev/null; then
                     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
+                    local METHOD="getent/id"
                 else
-                    local USER_INFO=$(kexec ipa user-show ${USERNAME})
-                    local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
+                    local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
+                    local METHOD="ipa"
                 fi
+
+                if [ -z "${USER_HOME}" ]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    return 1
+                fi
+
                 local MNT_USER_HOME="/mnt${USER_HOME}"
                 rm "${MNT_USER_HOME}/projects/$GROUP"
             done

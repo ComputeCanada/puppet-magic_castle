@@ -21,6 +21,36 @@ PREV_CONN=""
 
 source /sbin/account_functions.sh
 
+MOPPROJECT_PIPE=/var/tmp/modproject_pipe
+MODPROJECT_RETRY_PIPE=/var/tmp/modproject_retry_pipe
+MKHOME_MOPPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
+
+trap "rm -f ${MOPPROJECT_PIPE}; rm -f ${MODPROJECT_RETRY_PIPE}" EXIT
+
+if [[ ! -p ${MOPPROJECT_PIPE} ]]; then
+    mkfifo -m=600 ${MOPPROJECT_PIPE}
+fi
+
+if [[ ! -p ${MODPROJECT_RETRY_PIPE} ]]; then
+    mkfifo -m=600 ${MODPROJECT_RETRY_PIPE}
+fi
+
+# Loop over three sources of project modification
+# 1. Modification coming from SLAPD log
+# 2. Modification coming from mkhome daemon
+# 3. Modification coming from the loop that have errored on a previous try.
+(
+    tail -F ${MOPPROJECT_PIPE} &
+    tail -F ${MODPROJECT_RETRY_PIPE} &
+    tail -F ${MKHOME_MOPPROJECT_PIPE}
+) |
+while read GROUP WITH_FOLDER USERNAMES; do
+    if ! modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}; then
+        sleep 5
+        echo "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+    fi
+done &
+
 tail -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
 sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
@@ -49,7 +79,7 @@ while read CONN OP GROUP; do
         # We grep all unique groups that have been modified
         MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
         for GROUP in $MOD_GROUPS; do
-            modproject $GROUP <%= $with_folder %> $USERNAMES
+            echo $GROUP <%= $with_folder %> $USERNAMES > ${MOPPROJECT_PIPE} &
         done
     elif [[ "$OP" == "DEL" ]]; then
         delproject $GROUP <%= $with_folder %>
