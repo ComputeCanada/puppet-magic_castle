@@ -57,6 +57,9 @@ X11Parameters=home_xauthority
 <% } else { -%>
 PrologFlags=alloc,contain
 <% } -%>
+<% if $enable_scrontab { -%>
+ScronParameters=enable
+<% } -%>
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
