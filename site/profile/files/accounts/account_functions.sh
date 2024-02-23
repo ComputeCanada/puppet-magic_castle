@@ -124,9 +124,9 @@ mkproject() {
                 return 1
             fi
 
-            PROJECT_GID="/project/$GID"
+            local PROJECT_GID="/project/$GID"
             if [ ! -d ${PROJECT_GID} ]; then
-                PROJECT_GROUP="/project/$GROUP"
+                local PROJECT_GROUP="/project/$GROUP"
                 mkdir -p ${PROJECT_GID}
                 chown root:${GID} ${PROJECT_GID}
                 chmod 2770 ${PROJECT_GID}
