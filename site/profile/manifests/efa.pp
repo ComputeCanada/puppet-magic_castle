@@ -21,7 +21,7 @@ class profile::efa (
   }
 
   exec { 'install-efa-driver':
-    command => 'bash efa_installer.sh -y',
+    command => 'bash efa_installer.sh -y && rm -rf /tmp/aws-efa-installer',
     cwd     => '/tmp/aws-efa-installer',
     require => [
       Archive['download-efa-driver'],
@@ -31,11 +31,5 @@ class profile::efa (
     ],
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     creates => '/opt/amazon/efa',
-  }
-
-  tidy { 'delete-efa-driver':
-    path    => '/tmp/aws-efa-installer',
-    rmdirs  => true,
-    require => Exec['install-efa-driver'],
   }
 }
