@@ -53,3 +53,5 @@ magic_castle::site::tags:
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
+  efa:
+    - profile::efa
