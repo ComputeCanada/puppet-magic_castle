@@ -21,7 +21,7 @@ class profile::efa (
   }
 
   exec { 'install-efa-driver':
-    command => 'bash efa_installer.sh -y && rm -rf /tmp/aws-efa-installer',
+    command => 'bash efa_installer.sh -y --minimal && rm -rf /tmp/aws-efa-installer',
     cwd     => '/tmp/aws-efa-installer',
     require => [
       Archive['download-efa-driver'],
@@ -31,5 +31,9 @@ class profile::efa (
     ],
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     creates => '/opt/amazon/efa',
+  }
+
+  kmod::load { 'efa':
+    require => Exec['install-efa-driver']
   }
 }
