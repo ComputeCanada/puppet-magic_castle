@@ -1,4 +1,6 @@
-class profile::efa {
+class profile::efa (
+  String $version = 'latest'
+) {
   package { 'libibverbs-utils':
     ensure => 'installed',
   }
@@ -11,18 +13,18 @@ class profile::efa {
     ensure => 'installed',
   }
 
-  exec { 'download-efa-driver':
-    command => 'curl -O https://efa-installer.amazonaws.com/aws-efa-installer-1.30.0.tar.gz && tar -xf aws-efa-installer-1.30.0.tar.gz && cd aws-efa-installer',
-    cwd     => '/tmp',
-    creates => '/tmp/aws-efa-installer',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  archive { 'download-efa-driver':
+    path         => "/opt/puppetlabs/puppet/cache/puppet-archive/aws-efa-installer-${version}.tar.gz",
+    extract      => true,
+    extract_path => '/tmp/',
+    source       => "https://efa-installer.amazonaws.com/aws-efa-installer-${version}.tar.gz"
   }
 
   exec { 'install-efa-driver':
     command => 'bash efa_installer.sh -y',
     cwd     => '/tmp/aws-efa-installer',
     require => [
-      Exec['download-efa-driver'],
+      Archive['download-efa-driver'],
       Package['libibverbs-utils'],
       Package['rdma-core-devel'],
       Package['librdmacm-utils'],
@@ -32,9 +34,7 @@ class profile::efa {
   }
 
   tidy { 'delete-efa-driver':
-    path    => '/tmp',
-    recurse => true,
-    matches => [ 'aws-efa-installer*' ],
+    path    => '/tmp/aws-efa-installer',
     rmdirs  => true,
     require => Exec['install-efa-driver'],
   }
