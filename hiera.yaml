@@ -16,9 +16,9 @@ hierarchy:
   - name: "User data"
     glob: "hieradata/*.yaml"
   - name: "Prefix data"
-    path: "hieradata/prefix/%{facts.prefix}.yaml"
+    path: "hieradata/prefix/%{facts.prefix}/*.yaml"
   - name: "Hostname data"
-    path: "hieradata/hostname/%{facts.networking.hostname}.yaml"
+    path: "hieradata/hostname/%{facts.networking.hostname}/*.yaml"
   - name: "Terraform and user data"
     lookup_key: eyaml_lookup_key # eyaml backend
     paths:
