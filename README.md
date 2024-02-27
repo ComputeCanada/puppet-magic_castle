@@ -1308,13 +1308,20 @@ only type of users in Magic Castle allowed to be sudoers.
 | `users`  | Dictionary of users to be created locally | Hash[profile::users::local_user] |
 
 A `profile::users::local_user` is defined as a dictionary with the following keys:
-| Variable          | Description                                     | Type            | Optional ? |
-| ----------------- | :-----------------------------------------------| :-------------- | ---------  |
-| `groups`          | List of groups the user has to be part of       | Array[String]   | No         |
-| `public_keys`     | List of ssh authorized keys for the user        | Array[String]   | No         |
-| `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes        |
-| `selinux_user`    | SELinux context for the user                    | String          | Yes        |
-| `mls_range`       | MLS Range for the user                          | String          | Yes        |
+| Variable          | Description                                     | Type            | Optional ? (default) |
+| ----------------- | :-----------------------------------------------| :-------------- | -------------------  |
+| `groups`          | List of groups the user has to be part of       | Array[String]   | No                   |
+| `public_keys`     | List of ssh authorized keys for the user        | Array[String]   | No                   |
+| `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes (false)          |
+| `selinux_user`    | SELinux context for the user                    | String          | Yes (unconfined_u)   |
+| `mls_range`       | MLS Range for the user                          | String          | Yes (s0-s0:c0.c1023) |
+| `manage_home`     | Whether we manage the home folder               | Boolean         | Yes (true)           |
+| `purge_ssh_keys`  | Whether we purge ssh keys                       | Boolean         | Yes (true)           |
+| `shell`           | Default shell of the user                       | String          | Yes (/bin/bash)      |
+| `uid`             | UID of the user                                 | Integer         | Yes (undef)          |
+| `gid`             | GID of the user                                 | Integer         | Yes (undef)          |
+| `group`           | Primary group name of the user                  | String          | Yes (username)       |
+| `home`            | Home directory of the user                      | String          | Yes (/username)      |
 
 
 <details>
