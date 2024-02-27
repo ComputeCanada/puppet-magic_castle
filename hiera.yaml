@@ -7,11 +7,6 @@ defaults:
   # See https://puppet.com/docs/puppet/latest/environments_about.html for further details on environments.
   # datadir: data
   # data_hash: yaml_data
-  #
-  # Global: *.yaml au root du dossier
-  # Prefix: prefix/%{facts.prefix}.yaml
-  # Hostname: hsotname/%{facts.netwroking.hostname}.yaml
-  # Tags: mapped_paths: ["%{facts.tags}", "tag", "tags/%{tag}.yaml"]
 hierarchy:
   - name: "User data"
     glob: "hieradata/*.yaml"
