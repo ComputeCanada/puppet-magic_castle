@@ -44,6 +44,7 @@ define profile::volumes::volume (
   String $volume_tag,
   String $glob,
   String $owner,
+  String $mode,
   String $group,
   Boolean $root_bind_mount,
   String $seltype,
