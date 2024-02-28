@@ -30,7 +30,7 @@ class profile::efa (
       Package['librdmacm-utils'],
     ],
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    creates => '/sys/module/efa',
+    creates => '/etc/modprobe.d/efa.conf',
   }
 
   kmod::load { 'efa':
