@@ -1,0 +1,11 @@
+module efa 1.0;
+
+
+require {
+	type user_t;
+	type infiniband_device_t;
+	class chr_file { open ioctl map read write };
+}
+
+#============= user_t ==============
+allow user_t infiniband_device_t:chr_file { open ioctl map read write };

@@ -20,6 +20,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::cvmfs::client`](#profilecvmfsclient)
 - [`profile::cvmfs::local_user`](#profilecvmfslocal_user)
 - [`profile::cvmfs::alien_cache`](#profilecvmfsalien_cache)
+- [`profile::efa`](#profileefa)
 - [`profile::fail2ban`](#profilefail2ban)
 - [`profile::freeipa`](#profilefreeipa)
 - [`profile::freeipa::base`](#profilefreeipabase)
@@ -126,6 +127,8 @@ magic_castle::site::tags:
     - profile::reverse_proxy
     - profile::freeipa::client
     - profile::rsyslog::client
+  efa:
+    - profile::efa
 ```
 </details>
 
@@ -464,6 +467,32 @@ This class determines the location of the CVMFS alien cache.
 ```yaml
 profile::cvmfs::alien_cache::alien_fs_root: "/scratch"
 profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
+```
+</details>
+
+## `profile::efa`
+This class installs the Elastic Fabric Adapter drivers on an AWS instance with an EFA network interface.
+[reference](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html)
+
+### parameters
+
+| Variable        | Description                                                   | Type       |
+| :-------------- | :------------------------------------------------------------ | :--------  |
+| `version`       | EFA driver version | String     |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::efa::version: 'latest'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::efa::version: '1.30.0'
 ```
 </details>
 
