@@ -30,7 +30,7 @@ class profile::efa (
       Package['librdmacm-utils'],
     ],
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    creates => '/opt/amazon',
+    creates => '/sys/module/efa',
   }
 
   kmod::load { 'efa':
