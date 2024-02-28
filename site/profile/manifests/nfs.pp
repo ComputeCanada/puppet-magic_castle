@@ -23,7 +23,7 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
-  $nfs_volumes = $instances[$nfs_server]['volumes']['nfs']
+  $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
   if $nfs_volumes =~ Hash[String, Array[String]] {
     $nfs_export_list = keys($nfs_volumes)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
