@@ -28,6 +28,10 @@ class profile::volumes (
           volume_tag      => $volume_tag,
           glob            => $values['glob'],
           root_bind_mount => pick($values['root_bind'], true),
+          owner           => pick($values['owner'], 'root'),
+          group           => pick($values['group'], 'root'),
+          mode            => pick($values['mode'], '0644'),
+          seltype         => pick($values['seltype'], 'home_root_t'),
           require         => File["/mnt/${volume_tag}"],
         }
       }
@@ -39,12 +43,20 @@ define profile::volumes::volume (
   String $volume_name,
   String $volume_tag,
   Array[String] $glob,
-  Boolean $root_bind_mount = false,
-  String $seltype = 'home_root_t',
+  String $owner,
+  String $group,
+  Boolean $root_bind_mount,
+  String $seltype,
 ) {
   $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
-  ensure_resource('file', "/mnt/${volume_tag}/${volume_name}", { 'ensure' => 'directory', 'seltype' => $seltype })
+  file { "/mnt/${volume_tag}/${volume_name}":
+    ensure  => 'directory',
+    owner   => $owner,
+    group   => $group,
+    mode    => $mode,
+    seltype => $seltype,
+  }
 
   $pool = $::facts['/dev/disk'].filter |$k, $v| {
     $regexes.any|$regex| {
