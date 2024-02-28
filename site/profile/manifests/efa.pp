@@ -30,10 +30,15 @@ class profile::efa (
       Package['librdmacm-utils'],
     ],
     path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    creates => '/opt/amazon/efa',
+    creates => '/opt/amazon',
   }
 
   kmod::load { 'efa':
     require => Exec['install-efa-driver']
+  }
+
+  selinux::module { 'efa':
+    ensure    => 'present',
+    source_pp => 'puppet:///modules/profile/efa/efa.pp',
   }
 }
