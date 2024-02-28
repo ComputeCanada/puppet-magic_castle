@@ -225,6 +225,7 @@ profile::squid::server::cache_size: 4096
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
+  - '^(object-.*\.cloud\.computecanada\.ca)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
   - '^(.*\.cvmfs\.eessi-infra\.org)$'
