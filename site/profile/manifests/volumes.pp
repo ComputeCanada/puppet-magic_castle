@@ -42,7 +42,7 @@ class profile::volumes (
 define profile::volumes::volume (
   String $volume_name,
   String $volume_tag,
-  Array[String] $glob,
+  String $glob,
   String $owner,
   String $group,
   Boolean $root_bind_mount,
