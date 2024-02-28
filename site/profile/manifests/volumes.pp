@@ -49,7 +49,7 @@ define profile::volumes::volume (
   Boolean $root_bind_mount,
   String $seltype,
 ) {
-  $regexes = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
+  $regex = regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' })
 
   file { "/mnt/${volume_tag}/${volume_name}":
     ensure  => 'directory',
@@ -60,9 +60,7 @@ define profile::volumes::volume (
   }
 
   $pool = $::facts['/dev/disk'].filter |$k, $v| {
-    $regexes.any|$regex| {
-      $k =~ Regexp($regex)
-    }
+    $k =~ Regexp($regex)
   }.map |$k, $v| {
     $v
   }.unique
