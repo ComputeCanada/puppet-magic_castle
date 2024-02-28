@@ -13,7 +13,7 @@ class profile::volumes (
           volume_tag      => $volume_tag,
           glob            => $glob,
           root_bind_mount => true,
-          require         => File["/mnt/${volume_tag}"]
+          require         => File["/mnt/${volume_tag}"],
         }
       }
     }
