@@ -1,18 +1,33 @@
+# lookup_options:
+#   profile::volumes::devices:
+#     merge: 'deep'
+
+## common.yaml
+# profile::volumes::devices: %{alias('terraform.self.volumes')}
+
+## Provided by the user
+# profile::volumes::devices:
+#   nfs:
+#     home:
+#       mode: '0600'
+#       owner: 'root'
+#       group: 'root'
+
 class profile::volumes (
-  Hash[String, Hash[String, Array[String]]] $devices,
+  Hash[String, Hash[String, Hash]] $devices,
 ) {
-  if $devices =~ Hash[String, Hash[String, Array[String]]] {
+  if $devices =~ Hash[String, Hash[String, Hash]] {
     package { 'lvm2':
       ensure => installed,
     }
     $devices.each | String $volume_tag, $device_map | {
       ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
-      $device_map.each | String $key, $glob | {
+      $device_map.each | String $key, $values | {
         profile::volumes::volume { "${volume_tag}-${key}":
           volume_name     => $key,
           volume_tag      => $volume_tag,
-          glob            => $glob,
-          root_bind_mount => true,
+          glob            => $values['glob'],
+          root_bind_mount => pick($values['root_bind'], true),
           require         => File["/mnt/${volume_tag}"],
         }
       }
