@@ -99,7 +99,7 @@ define profile::volumes::volume (
 
   $pv_freespace_cmd = "pvs --noheading -o pv_free ${pool} | sed -nr 's/^ *([0-9]*)\\..*g/\\1/p'"
   exec { "lvextend -l '+100%FREE' -r /dev/${name}_vg/${name}":
-    onlyif  => "test ${pv_freespace_cmd} -gt 0",
+    onlyif  => "test `${pv_freespace_cmd}` -gt 0",
     path    => ['/usr/bin', '/bin', '/usr/sbin'],
     require => Exec["pvresize ${pool}"],
   }
