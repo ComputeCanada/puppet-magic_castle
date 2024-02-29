@@ -24,17 +24,17 @@ class profile::volumes (
       ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
       $device_map.each | String $key, $values | {
         profile::volumes::volume { "${volume_tag}-${key}":
-          volume_name => $key,
-          volume_tag  => $volume_tag,
-          glob        => $values['glob'],
-          bind_mount  => pick($values['bind_mount'], true),
-          bind_target => pick($values['bind_target'], "/${key}"),
-          owner       => pick($values['owner'], 'root'),
-          group       => pick($values['group'], 'root'),
-          mode        => pick($values['mode'], '0644'),
-          seltype     => pick($values['seltype'], 'home_root_t'),
-          autoresize  => pick($values['autoresize'], false),
-          require     => File["/mnt/${volume_tag}"],
+          volume_name   => $key,
+          volume_tag    => $volume_tag,
+          glob          => $values['glob'],
+          bind_mount    => pick($values['bind_mount'], true),
+          bind_target   => pick($values['bind_target'], "/${key}"),
+          owner         => pick($values['owner'], 'root'),
+          group         => pick($values['group'], 'root'),
+          mode          => pick($values['mode'], '0644'),
+          seltype       => pick($values['seltype'], 'home_root_t'),
+          enable_resize => pick($values['autoresize'], false),
+          require       => File["/mnt/${volume_tag}"],
         }
       }
     }
@@ -91,7 +91,7 @@ define profile::volumes::volume (
     mountpath_require => true,
   }
 
-  if $autoresize {
+  if $enable_resize {
     $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${pool} | sed -nr 's/^.*[ <]([0-9]+)\..*g$/\1/p'"
     $physical_volume_size_cmd = "pvs --noheadings -o dev_size ${pool} | sed -nr 's/^ *([0-9]+)\\..*g/\\1/p'"
     exec { "pvresize ${pool}":
