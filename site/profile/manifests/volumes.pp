@@ -114,7 +114,7 @@ define profile::volumes::volume (
   selinux::exec_restorecon { "/mnt/${volume_tag}/${volume_name}": }
 
   if $bind_mount {
-    ensure_resource('file', $bind_target, { 'ensure' => 'directory' })
+    ensure_resource('file', $bind_target, { 'ensure' => 'directory', 'seltype' => $seltype })
     mount { $bind_target:
       ensure  => mounted,
       device  => "/mnt/${volume_tag}/${volume_name}",
