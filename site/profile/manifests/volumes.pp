@@ -51,7 +51,7 @@ define profile::volumes::volume (
   String $bind_target,
   Boolean $bind_mount,
   String $seltype,
-  Boolean $autoresize,
+  Boolean $enable_resize,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
 
@@ -92,7 +92,7 @@ define profile::volumes::volume (
   }
 
   if $enable_resize {
-    $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${pool} | sed -nr 's/^.*[ <]([0-9]+)\..*g$/\1/p'"
+    $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${pool} | sed -nr 's/^.*[ <]([0-9]+)\\..*g$/\\1/p'"
     $physical_volume_size_cmd = "pvs --noheadings -o dev_size ${pool} | sed -nr 's/^ *([0-9]+)\\..*g/\\1/p'"
     exec { "pvresize ${pool}":
       onlyif  => "test `${logical_volume_size_cmd}` -lt `${physical_volume_size_cmd}`",
