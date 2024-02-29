@@ -63,7 +63,7 @@ define profile::volumes::volume (
     seltype => $seltype,
   }
 
-  $pool = (values($::facts['/dev/disk'].filter |$k, $v| { $k =~ $regex }).unique)[0]
+  $device = (values($::facts['/dev/disk'].filter |$k, $v| { $k =~ $regex }).unique)[0]
 
   exec { "vgchange-${name}_vg":
     command => "vgchange -ay ${name}_vg",
@@ -72,13 +72,13 @@ define profile::volumes::volume (
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
-  physical_volume { $pool:
+  physical_volume { $device:
     ensure => present,
   }
 
   volume_group { "${name}_vg":
     ensure           => present,
-    physical_volumes => $pool,
+    physical_volumes => $device,
     createonly       => true,
     followsymlinks   => true,
   }
@@ -92,19 +92,19 @@ define profile::volumes::volume (
   }
 
   if $enable_resize {
-    $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${pool} | sed -nr 's/^.*[ <]([0-9]+)\\..*g$/\\1/p'"
-    $physical_volume_size_cmd = "pvs --noheadings -o dev_size ${pool} | sed -nr 's/^ *([0-9]+)\\..*g/\\1/p'"
-    exec { "pvresize ${pool}":
+    $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${device} | sed -nr 's/^.*[ <]([0-9]+)\\..*g$/\\1/p'"
+    $physical_volume_size_cmd = "pvs --noheadings -o dev_size ${device} | sed -nr 's/^ *([0-9]+)\\..*g/\\1/p'"
+    exec { "pvresize ${device}":
       onlyif  => "test `${logical_volume_size_cmd}` -lt `${physical_volume_size_cmd}`",
       path    => ['/usr/bin', '/bin', '/usr/sbin'],
       require => Lvm::Logical_volume[$name],
     }
 
-    $pv_freespace_cmd = "pvs --noheading -o pv_free ${pool} | sed -nr 's/^ *([0-9]*)\\..*g/\\1/p'"
+    $pv_freespace_cmd = "pvs --noheading -o pv_free ${device} | sed -nr 's/^ *([0-9]*)\\..*g/\\1/p'"
     exec { "lvextend -l '+100%FREE' -r /dev/${name}_vg/${name}":
       onlyif  => "test `${pv_freespace_cmd}` -gt 0",
       path    => ['/usr/bin', '/bin', '/usr/sbin'],
-      require => Exec["pvresize ${pool}"],
+      require => Exec["pvresize ${device}"],
     }
   }
 
