@@ -692,10 +692,7 @@ class profile::slurm::node {
     both => 'unlimited',
   }
 
-  file { '/localscratch':
-    ensure  => 'directory',
-    seltype => 'tmp_t'
-  }
+  ensure_resource('file', '/localscratch', { 'ensure' => 'directory', 'seltype' => 'tmp_t' })
 
   file { '/var/spool/slurmd':
     ensure => 'directory',
