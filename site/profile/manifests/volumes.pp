@@ -34,6 +34,7 @@ class profile::volumes (
           mode          => pick($values['mode'], '0644'),
           seltype       => pick($values['seltype'], 'home_root_t'),
           enable_resize => pick($values['autoresize'], false),
+          filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
         }
       }
@@ -52,6 +53,7 @@ define profile::volumes::volume (
   Boolean $bind_mount,
   String $seltype,
   Boolean $enable_resize,
+  Enum['xfs', 'ext3', 'ext4'] $filesystem,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
 
@@ -86,7 +88,7 @@ define profile::volumes::volume (
   lvm::logical_volume { $name:
     ensure            => present,
     volume_group      => "${name}_vg",
-    fs_type           => 'xfs',
+    fs_type           => $filesystem,
     mountpath         => "/mnt/${volume_tag}/${volume_name}",
     mountpath_require => true,
   }
