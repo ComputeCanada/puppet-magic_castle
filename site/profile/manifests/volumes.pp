@@ -93,6 +93,16 @@ define profile::volumes::volume (
     mountpath_require => true,
   }
 
+  exec { "chown ${owner}:${group} /mnt/${volume_tag}/${volume_name}":
+    refreshonly => true,
+    subscribe   => Lvm::Logical_volume[$name],
+  }
+
+  exec { "chmod ${mode} /mnt/${volume_tag}/${volume_name}":
+    refreshonly => true,
+    subscribe   => Lvm::Logical_volume[$name],
+  }
+
   if $enable_resize {
     $logical_volume_size_cmd = "pvs --noheadings -o pv_size ${device} | sed -nr 's/^.*[ <]([0-9]+)\\..*g$/\\1/p'"
     $physical_volume_size_cmd = "pvs --noheadings -o dev_size ${device} | sed -nr 's/^ *([0-9]+)\\..*g/\\1/p'"
