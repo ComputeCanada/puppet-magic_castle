@@ -422,7 +422,6 @@ class profile::slurm::controller (
   String $tfe_var_pool = 'pool',
 ) {
   contain profile::slurm::base
-  include profile::mail::server
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',

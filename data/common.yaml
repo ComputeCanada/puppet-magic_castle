@@ -268,6 +268,7 @@ profile::users::local::users:
     groups: ['adm', 'wheel', 'systemd-journal']
     sudoer: true
 
+profile::base::domain_name: "%{alias('terraform.data.domain_name')}"
 
 profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
 
@@ -279,6 +280,10 @@ profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+
+profile::mail::relayhost::origin: "%{alias('terraform.data.domain_name')}"
+profile::mail::sender::origin: "%{alias('terraform.data.domain_name')}"
+profile::mail::sender::relayhost_ip: "%{alias('terraform.tag_ip.public.0')}"
 
 profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
 
