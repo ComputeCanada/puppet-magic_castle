@@ -94,12 +94,14 @@ define profile::volumes::volume (
   }
 
   exec { "chown ${owner}:${group} /mnt/${volume_tag}/${volume_name}":
+    onlyif      => "test \"$(stat -c%U:%G /mnt/${volume_tag}/${volume_name})\" == \"${owner}:${group}\"",
     refreshonly => true,
     subscribe   => Lvm::Logical_volume[$name],
     path        => ['/bin'],
   }
 
   exec { "chmod ${mode} /mnt/${volume_tag}/${volume_name}":
+    onlyif      => "test \"$(stat -c0%a /mnt/${volume_tag}/${volume_name})\" == \"${mode}\"",
     refreshonly => true,
     subscribe   => Lvm::Logical_volume[$name],
     path        => ['/bin'],
