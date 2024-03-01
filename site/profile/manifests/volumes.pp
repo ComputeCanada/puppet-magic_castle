@@ -96,11 +96,13 @@ define profile::volumes::volume (
   exec { "chown ${owner}:${group} /mnt/${volume_tag}/${volume_name}":
     refreshonly => true,
     subscribe   => Lvm::Logical_volume[$name],
+    path        => ['/bin'],
   }
 
   exec { "chmod ${mode} /mnt/${volume_tag}/${volume_name}":
     refreshonly => true,
     subscribe   => Lvm::Logical_volume[$name],
+    path        => ['/bin'],
   }
 
   if $enable_resize {
