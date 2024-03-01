@@ -31,7 +31,7 @@ class profile::volumes (
           bind_target   => pick($values['bind_target'], "/${key}"),
           owner         => pick($values['owner'], 'root'),
           group         => pick($values['group'], 'root'),
-          mode          => pick($values['mode'], '0644'),
+          mode          => pick($values['mode'], '0755'),
           seltype       => pick($values['seltype'], 'home_root_t'),
           enable_resize => pick($values['autoresize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
