@@ -149,7 +149,6 @@ define profile::volumes::volume (
   ) {
     mount { $bind_target:
       ensure  => unmounted,
-      require => File[$bind_target],
     }
   }
 }
