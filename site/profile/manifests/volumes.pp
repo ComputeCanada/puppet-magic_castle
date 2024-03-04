@@ -141,7 +141,10 @@ define profile::volumes::volume (
       device  => $dev_mapper_id,
       fstype  => none,
       options => 'rw,bind',
-      require => File[$bind_target],
+      require => [
+        File[$bind_target],
+        Lvm::Logical_volume[$name],
+      ],
     }
   } elsif (
     $facts['mountpoints'][$bind_target] != undef and
