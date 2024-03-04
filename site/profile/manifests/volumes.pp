@@ -138,7 +138,7 @@ define profile::volumes::volume (
     ensure_resource('file', $bind_target, { 'ensure' => 'directory', 'seltype' => $seltype })
     mount { $bind_target:
       ensure  => mounted,
-      device  => "/mnt/${volume_tag}/${volume_name}",
+      device  => $dev_mapper_id,
       fstype  => none,
       options => 'rw,bind',
       require => File[$bind_target],
