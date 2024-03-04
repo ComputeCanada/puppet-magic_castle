@@ -33,7 +33,7 @@ class profile::volumes (
           group         => pick($values['group'], 'root'),
           mode          => pick($values['mode'], '0755'),
           seltype       => pick($values['seltype'], 'home_root_t'),
-          enable_resize => pick($values['autoresize'], false),
+          enable_resize => pick($values['enable_resize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
         }
