@@ -66,7 +66,7 @@ define profile::volumes::volume (
   }
 
   $device = (values($::facts['/dev/disk'].filter |$k, $v| { $k =~ $regex }).unique)[0]
-  $dev_mapper_id = "/dev/mappper/${volume_tag}--${volume_name}_vg--${volume_tag}--${volume_name}"
+  $dev_mapper_id = "/dev/mappper/${volume_tag}--${volume_name}_vg-${volume_tag}--${volume_name}"
 
   exec { "vgchange-${name}_vg":
     command => "vgchange -ay ${name}_vg",
