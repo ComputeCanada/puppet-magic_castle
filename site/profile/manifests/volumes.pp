@@ -66,6 +66,7 @@ define profile::volumes::volume (
   }
 
   $device = (values($::facts['/dev/disk'].filter |$k, $v| { $k =~ $regex }).unique)[0]
+  $dev_mapper_id = "/dev/mappper/${volume_tag}--${volume_name}_vg--${volume_tag}--${volume_name}"
 
   exec { "vgchange-${name}_vg":
     command => "vgchange -ay ${name}_vg",
@@ -140,6 +141,14 @@ define profile::volumes::volume (
       device  => "/mnt/${volume_tag}/${volume_name}",
       fstype  => none,
       options => 'rw,bind',
+      require => File[$bind_target],
+    }
+  } elsif (
+    defined($facts['mountpoints'][$bind_target]) and
+    $facts['mountpoints'][$bind_target]['device'] == $dev_mapper_id
+  ) {
+    mount { $bind_target:
+      ensure  => unmounted,
       require => File[$bind_target],
     }
   }
