@@ -144,7 +144,7 @@ define profile::volumes::volume (
       require => File[$bind_target],
     }
   } elsif (
-    defined($facts['mountpoints'][$bind_target]) and
+    $facts['mountpoints'][$bind_target] != undef and
     $facts['mountpoints'][$bind_target]['device'] == $dev_mapper_id
   ) {
     mount { $bind_target:
