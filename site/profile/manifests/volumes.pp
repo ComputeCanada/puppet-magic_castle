@@ -138,10 +138,13 @@ define profile::volumes::volume (
     ensure_resource('file', $bind_target, { 'ensure' => 'directory', 'seltype' => $seltype })
     mount { $bind_target:
       ensure  => mounted,
-      # device  => $dev_mapper_id,
       device  => "/mnt/${volume_tag}/${volume_name}",
       fstype  => none,
       options => 'rw,bind',
+      before  => [
+        Exec["chown ${owner}:${group} /mnt/${volume_tag}/${volume_name}"],
+        Exec["chmod ${mode} /mnt/${volume_tag}/${volume_name}"],
+      ],
       require => [
         File[$bind_target],
         Lvm::Logical_volume[$name],
