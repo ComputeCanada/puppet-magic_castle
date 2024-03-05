@@ -668,7 +668,7 @@ class profile::slurm::node {
       source => 'puppet:///modules/profile/slurm/mig_gres.sh'
     }
     exec { '/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf':
-      refreshonly => True,
+      refreshonly => true,
       notify      => Service['slurmd'],
     }
     Exec <| tag == profile::gpu |> -> Service['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
