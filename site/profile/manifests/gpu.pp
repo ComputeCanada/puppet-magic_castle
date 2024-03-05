@@ -98,7 +98,7 @@ class profile::gpu::install::passthrough (
     path    => ['/usr/bin'],
   }
 
-  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Hash[String, Integer], undef, {})
   if $mig_profile and !$mig_profile.empty {
     include profile::gpu::install::mig
   }
