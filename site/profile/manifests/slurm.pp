@@ -657,22 +657,26 @@ class profile::slurm::node {
   }
 
   if $facts['nvidia_gpu_count'] > 0 {
-    # file { '/etc/slurm/gres.conf':
-    #   notify  => Service['slurmd'],
-    #   seltype => 'etc_t',
-    #   content => @(EOT)
-    #     AutoDetect=nvml
-    #     |EOT
-    # }
-    file { '/usr/bin/mig_gres.sh':
-      source => 'puppet:///modules/profile/slurm/mig_gres.sh'
+    $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Hash[String, Integer], undef, {})
+    if $mig_profile and !$mig_profile.empty {
+      file { '/usr/bin/mig_gres.sh':
+        source => 'puppet:///modules/profile/slurm/mig_gres.sh'
+      }
+      exec { '/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf':
+        refreshonly => true,
+        notify      => Service['slurmd'],
+      }
+      Exec <| tag == profile::gpu |> -> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
+      Exec <| tag == profile::gpu::install::mig |> ~> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
+    } else {
+      file { '/etc/slurm/gres.conf':
+        notify  => Service['slurmd'],
+        seltype => 'etc_t',
+        content => @(EOT)
+          AutoDetect=nvml
+          |EOT
+      }
     }
-    exec { '/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf':
-      refreshonly => true,
-      notify      => Service['slurmd'],
-    }
-    Exec <| tag == profile::gpu |> -> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
-    Exec <| tag == profile::gpu::install::mig |> ~> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
   }
 
   Exec <| tag == profile::cvmfs |> -> Service['slurmd']
