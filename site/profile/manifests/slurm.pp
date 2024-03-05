@@ -671,7 +671,7 @@ class profile::slurm::node {
       refreshonly => true,
       notify      => Service['slurmd'],
     }
-    Exec <| tag == profile::gpu |> -> Service['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
+    Exec <| tag == profile::gpu |> -> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
     Exec <| tag == profile::gpu::install::mig |> ~> Exec['/bin/bash /usr/bin/mig_gres.sh > /etc/slurm/gres.conf']
   }
 
