@@ -83,6 +83,7 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
+  String $mig_manager_version = '0.5.5',
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -98,14 +99,29 @@ class profile::gpu::install::passthrough (
     path    => ['/usr/bin'],
   }
 
+  package { 'nvidia-mig-manager':
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => 'nvidia-mig-manager',
+    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
+  }
+
+  service { 'nvidia-mig-manager':
+    ensure  => stopped,
+    enable  => false,
+    require => Package['nvidia-mig-manager'],
+  }
+
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Hash[String, Integer], undef, {})
   if $mig_profile and !$mig_profile.empty {
-    include profile::gpu::install::mig
+    class { 'profile::gpu::config::mig':
+      mig_profile => $mig_profile,
+    }
   }
   else {
     exec { 'disable_mig':
       command     => 'nvidia-mig-parted apply',
-      onlyif      => ['which nvidia-mig-parted', 'nvidia-mig-parted assert ; test $? -eq 1'],
+      onlyif      => ['nvidia-mig-parted assert ; test $? -eq 1'],
       environment => [
         'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/config.yaml',
         'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
@@ -113,6 +129,10 @@ class profile::gpu::install::passthrough (
         'MIG_PARTED_SKIP_RESET=false',
       ],
       path        => ['/usr/bin'],
+      require     => [
+        Package['nvidia-mig-manager'],
+        Pacakge[$packages],
+      ],
       notify      => [
         Service['nvidia-persistenced'],
         Service['nvidia-dcgm'],
@@ -154,25 +174,7 @@ class profile::gpu::install::passthrough (
   }
 }
 
-class profile::gpu::install::mig (
-  String $mig_manager_version = '0.5.5',
-) {
-  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig")
-  $arch = $::facts['os']['architecture']
-
-  package { 'nvidia-mig-manager':
-    ensure   => 'latest',
-    provider => 'rpm',
-    name     => 'nvidia-mig-manager',
-    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
-  }
-
-  service { 'nvidia-mig-manager':
-    ensure  => stopped,
-    enable  => false,
-    require => Package['nvidia-mig-manager'],
-  }
-
+class profile::gpu::config::mig (Hash $mig_profile) {
   file { '/etc/nvidia-mig-manager/puppet-config.yaml':
     require => Package['nvidia-mig-manager'],
     content => @("EOT")
@@ -195,7 +197,7 @@ class profile::gpu::install::mig (
 
   file { '/etc/nvidia-mig-manager/puppet-hooks.yaml':
     require => Package['nvidia-mig-manager'],
-    content => @("EOT")
+    content => @(EOT)
       version: v1
       hooks:
         pre-apply-mode:
