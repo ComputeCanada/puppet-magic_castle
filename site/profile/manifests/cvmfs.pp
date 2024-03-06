@@ -1,15 +1,4 @@
-class profile::cvmfs::client (
-  Integer $quota_limit,
-  Array[String] $repositories,
-  Array[String] $alien_cache_repositories = [],
-) {
-  include profile::consul
-  include profile::cvmfs::local_user
-  $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
-  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
-  $alien_folder_name_raw = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
-  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
-
+class profile::cvmfs::install {
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
@@ -26,6 +15,80 @@ class profile::cvmfs::client (
     ensure  => directory,
     seltype => 'root_t',
   }
+}
+
+type PublisherConfiguration = Struct[
+  {
+    'repository_name' => String,
+    'repository_user' => String,
+    'stratum0_url' => String,
+    'gateway_url' => String,
+    'certificate' => String,
+    'public_key' => String,
+    'api_key' => String,
+  }
+]
+
+class profile::cvmfs::publisher (
+  Hash[String, PublisherConfiguration] $repositories,
+) {
+  require profile::cvmfs::install
+  include profile::cvmfs::local_user
+  package { 'cvmfs-server':
+    ensure  => 'installed',
+    require => [Package['cvmfs']],
+  }
+
+  file { '/etc/cvmfs/keys':
+    ensure  => directory,
+    seltype => 'root_t',
+  }
+
+  ensure_resources(profile::cvmfs::publisher::repository, $repositories)
+}
+
+define profile::cvmfs::publisher::repository (
+  String $repository_name,
+  String $repository_user,
+  String $stratum0_url,
+  String $gateway_url,
+  String $certificate,
+  String $public_key,
+  String $api_key
+) {
+  file { "/etc/cvmfs/keys/${repository_name}.crt":
+    content => $certificate,
+    mode    => '0644',
+    owner   => $repository_user,
+    group   => 'root',
+  }
+  file { "/etc/cvmfs/keys/${repository_name}.pub":
+    content => $public_key,
+    mode    => '0644',
+    owner   => $repository_user,
+    group   => 'root',
+  }
+  file { "/etc/cvmfs/keys/${repository_name}.gw":
+    content => $api_key,
+    mode    => '0600',
+    owner   => $repository_user,
+    group   => 'root',
+  }
+}
+
+class profile::cvmfs::client (
+  Integer $quota_limit,
+  Array[String] $repositories,
+  Array[String] $alien_cache_repositories = [],
+) {
+  include profile::consul
+  require profile::cvmfs::install
+  include profile::cvmfs::local_user
+  $alien_fs_root_raw = lookup('profile::cvmfs::alien_cache::alien_fs_root', undef, undef, 'scratch')
+  $alien_fs_root = regsubst($alien_fs_root_raw, '^/|/$', '', 'G')
+  $alien_folder_name_raw = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
+  $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
+
 
   file { '/etc/auto.master.d/cvmfs.autofs':
     notify  => Service['autofs'],
