@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['23.02', '23.11'] $slurm_version,
+  Enum['21.08', '22.05', '23.02'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
@@ -143,7 +143,7 @@ class profile::slurm::base (
     require   => Package['munge']
   }
 
-  $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}-nvml"
+  $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}"
   yumrepo { 'slurm-copr-repo':
     enabled             => true,
     descr               => "Copr repo for Slurm${slurm_version} owned by cmdntrf",
