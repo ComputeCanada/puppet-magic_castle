@@ -57,11 +57,14 @@ EOT
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $ipa_domain = "int.${domain_name}"
   $domain_list = join([$ipa_domain] + keys($domains), ',')
-  file_line { 'sssd_domains':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    line    => "domains = ${domain_list}",
-    match   => "^domains = ${$ipa_domain}$",
+
+  augeas { 'sssd.conf':
+    lens    => 'sssd.lns',
+    incl    => '/etc/sssd/sssd.conf',
+    changes => [
+      "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
+      "set target[ . = 'sssd']/domains ${domain_list}",
+    ],
     notify  => Service['sssd'],
     require => Exec['ipa-install'],
   }
