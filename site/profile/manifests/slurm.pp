@@ -664,10 +664,10 @@ class profile::slurm::node {
 
   if $facts['nvidia_gpu_count'] > 0 {
     exec { 'slurm-nvidia_gres':
-      command     => '/opt/software/slurm/sbin/nvidia_gres.sh > /etc/slurm/gres.conf',
+      command     => '/opt/software/slurm/bin/nvidia_gres.sh > /etc/slurm/gres.conf',
       refreshonly => true,
       notify      => Service['slurmd'],
-      require     => File['/opt/software/slurm/bin/nvidia_gres.sh'],
+      subscribe   => File['/opt/software/slurm/bin/nvidia_gres.sh'],
     }
     Kmod::Load <| tag == profile::gpu  |> -> Exec['slurm-nvidia_gres']
     Exec <| tag == profile::gpu |> ~> Exec['slurm-nvidia_gres']
