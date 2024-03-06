@@ -112,7 +112,7 @@ class profile::gpu::install::passthrough (
     require => Package['nvidia-mig-manager'],
   }
 
-  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Hash[String, Integer], undef, {})
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undex, Hash[String, Integer]], undef, {})
   if $mig_profile and !$mig_profile.empty {
     class { 'profile::gpu::config::mig':
       mig_profile => $mig_profile,
@@ -131,7 +131,7 @@ class profile::gpu::install::passthrough (
       path        => ['/usr/bin'],
       require     => [
         Package['nvidia-mig-manager'],
-        Pacakge[$packages],
+        Package[$packages],
       ],
       notify      => [
         Service['nvidia-persistenced'],
