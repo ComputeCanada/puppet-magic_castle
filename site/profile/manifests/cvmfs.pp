@@ -91,7 +91,7 @@ define profile::cvmfs::publisher::repository (
         ensure  => 'present',
         path    => "/etc/cvmfs/repositories.d/${repository_name}/server.conf",
         line    => "${kv[0]}=${kv[1]}",
-        match   => "^${kv[0]}\=.*",
+        match   => "^${kv[0]}=.*",
         require => Exec["mkfs_${repository_name}"]
       }
     }
