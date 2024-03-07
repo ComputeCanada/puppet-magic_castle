@@ -26,6 +26,7 @@ type PublisherConfiguration = Struct[
     'certificate' => String,
     'public_key' => String,
     'api_key' => String,
+    'server_conf' => Optional[Array[Tuple[String, String]]]
   }
 ]
 
@@ -54,7 +55,8 @@ define profile::cvmfs::publisher::repository (
   String $gateway_url,
   String $certificate,
   String $public_key,
-  String $api_key
+  String $api_key,
+  Optional[Array[Tuple[String, String]]] $server_conf = undef,
 ) {
   file { "/etc/cvmfs/keys/${repository_name}.crt":
     content => $certificate,
@@ -82,7 +84,20 @@ define profile::cvmfs::publisher::repository (
     # create only if it does not already exist
     creates => ["/var/spool/cvmfs/${repository_name}"]
   }
+
+  if ($server_conf) {
+    $server_conf.each | Integer $index, Tuple[String, String] $kv | {
+      file_line { "server.conf_${repository_name}_${kv[0]}":
+        ensure  => 'present',
+        path    => "/etc/cvmfs/repositories.d/${repository_name}/server.conf",
+        line    => "${kv[0]}=${kv[1]}",
+        match   => "^${kv[0]}\=.*",
+        require => Exec["mkfs_${repository_name}"]
+      }
+    }
+  }
 }
+
 
 class profile::cvmfs::client (
   Integer $quota_limit,
