@@ -74,7 +74,7 @@ define profile::cvmfs::publisher::repository (
     owner   => $repository_user,
     group   => 'root',
   }
-  exec { 'mkfs':
+  exec { "mkfs_${repository_name}":
     command => "cvmfs_server mkfs -w ${stratum0_url} -u gw,/srv/cvmfs/${repository_name}/data/txn,${gateway_url} -k /etc/cvmfs/keys -o ${repository_user} -a shake128 ${repository_name}",
     require => [File["/etc/cvmfs/keys/${repository_name}.crt"], File["/etc/cvmfs/keys/${repository_name}.pub"], File["/etc/cvmfs/keys/${repository_name}.gw"]],
     path    => ['/usr/bin'],
