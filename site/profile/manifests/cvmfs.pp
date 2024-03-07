@@ -58,21 +58,29 @@ define profile::cvmfs::publisher::repository (
 ) {
   file { "/etc/cvmfs/keys/${repository_name}.crt":
     content => $certificate,
-    mode    => '0644',
+    mode    => '0444',
     owner   => $repository_user,
     group   => 'root',
   }
   file { "/etc/cvmfs/keys/${repository_name}.pub":
     content => $public_key,
-    mode    => '0644',
+    mode    => '0444',
     owner   => $repository_user,
     group   => 'root',
   }
   file { "/etc/cvmfs/keys/${repository_name}.gw":
     content => $api_key,
-    mode    => '0600',
+    mode    => '0400',
     owner   => $repository_user,
     group   => 'root',
+  }
+  exec { 'mkfs':
+    command => "cvmfs_server mkfs -w ${stratum0_url} -u gw,/srv/cvmfs/${repository_name}/data/txn,${gateway_url} -k /etc/cvmfs/keys -o ${repository_user} -a shake128 ${repository_name}",
+    require => [File["/etc/cvmfs/keys/${repository_name}.crt"], File["/etc/cvmfs/keys/${repository_name}.pub"], File["/etc/cvmfs/keys/${repository_name}.gw"]],
+    path    => ['/usr/bin'],
+    returns => [0],
+    # create only if it does not already exist
+    creates => ["/var/spool/cvmfs/${repository_name}"]
   }
 }
 
