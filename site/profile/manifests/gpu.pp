@@ -23,8 +23,8 @@ class profile::gpu::install (
   String $lib_symlink_path = undef
 ) {
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'ensure' => 'installed' })
-  ensure_packages(['dkms'], { 'require' => Yumrepo['epel'] })
+  ensure_packages(['kernel-devel', 'kernel-headers'], { 'ensure' => $facts['kernelrelease'] })
+  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
