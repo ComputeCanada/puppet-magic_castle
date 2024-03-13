@@ -101,8 +101,8 @@ define profile::cvmfs::publisher::repository (
 
 class profile::cvmfs::client (
   Integer $quota_limit,
-  Boolean $strict_mount = false,
   Array[String] $repositories,
+  Boolean $strict_mount = false,
   Array[String] $alien_cache_repositories = [],
 ) {
   include profile::consul
