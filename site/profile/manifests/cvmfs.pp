@@ -101,6 +101,7 @@ define profile::cvmfs::publisher::repository (
 
 class profile::cvmfs::client (
   Integer $quota_limit,
+  Boolean $strict_mount = false,
   Array[String] $repositories,
   Array[String] $alien_cache_repositories = [],
 ) {
@@ -127,6 +128,7 @@ class profile::cvmfs::client (
 
   file { '/etc/cvmfs/default.local.ctmpl':
     content => epp('profile/cvmfs/default.local', {
+        'strict_mount' => $strict_mount ? { true => 'yes', false => 'no' }, # lint:ignore:selector_inside_resource
         'quota_limit'  => $quota_limit,
         'repositories' => $repositories + $alien_cache_repositories,
     }),
