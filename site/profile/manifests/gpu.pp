@@ -33,36 +33,30 @@ class profile::gpu::install (
   }
 
   if ! $facts['nvidia_grid_vgpu'] {
-    require profile::gpu::install::passthrough
+    include profile::gpu::install::passthrough
+    Class['profile::gpu::install::passthrough'] -> Exec['dkms autoinstall']
   } else {
-    require profile::gpu::install::vgpu
+    include profile::gpu::install::vgpu
+    Class['profile::gpu::install::vgpu'] -> Exec['dkms autoinstall']
   }
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
+  $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
   if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
     exec { 'dkms autoinstall':
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
       timeout => 0,
+      before  => Kmod::Load[$nvidia_kmod],
       require => [
         Package['kernel-devel'],
         Package['dkms'],
       ],
     }
-    $kmod_require = [Exec['dkms autoinstall']]
-  } else {
-    $kmod_require = []
   }
 
-  kmod::load { [
-      'nvidia',
-      'nvidia_drm',
-      'nvidia_modeset',
-      'nvidia_uvm',
-    ]:
-      require => $kmod_require,
-  }
+  kmod::load { $nvidia_kmod: }
 
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
@@ -79,6 +73,9 @@ class profile::gpu::install (
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
     }
+
+    Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
+    Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
 }
 
@@ -148,7 +145,6 @@ class profile::gpu::install::passthrough (
       Exec['cuda-repo'],
       Yumrepo['epel'],
     ],
-    notify  => Exec['nvidia-symlink'],
   }
 
   # Used by slurm-job-exporter to export GPU metrics
@@ -278,7 +274,6 @@ class profile::gpu::install::vgpu::rpm (
       Yumrepo['epel'],
       Package['vgpu-repo'],
     ],
-    notify  => Exec['nvidia-symlink'],
   }
 
   # The device files/dev/nvidia* are normally created by nvidia-modprobe
