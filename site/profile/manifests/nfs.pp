@@ -24,7 +24,7 @@ class profile::nfs::client (
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
-  if $nfs_volumes =~ Hash[String, Array[String]] {
+  if $nfs_volumes =~ Hash[String, Hash] {
     $nfs_export_list = keys($nfs_volumes)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
@@ -77,7 +77,7 @@ class profile::nfs::server (
   }
 
   $devices = lookup('terraform.self.volumes.nfs')
-  if $devices =~ Hash[String, Array[String]] {
+  if $devices =~ Hash[String, Hash] {
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
     $common_options = 'rw,async,no_all_squash,security_label'
