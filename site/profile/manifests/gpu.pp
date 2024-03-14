@@ -34,19 +34,20 @@ class profile::gpu::install (
 
   if ! $facts['nvidia_grid_vgpu'] {
     include profile::gpu::install::passthrough
-    Class['profile::gpu::install::passthrough'] -> Exec['dkms autoinstall']
+    Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
     include profile::gpu::install::vgpu
-    Class['profile::gpu::install::vgpu'] -> Exec['dkms autoinstall']
+    Class['profile::gpu::install::vgpu'] -> Exec['dkms_nvidia']
   }
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
   if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
-    exec { 'dkms autoinstall':
+    exec { 'dkms_nvidia':
+      command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
-      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      onlyif  => "dkms status -m nvidia -k ${facts['kernelrelease']} | grep -v -q installed",
       timeout => 0,
       before  => Kmod::Load[$nvidia_kmod],
       require => [
