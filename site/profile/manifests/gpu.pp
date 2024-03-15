@@ -150,7 +150,7 @@ class profile::gpu::install::passthrough (
   }
 }
 
-class profile::gpu::config::mig (Hash $mig_profile) {
+class profile::gpu::config::mig (Variant[Undef, Hash] $mig_profile) {
   file { '/etc/nvidia-mig-manager/puppet-config.yaml':
     require => Package['nvidia-mig-manager'],
     content => @("EOT")
