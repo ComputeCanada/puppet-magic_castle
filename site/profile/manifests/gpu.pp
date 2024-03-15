@@ -112,31 +112,8 @@ class profile::gpu::install::passthrough (
   }
 
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})
-  if $mig_profile and !$mig_profile.empty {
-    class { 'profile::gpu::config::mig':
-      mig_profile => $mig_profile,
-    }
-  }
-  else {
-    exec { 'disable_mig':
-      command     => 'nvidia-mig-parted apply',
-      onlyif      => ['nvidia-mig-parted assert ; test $? -eq 1'],
-      environment => [
-        'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/config.yaml',
-        'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
-        'MIG_PARTED_SELECTED_CONFIG=all-disabled',
-        'MIG_PARTED_SKIP_RESET=false',
-      ],
-      path        => ['/usr/bin'],
-      require     => [
-        Package['nvidia-mig-manager'],
-        Package[$packages],
-      ],
-      notify      => [
-        Service['nvidia-persistenced'],
-        Service['nvidia-dcgm'],
-      ],
-    }
+  class { 'profile::gpu::config::mig':
+    mig_profile => $mig_profile,
   }
 
   package { $packages:
@@ -209,6 +186,14 @@ class profile::gpu::config::mig (Hash $mig_profile) {
       |EOT
   }
 
+  if $mig_profile and ! $mig_profile.empty {
+    $mig_parted_config_name = 'default'
+    $mig_parted_config_file = '/etc/nvidia-mig-manager/puppet-config.yaml'
+  } else {
+    $mig_parted_config_name = 'all-disabled'
+    $mig_parted_config_file = '/etc/nvidia-mig-manager/config.yaml'
+  }
+
   exec { 'nvidia-mig-parted apply':
     unless      => 'nvidia-mig-parted assert',
     require     => [
@@ -217,9 +202,9 @@ class profile::gpu::config::mig (Hash $mig_profile) {
       File['/etc/nvidia-mig-manager/puppet-hooks.yaml'],
     ],
     environment => [
-      'MIG_PARTED_CONFIG_FILE=/etc/nvidia-mig-manager/puppet-config.yaml',
+      "MIG_PARTED_CONFIG_FILE=${mig_parted_config_file}",
       'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
-      'MIG_PARTED_SELECTED_CONFIG=default',
+      "MIG_PARTED_SELECTED_CONFIG=${mig_parted_config_name}",
       'MIG_PARTED_SKIP_RESET=false',
     ],
     path        => ['/usr/bin'],
