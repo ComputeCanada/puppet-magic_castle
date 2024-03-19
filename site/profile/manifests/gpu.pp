@@ -98,22 +98,10 @@ class profile::gpu::install::passthrough (
     path    => ['/usr/bin'],
   }
 
-  package { 'nvidia-mig-manager':
-    ensure   => 'latest',
-    provider => 'rpm',
-    name     => 'nvidia-mig-manager',
-    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
-  }
-
-  service { 'nvidia-mig-manager':
-    ensure  => stopped,
-    enable  => false,
-    require => Package['nvidia-mig-manager'],
-  }
-
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})
   class { 'profile::gpu::config::mig':
     mig_profile => $mig_profile,
+    require     => Package[$packages],
   }
 
   package { $packages:
@@ -151,6 +139,19 @@ class profile::gpu::install::passthrough (
 }
 
 class profile::gpu::config::mig (Variant[Undef, Hash] $mig_profile) {
+  package { 'nvidia-mig-manager':
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => 'nvidia-mig-manager',
+    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
+  }
+
+  service { 'nvidia-mig-manager':
+    ensure  => stopped,
+    enable  => false,
+    require => Package['nvidia-mig-manager'],
+  }
+
   file { '/etc/nvidia-mig-manager/puppet-config.yaml':
     require => Package['nvidia-mig-manager'],
     content => @("EOT")
@@ -213,8 +214,6 @@ class profile::gpu::config::mig (Variant[Undef, Hash] $mig_profile) {
       Service['nvidia-dcgm'],
     ],
   }
-
-  Package <| tag == profile::gpu::install::passthrough |> -> Exec['nvidia-mig-parted apply']
 }
 
 class profile::gpu::install::vgpu (
