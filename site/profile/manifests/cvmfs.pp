@@ -71,7 +71,7 @@ define profile::cvmfs::publisher::repository (
     group   => 'root',
   }
   file { "/etc/cvmfs/keys/${repository_name}.gw":
-    content => $api_key,
+    content => "${api_key}\n",
     mode    => '0400',
     owner   => $repository_user,
     group   => 'root',
