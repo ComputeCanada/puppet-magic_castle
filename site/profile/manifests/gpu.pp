@@ -23,8 +23,9 @@ class profile::gpu::install (
   String $lib_symlink_path = undef
 ) {
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'ensure' => 'installed' })
-  ensure_packages(['dkms'], { 'require' => Yumrepo['epel'] })
+  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
@@ -32,36 +33,31 @@ class profile::gpu::install (
   }
 
   if ! $facts['nvidia_grid_vgpu'] {
-    require profile::gpu::install::passthrough
+    include profile::gpu::install::passthrough
+    Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
-    require profile::gpu::install::vgpu
+    include profile::gpu::install::vgpu
+    Class['profile::gpu::install::vgpu'] -> Exec['dkms_nvidia']
   }
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
+  $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
   if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
-    exec { 'dkms autoinstall':
+    exec { 'dkms_nvidia':
+      command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
-      onlyif  => 'dkms status | grep -v -q \'nvidia.*installed\'',
+      onlyif  => "dkms status -m nvidia -k ${facts['kernelrelease']} | grep -v -q installed",
       timeout => 0,
+      before  => Kmod::Load[$nvidia_kmod],
       require => [
         Package['kernel-devel'],
         Package['dkms'],
       ],
     }
-    $kmod_require = [Exec['dkms autoinstall']]
-  } else {
-    $kmod_require = []
   }
 
-  kmod::load { [
-      'nvidia',
-      'nvidia_drm',
-      'nvidia_modeset',
-      'nvidia_uvm',
-    ]:
-      require => $kmod_require,
-  }
+  kmod::load { $nvidia_kmod: }
 
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
@@ -78,10 +74,15 @@ class profile::gpu::install (
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
     }
+
+    Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
+    Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
 }
 
-class profile::gpu::install::passthrough (Array[String] $packages) {
+class profile::gpu::install::passthrough (
+  Array[String] $packages,
+) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
   if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
@@ -96,13 +97,19 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
     path    => ['/usr/bin'],
   }
 
+  $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})
+  class { 'profile::gpu::config::mig':
+    mig_profile => $mig_profile,
+    require     => Package[$packages],
+  }
+
   package { $packages:
     ensure  => 'installed',
     require => [
+      Package['kernel-devel'],
       Exec['cuda-repo'],
       Yumrepo['epel'],
     ],
-    notify  => Exec['nvidia-symlink'],
   }
 
   # Used by slurm-job-exporter to export GPU metrics
@@ -127,6 +134,88 @@ class profile::gpu::install::passthrough (Array[String] $packages) {
   file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
     content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
     mode    => '0644',
+  }
+}
+
+class profile::gpu::config::mig (
+  Variant[Undef, Hash] $mig_profile,
+  String $mig_manager_version = '0.5.5',
+) {
+  $arch = $::facts['os']['architecture']
+  package { 'nvidia-mig-manager':
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => 'nvidia-mig-manager',
+    source   => "https://github.com/NVIDIA/mig-parted/releases/download/v${$mig_manager_version}/nvidia-mig-manager-${mig_manager_version}-1.${arch}.rpm",
+  }
+
+  service { 'nvidia-mig-manager':
+    ensure  => stopped,
+    enable  => false,
+    require => Package['nvidia-mig-manager'],
+  }
+
+  file { '/etc/nvidia-mig-manager/puppet-config.yaml':
+    require => Package['nvidia-mig-manager'],
+    content => @("EOT")
+      version: v1
+      mig-configs:
+        default:
+          - devices: all
+            mig-enabled: true
+            mig-devices: ${to_json($mig_profile)}
+      |EOT
+  }
+
+  file_line { 'nvidia-persistenced.service':
+    ensure  => present,
+    path    => '/etc/nvidia-mig-manager/hooks.sh',
+    after   => 'driver_services=\(',
+    line    => '        nvidia-persistenced.service',
+    require => Package['nvidia-mig-manager'],
+  }
+
+  file { '/etc/nvidia-mig-manager/puppet-hooks.yaml':
+    require => Package['nvidia-mig-manager'],
+    content => @(EOT)
+      version: v1
+      hooks:
+        pre-apply-mode:
+        - workdir: "/etc/nvidia-mig-manager"
+          command: "/bin/bash"
+          args: ["-x", "-c", "source hooks.sh; stop_driver_services"]
+        - workdir: "/etc/nvidia-mig-manager"
+          command: "/bin/sh"
+          args: ["-c", "systemctl -q is-active slurmd && systemctl stop slurmd || true"]
+      |EOT
+  }
+
+  if $mig_profile and ! $mig_profile.empty {
+    $mig_parted_config_name = 'default'
+    $mig_parted_config_file = '/etc/nvidia-mig-manager/puppet-config.yaml'
+  } else {
+    $mig_parted_config_name = 'all-disabled'
+    $mig_parted_config_file = '/etc/nvidia-mig-manager/config.yaml'
+  }
+
+  exec { 'nvidia-mig-parted apply':
+    unless      => 'nvidia-mig-parted assert',
+    require     => [
+      Package['nvidia-mig-manager'],
+      File['/etc/nvidia-mig-manager/puppet-config.yaml'],
+      File['/etc/nvidia-mig-manager/puppet-hooks.yaml'],
+    ],
+    environment => [
+      "MIG_PARTED_CONFIG_FILE=${mig_parted_config_file}",
+      'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
+      "MIG_PARTED_SELECTED_CONFIG=${mig_parted_config_name}",
+      'MIG_PARTED_SKIP_RESET=false',
+    ],
+    path        => ['/usr/bin'],
+    notify      => [
+      Service['nvidia-persistenced'],
+      Service['nvidia-dcgm'],
+    ],
   }
 }
 
@@ -169,10 +258,10 @@ class profile::gpu::install::vgpu::rpm (
   package { $packages:
     ensure  => 'installed',
     require => [
+      Package['kernel-devel'],
       Yumrepo['epel'],
       Package['vgpu-repo'],
     ],
-    notify  => Exec['nvidia-symlink'],
   }
 
   # The device files/dev/nvidia* are normally created by nvidia-modprobe

@@ -3,14 +3,12 @@ NodeName=DEFAULT MemSpecLimit=<%= $memlimit %> State=CLOUD
 
 # Always online computes nodes
 <% $nodes.each |$name, $attr| { -%>
-<% if !('pool' in $attr['tags'])  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
-<% } -%>
-<% } -%>
+<% if !('pool' in $attr['tags']) { -%>
+<%= profile::generate_slurm_node_line($name, $attr, $weights[$name]) %>
+<% }} -%>
 
 # On-demand pool compute nodes
 <% $nodes.each |$name, $attr| { -%>
-<% if 'pool' in $attr['tags']  { -%>
-NodeName=<%= $name %> CPUs=<%= $attr['specs']['cpus'] %> RealMemory=<%= $attr['specs']['ram'] %> Gres=gpu:<%= $attr['specs']['gpus'] %> Weight=<%= $weights[$name] %>
-<% } -%>
-<% } -%>
+<% if 'pool' in $attr['tags'] { -%>
+<%= profile::generate_slurm_node_line($name, $attr, $weights[$name]) %>
+<% }} -%>
