@@ -70,3 +70,32 @@ class profile::rsyslog::server {
     notify => Service['rsyslog'],
   }
 }
+
+class profile::rsyslog::elasticsearch
+(
+  String $server_url,
+  String $server_port,
+  String $index,
+  String $username = '',
+  String $password = '',
+  Array[String] $program_names = [],
+  Hash[String, String] $tags = {}
+)
+{
+  package { 'rsyslog-elasticsearch':
+    ensure => 'installed',
+  }
+
+  file { '/etc/rsyslog.d/80-elasticsearch.conf':
+    notify  => Service['rsyslog'],
+    content => epp('profile/rsyslog/elasticsearch.conf', {
+        'server_url'    => $server_url,
+        'server_port'   => $server_port,
+        'index'         => $index,
+        'username'      => $username,
+        'password'      => $password,
+        'program_names' => $program_names,
+        'tags'          => $tags,
+    }),
+  }
+}
