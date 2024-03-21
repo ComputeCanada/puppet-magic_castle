@@ -82,7 +82,6 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $mig_manager_version = '0.5.5',
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -138,7 +137,11 @@ class profile::gpu::install::passthrough (
   }
 }
 
-class profile::gpu::config::mig (Variant[Undef, Hash] $mig_profile) {
+class profile::gpu::config::mig (
+  Variant[Undef, Hash] $mig_profile,
+  String $mig_manager_version = '0.5.5',
+) {
+  $arch = $::facts['os']['architecture']
   package { 'nvidia-mig-manager':
     ensure   => 'latest',
     provider => 'rpm',
