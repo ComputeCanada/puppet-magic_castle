@@ -696,7 +696,7 @@ class profile::slurm::node {
   if '/dev/disk/by-label/ephemeral0' in $facts['/dev/disk'] {
     mount { '/localscratch':
       ensure  => mounted,
-      device  => "/mnt/ephemeral0",
+      device  => '/mnt/ephemeral0',
       fstype  => none,
       options => 'rw,bind',
       require => [
