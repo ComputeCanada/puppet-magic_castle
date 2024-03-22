@@ -82,6 +82,8 @@ class profile::rsyslog::elasticsearch
   Hash[String, String] $tags = {}
 )
 {
+  include profile::rsyslog::base
+
   package { 'rsyslog-elasticsearch':
     ensure => 'installed',
   }

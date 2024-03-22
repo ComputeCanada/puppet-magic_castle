@@ -39,6 +39,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::base`](#profilersyslogbase)
 - [`profile::rsyslog::client`](#profilersyslogclient)
 - [`profile::rsyslog::server`](#profilersyslogserver)
+- [`profile::rsyslog::elasticsearch`](#profilersyslogelasticsearch)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
@@ -866,6 +867,30 @@ from all rsyslog client in the cluster.
 
 When `profile::rsyslog::server` is included, these classes are included too:
 - [profile::consul](#profileconsul)
+- [profile::rsyslog::base](#profilersyslogbase)
+
+## `profile::rsyslog::elasticsearch`
+
+This class install and configures rsyslog service to forward logs
+to Elasticsearch/Opensearch. 
+When used with `profile::rsyslog::server`, logs from all clients are included.
+
+### parameters
+
+| Variable                | Description              | Type    | Optional ? |
+| :---------------------- | :----------------------- | :------ | ---------  |
+| `server_url`            | URL to Elasticsearch server | String  | No         |
+| `server_port`           | Port to Elasticsearch server | String  | No        |
+| `index`                 | Elasticsearch index      | String  | No        |
+| `username`              | Username for HTTP authentification      | String  | Yes        |
+| `password`              | Password for HTTP authentification      | String  | Yes        |
+| `program_names`         | Include logs from those programs only   | Array[String]  | Yes        |
+| `tags`         | Tags to includes in the request   | Hash[String, String]  | Yes        |
+
+
+### dependencies
+
+When `profile::rsyslog::elasticsearch` is included, these classes are included too:
 - [profile::rsyslog::base](#profilersyslogbase)
 
 ## `profile::slurm::base`
