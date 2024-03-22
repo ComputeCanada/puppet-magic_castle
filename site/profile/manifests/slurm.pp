@@ -693,6 +693,17 @@ class profile::slurm::node {
   }
 
   ensure_resource('file', '/localscratch', { 'ensure' => 'directory', 'seltype' => 'tmp_t' })
+  if '/dev/disk/by-label/ephemeral0' in $facts['/dev/disk'] {
+    mount { '/localscratch':
+      ensure  => mounted,
+      device  => "/mnt/ephemeral0",
+      fstype  => none,
+      options => 'rw,bind',
+      require => [
+        File['/localscratch'],
+      ],
+    }
+  }
 
   file { '/var/spool/slurmd':
     ensure => 'directory',
