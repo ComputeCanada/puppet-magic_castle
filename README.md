@@ -475,7 +475,31 @@ Written in the Python programming language, it is designed to prevent brute-forc
 
 This class installs and configures fail2ban.
 
-Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for parameters to configure.
+### parameters
+
+| Variable          | Description      | Type    |
+| :---------------- | :--------------- | :------ |
+| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
+
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more parameters to configure.
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::fail2ban::ignoreip: []
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::fail2ban::ignoreip:
+  - 132.203.0.0/16
+  - 10.0.0.0/8
+```
+</details>
 
 ### dependencies
 
