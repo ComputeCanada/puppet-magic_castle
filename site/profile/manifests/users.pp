@@ -128,6 +128,7 @@ define profile::users::local_user (
   Boolean $sudoer = false,
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
+  String $authenticationmethods = '',
 ) {
   # Configure local account and ssh keys
   user { $name:
@@ -170,5 +171,20 @@ define profile::users::local_user (
     path    => '/etc/sudoers.d/90-puppet-users',
     line    => "${name} ALL=(ALL) NOPASSWD:ALL",
     require => File['/etc/sudoers.d/90-puppet-users'],
+  }
+
+  if $authenticationmethods != '' {
+    file { "/etc/ssh/sshd_config.d/authenticationmethods_${name}.conf":
+      ensure  => file,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+      notify  => Service['sshd'],
+      content => @("EOT")
+Match User ${name}
+  AuthenticationMethods ${authenticationmethods}
+Match all
+|EOT
+    }
   }
 }
