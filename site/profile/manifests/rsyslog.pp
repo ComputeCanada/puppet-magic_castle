@@ -1,15 +1,13 @@
 class profile::rsyslog::base {
-  package { 'rsyslog':
-    ensure => 'installed',
-  }
-  service { 'rsyslog':
-    ensure => running,
-    enable => true,
+  class { 'rsyslog':
+    purge_config_files      => false,
+    override_default_config => false,
   }
 }
 
 class profile::rsyslog::client {
   include profile::rsyslog::base
+  include rsyslog::config
 
   $remote_host_conf = @(EOT)
     {{ with $local := node -}}
