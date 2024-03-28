@@ -1,0 +1,46 @@
+module(load="omelasticsearch")
+
+# Define the Elasticsearch template
+template(
+  name="es-template"
+  type="list"
+  option.json="on"
+) {
+  constant(value="{")
+  constant(value="\"@timestamp\":\"")
+  property(name="timereported" dateFormat="rfc3339")
+  constant(value="\",\"host\":\"")
+  property(name="hostname")
+  constant(value="\",\"program\":\"")
+  property(name="programname")
+  constant(value="\",\"severity\":\"")
+  property(name="syslogseverity-text")
+  constant(value="\",\"facility\":\"")
+  property(name="syslogfacility-text")
+  constant(value="\",\"syslogtag\":\"")
+  property(name="syslogtag")
+  constant(value="\",\"message\":\"")
+  property(name="msg" format="json")
+<% $tags.each |$key, $value| { -%>
+  constant(value="\",\"<%= $key %>\":\"<%= $value %>")
+<% } -%>
+  constant(value="\"}")
+}
+
+<% if !$program_names.empty { -%>
+if (
+    <%= $program_names.map |$name| { "\$programname == \'$name\'" }.join(" or ") %>
+) then {
+<% } -%>
+ action(
+  type="omelasticsearch"
+  template="es-template"
+  server="<%= $server_url %>"
+  serverport="<%= $server_port %>"
+  searchIndex="<%= $index %>"
+  <%= if $username != '' { "uid=\"$username\"" } %>
+  <%= if $password != '' { "pwd=\"$password\"" } %>
+ )
+<% if !$program_names.empty { -%>
+}
+<% } -%>
