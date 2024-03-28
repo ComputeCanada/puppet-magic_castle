@@ -59,7 +59,9 @@ PrologFlags=alloc,contain
 <% } -%>
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog
+<% if $enable_tmpfs_mounts { -%>
 PlugStackConfig=/etc/slurm/plugstack.conf
+<% } -%>
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
 <% if versioncmp($slurm_version, '21.08') >= 0 { -%>

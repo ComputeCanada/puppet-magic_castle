@@ -15,6 +15,7 @@ class profile::slurm::base (
   Integer $resume_timeout = 3600,
   Boolean $enable_x11_forwarding = true,
   String  $config_addendum = '',
+  Boolean $enable_tmpfs_mounts = true,
 )
 {
   include epel
@@ -194,6 +195,7 @@ class profile::slurm::base (
         'suspend_time'          => $suspend_time,
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
+        'enable_tmpfs_mounts'   => $enable_tmpfs_mounts,
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -562,44 +564,49 @@ class profile::slurm::node {
   contain profile::slurm::base
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if versioncmp($slurm_version, '22.05') >= 0 {
-    $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
-  } else {
-    $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/'
+  $enable_tmpfs_mounts = lookup('profile::slurm::base::enable_tmpfs_mounts')
+
+  if $enable_tmpfs_mounts {
+    if versioncmp($slurm_version, '22.05') >= 0 {
+      $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
+    } else {
+      $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/'
+    }
+
+    yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
+      enabled             => true,
+      descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
+      baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
+      skip_if_unavailable => true,
+      gpgcheck            => 1,
+      gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
+      repo_gpgcheck       => 0,
+    }
+    package { 'spank-cc-tmpfs_mounts':
+      ensure  => 'installed',
+      require => [
+        Package['slurm-slurmd'],
+        Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+      ]
+    }
+    file { '/etc/slurm/plugstack.conf':
+      ensure  => 'present',
+      owner   => 'slurm',
+      group   => 'slurm',
+      notify  => Service['slurmd'],
+      content => @(EOT/L),
+        required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
+        bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
+        |EOT
+    }
   }
 
-  yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
-    enabled             => true,
-    descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
-    baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
-    skip_if_unavailable => true,
-    gpgcheck            => 1,
-    gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
-    repo_gpgcheck       => 0,
-  }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
     require => Package['slurm']
   }
 
-  package { 'spank-cc-tmpfs_mounts':
-    ensure  => 'installed',
-    require => [
-      Package['slurm-slurmd'],
-      Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
-    ]
-  }
-
-  file { '/etc/slurm/plugstack.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => @(EOT/L),
-      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
-      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
-      |EOT
-  }
 
   pam { 'Add pam_slurm_adopt':
     ensure   => present,
@@ -674,7 +681,6 @@ class profile::slurm::node {
     enable    => true,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
-      File['/etc/slurm/plugstack.conf'],
       File['/etc/slurm/slurm.conf'],
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
