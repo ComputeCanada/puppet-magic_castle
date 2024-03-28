@@ -10,7 +10,7 @@ lookup_options:
     merge: 'deep'
 
 profile::base::version: 13.3.2
-
+profile::base::packages: []
 motd::content: ""
 
 consul_template::version: 0.25.2

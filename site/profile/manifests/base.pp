@@ -1,5 +1,6 @@
 class profile::base (
   String $version,
+  Array[String] $packages,
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
@@ -97,6 +98,8 @@ class profile::base (
     enable  => true,
     require => Package['haveged'],
   }
+
+  ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
