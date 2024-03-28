@@ -21,14 +21,14 @@ PREV_CONN=""
 
 source /sbin/account_functions.sh
 
-MOPPROJECT_PIPE=/var/tmp/modproject_pipe
+MODPROJECT_PIPE=/var/tmp/modproject_pipe
 MODPROJECT_RETRY_PIPE=/var/tmp/modproject_retry_pipe
-MKHOME_MOPPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
+MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
 
-trap "rm -f ${MOPPROJECT_PIPE}; rm -f ${MODPROJECT_RETRY_PIPE}" EXIT
+trap "rm -f ${MODPROJECT_PIPE}; rm -f ${MODPROJECT_RETRY_PIPE}" EXIT
 
-if [[ ! -p ${MOPPROJECT_PIPE} ]]; then
-    mkfifo -m=600 ${MOPPROJECT_PIPE}
+if [[ ! -p ${MODPROJECT_PIPE} ]]; then
+    mkfifo -m=600 ${MODPROJECT_PIPE}
 fi
 
 if [[ ! -p ${MODPROJECT_RETRY_PIPE} ]]; then
@@ -40,14 +40,16 @@ fi
 # 2. Modification coming from mkhome daemon
 # 3. Modification coming from the loop that have errored on a previous try.
 (
-    tail -F ${MOPPROJECT_PIPE} &
+    tail -F ${MODPROJECT_PIPE} &
     tail -F ${MODPROJECT_RETRY_PIPE} &
-    tail -F ${MKHOME_MOPPROJECT_PIPE}
+    tail -F ${MKHOME_MODPROJECT_PIPE}
 ) |
 while read GROUP WITH_FOLDER USERNAMES; do
-    if ! modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}; then
-        sleep 5
+    modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
+    return_code=$?
+    if [ $return_code -gt 1 ]; then
         echo "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+        sleep 5
     fi
 done &
 
@@ -79,7 +81,7 @@ while read CONN OP GROUP; do
         # We grep all unique groups that have been modified
         MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
         for GROUP in $MOD_GROUPS; do
-            echo $GROUP <%= $with_folder %> $USERNAMES > ${MOPPROJECT_PIPE} &
+            echo $GROUP <%= $with_folder %> $USERNAMES > ${MODPROJECT_PIPE} &
         done
     elif [[ "$OP" == "DEL" ]]; then
         delproject $GROUP <%= $with_folder %>
