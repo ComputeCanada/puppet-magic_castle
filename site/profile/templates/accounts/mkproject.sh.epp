@@ -17,6 +17,7 @@
 
 
 PROJECT_REGEX="<%= $project_regex %>"
+WITH_FOLDER="<%= $with_folder %>"
 PREV_CONN=""
 
 source /sbin/account_functions.sh
@@ -79,7 +80,7 @@ sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/
 while read CONN OP GROUP; do
     # An operation has been done on a group in LDAP
     # We have already completed this request
-    if [[ "$PREV_CONN" == "$CONN" ]]; then
+    if [[ "${PREV_CONN}" == "${CONN}" ]]; then
         continue
     fi
 
@@ -87,33 +88,40 @@ while read CONN OP GROUP; do
     # Taken from StackExchange:
     # https://unix.stackexchange.com/questions/416150/make-tail-f-exit-on-a-broken-pipe
     {
-        grep --line-buffered -q -m 1 "conn=$CONN op=[0-9]* UNBIND";
+        grep --line-buffered -q -m 1 "conn=${CONN} op=[0-9]* UNBIND";
         kill -s PIPE "$!";
     } < <(tail -n +0 -F /var/log/dirsrv/slapd-*/access 2> /dev/null)
 
     # We support three operations : ADD, MOD or DEL
-    if [[ "$OP" == "ADD" ]]; then
-        if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
-            continue
-        fi
-        mkproject $GROUP <%= $with_folder %>
-        if [[ $? -eq 0 ]]; then
-            echo "${GROUP}" >> ${MKPROJECT_CACHE}
-            if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
-                sed -i '1d' ${MKPROJECT_CACHE}
+    case ${OP} in
+        ADD)
+            if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
+                continue
             fi
-        fi
-    elif [[ "$OP" == "MOD" ]]; then
-        # One or more groups have been modified
-        # We grep the log for all operations related to request $CONN that contain a uid
-        USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
-        # We grep all unique groups that have been modified
-        MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
-        for GROUP in $MOD_GROUPS; do
-            echo $GROUP <%= $with_folder %> $USERNAMES > ${MODPROJECT_PIPE} &
-        done
-    elif [[ "$OP" == "DEL" ]]; then
-        delproject $GROUP <%= $with_folder %>
-    fi
-    PREV_CONN="$CONN"
+            mkproject ${GROUP} ${WITH_FOLDER}
+            if [[ $? -eq 0 ]]; then
+                echo "${GROUP}" >> ${MKPROJECT_CACHE}
+                if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
+                    sed -i '1d' ${MKPROJECT_CACHE}
+                fi
+            fi
+            ;;
+        MOD)
+            # One or more groups have been modified
+            # We grep the log for all operations related to request $CONN that contain a uid
+            USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K([a-z0-9A-Z_-]*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
+            # We grep all unique groups that have been modified
+            MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
+            for GROUP in ${MOD_GROUPS}; do
+                echo ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+            done
+            ;;
+        DEL)
+            delproject ${GROUP} ${WITH_FOLDER}
+            ;;
+        *)
+            echo "Unknown operation ${OP}"
+            ;;
+    esac
+    PREV_CONN="${CONN}"
 done
