@@ -150,8 +150,9 @@ mkproject() {
 
 # return codes
 # 0: project was correctly modified
-# 1: invalid arguments, do not retry
-# 2: context did not allow function to execute, retry later
+# 1: context did not allow function to execute, retry later
+# 2: not used
+# 3: invalid arguments, do not retry
 modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
@@ -159,25 +160,25 @@ modproject() {
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
-        return 1
+        return 3
     fi
 
     # mkproject is currently running, we skip adding more folder under the project
     if [ -d /var/lock/mkproject.$GROUP.lock ]; then
         echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES group folder is locked"
-        return 2
+        return 1
     fi
     local GROUP_LINK=$(readlink /mnt/project/${GROUP})
     # mkproject has yet been ran for this group, skip it
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         if [[ -z "${GROUP_LINK}" ]]; then
             echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group, skip it"
-            return 2
+            return 1
         fi
     else
         if [[ $(/opt/software/slurm/bin/sacctmgr -n list account Name=${GROUP} | wc -l) -eq 0 ]]; then
             echo "ERROR::${FUNCNAME}: Slurm account does not exist"
-            return 2
+            return 1
         fi
     fi
     # The operation that add users to a group would have operations with a uid.
@@ -191,13 +192,13 @@ modproject() {
                 local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-                    return 2
+                    return 1
                 fi
 
                 local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME 2> /dev/null)
                 if [ -z "${USER_UID}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-                    return 2
+                    return 1
                 fi
 
                 local MNT_USER_HOME="/mnt${USER_HOME}"
@@ -248,7 +249,7 @@ modproject() {
 
                     if [ -z "${USER_HOME}" ]; then
                         echo "ERROR::${FUNCNAME} ${GROUP}: ${USERNAME} home path not defined"
-                        return 2
+                        return 1
                     fi
 
                     local MNT_USER_HOME="/mnt${USER_HOME}"
@@ -257,7 +258,7 @@ modproject() {
                         echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
                         echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
-                        return 2
+                        return 1
                     fi
                 done
             fi
