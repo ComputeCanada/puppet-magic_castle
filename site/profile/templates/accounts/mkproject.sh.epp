@@ -68,7 +68,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         fi
     fi
     if [[ ${NRETRY} -gt 0 ]]; then
-        sleep 2
+        sleep 5
     fi
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
