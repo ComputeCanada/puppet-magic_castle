@@ -35,6 +35,6 @@ while read USERNAME; do
     <% } -%>
 
     for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
-        echo ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
+        echo 0 ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
     done
 done
