@@ -2,14 +2,14 @@
 
 # mkproject.sh watches 389-ds access log for operations related to group
 # matching a regex ($PROJECT_REGEX) with the intent of automatically
-# manipulating Slurm accounts and folder under /project associated with these
+# manipulating Slurm accounts and folders under /project associated with these
 # groups.
 
 # Three operations are currently supported: ADD, MOD and DEL.
 # - ADD triggers a creation of Slurm account and directory under /project
 # - MOD triggers either the additions of users to the associated Slurm
 #   accounts and their folder under /project/GID/`username`
-#   or it trigger the removals of the users from the associated Slurm account
+#   or it triggers the removals of the users from the associated Slurm account
 #   and the removal of the symlink from the users home to the project folder.
 # - DEL trigger the removal of all users from the associated Slurm account
 #   and the removal of the symlink to the project from all previous member
@@ -28,6 +28,13 @@ MODPROJECT_CACHE_SIZE=50
 MKPROJECT_CACHE=/var/tmp/mkproject.cache
 MKPROJECT_CACHE_SIZE=50
 
+# FIFO pipes could eventually be replaced by sockets
+# to allow input from other instances, like login nodes
+# and avoid background echo processes. A FIFO pipe can
+# be replaced by a UNIX socket with netcat and this command:
+#   nc -lkU /var/tmp/dsocket
+# To write data to the UNIX socket:
+#   echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" | nc -N -U /var/tmp/dsocket
 MODPROJECT_PIPE=/var/tmp/modproject.pipe
 MODPROJECT_RETRY_PIPE=/var/tmp/modproject_retry.pipe
 MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject.pipe
@@ -42,6 +49,7 @@ if [[ ! -p ${MODPROJECT_RETRY_PIPE} ]]; then
     mkfifo -m=600 ${MODPROJECT_RETRY_PIPE}
 fi
 
+# Create two empty cache files that are only r+w by root
 install -m 600 /dev/null ${MKPROJECT_CACHE}
 install -m 600 /dev/null ${MODPROJECT_CACHE}
 
@@ -56,6 +64,8 @@ install -m 600 /dev/null ${MODPROJECT_CACHE}
 ) |
 while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     if [[ ! -z "${USERNAMES}" ]]; then
+        # Filter group+usernames that have been successfully modified
+        # and that are still in cache.
         USERNAMES=$(
             for USERNAME in ${USERNAMES}; do
                 if ! grep -q "${GROUP} ${WITH_FOLDER} ${USERNAME}" ${MODPROJECT_CACHE}; then
@@ -68,20 +78,31 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         fi
     fi
     if [[ ${NRETRY} -gt 0 ]]; then
+        # NRETRY corresponds to the number of times that modproject has been called
+        # with these arguments without success. If it is greater than 0, the script
+        # sleeps to give time to the system internal to adjust before retrying.
         sleep 5
     fi
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
         0)
+            # modproject has been successful, so we wad all usernames individually to
+            # the cache, then we restrict the size of the cache to its maximum value
+            # by keeping the N most recent element added.
             for USERNAME in ${USERNAMES}; do
                 echo "${GROUP}" "${WITH_FOLDER}" "${USERNAME}" >> ${MODPROJECT_CACHE}
             done
             echo "$(tail -n ${MODPROJECT_CACHE_SIZE} ${MODPROJECT_CACHE})" > ${MODPROJECT_CACHE}
             ;;
         1)
+            # modproject was not successul, but the arguments are valid, so we should try again
+            # later. We increment the number of retry and add the arguments the retry pipeline.
             echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
             ;;
-        *) ;;
+        *)
+            # modproject was not successful and the return code indicates the function should not be
+            # called again with these arguments (invalid arguments, do not retry).
+            ;;
     esac
 done &
 
