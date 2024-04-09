@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['20.11', '21.08', '22.05', '23.02'] $slurm_version,
+  Enum['21.08', '22.05', '23.02'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
@@ -257,18 +257,6 @@ class profile::slurm::base (
       }),
   }
 
-  file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => epp('profile/slurm/gres.conf',
-      {
-        'nodes' => $nodes,
-      }
-    ),
-    seltype => 'etc_t'
-  }
-
   file { '/opt/software/slurm/bin/cond_restart_slurm_services':
     require => Package['slurm'],
     mode    => '0755',
@@ -423,6 +411,20 @@ class profile::slurm::controller (
 ) {
   contain profile::slurm::base
   include profile::mail::server
+
+  $instances = lookup('terraform.instances')
+  $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/gres.conf',
+      {
+        'nodes' => $nodes,
+      }
+    ),
+    seltype => 'etc_t'
+  }
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',
@@ -654,9 +656,34 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  file { '/opt/software/slurm/bin/nvidia_gres.sh':
+    source  => 'puppet:///modules/profile/slurm/nvidia_gres.sh',
+    mode    => '0755',
+    require => Package['slurm'],
+  }
+
+  if $facts['nvidia_gpu_count'] > 0 {
+    file { '/etc/slurm/gres.conf':
+      ensure => present,
+    }
+    exec { 'slurm-nvidia_gres':
+      command     => '/opt/software/slurm/bin/nvidia_gres.sh > /etc/slurm/gres.conf',
+      refreshonly => true,
+      notify      => Service['slurmd'],
+      subscribe   => [
+        File['/opt/software/slurm/bin/nvidia_gres.sh'],
+        File['/etc/slurm/gres.conf'],
+      ]
+    }
+    Kmod::Load <| tag == profile::gpu  |> -> Exec['slurm-nvidia_gres']
+    Exec <| tag == profile::gpu |> ~> Exec['slurm-nvidia_gres']
+    Exec <| tag == profile::gpu::install::mig |> ~> Exec['slurm-nvidia_gres']
+  }
+
   Exec <| tag == profile::cvmfs |> -> Service['slurmd']
   Exec <| tag == profile::freeipa |> -> Service['slurmd']
   Exec <| tag == profile::gpu |> -> Service['slurmd']
+  Exec <| tag == profile::gpu::install::mig |> ~> Service['slurmd']
   Exec <| tag == profile::jupyterhub |> -> Service['slurmd']
   Kmod::Load <| |> -> Service['slurmd']
   Mount <| |> -> Service['slurmd']
@@ -671,14 +698,13 @@ class profile::slurm::node {
 
   service { 'slurmd':
     ensure    => 'running',
-    enable    => true,
+    enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
       File['/etc/slurm/slurm.conf'],
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
-      File['/etc/slurm/gres.conf'],
     ],
     require   => [
       Package['slurm-slurmd'],
