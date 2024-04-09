@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Support for NVIDIA MIG (PR #276)
+- Support for AWS EFA (PR #331)
 
 ### Changed
 
