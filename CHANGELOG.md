@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.5.0] UNRELEASED
+
+### Added
+
+- Support for NVIDIA MIG (PR #276)
+
+### Changed
+
+- Bumped Slurm version to 23.02 (PR #276)
+
+### Removed
+
+- Removed support for Slurm 20.11 (PR #276)
+
 ## [13.4.0] 2024-04-09
 
 ### Added
