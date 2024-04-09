@@ -9,7 +9,7 @@ lookup_options:
   prometheus::alerts:
     merge: 'deep'
 
-profile::base::version: 13.3.2
+profile::base::version: 13.4.0
 
 motd::content: ""
 
