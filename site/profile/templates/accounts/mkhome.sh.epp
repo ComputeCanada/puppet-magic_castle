@@ -3,8 +3,8 @@ source /sbin/account_functions.sh
 
 PROJECT_REGEX="<%= $project_regex %>"
 
-MKHOME_RETRY_PIPE=/var/tmp/mkhome_retry_pipe
-MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject_pipe
+MKHOME_RETRY_PIPE=/var/tmp/mkhome_retry.pipe
+MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject.pipe
 
 trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
 
@@ -35,6 +35,6 @@ while read USERNAME; do
     <% } -%>
 
     for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
-        echo ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
+        echo 0 ${PROJECT} <%= $with_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
     done
 done

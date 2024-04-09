@@ -148,6 +148,11 @@ mkproject() {
     fi
 }
 
+# return codes
+# 0: project was correctly modified
+# 1: context did not allow function to execute, retry later
+# 2: not used
+# 3: invalid arguments, do not retry
 modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
@@ -155,22 +160,25 @@ modproject() {
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
-        return 1
+        return 3
     fi
 
     # mkproject is currently running, we skip adding more folder under the project
     if [ -d /var/lock/mkproject.$GROUP.lock ]; then
-        return
+        echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES group folder is locked"
+        return 1
     fi
     local GROUP_LINK=$(readlink /mnt/project/${GROUP})
     # mkproject has yet been ran for this group, skip it
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         if [[ -z "${GROUP_LINK}" ]]; then
-            return
+            echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group, skip it"
+            return 1
         fi
     else
         if [[ $(/opt/software/slurm/bin/sacctmgr -n list account Name=${GROUP} | wc -l) -eq 0 ]]; then
-            return
+            echo "ERROR::${FUNCNAME}: Slurm account does not exist"
+            return 1
         fi
     fi
     # The operation that add users to a group would have operations with a uid.
