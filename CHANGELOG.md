@@ -3,6 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [13.4.0] UNRELEASED
+
+### Added
+- Added class `software_stack` (PR #304)
+- Enabled Prometheus alertmanager for mgmt (PR #318)
+- Added support for ssh authorized keys options (PR #344)
+
+### Changed
+
+- Moved software stack content out of cvmfs class into its own class (PR #304)
+- Fixed cvmfs configuration order in Puppet (PR #310)
+- Improved error handling in mkhome and mkproject daemon by implementing pipeline with shell fifo (PR #328)
+- Improved mkproject daemon handling of error and of group locking (PR #346)
+
+### Removed
+
+- Remove profile::mfa::provider from common.yaml
+
 ## [13.3.2] 2024-02-19
 
 ### Changed
