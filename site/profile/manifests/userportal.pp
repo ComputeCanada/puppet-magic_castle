@@ -1,6 +1,6 @@
 class profile::userportal {
   $instances = lookup('terraform.instances')
-  $logins = $instances.filter |$keys, $values| { 'login' in $values['tags'] }
+  $logins = keys($instances.filter |$keys, $values| { 'login' in $values['tags'] })
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
