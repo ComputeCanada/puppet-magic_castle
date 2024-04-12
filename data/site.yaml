@@ -56,7 +56,7 @@ magic_castle::site::tags:
     - profile::nfs
     - profile::cvmfs::alien_cache
   portal:
-    - profile::userportal::server
+    - profile::userportal
   proxy:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
