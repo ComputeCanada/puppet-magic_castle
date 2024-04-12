@@ -12,8 +12,8 @@ ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
     $ENC_CMD -l 'profile::freeipa::mokey::password' -s $(openssl rand -base64 9)
     $ENC_CMD -l 'profile::freeipa::server::ds_password' -s $(openssl rand -base64 9)
     $ENC_CMD -l 'profile::freeipa::server::admin_password' -s $(openssl rand -base64 9)
-    $ENC_CMD -l 'profile::userportal::server::password' -s $(openssl rand -base64 9)
-    $ENC_CMD -l 'profile::userportal::server::root_api_token' -s $(openssl rand -hex 20)
+    $ENC_CMD -l 'trailblazing_turtle::server::password' -s $(openssl rand -base64 9)
+    $ENC_CMD -l 'trailblazing_turtle::server::root_api_token' -s $(openssl rand -hex 20)
 ) > /etc/puppetlabs/code/environments/production/data/bootstrap.yaml
 
 # Apply bootstrap classes if any

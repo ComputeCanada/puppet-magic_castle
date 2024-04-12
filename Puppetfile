@@ -40,3 +40,7 @@ mod 'saz-limits', '3.0.4'
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
     :ref => 'v5.0.6'
+
+mod 'computecanada-trailblazing_turtle',
+    :git => 'https://github.com/ComputeCanada/puppet-trailblazing_turtle.git',
+    :ref => 'main'
