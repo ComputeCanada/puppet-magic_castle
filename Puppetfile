@@ -38,3 +38,7 @@ mod 'treydock-globus', '9.0.0'
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
     :ref => 'v5.0.3'
+
+mod 'computecanada-trailblazing_turtle',
+    :git => 'https://github.com/ComputeCanada/puppet-trailblazing_turtle.git',
+    :ref => 'main'
