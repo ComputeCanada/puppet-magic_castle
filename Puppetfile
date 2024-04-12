@@ -43,4 +43,4 @@ mod 'computecanada-jupyterhub',
 
 mod 'computecanada-trailblazing_turtle',
     :git => 'https://github.com/ComputeCanada/puppet-trailblazing_turtle.git',
-    :ref => 'main'
+    :ref => 'v0.1.0'
