@@ -52,7 +52,7 @@ magic_castle::site::tags:
     - profile::nfs::server
     - profile::cvmfs::alien_cache
   portal:
-    - profile::userportal::server
+    - profile::userportal
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
