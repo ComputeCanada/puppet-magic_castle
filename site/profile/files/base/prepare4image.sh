@@ -26,7 +26,7 @@ grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab > /etc/fstab.new
 mv -f /etc/fstab.new /etc/fstab
 systemctl daemon-reload
 
-systemctl stop syslog
+systemctl stop rsyslog
 : > /var/log/messages
 : > /var/log/munge/munged.log
 : > /var/log/secure
