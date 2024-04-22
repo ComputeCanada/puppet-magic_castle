@@ -931,7 +931,7 @@ Refer to the [documentation](https://vector.dev/docs/) for configuration.
 
 | Variable                | Description              | Type    | Optional ? |
 | :---------------------- | :----------------------- | :------ | ---------  |
-| `config`                | Content of the configuration file | String  | Yes  |
+| `config`                | Content of the yaml configuration file | String  | Yes  |
 | `access_var_log`        | Set `/var/log` group to `vector`  | Boolean | Yes  |
 
 ## `profile::slurm::base`
