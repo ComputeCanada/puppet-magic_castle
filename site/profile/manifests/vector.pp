@@ -1,7 +1,6 @@
 class profile::vector
 (
-  String $config = file('puppet:///modules/profile/vector/default_config.yaml'),
-  Boolean $access_var_log = false,
+  String $config = file('puppet:///modules/profile/vector/default_config.yaml')
 )
 {
   yumrepo { 'vector':
@@ -32,16 +31,6 @@ class profile::vector
     notify  => Service['vector'],
     content => $config,
     require => [Package['vector']],
-  }
-
-  if $access_var_log {
-    file { '/var/log':
-      ensure  => directory,
-      group   => 'vector',
-      recurse => true,
-      notify  => Service['vector'],
-      require => [Package['vector']],
-    }
   }
 }
 

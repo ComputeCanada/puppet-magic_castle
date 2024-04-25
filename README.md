@@ -924,7 +924,7 @@ When `profile::rsyslog::server` is included, these classes are included too:
 
 ## `profile::vector`
 
-This class install and configures vector.dev service to manager logs.
+This class install and configures vector.dev service to manage logs.
 Refer to the [documentation](https://vector.dev/docs/) for configuration.
 
 ### parameters
@@ -932,7 +932,6 @@ Refer to the [documentation](https://vector.dev/docs/) for configuration.
 | Variable                | Description              | Type    | Optional ? |
 | :---------------------- | :----------------------- | :------ | ---------  |
 | `config`                | Content of the yaml configuration file | String  | Yes  |
-| `access_var_log`        | Set `/var/log` group to `vector`  | Boolean | Yes  |
 
 ## `profile::slurm::base`
 
