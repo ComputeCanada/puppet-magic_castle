@@ -23,7 +23,7 @@ hierarchy:
     options:
       pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
   - name: "Rest of user data"
-    glob:
+    globs:
       - "user_data/*.yaml"
       - "user_data.yaml"
     lookup_key: eyaml_lookup_key # eyaml backend
