@@ -8,14 +8,32 @@ defaults:
   # datadir: data
   # data_hash: yaml_data
 hierarchy:
-  - name: "Terraform and user data"
+  - name: "Per hostname"
+    globs:
+      - "user_data/hostnames/%{facts.networking.hostname}/*.yaml"
+      - "user_data/hostnames/%{facts.networking.hostname}.yaml"
     lookup_key: eyaml_lookup_key # eyaml backend
-    paths:
-      - "user_data.yaml"
-      - "terraform_data.yaml"
     options:
       pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
-      pkcs7_public_key:  /etc/puppetlabs/puppet/eyaml/public_key.pkcs7.pem
+  - name: "Per prefix"
+    globs:
+      - "user_data/prefixes/%{facts.prefix}/*.yaml"
+      - "user_data/prefixes/%{facts.prefix}.yaml"
+    lookup_key: eyaml_lookup_key # eyaml backend
+    options:
+      pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
+  - name: "Rest of user data"
+    globs:
+      - "user_data/*.yaml"
+      - "user_data.yaml"
+    lookup_key: eyaml_lookup_key # eyaml backend
+    options:
+      pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
+  - name: "Terraform data"
+    path: "terraform_data.yaml"
+    lookup_key: eyaml_lookup_key # eyaml backend
+    options:
+      pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/private_key.pkcs7.pem
   - name: "Software stack"
     path: "software_stack/%{facts.software_stack}.yaml"
   - name: "Cloud provider"
@@ -31,6 +49,5 @@ hierarchy:
       - "bootstrap.yaml"
     options:
       pkcs7_private_key: /etc/puppetlabs/puppet/eyaml/boot_private_key.pkcs7.pem
-      pkcs7_public_key:  /etc/puppetlabs/puppet/eyaml/boot_public_key.pkcs7.pem
   - name: "site.pp definition"
     path: "site.yaml"
