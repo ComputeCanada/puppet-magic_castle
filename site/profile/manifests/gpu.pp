@@ -85,14 +85,9 @@ class profile::gpu::install::passthrough (
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
-  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
-    $repo_config_cmd = 'dnf config-manager'
-  } else {
-    $repo_config_cmd = 'yum-config-manager'
-  }
 
   exec { 'cuda-repo':
-    command => "${repo_config_cmd} --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
+    command => "dnf config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
     creates => "/etc/yum.repos.d/cuda-${os}.repo",
     path    => ['/usr/bin'],
   }

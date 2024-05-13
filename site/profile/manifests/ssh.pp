@@ -55,34 +55,6 @@ class profile::ssh::base {
       source => 'puppet:///modules/profile/base/opensshserver-9.config',
       notify => Service['sshd'],
     }
-  } elsif versioncmp($::facts['os']['release']['major'], '8') < 0 {
-    file_line { 'MACs':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'KexAlgorithms':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'HostKeyAlgorithms':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'HostKeyAlgorithms ssh-rsa',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'Ciphers':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
-      notify => Service['sshd'],
-    }
   }
 }
 
