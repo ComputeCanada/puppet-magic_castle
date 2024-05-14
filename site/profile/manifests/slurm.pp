@@ -14,6 +14,7 @@ class profile::slurm::base (
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
   Boolean $enable_x11_forwarding = true,
+  Boolean $enable_scrontab = false,
   String  $config_addendum = '',
 )
 {
@@ -188,6 +189,7 @@ class profile::slurm::base (
         'cluster_name'          => $cluster_name,
         'slurm_version'         => $slurm_version,
         'enable_x11_forwarding' => $enable_x11_forwarding,
+        'enable_scrontab'       => $enable_scrontab,
         'nb_nodes'              => length($nodes),
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,

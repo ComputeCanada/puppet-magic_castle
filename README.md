@@ -955,6 +955,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
+| `enable_scrontab`       | Enable user's Slurm-managed crontab | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 
