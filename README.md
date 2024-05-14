@@ -391,14 +391,16 @@ This class installs CVMFS client and configure repositories.
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `repositories`            | List of CVMFS repositories to mount  | Array[String] |
-| `alien_cache_repositories`| List of CVMFS repositories that need an alien cache | Array[String] |
+| `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
+| `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
+| `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
   - software.eessi.io
