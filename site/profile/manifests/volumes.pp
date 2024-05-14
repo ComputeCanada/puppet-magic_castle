@@ -12,6 +12,7 @@
 #       mode: '0600'
 #       owner: 'root'
 #       group: 'root'
+#       quota: '5g'
 
 class profile::volumes (
   Hash[String, Hash[String, Hash]] $devices,
@@ -36,6 +37,7 @@ class profile::volumes (
           enable_resize => pick($values['enable_resize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
+          quota         => pick($values['quota'], undef),
         }
       }
     }
@@ -54,6 +56,7 @@ define profile::volumes::volume (
   String $seltype,
   Boolean $enable_resize,
   Enum['xfs', 'ext3', 'ext4'] $filesystem,
+  Optional[String] $quota = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
 
@@ -86,12 +89,19 @@ define profile::volumes::volume (
     followsymlinks   => true,
   }
 
+  if $filesystem == 'xfs' and $quota {
+    $options = 'defaults,usrquota'
+  } else {
+    $options = ''
+  }
+
   lvm::logical_volume { $name:
     ensure            => present,
     volume_group      => "${name}_vg",
     fs_type           => $filesystem,
     mountpath         => "/mnt/${volume_tag}/${volume_name}",
     mountpath_require => true,
+    options           => $options,
   }
 
   exec { "chown ${owner}:${group} /mnt/${volume_tag}/${volume_name}":
@@ -152,6 +162,15 @@ define profile::volumes::volume (
   ) {
     mount { $bind_target:
       ensure  => absent,
+    }
+  }
+
+  if $filesystem == 'xfs' and $quota {
+    exec { "apply-quota-${name}":
+      command     => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
+      require     => Mount["/mnt/${volume_tag}/${volume_name}"],
+      path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      refreshonly => true,
     }
   }
 }
