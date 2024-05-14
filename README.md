@@ -222,6 +222,7 @@ cluster operations.
 | :------------- | :------------------------------------------------------------------------------------- | :----- |
 | `version`      | Current version number of Magic Castle                                                 | String |
 | `admin_email`  | Email of the cluster administrator, use to send log and report cluster related issues  | String |
+| `packages`     | List of additional OS packages that should be installed                                | Array[String] |
 
 <details>
 <summary>default values</summary>
@@ -229,6 +230,7 @@ cluster operations.
 ```yaml
 profile::base::version: '13.0.0'
 profile::base::admin_emain: ~ #undef
+profile::base::packages: []
 ```
 </details>
 
@@ -238,6 +240,9 @@ profile::base::admin_emain: ~ #undef
 ```yaml
 profile::base::version: '13.0.0-rc.2'
 profile::base::admin_emain: "you@email.com"
+profile::base::packages:
+  - gcc-c++
+  - make
 ```
 </details>
 
