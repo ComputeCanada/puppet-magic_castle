@@ -381,7 +381,7 @@ class profile::freeipa::server (
     subscribe   => Exec['ipa-install'],
   }
 
-  $regen_cert_cmd = lookup('profile::freeipa::server::regen_cert_cmd')
+  $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
   exec { 'ipa_regen_cert':
     command   => "${regen_cert_cmd} -D ipa.${int_domain_name}",
     path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
