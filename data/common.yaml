@@ -255,7 +255,7 @@ profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.5.1'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login', 'portal:login']
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
@@ -288,6 +288,21 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
+  explore: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
+
+profile::metrics::slurm_job_exporter::version: 0.2.0
+
+trailblazing_turtle::server::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+trailblazing_turtle::server::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
+trailblazing_turtle::server::slurm_password: "%{alias('profile::slurm::accounting::password')}"
+trailblazing_turtle::server::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
+trailblazing_turtle::server::prometheus_port: 9090
+trailblazing_turtle::server::db_ip: 127.0.0.1
+trailblazing_turtle::server::db_port: 3306
+trailblazing_turtle::version: 1.4.0
+
+trailblazing_turtle::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
+trailblazing_turtle::slurm_jobscripts::token: "%{alias('trailblazing_turtle::server::root_api_token')}"
