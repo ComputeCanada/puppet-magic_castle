@@ -8,7 +8,7 @@ class profile::sssd::client(
   package { 'sssd-ldap': }
 
   if ! defined('$deny_access') {
-    $tags = lookup("terraform.instances.${facts['networking']['hostname']}.tags")
+    $tags = lookup('terraform.self.tags')
     $deny_access = intersection($tags, $access_tags).empty
   }
 

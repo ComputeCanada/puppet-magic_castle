@@ -53,6 +53,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::ssh::hostbased_auth::server`](#profilesshhostbased_authserver)
 - [`profile::users::ldap`](#profileusersldap)
 - [`profile::users::local`](#profileuserslocal)
+- [`profile::volumes`](#profilevolumes)
 
 For classes with parameters, a folded **default values** subsection provides the default
 value of each parameter as it would be defined in hieradata. For some parameters, the value is
@@ -182,13 +183,18 @@ This class configures two services to bridge LDAP users, Slurm accounts and user
 | :-------------- | :------------------------------------------------------------ | :--------  |
 | `project_regex` | Regex identifying FreeIPA groups that require a corresponding Slurm account | String     |
 | `skel_archives` | Archives extracted in each FreeIPA user's home when created | Array[Struct[{filename => String[1], source => String[1]}]] |
-
+| `manage_home`   | When true, `mkhome` create home folder for new FreeIPA users | Boolean |
+| `manage_scratch`| When true, `mkhome` create scratch folder for new FreeIPA users | Boolean |
+| `manage_project`| When true, `mkproject` create project folder for new FreeIPA users | Boolean |
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::accounts::project_regex: '(ctb\|def\|rpp\|rrg)-[a-z0-9_-]*'
 profile::accounts::skel_archives: []
+profile::accounts::manage_home: true
+profile::accounts::manage_scratch: true
+profile::accounts::manage_project: true
 ```
 </details>
 
@@ -812,41 +818,19 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class install NFS and configure an NFS server that will export all provided devices.
-The class also make sure that devices sharing a common export name form an LVM volume group
-that is exported as a single LVM logical volume formated as XFS.
-
-If a volume's size associated with an NFS server device is expanded after the initial configuration,
-the class will not expand the LVM volume automatically. These operations currently have to be
-accomplished manually.
+This class install NFS and configure an NFS server that will export all volumes tagged as `nfs`.
 
 ### parameters
 
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
-| `devices` | Mapping between NFS share and devices to export. | Hash[String, Array[String]]   |
-
+| `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
-profile::nfs::server::devices:
-  home:
-    - /dev/disk/by-id/b0b686f6-62c8-11ee-8c99-0242ac120002
-    - /dev/disk/by-id/b65acc52-62c8-11ee-8c99-0242ac120002
-  scratch:
-    - bfd50252-62c8-11ee-8c99-0242ac120002
-  project:
-    - c3b99e00-62c8-11ee-8c99-0242ac120002
+profile::nfs::server::no_root_squash_tags: ['mgmt']
 ```
 </details>
 
@@ -1419,5 +1403,36 @@ profile::users::local::users:
     # sudoer: false
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
+```
+</details>
+
+## `profile::volumes`
+
+This class creates and mounts LVM volume groups. Each volume is formated as XFS.
+
+If a volume is expanded after the initial configuration, the class will not expand the
+LVM volume automatically. These operations currently have to be accomplished manually.
+
+### parameters
+
+| Variable   | Description                                                                    | Type                                      |
+| :--------- | :----------------------------------------------------------------------------- | :---------------------------------------- |
+| `devices`  | Hash of devices: `{ tag : { volume_name: [array of glob expressing paths] } }` | Hash[String, Hash[String, Array[String]]] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::volumes::devices: "%{lookup('terraform.self.volumes')}"
+```
+</details>
+
+
+<details>
+<summary>examples</summary>
+```yaml
+profile::volumes::devices:
+  local:
+    temp:
+      - /dev/vdc
 ```
 </details>
