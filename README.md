@@ -40,6 +40,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::base`](#profilersyslogbase)
 - [`profile::rsyslog::client`](#profilersyslogclient)
 - [`profile::rsyslog::server`](#profilersyslogserver)
+- [`profile::vector`](#profilervector)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
@@ -927,6 +928,17 @@ from all rsyslog client in the cluster.
 When `profile::rsyslog::server` is included, these classes are included too:
 - [profile::consul](#profileconsul)
 - [profile::rsyslog::base](#profilersyslogbase)
+
+## `profile::vector`
+
+This class install and configures vector.dev service to manage logs.
+Refer to the [documentation](https://vector.dev/docs/) for configuration.
+
+### parameters
+
+| Variable                | Description              | Type    | Optional ? |
+| :---------------------- | :----------------------- | :------ | ---------  |
+| `config`                | Content of the yaml configuration file | String  | Yes  |
 
 ## `profile::slurm::base`
 
