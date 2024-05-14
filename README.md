@@ -20,6 +20,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::cvmfs::client`](#profilecvmfsclient)
 - [`profile::cvmfs::local_user`](#profilecvmfslocal_user)
 - [`profile::cvmfs::alien_cache`](#profilecvmfsalien_cache)
+- [`profile::efa`](#profileefa)
 - [`profile::fail2ban`](#profilefail2ban)
 - [`profile::freeipa`](#profilefreeipa)
 - [`profile::freeipa::base`](#profilefreeipabase)
@@ -126,6 +127,8 @@ magic_castle::site::tags:
     - profile::reverse_proxy
     - profile::freeipa::client
     - profile::rsyslog::client
+  efa:
+    - profile::efa
 ```
 </details>
 
@@ -393,14 +396,16 @@ This class installs CVMFS client and configure repositories.
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `repositories`            | List of CVMFS repositories to mount  | Array[String] |
-| `alien_cache_repositories`| List of CVMFS repositories that need an alien cache | Array[String] |
+| `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
+| `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
+| `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
   - software.eessi.io
@@ -472,6 +477,32 @@ profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
 ```
 </details>
 
+## `profile::efa`
+This class installs the Elastic Fabric Adapter drivers on an AWS instance with an EFA network interface.
+[reference](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html)
+
+### parameters
+
+| Variable        | Description                                                   | Type       |
+| :-------------- | :------------------------------------------------------------ | :--------  |
+| `version`       | EFA driver version | String     |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::efa::version: 'latest'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::efa::version: '1.30.0'
+```
+</details>
+
 ## `profile::fail2ban`
 
 > [Fail2ban](https://github.com/fail2ban/fail2ban) is an intrusion prevention software framework.
@@ -480,7 +511,31 @@ Written in the Python programming language, it is designed to prevent brute-forc
 
 This class installs and configures fail2ban.
 
-Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for parameters to configure.
+### parameters
+
+| Variable          | Description      | Type    |
+| :---------------- | :--------------- | :------ |
+| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
+
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more parameters to configure.
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::fail2ban::ignoreip: []
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::fail2ban::ignoreip:
+  - 132.203.0.0/16
+  - 10.0.0.0/8
+```
+</details>
 
 ### dependencies
 

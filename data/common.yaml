@@ -6,9 +6,12 @@ lookup_options:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
+  prometheus::alerts:
+    merge: 'deep'
 
-profile::base::version: 13.3.2
+profile::base::version: 13.5.0
 profile::base::packages: []
+
 motd::content: ""
 
 consul_template::version: 0.25.2
@@ -204,11 +207,26 @@ prometheus::server::scrape_configs:
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
+prometheus::alertmanager::version: '0.26.0'
+# The default value has a syntax issue in the original puppet-prometheus
+# https://github.com/voxpupuli/puppet-prometheus/pull/540
+prometheus::alertmanager::receivers:
+  - name: 'Admin'
+    email_configs:
+      - to: 'root@localhost'
+
+prometheus::alertmanagers_config:
+  - static_configs:
+    - targets:
+      - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
+
+
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
+  - '^(object-.*\.cloud\.computecanada\.ca)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
   - '^(.*\.cvmfs\.eessi-infra\.org)$'
@@ -224,8 +242,6 @@ profile::cvmfs::local_user::group: 'cvmfs-reserved'
 profile::cvmfs::local_user::uid: 13000004
 profile::cvmfs::local_user::gid: 8000131
 
-profile::mfa::provider: 'none'
-
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
@@ -234,7 +250,7 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
 
-profile::slurm::base::slurm_version: '22.05'
+profile::slurm::base::slurm_version: '23.02'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.5.1'
 

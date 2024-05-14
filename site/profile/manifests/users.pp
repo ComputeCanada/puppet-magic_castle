@@ -92,7 +92,7 @@ define profile::users::ldap_user (
       }
     }
 
-    if $manage_password {
+    if $manage_password and $passwd {
       $ds_password = lookup('profile::freeipa::server::ds_password')
       $domain_name = lookup('profile::freeipa::base::domain_name')
       $int_domain_name = "int.${domain_name}"
@@ -144,16 +144,30 @@ define profile::users::local_user (
 
   $public_keys.each | Integer $index, String $sshkey | {
     $split = split($sshkey, ' ')
-    if length($split) > 2 {
-      $keyname = String($split[2], '%t')
+    $key_type_index = $split.index|$value| { $value =~ /^(?:ssh|ecdsa).*$/ }
+
+    $key_type = $split[$key_type_index]
+    $key_value = $split[$key_type_index+1]
+
+    if $key_type_index != 0 {
+      $key_options = ssh_split_options($split[0, $key_type_index].join(' '))
     } else {
-      $keyname = "sshkey_${index}"
+      $key_options = undef
     }
-    ssh_authorized_key { "${name}_${keyname}":
-      ensure => present,
-      user   => $name,
-      type   => $split[0],
-      key    => $split[1],
+    if length($split) > $key_type_index + 2 {
+      $comment_index = $key_type_index + 2
+      $comment = String($split[$comment_index, -1].join(' '), '%t')
+      $key_name = "${name}_${index}:${comment}"
+    } else {
+      $key_name = "${name}_${index}"
+    }
+    ssh_authorized_key { "${name}_${index}":
+      ensure  => present,
+      name    => $key_name,
+      user    => $name,
+      type    => $key_type,
+      key     => $key_value,
+      options => $key_options,
     }
   }
 
