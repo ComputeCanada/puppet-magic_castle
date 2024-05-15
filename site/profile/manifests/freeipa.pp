@@ -1,7 +1,6 @@
 class profile::freeipa {
   $server_ip = lookup('profile::freeipa::client::server_ip')
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $ipaddress = lookup('terraform.self.local_ip')
 
   if $ipaddress == $server_ip {
     include profile::freeipa::server
@@ -53,8 +52,7 @@ class profile::freeipa::client (String $server_ip) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
   $realm = upcase($int_domain_name)
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $ipaddress = lookup('terraform.self.local_ip')
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
     mode    => '0644',
@@ -245,9 +243,7 @@ class profile::freeipa::server (
   $realm = upcase($int_domain_name)
   $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
   $reverse_zone = profile::getreversezone()
-
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
+  $ipaddress = lookup('terraform.self.local_ip')
 
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
     /sbin/ipa-server-install \

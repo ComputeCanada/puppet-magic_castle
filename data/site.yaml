@@ -4,6 +4,8 @@ lookup_options:
     merge: 'first'
   magic_castle::site::tags:
     merge: 'hash'
+  terraform:
+    merge: 'hash'
 
 magic_castle::site::all:
   - profile::base
@@ -13,6 +15,7 @@ magic_castle::site::all:
   - profile::sssd::client
   - profile::metrics::node_exporter
   - profile::rsyslog::client
+  - profile::volumes
   - swap_file
 
 magic_castle::site::tags:
@@ -37,6 +40,7 @@ magic_castle::site::tags:
     - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
+    - profile::nfs
     - profile::users::ldap
   node:
     - profile::gpu
@@ -53,3 +57,5 @@ magic_castle::site::tags:
   proxy:
     - profile::jupyterhub::hub
     - profile::reverse_proxy
+  efa:
+    - profile::efa

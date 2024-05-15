@@ -16,6 +16,7 @@ GresTypes=gpu
 
 TreeWidth=<%= $nb_nodes %>
 ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
+RebootProgram=/usr/sbin/reboot
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
 ResumeFailProgram=/usr/bin/slurm_suspend
@@ -56,6 +57,9 @@ PrologFlags=alloc,contain,x11
 X11Parameters=home_xauthority
 <% } else { -%>
 PrologFlags=alloc,contain
+<% } -%>
+<% if $enable_scrontab { -%>
+ScronParameters=enable
 <% } -%>
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog

@@ -2,7 +2,7 @@
 
 forge "https://forgeapi.puppetlabs.com"
 
-mod 'cmdntrf-consul_template', '2.3.6'
+mod 'cmdntrf-consul_template', '2.3.8'
 mod 'derdanne-nfs', '2.1.11'
 mod 'heini-wait_for', '2.2.0'
 mod 'puppet-augeasproviders_core', '4.0.1'
@@ -20,6 +20,7 @@ mod 'puppet-healthcheck', '1.0.1'
 mod 'puppet-kmod', '4.0.0'
 mod 'puppet-logrotate', '5.0.0'
 mod 'puppet-prometheus', '12.5.0'
+mod 'puppet-rsyslog', '7.1.0'
 mod 'puppet-selinux', '3.4.1'
 mod 'puppet-squid', '3.0.0'
 mod 'puppet-systemd', '3.10.0'
@@ -34,7 +35,7 @@ mod 'puppetlabs-mysql', '13.3.0'
 mod 'puppetlabs-stdlib', '5.2.0'
 mod 'puppetlabs-transition', '0.1.3'
 mod 'treydock-globus', '9.0.0'
-mod 'puppet-rsyslog', '7.1.0'
+mod 'saz-limits', '3.0.4'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
