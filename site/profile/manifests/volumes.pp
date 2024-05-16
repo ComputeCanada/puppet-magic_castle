@@ -37,7 +37,7 @@ class profile::volumes (
           enable_resize => pick($values['enable_resize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
-          quota         => pick($values['quota'], undef),
+          quota         => pick($values['quota'], nil),
         }
       }
     }
