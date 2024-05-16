@@ -66,13 +66,16 @@ class profile::base (
     ensure => 'absent',
   }
 
-  class { 'firewall': }
+  class { 'firewall':
+    tag => 'mc_bootstrap',
+  }
 
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
     source => profile::getcidr(),
     action => 'accept',
+    tag    => 'mc_bootstrap',
   }
 
   firewall { '001 drop access to metadata server':
@@ -81,6 +84,7 @@ class profile::base (
     destination => '169.254.169.254',
     action      => 'drop',
     uid         => '! root',
+    tag         => 'mc_bootstrap',
   }
 
   package { 'haveged':
