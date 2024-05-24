@@ -58,6 +58,14 @@ EOT
   $ipa_domain = "int.${domain_name}"
   $domain_list = join([$ipa_domain] + keys($domains), ',')
 
+  file { '/etc/sssd/sssd.conf':
+    ensure => 'file',
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0600',
+    notify => Service['sssd'],
+  }
+
   augeas { 'sssd.conf':
     lens    => 'sssd.lns',
     incl    => '/etc/sssd/sssd.conf',
@@ -66,6 +74,7 @@ EOT
       "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
       "set target[ . = 'sssd']/domains ${domain_list}",
     ],
+    require => File['/etc/sssd/sssd.conf'],
     notify  => Service['sssd'],
   }
 }
