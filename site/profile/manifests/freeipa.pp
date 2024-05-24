@@ -45,6 +45,8 @@ class profile::freeipa::base (String $domain_name) {
 
 class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
+  include profile::sssd::client
+
   ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
@@ -137,9 +139,13 @@ class profile::freeipa::client (String $server_ip) {
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
       Wait_for['ipa-ca_https'],
+      Augeas['sssd.conf'],
     ],
     creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind'],
+    notify    => [
+      Service['systemd-logind'],
+      Service['sssd'],
+    ],
   }
 
   file_line { 'ssh_known_hosts':

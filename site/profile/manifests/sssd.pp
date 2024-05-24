@@ -62,10 +62,10 @@ EOT
     lens    => 'sssd.lns',
     incl    => '/etc/sssd/sssd.conf',
     changes => [
+      "set target[ . = 'sssd'] 'sssd'",
       "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
       "set target[ . = 'sssd']/domains ${domain_list}",
     ],
     notify  => Service['sssd'],
-    require => Exec['ipa-install'],
   }
 }
