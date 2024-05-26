@@ -54,9 +54,11 @@ EOT
     break()
   }
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $ipa_domain = "int.${domain_name}"
-  $domain_list = join([$ipa_domain] + keys($domains), ',')
+  if $facts['ipa']['installed'] {
+    $domain_list = join([$facts['ipa']['domain']] + keys($domains), ',')
+  } else {
+    $domain_list = join(keys($domains), ',')
+  }
 
   file { '/etc/sssd/sssd.conf':
     ensure => 'file',
