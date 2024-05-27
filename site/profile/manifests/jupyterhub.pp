@@ -3,8 +3,8 @@ class profile::jupyterhub::hub (
   String $reset_pw_url = '', # lint:ignore:params_empty_string_assignment
 ) {
   contain jupyterhub
-  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
 
+  Service <| tag == profile::sssd |> ~> Service['jupyterhub']
   Yumrepo['epel'] -> Class['jupyterhub']
 
   file { '/etc/jupyterhub/templates/login.html':
