@@ -60,6 +60,12 @@ EOT
     $domain_list = join(keys($domains), ',')
   }
 
+  if ! $domain_list.empty {
+    $augeas_domains = "set target[ . = 'sssd']/domains ${domain_list}"
+  } else {
+    $augeas_domains = ''
+  }
+
   file { '/etc/sssd/sssd.conf':
     ensure => 'file',
     owner  => 'root',
@@ -74,7 +80,7 @@ EOT
     changes => [
       "set target[ . = 'sssd'] 'sssd'",
       "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
-      "set target[ . = 'sssd']/domains ${domain_list}",
+      $augeas_domains,
     ],
     require => File['/etc/sssd/sssd.conf'],
     notify  => Service['sssd'],
