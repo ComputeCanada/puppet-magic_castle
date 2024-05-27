@@ -54,15 +54,35 @@ EOT
     break()
   }
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $ipa_domain = "int.${domain_name}"
-  $domain_list = join([$ipa_domain] + keys($domains), ',')
-  file_line { 'sssd_domains':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    line    => "domains = ${domain_list}",
-    match   => "^domains = ${$ipa_domain}$",
+  if $facts['ipa']['installed'] {
+    $domain_list = join([$facts['ipa']['domain']] + keys($domains), ',')
+  } else {
+    $domain_list = join(keys($domains), ',')
+  }
+
+  if ! $domain_list.empty {
+    $augeas_domains = "set target[ . = 'sssd']/domains ${domain_list}"
+  } else {
+    $augeas_domains = ''
+  }
+
+  file { '/etc/sssd/sssd.conf':
+    ensure => 'file',
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0600',
+    notify => Service['sssd'],
+  }
+
+  augeas { 'sssd.conf':
+    lens    => 'sssd.lns',
+    incl    => '/etc/sssd/sssd.conf',
+    changes => [
+      "set target[ . = 'sssd'] 'sssd'",
+      "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
+      $augeas_domains,
+    ],
+    require => File['/etc/sssd/sssd.conf'],
     notify  => Service['sssd'],
-    require => Exec['ipa-install'],
   }
 }

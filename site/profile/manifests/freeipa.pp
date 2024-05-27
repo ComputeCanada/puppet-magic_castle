@@ -45,7 +45,7 @@ class profile::freeipa::base (String $domain_name) {
 
 class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
-  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
+  include profile::sssd::client
 
   $domain_name = lookup('profile::freeipa::base::domain_name')
   $int_domain_name = "int.${domain_name}"
@@ -137,9 +137,13 @@ class profile::freeipa::client (String $server_ip) {
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
       Wait_for['ipa-ca_https'],
+      Augeas['sssd.conf'],
     ],
     creates   => '/etc/ipa/default.conf',
-    notify    => Service['systemd-logind'],
+    notify    => [
+      Service['systemd-logind'],
+      Service['sssd'],
+    ],
   }
 
   file_line { 'ssh_known_hosts':
@@ -187,11 +191,12 @@ class profile::freeipa::client (String $server_ip) {
   # This can cause serious slow down when multiple
   # concurrent users try to login at the same time
   # since the rebuilt is done for each user sequentially.
-  file_line { 'selinux_provider':
-    ensure  => present,
-    path    => '/etc/sssd/sssd.conf',
-    after   => 'id_provider = ipa',
-    line    => 'selinux_provider = none',
+  augeas { 'selinux_provider':
+    lens    => 'sssd.lns',
+    incl    => '/etc/sssd/sssd.conf',
+    changes => [
+      "set target[ . = 'domain/${int_domain_name}']/selinux_provider none",
+    ],
     require => Exec['ipa-install'],
     notify  => Service['sssd'],
   }
