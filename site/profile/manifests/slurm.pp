@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['21.08', '22.05', '23.02', '23.11'] $slurm_version,
+  Enum['21.08', '22.05', '23.02', '23.11', '24.05'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,

@@ -946,7 +946,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
 | `munge_key`             | Base64 encoded Munge key | String  |
-| `slurm_version`         | Slurm version to install | Enum['21.08', '22.05', '23.02', '23.11'] |
+| `slurm_version`         | Slurm version to install | Enum['21.08', '22.05', '23.02', '23.11', '24.05'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
