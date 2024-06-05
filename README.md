@@ -290,7 +290,7 @@ that provides object storage, block storage, and file storage built on a common 
 cluster foundation.
 [reference](https://en.wikipedia.org/wiki/Ceph_(software))
 
-This class install Ceph packages, and configure and mount a CephFS share.
+This class installs the Ceph packages, and configure and mount a CephFS share.
 
 ### parameters
 
@@ -333,6 +333,10 @@ profile::ceph::client::mount_name: 'cephfs'
 profile::ceph::client::binds_fcontext_equivalence: '/home'
 ```
 </details>
+
+## profile::ceph::client::install
+
+This class only installs the Ceph packages. 
 
 ## `profile::consul`
 
