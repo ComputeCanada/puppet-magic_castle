@@ -34,13 +34,22 @@ class profile::ceph::client (
   ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'bind_mounts' => [] })
 }
 
-class profile::ceph::client::install {
+class profile::ceph::client::install (
+  String $release = 'reef',
+  Optional[String] $version = undef,
+) {
   include epel
+
+  if $version != undef and $version != '' {
+    $repo = "rpm-${version}"
+  } else {
+    $repo = "rpm-${release}"
+  }
 
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
-    baseurl       => "https://download.ceph.com/rpm-nautilus/el${$::facts['os']['release']['major']}/${::facts['architecture']}/",
+    baseurl       => "https://download.ceph.com/${repo}/el${$::facts['os']['release']['major']}/${::facts['architecture']}/",
     gpgcheck      => 1,
     gpgkey        => 'https://download.ceph.com/keys/release.asc',
     repo_gpgcheck => 0,
