@@ -1,4 +1,3 @@
-CgroupPlugin="cgroup/v1"
 CgroupMountpoint="/sys/fs/cgroup"
 <% if versioncmp($slurm_version, '22.05') < 0 { -%>
 AllowedDevicesFile="/etc/slurm/cgroup_allowed_devices_file.conf"
