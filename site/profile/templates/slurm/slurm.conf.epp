@@ -66,25 +66,13 @@ Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
-<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 TaskPlugin=task/affinity,task/cgroup
-<% } else { -%>
-TaskPlugin=task/cgroup
-<% } -%>
 PropagateResourceLimits=NONE
 MailProg=/usr/sbin/slurm_mail
 
 StateSaveLocation=/var/spool/slurm
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step,disable_send_gids
-<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 JobSubmitPlugins=lua
-<% } -%>
-
-<% if versioncmp($slurm_version, '23.02') < 0 { -%>
-# The autoscaling compute nodes are not showed by sinfo unless we set PrivateData=cloud
-# Not needed for Slurm >= 23.02
-PrivateData=cloud
-<% } -%>
 
 include /etc/slurm/slurm-addendum.conf
