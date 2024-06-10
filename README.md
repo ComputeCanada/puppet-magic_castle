@@ -1315,7 +1315,7 @@ A `profile::users::local_user` is defined as a dictionary with the following key
 | `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes        |
 | `selinux_user`    | SELinux context for the user                    | String          | Yes        |
 | `mls_range`       | MLS Range for the user                          | String          | Yes        |
-
+| `authenticationmethods` | Specifies AuthenticationMethods value for this user in sshd_config | String          | Yes        |
 
 <details>
 <summary>default values</summary>
@@ -1326,6 +1326,7 @@ profile::users::local::users:
     public_keys: "%{alias('terraform.data.public_keys')}"
     groups: ['adm', 'wheel', 'systemd-journal']
     sudoer: true
+    authenticationmethods: 'publickey'
 ```
 
 If `profile::users::local::users` is present in more than one YAML file in the hierarchy,
@@ -1346,5 +1347,6 @@ profile::users::local::users:
     # sudoer: false
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
+    # authenticationmethods: 'publickey,password publickey,keyboard-interactive'
 ```
 </details>
