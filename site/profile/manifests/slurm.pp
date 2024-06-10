@@ -555,43 +555,46 @@ export TFE_VAR_POOL=${tfe_var_pool}
 }
 
 # Slurm node class. This is where slurmd is ran.
-class profile::slurm::node {
+class profile::slurm::node (
+  Boolean $enable_tmpfs_mounts = true,
+) {
   contain profile::slurm::base
-
-  $slurm_version = lookup('profile::slurm::base::slurm_version')
-  $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
-
-  yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
-    enabled             => true,
-    descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
-    baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
-    skip_if_unavailable => true,
-    gpgcheck            => 1,
-    gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
-    repo_gpgcheck       => 0,
-  }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
     require => Package['slurm']
   }
 
-  package { 'spank-cc-tmpfs_mounts':
-    ensure  => 'installed',
-    require => [
-      Package['slurm-slurmd'],
-      Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
-    ]
+  if $enable_tmpfs_mounts {
+    $slurm_version = lookup('profile::slurm::base::slurm_version')
+    $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
+
+    yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
+      enabled             => true,
+      descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
+      baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
+      skip_if_unavailable => true,
+      gpgcheck            => 1,
+      gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
+      repo_gpgcheck       => 0,
+    }
+    package { 'spank-cc-tmpfs_mounts':
+      ensure  => 'installed',
+      require => [
+        Package['slurm-slurmd'],
+        Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+      ]
+    }
+    $plugstack = 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
+  } else {
+    $plugstack = ''
   }
 
   file { '/etc/slurm/plugstack.conf':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => @(EOT/L),
-      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
-      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
-      |EOT
+    content => $plugstack,
   }
 
   pam { 'Add pam_slurm_adopt':

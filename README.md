@@ -44,6 +44,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
+- [`profile::slurm::node`](#profileslurmnode)
 - [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
@@ -1091,6 +1092,38 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::mail::server`](#profilemailserver)
+
+
+## `profile::slurm::node`
+
+This class installs and configure the Slurm node daemon - **slurmd**.
+
+### parameters
+
+| Variable                | Description                                                                                   | Type    |
+| :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
+| `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::slurm::node::enable_tmpfs_mounts: true
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::slurm::node::enable_tmpfs_mounts: false
+```
+</details>
+
+### dependency
+
+When `profile::slurm::node` is included, this class is included too:
+- [`profile::slurm::base`](#profileslurmbase)
 
 ## `profile::software_stack`
 
