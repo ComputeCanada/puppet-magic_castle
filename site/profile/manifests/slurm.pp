@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['21.08', '22.05', '23.02', '23.11', '24.05'] $slurm_version,
+  Enum['23.02', '23.11', '24.05'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
@@ -95,15 +95,6 @@ class profile::slurm::base (
         'slurm_version' => $slurm_version,
       }
     ),
-  }
-
-  if versioncmp($slurm_version, '22.05') < 0 {
-    file { '/etc/slurm/cgroup_allowed_devices_file.conf':
-      ensure => 'present',
-      owner  => 'slurm',
-      group  => 'slurm',
-      source => 'puppet:///modules/profile/slurm/cgroup_allowed_devices_file.conf'
-    }
   }
 
   file { '/etc/slurm/epilog':
@@ -509,19 +500,15 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
-
-  $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if versioncmp($slurm_version, '21.08') >= 0 {
-    file { '/etc/slurm/job_submit.lua':
-      ensure  => 'present',
-      owner   => 'slurm',
-      group   => 'slurm',
-      content => epp('profile/slurm/job_submit.lua',
-        {
-          'selinux_context' => $selinux_context,
-        }
-      ),
-    }
+  file { '/etc/slurm/job_submit.lua':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/job_submit.lua',
+      {
+        'selinux_context' => $selinux_context,
+      }
+    ),
   }
 
   consul::service { 'slurmctld':
@@ -572,11 +559,7 @@ class profile::slurm::node {
   contain profile::slurm::base
 
   $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if versioncmp($slurm_version, '22.05') >= 0 {
-    $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
-  } else {
-    $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/'
-  }
+  $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
 
   yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
     enabled             => true,
