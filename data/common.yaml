@@ -269,6 +269,7 @@ profile::users::local::users:
     public_keys: "%{alias('terraform.data.public_keys')}"
     groups: ['adm', 'wheel', 'systemd-journal']
     sudoer: true
+    authenticationmethods: 'publickey'
 
 
 profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
