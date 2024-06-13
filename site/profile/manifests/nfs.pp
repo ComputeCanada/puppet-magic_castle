@@ -12,6 +12,7 @@ class profile::nfs {
 class profile::nfs::client (
   String $server_ip,
   String $domain_name,
+  Array[String] $shares = [],
 ) {
   $nfs_domain  = "int.${domain_name}"
 
@@ -23,18 +24,24 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
-  $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
-  if $nfs_volumes =~ Hash[String, Hash] {
+  if $nfs_server {
+    $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
     $nfs_export_list = keys($nfs_volumes)
-    $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
-    $nfs_export_list.each | String $name | {
-      nfs::client::mount { "/${name}":
-        ensure        => present,
-        server        => $server_ip,
-        share         => $name,
-        options_nfsv4 => $options_nfsv4,
-        notify        => Systemd::Daemon_reload['nfs-automount'],
-      }
+    $nfs_options     = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
+  } else {
+    # The NFS server is not an instance created by Magic Castle and managed by Terraform.
+    $nfs_export_list = $shares
+    $nfs_options     = 'nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport'
+  }
+
+  $options_nfsv4 = "${nfs_options},x-systemd.automount,x-systemd.mount-timeout=30,_netdev"
+  $nfs_export_list.each | String $name | {
+    nfs::client::mount { "/${name}":
+      ensure        => present,
+      server        => $server_ip,
+      share         => $name,
+      options_nfsv4 => $options_nfsv4,
+      notify        => Systemd::Daemon_reload['nfs-automount'],
     }
   }
 
