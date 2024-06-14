@@ -47,11 +47,14 @@ class profile::ssh::base {
       source => 'puppet:///modules/profile/base/opensshserver.config',
       notify => Service['sshd'],
     }
-  } elsif versioncmp($::facts['os']['release']['major'], '8') >= 1 {
-    # In RedHat 9, the sshd policies are defined as an include that of the
+  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+    # In RedHat 9, the sshd policies are defined as an include of the
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
     file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
+      mode   => '0700',
+      owner  => 'root',
+      group  => 'root',
       source => 'puppet:///modules/profile/base/opensshserver-9.config',
       notify => Service['sshd'],
     }
