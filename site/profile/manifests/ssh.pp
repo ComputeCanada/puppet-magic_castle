@@ -105,17 +105,15 @@ class profile::ssh::hostbased_auth::server (
     content => $shosts,
   }
 
-  file_line { 'HostbasedAuthentication':
+  sshd_config { 'HostbasedAuthentication':
     ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'HostbasedAuthentication yes',
+    value  => 'yes',
     notify => Service['sshd'],
   }
 
-  file_line { 'UseDNS':
+  sshd_config { 'UseDNS':
     ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'UseDNS yes',
+    value  => 'yes',
     notify => Service['sshd'],
   }
 
