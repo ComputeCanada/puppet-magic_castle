@@ -227,7 +227,7 @@ class profile::gpu::install::vgpu (
 
   # Used by slurm-job-exporter to export GPU metrics
   # DCGM does not work with GRID VGPU, most of the stats are missing
-  ensure_packages(['python3'], { ensure => 'present' })
+  ensure_packages(['python3', 'python3-pip'], { ensure => 'present' })
   $py3_version = lookup('os::redhat::python3::version')
 
   exec { 'pip install nvidia-ml-py':
