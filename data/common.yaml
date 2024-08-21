@@ -294,7 +294,6 @@ profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
 
 profile::gpu::install::passthrough::packages:
-  - kmod-nvidia-latest-dkms # require to be first package, otherwise kmod-nivida is installed
   - nvidia-driver-cuda-libs
   - nvidia-driver
   - nvidia-driver-devel
