@@ -23,7 +23,7 @@ grep -q "swap" /etc/fstab && rm -f $(grep "swap" /etc/fstab | cut -f 1)
 # Unmount filesystems
 umount -a --types cephfs,nfs4
 # for xfs, we unmount only what's in /mnt, not things like / or /boot
-grep xfs /etc/fstab | cut -f 2 | grep /mnt | xargs umount
+grep xfs /etc/fstab | cut -f 2 | grep /mnt | xargs --no-run-if-empty umount
 grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab | grep -v /mnt > /etc/fstab.new
 mv -f /etc/fstab.new /etc/fstab
 systemctl daemon-reload
