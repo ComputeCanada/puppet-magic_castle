@@ -661,13 +661,6 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 ```
 </details>
 
-<details>
-<summary>example</summary>
-
-```yaml
-```
-</details>
-
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
