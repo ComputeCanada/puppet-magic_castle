@@ -1452,7 +1452,7 @@ LVM volume automatically. These operations currently have to be accomplished man
 
 | Variable   | Description                                                                    | Type                                      |
 | :--------- | :----------------------------------------------------------------------------- | :---------------------------------------- |
-| `devices`  | Hash of devices: `{ tag : { volume_name: [array of glob expressing paths] } }` | Hash[String, Hash[String, Array[String]]] |
+| `devices`  | Hash of devices | Hash[String, Hash[String, Hash]] |
 
 <details>
 <summary>default values</summary>
@@ -1468,8 +1468,18 @@ profile::volumes::devices: "%{lookup('terraform.self.volumes')}"
 
 ```yaml
 profile::volumes::devices:
-  local:
-    temp:
-      - /dev/vdc
+  "local":
+    "tmp":
+      "glob": "/dev/vdc",
+      "size": 100,
+      #"bind_mount": true,
+      #"bind_target": "/tmp",
+      #"owner": "root",
+      #"group": "root",
+      #"mode": "0755",
+      #"seltype": "home_root_t",
+      #"enable_resize": false,
+      #"filesystem": "xfs",
+      #"quota": nil
 ```
 </details>
