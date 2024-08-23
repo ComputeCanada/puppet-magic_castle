@@ -100,7 +100,7 @@ class profile::gpu::install::passthrough (
     enable_only => true,
     require     => [
       Exec['cuda-repo'],
-    ]
+    ],
   }
 
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})

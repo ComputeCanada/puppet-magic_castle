@@ -1456,6 +1456,7 @@ LVM volume automatically. These operations currently have to be accomplished man
 
 <details>
 <summary>default values</summary>
+
 ```yaml
 profile::volumes::devices: "%{lookup('terraform.self.volumes')}"
 ```
@@ -1464,6 +1465,7 @@ profile::volumes::devices: "%{lookup('terraform.self.volumes')}"
 
 <details>
 <summary>examples</summary>
+
 ```yaml
 profile::volumes::devices:
   local:
