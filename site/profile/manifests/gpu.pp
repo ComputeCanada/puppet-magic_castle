@@ -94,8 +94,8 @@ class profile::gpu::install::passthrough (
   }
 
   package { 'nvidia-stream':
-    ensure      => present,
-    name        => "nvidia-driver:${nvidia_driver_stream}",
+    ensure      => $nvidia_driver_stream,
+    name        => 'nvidia-driver',
     provider    => dnfmodule,
     enable_only => true,
     require     => [
