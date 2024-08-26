@@ -25,10 +25,10 @@ class profile::users::local (
     group  => 'root',
   }
 
-  file { '/etc/sudoers.d/90-cloud-init-users':
-    ensure  => absent,
-    require => $users.map | $k, $v | { Profile::Users::Local_user[$k] },
-  }
+  # file { '/etc/sudoers.d/90-cloud-init-users':
+  #   ensure  => absent,
+  #   require => $users.map | $k, $v | { Profile::Users::Local_user[$k] },
+  # }
 
   ensure_resources(profile::users::local_user, $users)
 }
