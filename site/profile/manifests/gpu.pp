@@ -256,7 +256,7 @@ class profile::gpu::install::vgpu::rpm (
 ) {
   $source_pkg_name = (split($source, '[/]')[-1]).regsubst(/\.rpm/, '', 'G')
   package { 'vgpu-repo':
-    ensure   => 'latest',
+    ensure   => 'installed',
     provider => 'rpm',
     name     => $source_pkg_name,
     source   => $source,
