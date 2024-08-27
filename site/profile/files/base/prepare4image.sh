@@ -52,6 +52,10 @@ rm -f /etc/hostname
 rm -f /etc/udev/rules.d/70-persistent-net.rules
 : > /etc/sysconfig/network
 : > /etc/machine-id
+
+rm /etc/NetworkManager/conf.d/zzz-puppet.conf
+: > /etc/resolv.conf
+
 cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
 DEVICE=eth0
 TYPE=Ethernet
