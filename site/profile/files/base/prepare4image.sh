@@ -14,7 +14,7 @@ rm -f /var/log/ipaclient-install.log
 rm -rf /etc/sssd/sssd.conf.deleted
 
 rm -rf /etc/puppetlabs
-rm -rf /opt/puppetlabs/puppet/cache
+rm -rf /opt/puppetlabs/puppet/cache/{clientbucket,client_data,client_yaml,state}
 rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
 
 # Turn off swap
