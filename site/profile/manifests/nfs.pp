@@ -76,7 +76,7 @@ class profile::nfs::server (
     notify => Service[$nfs::server_service_name],
   }
 
-  $devices = lookup('terraform.self.volumes.nfs')
+  $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
   if $devices =~ Hash[String, Hash] {
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
