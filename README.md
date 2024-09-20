@@ -290,49 +290,34 @@ that provides object storage, block storage, and file storage built on a common 
 cluster foundation.
 [reference](https://en.wikipedia.org/wiki/Ceph_(software))
 
-This class install Ceph packages, and configure and mount a CephFS share.
+This class installs the Ceph packages, and configure and mount CephFS shares.
 
 ### parameters
 
-| Variable                     | Description                                                 | Type          |
-| :--------------------------- | :---------------------------------------------------------- | ------------- |
-| `share_name`                 | CEPH share name                                             | String        |
-| `access_key`                 | CEPH share access key                                       | String        |
-| `export_path`                | Path of the share as exported by the monitors               | String        |
-| `mon_host`                   | List of CEPH monitor hostnames                              | Array[String] |
-| `mount_binds`                | List of CEPH share folders that will bind mounted under `/` | Array[String] |
-| `mount_name`                 | Name to give to the CEPH share once mounted under `/mnt`    | String        |
-| `binds_fcontext_equivalence` | SELinux file context equivalence for the CEPH share         | String        |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::ceph::client::mount_binds: []
-profile::ceph::client::mount_name: 'cephfs01'
-profile::ceph::client::binds_fcontext_equivalence: '/home'
-```
-</details>
+| Variable      | Description                                                 | Type                 |
+| :------------ | :---------------------------------------------------------- | -------------------- |
+| `mon_host`    | List of Ceph monitor hostnames                              | Array[String]        |
+| `shares`      | List of Ceph share structures                               | Hash[String, CephFS] |
 
 <details>
 <summary>example</summary>
 
 ```yaml
-profile::ceph::client::share_name: "your-project-shared-fs"
-profile::ceph::client::access_key: "MTIzNDU2Nzg5cHJvZmlsZTo6Y2VwaDo6Y2xpZW50OjphY2Nlc3Nfa2V5"
-profile::ceph::client::export_path: "/volumes/_nogroup/"
 profile::ceph::client::mon_host:
   - 192.168.1.3:6789
   - 192.168.2.3:6789
   - 192.168.3.3:6789
-profile::ceph::client::mount_binds:
-  - home
-  - project
-  - software
-profile::ceph::client::mount_name: 'cephfs'
-profile::ceph::client::binds_fcontext_equivalence: '/home'
+profile::ceph::client::shares:
+  home: 
+    
+  project:
+    
 ```
 </details>
+
+## profile::ceph::client::install
+
+This class only installs the Ceph packages. 
 
 ## `profile::consul`
 
