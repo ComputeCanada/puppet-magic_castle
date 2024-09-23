@@ -167,10 +167,10 @@ define profile::volumes::volume (
 
   if $filesystem == 'xfs' and $quota {
     exec { "apply-quota-${name}":
-      command     => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${name}",
-      require     => Mount["/mnt/${volume_tag}/${volume_name}"],
-      path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-      refreshonly => true,
+      command => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${volume_tag}/${volume_name} && echo ${quota} > /tmp/quota-${name}",
+      require => Mount["/mnt/${volume_tag}/${volume_name}"],
+      path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      unless  => "grep -q '${quota}' /tmp/quota-${name}",
     }
   }
 }
