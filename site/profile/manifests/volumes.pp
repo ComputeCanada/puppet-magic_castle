@@ -174,7 +174,7 @@ define profile::volumes::volume (
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
-      content => $quota,
+      content => "#FILE TRACKED BY PUPPET DO NOT EDIT MANUALLY\n${quota}",
       require => File['/etc/xfs_quota']
     }
 
