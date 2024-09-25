@@ -124,16 +124,17 @@ class profile::gpu::install::passthrough (
 
   -> file { '/run/nvidia-persistenced':
     ensure => directory,
-    owner  => 'nvidia-persistenced',
-    group  => 'nvidia-persistenced',
+    owner  => 'root',
+    group  => 'root',
     mode   => '0755',
   }
 
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
     changes => [
-      'set User/value nvidia-persistenced',
-      'set Group/value nvidia-persistenced',
+      'set DynamicUser/value yes',
+      'set StateDirectory/value nvidia-persistenced',
+      'set RuntimeDirectory/value nvidia-persistenced',
       'rm ExecStart/arguments',
     ],
   }
