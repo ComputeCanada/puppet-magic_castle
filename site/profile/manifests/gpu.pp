@@ -82,7 +82,7 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $nvidia_driver_stream = '555-dkms'
+  String $nvidia_driver_stream = '560-dkms'
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
