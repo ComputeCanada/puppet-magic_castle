@@ -82,7 +82,7 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $nvidia_driver_stream = '555-dkms'
+  String $nvidia_driver_stream = '560-dkms'
 ) {
   $os = "rhel${::facts['os']['release']['major']}"
   $arch = $::facts['os']['architecture']
@@ -122,25 +122,14 @@ class profile::gpu::install::passthrough (
   # Used by slurm-job-exporter to export GPU metrics
   -> package { 'datacenter-gpu-manager': }
 
-  -> file { '/run/nvidia-persistenced':
-    ensure => directory,
-    owner  => 'nvidia-persistenced',
-    group  => 'nvidia-persistenced',
-    mode   => '0755',
-  }
-
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
     changes => [
-      'set User/value nvidia-persistenced',
-      'set Group/value nvidia-persistenced',
+      'set DynamicUser/value yes',
+      'set StateDirectory/value nvidia-persistenced',
+      'set RuntimeDirectory/value nvidia-persistenced',
       'rm ExecStart/arguments',
     ],
-  }
-
-  file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
-    content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
-    mode    => '0644',
   }
 }
 
