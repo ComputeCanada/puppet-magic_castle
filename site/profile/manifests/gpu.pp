@@ -122,13 +122,6 @@ class profile::gpu::install::passthrough (
   # Used by slurm-job-exporter to export GPU metrics
   -> package { 'datacenter-gpu-manager': }
 
-  -> file { '/run/nvidia-persistenced':
-    ensure => directory,
-    owner  => 'root',
-    group  => 'root',
-    mode   => '0755',
-  }
-
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
     changes => [
@@ -137,11 +130,6 @@ class profile::gpu::install::passthrough (
       'set RuntimeDirectory/value nvidia-persistenced',
       'rm ExecStart/arguments',
     ],
-  }
-
-  file { '/usr/lib/tmpfiles.d/nvidia-persistenced.conf':
-    content => 'd /run/nvidia-persistenced 0755 nvidia-persistenced nvidia-persistenced -',
-    mode    => '0644',
   }
 }
 
