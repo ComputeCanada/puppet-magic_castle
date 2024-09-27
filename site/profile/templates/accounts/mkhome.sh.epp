@@ -17,7 +17,7 @@ if [[ ! -p ${MKHOME_MODPROJECT_PIPE} ]]; then
 fi
 
 (
-    tail -F /var/log/dirsrv/slapd-*/access | grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z_]*)(?=,cn=users)' &
+    tail -F /var/log/dirsrv/slapd-*/access | grep --line-buffered -oP 'ADD dn=\"uid=\K([a-z0-9A-Z-_]*)(?=,cn=users)' &
     tail -F ${MKHOME_RETRY_PIPE}
 ) |
 while read USERNAME; do
