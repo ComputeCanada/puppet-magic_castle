@@ -97,7 +97,7 @@ define profile::volumes::volume (
   if $filesystem == 'xfs' {
     $options = 'defaults,usrquota'
   } else {
-    $options = ''
+    $options = 'defaults'
   }
 
   lvm::logical_volume { $name:
