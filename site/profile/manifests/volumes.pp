@@ -42,7 +42,7 @@ class profile::volumes (
           enable_resize => pick($values['enable_resize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
-          quota         => pick($values['quota'], nil),
+          quota         => pick_default($values['quota'], undef),
         }
       }
     }
@@ -94,10 +94,10 @@ define profile::volumes::volume (
     followsymlinks   => true,
   }
 
-  if $filesystem == 'xfs' and $quota {
+  if $filesystem == 'xfs' {
     $options = 'defaults,usrquota'
   } else {
-    $options = ''
+    $options = 'defaults'
   }
 
   lvm::logical_volume { $name:
@@ -170,7 +170,7 @@ define profile::volumes::volume (
     }
   }
 
-  if $filesystem == 'xfs' and $quota {
+  if $filesystem == 'xfs' and $quota != undef {
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
