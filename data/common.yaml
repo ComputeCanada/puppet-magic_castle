@@ -302,3 +302,4 @@ profile::gpu::install::passthrough::packages:
   - nvidia-modprobe
   - nvidia-xconfig
   - nvidia-persistenced
+  - nvidia-driver-cuda
