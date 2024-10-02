@@ -8,4 +8,14 @@ case "$cpu_ext" in
         cpu_ext="sse3"
         ;;
 esac
-echo "{ 'cpu_ext' : '${cpu_ext}' }"
+
+case "$cpu_ext" in
+    avx512)
+        cpu_microarch="x86-64-v4"
+        ;;
+    avx2)
+        cpu_microarch="x86-64-v3"
+        ;;
+esac
+
+echo "{ 'cpu_ext' : '${cpu_ext}', 'cpu_microarch': '${cpu_microarch}' }"
