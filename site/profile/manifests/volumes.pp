@@ -42,7 +42,7 @@ class profile::volumes (
           enable_resize => pick($values['enable_resize'], false),
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
-          quota         => pick_default($values['quota'], undef),
+          quota         => pick_default($values['quota'], ''),
         }
       }
     }
@@ -61,7 +61,7 @@ define profile::volumes::volume (
   String $seltype,
   Boolean $enable_resize,
   Enum['xfs', 'ext3', 'ext4'] $filesystem,
-  Optional[String] $quota = undef,
+  String $quota = '',
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
 
@@ -170,7 +170,7 @@ define profile::volumes::volume (
     }
   }
 
-  if $filesystem == 'xfs' and $quota != undef {
+  if $filesystem == 'xfs' and $quota != '' {
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
