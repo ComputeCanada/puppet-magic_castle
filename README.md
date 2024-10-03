@@ -845,7 +845,7 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
-profile::reverse_proxy::main2sub_redit: "jupyter"
+profile::reverse_proxy::main2sub_redir: "jupyter"
 profile::reverse_proxy::remote_ips: {}
 ```
 </details>
