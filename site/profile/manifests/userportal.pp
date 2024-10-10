@@ -16,6 +16,7 @@ class profile::userportal {
     ldap_password   => lookup('trailblazing_turtle::server::ldap_password'),
     slurm_password  => lookup('trailblazing_turtle::server::slurm_password'),
     cluster_name    => lookup('trailblazing_turtle::server::cluster_name'),
+    subdomain       => lookup('trailblazing_turtle::subdomain'),
     logins          => $logins,
     base_dn         => $base_dn,
     domain_name     => $domain_name,
