@@ -186,6 +186,7 @@ prometheus::server::scrape_configs:
           - __meta_consul_node
         target_label: instance
   - job_name: jupyterhub
+    metrics_path: "/hub/metrics"
     scrape_interval: 10s
     scrape_timeout: 10s
     honor_labels: true
