@@ -6,7 +6,7 @@ jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/softwar
 jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:/cvmfs/soft.computecanada.ca/custom/python/site-packages"
-  UV_FIND_LINKS: "/cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2023/%{facts.cpu_microarch},/cvmfs/soft.computecanada.ca/custom/python/wheelhouse/gentoo2023/generic,/cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic"
+  PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-%{facts.cpu_microarch}-gentoo2023.conf"
 
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
