@@ -38,11 +38,11 @@ class profile::jupyterhub::hub (
   $service_name = "jupyterhub/${fqdn}"
   $service_register_script = @("EOF")
     api.Command.batch(
-      { 'method': 'service_add',        'params': [[${service_name}], {}]},
+      { 'method': 'service_add',        'params': [['${service_name}'], {}]},
       { 'method': 'role_add',           'params': [['JupyterHub'], {'description' : 'JupyterHub User management'}]},
       { 'method': 'role_add_privilege', 'params': [['JupyterHub'], {'privilege'   : 'Group Administrator'}]},
       { 'method': 'role_add_privilege', 'params': [['JupyterHub'], {'privilege'   : 'User Administrators'}]},
-      { 'method': 'role_add_member',    'params': [['JupyterHub'], {'service'     : ${service_name}}]},
+      { 'method': 'role_add_member',    'params': [['JupyterHub'], {'service'     : '${service_name}'}]},
     )
     |EOF
 
