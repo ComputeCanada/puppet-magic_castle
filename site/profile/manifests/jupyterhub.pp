@@ -58,7 +58,7 @@ class profile::jupyterhub::hub (
     require     => [
       Exec['ipa-install'],
     ],
-    subscribe   => File["${jupyterhub::prefix}/bin/kinit_wrapper"],
+    subscribe   => File["${jupyterhub::prefix}/bin/ipa_register_service.py"],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', " ${jupyterhub::prefix}/bin"],
   }
