@@ -56,7 +56,7 @@ class profile::jupyterhub::hub (
     command     => "kinit_wrapper ipa console ${jupyterhub::prefix}/bin/ipa_register_service.py",
     refreshonly => true,
     require     => [
-      File['kinit_wrapper'],
+      File["${jupyterhub::prefix}/bin/kinit_wrapper"],
       Exec['ipa-install'],
     ],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
@@ -67,7 +67,7 @@ class profile::jupyterhub::hub (
     command     => "kinit_wrapper ipa-getkeytab -p ${service_name} -k /etc/jupyterhub/jupyterhub.keytab",
     creates     => '/etc/jupyterhub/jupyterhub.keytab',
     require     => [
-      File['kinit_wrapper'],
+      File["${jupyterhub::prefix}/bin/kinit_wrapper"],
       Exec['jupyterhub_ipa_service_register'],
       Exec['ipa-install'],
     ],
