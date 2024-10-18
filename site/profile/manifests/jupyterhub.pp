@@ -21,6 +21,59 @@ class profile::jupyterhub::hub (
     tags  => ['jupyterhub'],
     token => lookup('profile::consul::acl_api_token'),
   }
+
+  file { "${jupyterhub::prefix}/bin/ipa_create_user.py":
+    source => 'puppet:///modules/profile/users/ipa_create_user.py',
+    mode   => '0755',
+  }
+
+  file { "${jupyterhub::prefix}/bin/kinit_wrapper":
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755',
+  }
+
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
+  $service_name = "jupyterhub/${fqdn}"
+  $service_register_script = @("EOF")
+    api.Command.batch(
+      { 'method': 'service_add',        'params': [[${service_name}], {}]},
+      { 'method': 'role_add',           'params': [['JupyterHub'], {'description' : 'JupyterHub User management'}]},
+      { 'method': 'role_add_privilege', 'params': [['JupyterHub'], {'privilege'   : 'Group Administrator'}]},
+      { 'method': 'role_add_privilege', 'params': [['JupyterHub'], {'privilege'   : 'User Administrators'}]},
+      { 'method': 'role_add_member',    'params': [['JupyterHub'], {'service'     : ${service_name}}]},
+    )
+    |EOF
+
+  file { "${jupyterhub::prefix}/bin/ipa_register_service.py":
+    content => $service_register_script,
+    require => Exec['jupyterhub_venv'],
+  }
+
+  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
+  exec { 'jupyterhub_ipa_service_register':
+    command     => "kinit_wrapper ipa console ${jupyterhub::prefix}/bin/ipa_register_service.py",
+    refreshonly => true,
+    require     => [
+      File['kinit_wrapper'],
+      Exec['ipa-install'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', " ${jupyterhub::prefix}/bin"],
+  }
+
+  exec { 'jupyterhub_keytab':
+    command     => "kinit_wrapper ipa-getkeytab -p ${service_name} -k /etc/jupyterhub/jupyterhub.keytab",
+    creates     => '/etc/jupyterhub/jupyterhub.keytab',
+    require     => [
+      File['kinit_wrapper'],
+      Exec['jupyterhub_ipa_service_register'],
+      Exec['ipa-install'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', " ${jupyterhub::prefix}/bin"],
+  }
 }
 
 class profile::jupyterhub::node {
