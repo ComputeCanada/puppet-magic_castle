@@ -77,9 +77,6 @@ jupyterhub::jupyterhub_config_hash:
       choices: ['notebook', 'lab', 'terminal', 'code-server', 'desktop']
       def: 'lab'
 
-  LocalFreeIPAAuthenticator:
-    principal: "jupyterhub/jupyterhub"
-
 selinux::mode: 'permissive'
 # selinux::type: 'targeted'
 
