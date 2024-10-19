@@ -80,6 +80,8 @@ class profile::jupyterhub::hub::keytab {
   exec { 'jupyterhub_keytab':
     command     => 'kinit_wrapper ipa-getkeytab -p jupyterhub/jupyterhub -k /etc/jupyterhub/jupyterhub.keytab',
     creates     => '/etc/jupyterhub/jupyterhub.keytab',
+    tries       => 5,
+    try_sleep   => 5,
     require     => [
       Exec['jupyterhub_venv'],
       File["${jupyterhub::prefix}/bin/kinit_wrapper"],
