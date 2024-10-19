@@ -52,7 +52,7 @@ class profile::jupyterhub::hub::keytab {
       { 'method': 'service_add',           'params': [['${service_name}'], {}]},
       { 'method': 'service_add_principal', 'params': [['${service_name}', 'jupyterhub/jupyterhub'], {}]},
       { 'method': 'role_add',              'params': [['JupyterHub'], {'description' : 'JupyterHub User management'}]},
-      { 'method': 'role_add_privilege',    'params': [['JupyterHub'], {'privilege'   : 'Group Administrator'}]},
+      { 'method': 'role_add_privilege',    'params': [['JupyterHub'], {'privilege'   : 'Group Administrators'}]},
       { 'method': 'role_add_privilege',    'params': [['JupyterHub'], {'privilege'   : 'User Administrators'}]},
       { 'method': 'role_add_member',       'params': [['JupyterHub'], {'service'     : '${service_name}'}]},
     )
