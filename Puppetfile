@@ -39,4 +39,4 @@ mod 'saz-limits', '3.0.4'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v5.1.0'
+    :ref => 'uv'
