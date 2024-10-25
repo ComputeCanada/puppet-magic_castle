@@ -20,7 +20,8 @@ class profile::gpu {
 }
 
 class profile::gpu::install (
-  String $lib_symlink_path = undef
+  String $lib_symlink_path = undef,
+  Boolean $allow_profiling_for_all = false
 ) {
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
   ensure_packages(['kernel-devel'], { 'ensure' => 'installed' })
@@ -61,6 +62,21 @@ class profile::gpu::install (
       'nvidia_uvm',
     ]:
       require => $kmod_require,
+  }
+
+  if $allow_profiling_for_all {
+    file { '/etc/modprobe.d/nvidia.conf':
+      ensure => file,
+      owner  => 'root',
+      group  => 'root',
+      mode   => '0755',
+    }
+    file_line { 'allow_profiling_for_all':
+      path    => '/etc/modprobe.d/nvidia.conf',
+      line    => 'options nvidia NVreg_RestrictProfilingToAdminUsers=0',
+      require => File['/etc/modprobe.d/nvidia.conf'],
+      before  => (if ! $facts['nvidia_grid_gpu'] { Class['profile::gpu::install::passthrough'] } else { Class['profile::gpu::install::vgpu'] }),
+    }
   }
 
   if $lib_symlink_path {
