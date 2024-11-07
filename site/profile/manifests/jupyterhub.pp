@@ -21,6 +21,16 @@ class profile::jupyterhub::hub (
     tags  => ['jupyterhub'],
     token => lookup('profile::consul::acl_api_token'),
   }
+
+  file { "${jupyterhub::prefix}/bin/ipa_create_user.py":
+    source => 'puppet:///modules/profile/users/ipa_create_user.py',
+    mode   => '0755',
+  }
+
+  file { "${jupyterhub::prefix}/bin/kinit_wrapper":
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755',
+  }
 }
 
 class profile::jupyterhub::node {
@@ -29,5 +39,62 @@ class profile::jupyterhub::node {
     if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
       Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
     }
+  }
+}
+
+class profile::jupyterhub::hub::keytab {
+  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $int_domain_name = "int.${domain_name}"
+  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
+  $service_name = "jupyterhub/${fqdn}"
+  $service_register_script = @("EOF")
+    api.Command.batch(
+      { 'method': 'service_add',           'params': [['${service_name}'], {}]},
+      { 'method': 'service_add_principal', 'params': [['${service_name}', 'jupyterhub/jupyterhub'], {}]},
+      { 'method': 'role_add',              'params': [['JupyterHub'], {'description' : 'JupyterHub User management'}]},
+      { 'method': 'role_add_privilege',    'params': [['JupyterHub'], {'privilege'   : 'Group Administrators'}]},
+      { 'method': 'role_add_privilege',    'params': [['JupyterHub'], {'privilege'   : 'User Administrators'}]},
+      { 'method': 'role_add_member',       'params': [['JupyterHub'], {'service'     : '${service_name}'}]},
+    )
+    |EOF
+
+  file { "${jupyterhub::prefix}/bin/ipa_register_service.py":
+    content => $service_register_script,
+    require => Exec['jupyterhub_venv'],
+  }
+
+  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
+  exec { 'jupyterhub_ipa_service_register':
+    command     => "kinit_wrapper ipa console ${jupyterhub::prefix}/bin/ipa_register_service.py",
+    refreshonly => true,
+    require     => [
+      Exec['jupyterhub_venv'],
+      File["${jupyterhub::prefix}/bin/kinit_wrapper"],
+      Exec['ipa-install'],
+    ],
+    subscribe   => File["${jupyterhub::prefix}/bin/ipa_register_service.py"],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub::prefix}/bin"],
+  }
+
+  exec { 'jupyterhub_keytab':
+    command     => 'kinit_wrapper ipa-getkeytab -p jupyterhub/jupyterhub -k /etc/jupyterhub/jupyterhub.keytab',
+    creates     => '/etc/jupyterhub/jupyterhub.keytab',
+    require     => [
+      File['/etc/jupyterhub'],
+      File["${jupyterhub::prefix}/bin/kinit_wrapper"],
+      Exec['jupyterhub_ipa_service_register'],
+      Exec['ipa-install'],
+    ],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub::prefix}/bin"],
+  }
+
+  file { '/etc/jupyterhub/jupyterhub.keytab':
+    owner     => 'root',
+    group     => 'jupyterhub',
+    mode      => '0640',
+    subscribe => Exec['jupyterhub_keytab'],
+    require   => Group['jupyterhub'],
   }
 }
