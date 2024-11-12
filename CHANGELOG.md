@@ -3,6 +3,48 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [14.0.0] UNRELEASED
+
+### Added
+
+- Added ability to define gieradata per instances group (PR #324)
+- Added option to disable CVMFS_STRICT_MOUNT (PR #335)
+- Added option to install additional OS packages (PR #290)
+- Added enable_scrontab to slurm::base (PR #329)
+- Added support for vector.dev (PR #356)
+- Added user quota support with XFS (PR #308)
+- Added puppet-forge's rsyslog (PR #321)
+- Added support for Slurm 23.11 (PR #359)
+- Added support for Slurm 24.05 (PR #364)
+- Added perl-Sys-hostname in base slurm when os major >= 9 (PR #366)
+- Added option to disable Slurm's spank plugin to manage tmpfs mounts (PR #337)
+- Added authenticationmethods param to local user (PR #340)
+- Added option for user to specify CephFS version (PR #380)
+- Provided JupyterHub the ability to create users in FreeIPA (PR #397)
+
+### Changed
+
+- Fixed issue #351 - "prepare4image.sh fails to run to completion..." (PR #352)
+- Generalized ceph.pp to allow multiple cephfs mounting (PR #313)
+- Adjusted user limits on compute node (PR #311)
+- Refactored NFS server and client to allow running nfs and mgmt on distinct instances (PR #300)
+- Improved prepare4image.sh handling of mounted volumes (#338)
+- Added firewall definition to bootstrap
+- Made profile::sssd module works on its own with or without profile::freeipa (PR #330)
+- Replaced file_line by sshd_config provider for UseDNS and HostbasedAuthentication (PR #367)
+- Fixed Arbutus vgpu rpm src (PR #369)
+- Changed Nvidia driver source to stream - proprietary version (PR #373)
+- Made prepare4image.sh remove only puppet data cache directories
+- Replaced nvidia-persistenced user by dynamic systemd user (PR #383)
+- Bumped nvidia driver to v550-dkms
+- Upgraded default Compute Canada environment to StdEnv/2023 (PR #390)
+- Bumped puppet-jupyterhub to 6.2.0
+
+### Removed
+
+- Removed branching related to CentOS 7 (PR #358)
+- Pruned slurm versions no longer supported by SchedMD (PR #365)
+
 ## [13.5.0] 2024-04-11
 
 ### Added
@@ -145,7 +187,6 @@ definition.
 - Disabled unused epel repos
 - Removed profile::nfs exec `exportfs -ua; cat...; exportfs -a`
 - Removed puppet alias from etc/hosts
-- 
 
 ## [12.6.7] 2023-09-29
 
