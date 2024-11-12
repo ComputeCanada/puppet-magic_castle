@@ -38,7 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced nvidia-persistenced user by dynamic systemd user (PR #383)
 - Bumped nvidia driver to v550-dkms
 - Upgraded default Compute Canada environment to StdEnv/2023 (PR #390)
-- Bumped puppet-jupyterhub to 6.2.0
+- Bumped puppet-jupyterhub to 6.3.0
 
 ### Removed
 
