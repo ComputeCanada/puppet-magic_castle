@@ -92,6 +92,11 @@ class profile::freeipa::client (String $server_ip) {
       Exec['ipa-client-uninstall_bad-server'],
     ],
   }
+  # Make sure heavy lifting operations are done before waiting on mgmt1
+  Package <| |> -> Wait_for['ipa_records']
+  Selinux::Module <| |> -> Wait_for['ipa_records']
+  Selinux::Boolean <| |> -> Wait_for['ipa_records']
+  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_records']
 
   # Check if the FreeIPA HTTPD service is consistently available
   # over a period of 2sec * 15 times = 30 seconds. If a single
