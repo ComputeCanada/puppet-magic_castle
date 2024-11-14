@@ -729,17 +729,6 @@ class profile::slurm::node (
     create_group => 'root',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
   }
-
-  $hostname = $facts['networking']['hostname']
-
-  # If slurmctld server is rebooted slurmd needs to be restarted.
-  # Otherwise, slurmd keeps running, but the node is not in any partition
-  # and no job can be scheduled on it.
-  exec { 'systemctl restart slurmd':
-    onlyif  => "test $(sinfo -n ${hostname} -o %t -h | wc -l) -eq 0",
-    path    => ['/usr/bin', '/opt/software/slurm/bin'],
-    require => Service['slurmd'],
-  }
 }
 
 # Slurm submitter class. This is for instances that neither run slurmd
