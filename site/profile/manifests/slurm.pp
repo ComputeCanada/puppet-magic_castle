@@ -198,6 +198,8 @@ class profile::slurm::base (
         'suspend_time'          => $suspend_time,
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
+        'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
+        'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -217,25 +219,6 @@ class profile::slurm::base (
     owner   => 'slurm',
     mode    => '0644',
     require => File['/etc/slurm'],
-  }
-
-  file { '/etc/slurm/slurm-consul.tpl':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/slurm/slurm-consul.tpl',
-    notify => Service['consul-template'],
-  }
-
-  wait_for { 'slurmctldhost_set':
-    query             => 'cat /etc/slurm/slurm-consul.conf',
-    regex             => '^SlurmctldHost=',
-    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
-    max_retries       => 30,
-    require           => [
-      Service['consul-template'],
-      Class['consul::reload_service'],
-    ],
-    refreshonly       => true,
-    subscribe         => File['/etc/slurm/slurm-consul.tpl'],
   }
 
   # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
@@ -259,32 +242,6 @@ class profile::slurm::base (
         'memlimit' => $os_reserved_memory,
         'weights'  => slurm_compute_weights($nodes),
       }),
-  }
-
-  file { '/opt/software/slurm/bin/cond_restart_slurm_services':
-    require => Package['slurm'],
-    mode    => '0755',
-    content => @("EOT"),
-#!/bin/bash
-{
-  /usr/bin/systemctl -q is-active slurmd && /usr/bin/systemctl restart slurmd || /usr/bin/true
-  /usr/bin/systemctl -q is-active slurmctld && /usr/bin/systemctl restart slurmctld || /usr/bin/true
-} &> /var/log/slurm/cond_restart_slurm_services.log
-|EOT
-  }
-
-
-  consul_template::watch { 'slurm-consul.conf':
-    require     => [
-      File['/etc/slurm/slurm-consul.tpl'],
-      File['/opt/software/slurm/bin/cond_restart_slurm_services'],
-    ],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/slurm/slurm-consul.tpl',
-      destination => '/etc/slurm/slurm-consul.conf',
-      command     => '/opt/software/slurm/bin/cond_restart_slurm_services',
-    }
   }
 
 }
@@ -384,7 +341,6 @@ class profile::slurm::accounting(
     require     => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
-      Wait_for['slurmctldhost_set'],
     ],
     before      => [
       Service['slurmctld']
@@ -523,7 +479,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     port    => 6817,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
-    before  => Wait_for['slurmctldhost_set'],
   }
 
   package { 'slurm-slurmctld':
@@ -539,7 +494,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     enable    => true,
     require   => [
       Package['slurm-slurmctld'],
-      Wait_for['slurmctldhost_set'],
     ],
     subscribe => [
       File['/etc/slurm/slurm.conf'],
@@ -758,7 +712,6 @@ class profile::slurm::node (
     ],
     require   => [
       Package['slurm-slurmd'],
-      Wait_for['slurmctldhost_set'],
     ],
   }
 
