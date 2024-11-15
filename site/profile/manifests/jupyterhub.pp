@@ -73,7 +73,6 @@ class profile::jupyterhub::hub::keytab {
     require     => [
       File['/etc/jupyterhub'],
       File["${jupyterhub::prefix}/bin/kinit_wrapper"],
-      Exec['jupyterhub_ipa_service_register'],
       Exec['ipa-install'],
     ],
     subscribe   => File["${jupyterhub::prefix}/bin/ipa_register_service.py"],
