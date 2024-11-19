@@ -3,7 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [14.1.1] UNRELEASED
+## [14.1.2] 2024-11-19
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [14.1.1] 2024-11-19
 
 No changes to Puppet code.
 
