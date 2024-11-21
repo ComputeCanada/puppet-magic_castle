@@ -58,7 +58,6 @@ class profile::slurm::base (
 
   package { 'munge':
     ensure  => 'installed',
-    require => Yumrepo['epel']
   }
 
   file { '/var/log/slurm':
