@@ -158,8 +158,10 @@ class profile::slurm::base (
 
   package { ['slurm-contribs', 'slurm-perlapi' ]:
     ensure  => 'installed',
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']],
   }
 
   # slurm-contribs command "seff" requires Sys/hostname.pm
