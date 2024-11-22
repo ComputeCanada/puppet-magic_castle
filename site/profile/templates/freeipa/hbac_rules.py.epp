@@ -1,0 +1,23 @@
+#!/bin/bash
+# 1. Create a hostgroup for each tag
+# 2. Create an automember rule for each hostgroup
+# 3. Add a condition to the automember rule for each prefix with that tag
+# 4. Rebuild the automember rules
+api.Command.batch(
+<% $hbac_services.each |$service| { -%>
+  { 'method': 'hbacsvc_add', 'params': [['<%= $service %>'], {}] },
+<% } -%>
+<% $tags.each |$tag| { -%>
+  { 'method': 'hostgroup_add', 'params': [['<%= $tag %>'], {}] },
+  { 'method': 'automember_add', 'params': [['<%= $tag %>'], {'type': 'hostgroup'}] },
+<% $hbac_services.each |$service| { -%>
+  { 'method': 'hbacrule_add', 'params': [['<%= $tag %>:<%= $service %>'], {'accessruletype': 'allow'}] },
+  { 'method': 'hbacrule_add_host', 'params': [['<%= $tag %>:<%= $service %>'], {'hostgroup': '<%= $tag %>'}] },
+  { 'method': 'hbacrule_add_service', 'params': [['<%= $tag %>:<%= $service %>'], {'hbacsvc': '<%= $service %>'}] },
+<% }} -%>
+<% $prefixes_tags.each |$prefix, $tags| { -%>
+<% $tags.each |$tag| { -%>
+  { 'method': 'automember_add_condition', 'params': [['<%= $tag %>'], {'type': 'hostgroup', 'key': 'fqdn', 'automemberinclusiveregex': "^<%= $prefix %>\d+.int.<%= $domain_name %>$"}] },
+<% }} -%>
+  { 'method': 'automember_rebuild', 'params': [[], {'type': 'hostgroup'}] },
+)

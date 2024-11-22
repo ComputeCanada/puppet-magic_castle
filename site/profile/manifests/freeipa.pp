@@ -309,82 +309,41 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  exec { 'ipa_config-mod_auth-otp':
-    command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
+  $ipa_server_base_config = @("EOF")
+    api.Command.batch(
+      { 'method': 'config_mod', 'params': [[], {'ipauserauthtype': 'otp'}]},
+      { 'method': 'config_mod', 'params': [[], {'ipadefaultloginshell': '/bin/bash'}]},
+      { 'method': 'pwpolicy_add', 'params': [['admins'], {'krbminpwdlife': 0, 'krbmaxpwdlife': 0, 'cospriority': 1}]},
+      { 'method': 'dnsrecord_add', 'params': [['${int_domain_name}', 'ipa'], {'cnamerecord': '${facts['networking']['hostname']}'}]},
+      { 'method': 'host_add', 'params': [['ipa.${int_domain_name}'], {'force': True}]},
+      { 'method': 'service_add_principal', 'params': [['HTTP/${fqdn}', 'HTTP/ipa.${int_domain_name}'], {}]},
+      { 'method': 'service_add_principal', 'params': [['ldap/${fqdn}', 'ldap/ipa.${int_domain_name}'], {}]},
+    )
+    |EOF
+
+  file { '/etc/ipa/ipa_server_base_config.py':
+    content => $ipa_server_base_config,
+    require => Exec['ipa-install'],
   }
 
-  exec { 'ipa_config-mod_shell':
-    command     => 'kinit_wrapper ipa config-mod --defaultshell=/bin/bash',
+  exec { 'ipa_server_base_config':
+    command     => 'kinit_wrapper ipa console /etc/ipa/ipa_server_base_config.py',
     refreshonly => true,
-    require     => [File['kinit_wrapper'],],
+    require     => [
+      File['/etc/ipa/ipa_server_base_config.py'],
+      Exec['ipa-install'],
+    ],
+    subscribe   => File['/etc/ipa/ipa_server_base_config.py'],
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
   }
 
   # Configure the password of the admin accounts to never expire
-  exec { 'ipa_admin_passwd_exp':
-    command     => 'kinit_wrapper ipa pwpolicy-add --minlife=0 --maxlife=0 --priority=1 admins',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
   ~> exec { 'ipa_admin_passwd_reset':
     command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
     refreshonly => true,
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-  }
-
-  exec { 'ipa_add_record_CNAME':
-    command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${facts['networking']['hostname']}",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_host_ipa':
-    command     => "kinit_wrapper ipa host-add ipa.${int_domain_name} --force",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_service_principal_http':
-    command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_record_CNAME'],
-      Exec['ipa_add_host_ipa'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_service_principal_ldap':
-    command     => "kinit_wrapper ipa service-add-principal ldap/${fqdn} ldap/ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_record_CNAME'],
-      Exec['ipa_add_host_ipa'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
   }
 
   $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
@@ -395,8 +354,7 @@ class profile::freeipa::server (
     tries     => 5,
     try_sleep => 10,
     require   => [
-      Exec['ipa_add_service_principal_http'],
-      Exec['ipa_add_service_principal_ldap'],
+      Exec['ipa_server_base_config'],
       Exec['ipa-install'],
     ],
   }
@@ -404,10 +362,10 @@ class profile::freeipa::server (
   $instances = lookup('terraform.instances')
   $tags = unique(flatten($instances.map |$key, $values| { $values['tags'] }))
   $prefixes_tags = Hash(unique($instances.map |$key, $values| { [$values['prefix'], $values['tags']] }))
-  file { '/etc/ipa/hbac_rules.sh':
+  file { '/etc/ipa/hbac_rules.py':
     mode    => '0700',
     content => epp(
-      'profile/freeipa/hbac_rules.sh',
+      'profile/freeipa/hbac_rules.py',
       {
         'tags'          => $tags,
         'prefixes_tags' => $prefixes_tags,
@@ -418,7 +376,7 @@ class profile::freeipa::server (
   }
 
   exec { 'hbac_rules':
-    command     => 'kinit_wrapper /etc/ipa/hbac_rules.sh',
+    command     => 'kinit_wrapper ipa console /etc/ipa/hbac_rules.py',
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
@@ -426,7 +384,7 @@ class profile::freeipa::server (
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
-      File['/etc/ipa/hbac_rules.sh'],
+      File['/etc/ipa/hbac_rules.py'],
       Exec['ipa-install'],
     ],
   }
