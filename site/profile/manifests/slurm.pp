@@ -151,7 +151,8 @@ class profile::slurm::base (
     require => [
       Exec['enable_powertools'],
       Package['munge'],
-      Yumrepo['slurm-copr-repo']
+      Yumrepo['slurm-copr-repo'],
+      Yumrepo['epel'],
     ],
   }
 
@@ -169,8 +170,11 @@ class profile::slurm::base (
 
   package { 'slurm-libpmi':
     ensure  => 'installed',
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']]
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   $instances = lookup('terraform.instances')
@@ -320,8 +324,11 @@ class profile::slurm::accounting(
   package { 'slurm-slurmdbd':
     ensure  => present,
     name    => "slurm-slurmdbd-${slurm_version}*",
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   service { 'slurmdbd':
@@ -519,7 +526,10 @@ export TFE_VAR_POOL=${tfe_var_pool}
 
   package { 'slurm-slurmctld':
     ensure  => 'installed',
-    require => Package['munge']
+    require => [
+      Package['munge'],
+      Package['slurm'],
+    ],
   }
 
   service { 'slurmctld':
@@ -561,7 +571,7 @@ class profile::slurm::node (
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
-    require => Package['slurm']
+    require => Package['slurm'],
   }
 
   if $enable_tmpfs_mounts {
