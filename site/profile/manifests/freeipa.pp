@@ -375,6 +375,7 @@ class profile::freeipa::server (
   service { 'httpd':
     ensure  => running,
     enable  => true,
+    restart => '/usr/bin/systemctl reload httpd',
     require => Exec['ipa-install'],
   }
 
