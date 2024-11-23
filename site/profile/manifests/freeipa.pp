@@ -69,22 +69,11 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
-  $ipa_records = [
-    "_kerberos-master._tcp.${int_domain_name} SRV",
-    "_kerberos-master._udp.${int_domain_name} SRV",
-    "_kerberos._tcp.${int_domain_name} SRV",
-    "_kerberos._udp.${int_domain_name} SRV",
-    "_kpasswd._tcp.${int_domain_name} SRV",
-    "_kpasswd._udp.${int_domain_name} SRV",
-    "_ldap._tcp.${int_domain_name} SRV",
-    "ipa-ca.${int_domain_name} A",
-  ]
-
-  wait_for { 'ipa_records':
-    query             => sprintf('dig +short %s | wc -l', join($ipa_records, ' ')),
-    regex             => String(length($ipa_records)),
-    polling_frequency => 10,
-    max_retries       => 60,
+  wait_for { 'ipa_https':
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${int_domain_name}",
+    exit_code         => 0,
+    polling_frequency => 5,
+    max_retries       => 120,
     refreshonly       => true,
     subscribe         => [
       Package['ipa-client'],
@@ -92,24 +81,12 @@ class profile::freeipa::client (String $server_ip) {
       Exec['ipa-client-uninstall_bad-server'],
     ],
   }
-  # Make sure heavy lifting operations are done before waiting on mgmt1
-  Package <| |> -> Wait_for['ipa_records']
-  Selinux::Module <| |> -> Wait_for['ipa_records']
-  Selinux::Boolean <| |> -> Wait_for['ipa_records']
-  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_records']
 
-  # Check if the FreeIPA HTTPD service is consistently available
-  # over a period of 2sec * 15 times = 30 seconds. If a single
-  # test of availability fails, we wait for 5 seconds, then try
-  # again.
-  wait_for { 'ipa-ca_https':
-    query             => "for i in {1..15}; do curl --insecure -L --silent --output /dev/null https://ipa-ca.${int_domain_name}/ && sleep 2 || exit 1; done",
-    exit_code         => 0,
-    polling_frequency => 5,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => Wait_for['ipa_records'],
-  }
+  # Make sure heavy lifting operations are done before waiting on mgmt1
+  Package <| |> -> Wait_for['ipa_https']
+  Selinux::Module <| |> -> Wait_for['ipa_https']
+  Selinux::Boolean <| |> -> Wait_for['ipa_https']
+  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
 
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
@@ -141,7 +118,7 @@ class profile::freeipa::client (String $server_ip) {
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa-ca_https'],
+      Wait_for['ipa_https'],
       Augeas['sssd.conf'],
     ],
     creates   => '/etc/ipa/default.conf',
