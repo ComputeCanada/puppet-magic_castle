@@ -205,25 +205,28 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
-  # Fix FreeIPA issue adding 2 minutes of wait time for nothing
-  # https://pagure.io/freeipa/issue/9358
-  # TODO: remove this patch once FreeIPA is released with the patch
-  ensure_packages(['patch'], { ensure => 'present' })
-  $python_version = lookup('os::redhat::python3::version')
-  file { 'freeipa_27e9181bdc.patch':
-    path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
-    source => 'puppet:///modules/profile/freeipa/27e9181bdc684915a7f9f15631f4c3dd6ac5f884.patch',
-  }
-  exec { 'patch -p1 -r - --forward --quiet < freeipa_27e9181bdc.patch':
-    cwd         => "/usr/lib/python${python_version}/site-packages",
-    path        => ['/usr/bin', '/bin'],
-    subscribe   => [
-      File['freeipa_27e9181bdc.patch'],
-      Package['ipa-server-dns'],
-    ],
-    refreshonly => true,
-    before      => Exec['ipa-install'],
-    returns     => [0, 1],
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # Fix FreeIPA issue adding 2 minutes of wait time for nothing
+    # https://pagure.io/freeipa/issue/9358
+    # TODO: remove this patch once FreeIPA >= 4.10 is made available
+    # in RHEL 8.
+    ensure_packages(['patch'], { ensure => 'present' })
+    $python_version = lookup('os::redhat::python3::version')
+    file { 'freeipa_27e9181bdc.patch':
+      path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
+      source => 'puppet:///modules/profile/freeipa/27e9181bdc684915a7f9f15631f4c3dd6ac5f884.patch',
+    }
+    exec { 'patch -p1 -r - --forward --quiet < freeipa_27e9181bdc.patch':
+      cwd         => "/usr/lib/python${python_version}/site-packages",
+      path        => ['/usr/bin', '/bin'],
+      subscribe   => [
+        File['freeipa_27e9181bdc.patch'],
+        Package['ipa-server-dns'],
+      ],
+      refreshonly => true,
+      before      => Exec['ipa-install'],
+      returns     => [0, 1],
+    }
   }
 
   $int_domain_name = "int.${domain_name}"
