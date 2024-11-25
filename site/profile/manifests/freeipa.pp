@@ -87,6 +87,10 @@ class profile::freeipa::client (String $server_ip) {
   Selinux::Boolean <| |> -> Wait_for['ipa_https']
   Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
 
+  if length($fqdn) > 63 {
+    fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
+  }
+
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
     unless  => "/usr/bin/test `hostname` = ${fqdn}",
