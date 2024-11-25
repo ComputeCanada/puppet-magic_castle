@@ -273,21 +273,20 @@ profile::users::local::users:
     authenticationmethods: 'publickey'
 
 
-profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::freeipa::base::ipa_domain: "int.%{lookup('terraform.data.domain_name')}"
 
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 
-profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
-profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
+profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
 profile::volumes::devices: "%{alias('terraform.self.volumes')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:
-  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
 

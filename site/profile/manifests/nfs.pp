@@ -1,4 +1,4 @@
-class profile::nfs {
+class profile::nfs (String $domain) {
   $server_ip = lookup('profile::nfs::client::server_ip')
   $ipaddress = lookup('terraform.self.local_ip')
 
@@ -11,9 +11,7 @@ class profile::nfs {
 
 class profile::nfs::client (
   String $server_ip,
-  String $domain_name,
 ) {
-  $nfs_domain  = "int.${domain_name}"
 
   class { 'nfs':
     client_enabled      => true,
@@ -21,6 +19,7 @@ class profile::nfs::client (
     nfs_v4_idmap_domain => $nfs_domain,
   }
 
+  $nfs_domain = lookup('profile::nfs::domain')
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
@@ -47,12 +46,11 @@ class profile::nfs::client (
 }
 
 class profile::nfs::server (
-  String $domain_name,
   Array[String] $no_root_squash_tags = ['mgmt']
 ) {
   include profile::volumes
-  $nfs_domain  = "int.${domain_name}"
 
+  $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
     server_enabled             => true,
     nfs_v4                     => true,

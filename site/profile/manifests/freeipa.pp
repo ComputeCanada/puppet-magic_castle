@@ -9,7 +9,7 @@ class profile::freeipa {
   }
 }
 
-class profile::freeipa::base (String $domain_name) {
+class profile::freeipa::base (String $ipa_domain) {
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',
@@ -47,18 +47,17 @@ class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
   include profile::sssd::client
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
-  $realm = upcase($int_domain_name)
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
       {
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
         'nameservers'     => union([$server_ip], $facts['nameservers']),
       }
     ),
@@ -69,22 +68,11 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
-  $ipa_records = [
-    "_kerberos-master._tcp.${int_domain_name} SRV",
-    "_kerberos-master._udp.${int_domain_name} SRV",
-    "_kerberos._tcp.${int_domain_name} SRV",
-    "_kerberos._udp.${int_domain_name} SRV",
-    "_kpasswd._tcp.${int_domain_name} SRV",
-    "_kpasswd._udp.${int_domain_name} SRV",
-    "_ldap._tcp.${int_domain_name} SRV",
-    "ipa-ca.${int_domain_name} A",
-  ]
-
-  wait_for { 'ipa_records':
-    query             => sprintf('dig +short %s | wc -l', join($ipa_records, ' ')),
-    regex             => String(length($ipa_records)),
-    polling_frequency => 10,
-    max_retries       => 60,
+  wait_for { 'ipa_https':
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
+    exit_code         => 0,
+    polling_frequency => 5,
+    max_retries       => 120,
     refreshonly       => true,
     subscribe         => [
       Package['ipa-client'],
@@ -92,24 +80,12 @@ class profile::freeipa::client (String $server_ip) {
       Exec['ipa-client-uninstall_bad-server'],
     ],
   }
-  # Make sure heavy lifting operations are done before waiting on mgmt1
-  Package <| |> -> Wait_for['ipa_records']
-  Selinux::Module <| |> -> Wait_for['ipa_records']
-  Selinux::Boolean <| |> -> Wait_for['ipa_records']
-  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_records']
 
-  # Check if the FreeIPA HTTPD service is consistently available
-  # over a period of 2sec * 15 times = 30 seconds. If a single
-  # test of availability fails, we wait for 5 seconds, then try
-  # again.
-  wait_for { 'ipa-ca_https':
-    query             => "for i in {1..15}; do curl --insecure -L --silent --output /dev/null https://ipa-ca.${int_domain_name}/ && sleep 2 || exit 1; done",
-    exit_code         => 0,
-    polling_frequency => 5,
-    max_retries       => 60,
-    refreshonly       => true,
-    subscribe         => Wait_for['ipa_records'],
-  }
+  # Make sure heavy lifting operations are done before waiting on mgmt1
+  Package <| |> -> Wait_for['ipa_https']
+  Selinux::Module <| |> -> Wait_for['ipa_https']
+  Selinux::Boolean <| |> -> Wait_for['ipa_https']
+  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
 
   exec { 'set_hostname':
     command => "/bin/hostnamectl set-hostname ${fqdn}",
@@ -123,7 +99,7 @@ class profile::freeipa::client (String $server_ip) {
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
     /sbin/mc-ipa-client-install \
-    --domain ${int_domain_name} \
+    --domain ${ipa_domain} \
     --hostname ${fqdn} \
     --ip-address ${ipaddress} \
     --ssh-trust-dns \
@@ -141,7 +117,7 @@ class profile::freeipa::client (String $server_ip) {
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa-ca_https'],
+      Wait_for['ipa_https'],
       Augeas['sssd.conf'],
     ],
     creates   => '/etc/ipa/default.conf',
@@ -200,7 +176,7 @@ class profile::freeipa::client (String $server_ip) {
     lens    => 'sssd.lns',
     incl    => '/etc/sssd/sssd.conf',
     changes => [
-      "set target[ . = 'domain/${int_domain_name}']/selinux_provider none",
+      "set target[ . = 'domain/${ipa_domain}']/selinux_provider none",
     ],
     require => Exec['ipa-install'],
     notify  => Service['sssd'],
@@ -222,36 +198,38 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   package { 'ipa-server-dns':
     ensure => 'installed',
   }
 
-  # Fix FreeIPA issue adding 2 minutes of wait time for nothing
-  # https://pagure.io/freeipa/issue/9358
-  # TODO: remove this patch once FreeIPA is released with the patch
-  ensure_packages(['patch'], { ensure => 'present' })
-  $python_version = lookup('os::redhat::python3::version')
-  file { 'freeipa_27e9181bdc.patch':
-    path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
-    source => 'puppet:///modules/profile/freeipa/27e9181bdc684915a7f9f15631f4c3dd6ac5f884.patch',
-  }
-  exec { 'patch -p1 -r - --forward --quiet < freeipa_27e9181bdc.patch':
-    cwd         => "/usr/lib/python${python_version}/site-packages",
-    path        => ['/usr/bin', '/bin'],
-    subscribe   => [
-      File['freeipa_27e9181bdc.patch'],
-      Package['ipa-server-dns'],
-    ],
-    refreshonly => true,
-    before      => Exec['ipa-install'],
-    returns     => [0, 1],
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # Fix FreeIPA issue adding 2 minutes of wait time for nothing
+    # https://pagure.io/freeipa/issue/9358
+    # TODO: remove this patch once FreeIPA >= 4.10 is made available
+    # in RHEL 8.
+    ensure_packages(['patch'], { ensure => 'present' })
+    $python_version = lookup('os::redhat::python3::version')
+    file { 'freeipa_27e9181bdc.patch':
+      path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
+      source => 'puppet:///modules/profile/freeipa/27e9181bdc684915a7f9f15631f4c3dd6ac5f884.patch',
+    }
+    exec { 'patch -p1 -r - --forward --quiet < freeipa_27e9181bdc.patch':
+      cwd         => "/usr/lib/python${python_version}/site-packages",
+      path        => ['/usr/bin', '/bin'],
+      subscribe   => [
+        File['freeipa_27e9181bdc.patch'],
+        Package['ipa-server-dns'],
+      ],
+      refreshonly => true,
+      before      => Exec['ipa-install'],
+      returns     => [0, 1],
+    }
   }
 
-  $int_domain_name = "int.${domain_name}"
-  $realm = upcase($int_domain_name)
-  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
+  $realm = upcase($ipa_domain)
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $reverse_zone = profile::getreversezone()
   $ipaddress = lookup('terraform.self.local_ip')
 
@@ -274,7 +252,7 @@ class profile::freeipa::server (
     --allow-zone-overlap \
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
-    --domain=${int_domain_name} \
+    --domain=${ipa_domain} \
     --no_hbac_allow
     | IPASERVERINSTALL
 
@@ -293,7 +271,7 @@ class profile::freeipa::server (
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
       {
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
         'nameservers'     => ['127.0.0.1'],
       }
     ),
@@ -304,38 +282,41 @@ class profile::freeipa::server (
   file_line { 'ipa_server_fileline':
     ensure  => present,
     path    => '/etc/ipa/default.conf',
-    after   => "domain = ${int_domain_name}",
+    after   => "domain = ${ipa_domain}",
     line    => "server = ${fqdn}",
     require => Exec['ipa-install'],
   }
 
-  exec { 'ipa_config-mod_auth-otp':
-    command     => 'kinit_wrapper ipa config-mod --user-auth-type=otp',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
+  $ipa_server_base_config = @("EOF")
+    api.Command.batch(
+      { 'method': 'config_mod', 'params': [[], {'ipauserauthtype': 'otp'}]},
+      { 'method': 'config_mod', 'params': [[], {'ipadefaultloginshell': '/bin/bash'}]},
+      { 'method': 'pwpolicy_add', 'params': [['admins'], {'krbminpwdlife': 0, 'krbmaxpwdlife': 0, 'cospriority': 1}]},
+      { 'method': 'dnsrecord_add', 'params': [['${ipa_domain}', 'ipa'], {'cnamerecord': '${facts['networking']['hostname']}'}]},
+      { 'method': 'host_add', 'params': [['ipa.${ipa_domain}'], {'force': True}]},
+      { 'method': 'service_add_principal', 'params': [['HTTP/${fqdn}', 'HTTP/ipa.${ipa_domain}'], {}]},
+      { 'method': 'service_add_principal', 'params': [['ldap/${fqdn}', 'ldap/ipa.${ipa_domain}'], {}]},
+    )
+    |EOF
+
+  file { '/etc/ipa/ipa_server_base_config.py':
+    content => $ipa_server_base_config,
+    require => Exec['ipa-install'],
   }
 
-  exec { 'ipa_config-mod_shell':
-    command     => 'kinit_wrapper ipa config-mod --defaultshell=/bin/bash',
+  exec { 'ipa_server_base_config':
+    command     => 'kinit_wrapper ipa console /etc/ipa/ipa_server_base_config.py',
     refreshonly => true,
-    require     => [File['kinit_wrapper'],],
+    require     => [
+      File['/etc/ipa/ipa_server_base_config.py'],
+      Exec['ipa-install'],
+    ],
+    subscribe   => File['/etc/ipa/ipa_server_base_config.py'],
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
   }
 
   # Configure the password of the admin accounts to never expire
-  exec { 'ipa_admin_passwd_exp':
-    command     => 'kinit_wrapper ipa pwpolicy-add --minlife=0 --maxlife=0 --priority=1 admins',
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
   ~> exec { 'ipa_admin_passwd_reset':
     command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
     refreshonly => true,
@@ -343,60 +324,15 @@ class profile::freeipa::server (
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
-  exec { 'ipa_add_record_CNAME':
-    command     => "kinit_wrapper ipa dnsrecord-add ${int_domain_name} ipa --cname-rec ${facts['networking']['hostname']}",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_host_ipa':
-    command     => "kinit_wrapper ipa host-add ipa.${int_domain_name} --force",
-    refreshonly => true,
-    require     => [File['kinit_wrapper'],],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_service_principal_http':
-    command     => "kinit_wrapper ipa service-add-principal HTTP/${fqdn} HTTP/ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_record_CNAME'],
-      Exec['ipa_add_host_ipa'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
-  exec { 'ipa_add_service_principal_ldap':
-    command     => "kinit_wrapper ipa service-add-principal ldap/${fqdn} ldap/ipa.${int_domain_name}",
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa_add_record_CNAME'],
-      Exec['ipa_add_host_ipa'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa-install'],
-  }
-
   $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
   exec { 'ipa_regen_cert':
-    command   => "${regen_cert_cmd} -D ipa.${int_domain_name}",
+    command   => "${regen_cert_cmd} -D ipa.${ipa_domain}",
     path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
     try_sleep => 10,
     require   => [
-      Exec['ipa_add_service_principal_http'],
-      Exec['ipa_add_service_principal_ldap'],
+      Exec['ipa_server_base_config'],
       Exec['ipa-install'],
     ],
   }
@@ -404,21 +340,21 @@ class profile::freeipa::server (
   $instances = lookup('terraform.instances')
   $tags = unique(flatten($instances.map |$key, $values| { $values['tags'] }))
   $prefixes_tags = Hash(unique($instances.map |$key, $values| { [$values['prefix'], $values['tags']] }))
-  file { '/etc/ipa/hbac_rules.sh':
+  file { '/etc/ipa/hbac_rules.py':
     mode    => '0700',
     content => epp(
-      'profile/freeipa/hbac_rules.sh',
+      'profile/freeipa/hbac_rules.py',
       {
         'tags'          => $tags,
         'prefixes_tags' => $prefixes_tags,
-        'domain_name'   => $domain_name,
+        'domain_name'   => $ipa_domain,
         'hbac_services' => $hbac_services,
       }
     ),
   }
 
   exec { 'hbac_rules':
-    command     => 'kinit_wrapper /etc/ipa/hbac_rules.sh',
+    command     => 'kinit_wrapper ipa console /etc/ipa/hbac_rules.py',
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
@@ -426,7 +362,7 @@ class profile::freeipa::server (
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
-      File['/etc/ipa/hbac_rules.sh'],
+      File['/etc/ipa/hbac_rules.py'],
       Exec['ipa-install'],
     ],
   }
@@ -440,6 +376,7 @@ class profile::freeipa::server (
   service { 'httpd':
     ensure  => running,
     enable  => true,
+    restart => '/usr/bin/systemctl reload httpd',
     require => Exec['ipa-install'],
   }
 
@@ -448,8 +385,8 @@ class profile::freeipa::server (
       'profile/freeipa/ipa-rewrite.conf',
       {
         'referee'     => $fqdn,
-        'referer'     => "ipa.${domain_name}",
-        'referer_int' => "ipa.${int_domain_name}",
+        'referer'     => "ipa.${ipa_domain}",
+        'referer_int' => "ipa.${ipa_domain}",
       }
     ),
     notify  => Service['httpd'],
@@ -463,7 +400,7 @@ class profile::freeipa::server (
   # This is needed because the password is generated by
   # the puppet server during the bootstrap phase and it can
   # change if the puppet server is reinstalled.
-  $ds_domain = upcase(regsubst($int_domain_name, '\.', '-', 'G'))
+  $ds_domain = upcase(regsubst($ipa_domain, '\.', '-', 'G'))
   $ds_file = "/etc/dirsrv/slapd-${ds_domain}/dse.ldif"
   $reset_ds_password_cmd = @("EOT")
     dsctl ${ds_domain} stop && \
@@ -481,7 +418,7 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reset_admin_password_cmd = @("EOT")
     ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
       -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
@@ -526,8 +463,7 @@ class profile::freeipa::mokey (
   }
 
   $ipa_passwd = lookup('profile::freeipa::server::admin_password')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   mysql::db { 'mokey':
     ensure   => present,
@@ -547,54 +483,34 @@ class profile::freeipa::mokey (
     subscribe   => Mysql::Db['mokey'],
   }
 
-  exec { 'ipa_mokey_role_add':
-    command     => 'kinit_wrapper ipa role-add "Mokey User Manager" --desc="Mokey User management"',
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [
-      Exec['ipa-install'],
+  $service_name = "mokey/${fqdn}"
+  $service_register_script = @("EOF")
+    api.Command.batch(
+      { 'method': 'service_add',           'params': [['${service_name}'], {}]},
+      { 'method': 'service_add_principal', 'params': [['${service_name}', 'mokey/mokey'], {}]},
+      { 'method': 'role_add',              'params': [['MokeyApp'], {'description' : 'Mokey User management'}]},
+      { 'method': 'role_add_privilege',    'params': [['MokeyApp'], {'privilege'   : 'User Administrators'}]},
+      { 'method': 'role_add_member',       'params': [['MokeyApp'], {'service'     : '${service_name}'}]},
+    )
+    |EOF
+
+  file { '/etc/mokey/mokey_ipa_service_register.py':
+    content => $service_register_script,
+    require => [
       Package['mokey'],
     ],
   }
 
-  exec { 'ipa_mokey_role_add_privilege':
-    command     => 'kinit_wrapper ipa role-add-privilege "Mokey User Manager" --privilege="User Administrators"',
+  exec { 'mokey_ipa_service_register':
+    command     => 'kinit_wrapper ipa console /etc/mokey/mokey_ipa_service_register.py',
     refreshonly => true,
     require     => [
       File['kinit_wrapper'],
+      Exec['ipa-install'],
     ],
+    subscribe   => File['/etc/mokey/mokey_ipa_service_register.py'],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa_mokey_role_add'],
-  }
-
-  exec { 'ipa_mokey_user_add':
-    command     => 'kinit_wrapper ipa user-add mokeyapp --first Mokey --last App',
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Exec['ipa_mokey_role_add'],
-  }
-
-  exec { 'ipa_mokey_role_add_member':
-    command     => 'kinit_wrapper ipa role-add-member "Mokey User Manager" --users=mokeyapp',
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [
-      Exec['ipa_mokey_role_add'],
-      Exec['ipa_mokey_user_add'],
-    ],
   }
 
   file { '/etc/mokey/keytab':
@@ -605,9 +521,8 @@ class profile::freeipa::mokey (
     require => Package['mokey'],
   }
 
-  # TODO: Fix server hostname to ipa.${int_domain_name}
   exec { 'ipa_getkeytab_mokeyapp':
-    command     => 'kinit_wrapper ipa-getkeytab -s $(grep -m1 -oP \'(host|server) = \K.+\' /etc/ipa/default.conf) -p mokeyapp -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
+    command     => 'kinit_wrapper ipa-getkeytab -p mokey/mokey -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
     creates     => '/etc/mokey/keytab/mokeyapp.keytab',
     require     => [
       File['kinit_wrapper'],
@@ -616,8 +531,7 @@ class profile::freeipa::mokey (
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
-      Exec['ipa_mokey_role_add'],
-      Exec['ipa_mokey_user_add'],
+      Exec['mokey_ipa_service_register'],
     ],
   }
 
@@ -626,8 +540,7 @@ class profile::freeipa::mokey (
     mode    => '0640',
     require => [
       Package['mokey'],
-      Exec['ipa_mokey_user_add'],
-      Exec['ipa_getkeytab_mokeyapp'],
+      Exec['mokey_ipa_service_register'],
     ],
   }
 
@@ -648,8 +561,8 @@ class profile::freeipa::mokey (
         'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${domain_name}/",
-        'email_from'           => "admin@${domain_name}",
+        'email_link_base'      => "https://${lookup('terraform.data.domain_name')}/",
+        'email_from'           => "admin@${lookup('terraform.data.domain_name')}",
       }
     ),
   }
@@ -700,7 +613,7 @@ class profile::freeipa::mokey (
   # We had to come up with this automember rule because Mokey does not provide the ability
   # to assign a group to users who self-signup.
   exec { 'ipa_self-signup_automember-rule':
-    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${int_domain_name}$\'",
+    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
     refreshonly => true,
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     require     => [File['kinit_wrapper'],],

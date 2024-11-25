@@ -133,8 +133,7 @@ class profile::base::azure {
 
 # build /etc/hosts
 class profile::base::etc_hosts {
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $instances = lookup('terraform.instances')
 
   # build /etc/hosts
@@ -145,7 +144,7 @@ class profile::base::etc_hosts {
     content => epp('profile/base/hosts',
       {
         'instances'       => $instances,
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
       }
     ),
   }

@@ -94,10 +94,9 @@ define profile::users::ldap_user (
 
     if $manage_password and $passwd {
       $ds_password = lookup('profile::freeipa::server::ds_password')
-      $domain_name = lookup('profile::freeipa::base::domain_name')
-      $int_domain_name = "int.${domain_name}"
-      $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
-      $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+      $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+      $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+      $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
 
       $ldad_passwd_cmd = @("EOT")
         ldappasswd -ZZ -H ldap://${fqdn} \
