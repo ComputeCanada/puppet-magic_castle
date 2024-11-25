@@ -842,7 +842,7 @@ internal services to the Internet.
 ```yaml
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:
-  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
 profile::reverse_proxy::main2sub_redir: "jupyter"

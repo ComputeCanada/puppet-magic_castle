@@ -43,9 +43,8 @@ class profile::jupyterhub::node {
 }
 
 class profile::jupyterhub::hub::keytab {
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
-  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "jupyterhub/${fqdn}"
   $service_register_script = @("EOF")
     api.Command.batch(

@@ -17,7 +17,7 @@ api.Command.batch(
 <% }} -%>
 <% $prefixes_tags.each |$prefix, $tags| { -%>
 <% $tags.each |$tag| { -%>
-  { 'method': 'automember_add_condition', 'params': [['<%= $tag %>'], {'type': 'hostgroup', 'key': 'fqdn', 'automemberinclusiveregex': "^<%= $prefix %>\d+.int.<%= $domain_name %>$"}] },
+  { 'method': 'automember_add_condition', 'params': [['<%= $tag %>'], {'type': 'hostgroup', 'key': 'fqdn', 'automemberinclusiveregex': "^<%= $prefix %>\d+.<%= $ipa_domain %>$"}] },
 <% }} -%>
   { 'method': 'automember_rebuild', 'params': [[], {'type': 'hostgroup'}] },
 )

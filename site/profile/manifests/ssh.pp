@@ -65,8 +65,7 @@ class profile::ssh::base {
 # for host based authentication
 class profile::ssh::known_hosts {
   $instances = lookup('terraform.instances')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   file { '/etc/ssh/ssh_known_hosts':
     content => '# This file is managed by Puppet',
@@ -84,7 +83,7 @@ class profile::ssh::known_hosts {
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],],
+          'host_aliases' => ["${k}.${ipa_domain}", $v['local_ip'],],
           'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]
@@ -100,9 +99,9 @@ class profile::ssh::hostbased_auth::server (
   include profile::ssh::known_hosts
 
   $instances = lookup('terraform.instances')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $hosts = $instances.filter |$k, $v| { ! intersection($v['tags'], $shosts_tags).empty }
-  $shosts = join($hosts.map |$k, $v| { "${k}.int.${domain_name}" }, "\n")
+  $shosts = join($hosts.map |$k, $v| { "${k}.${ipa_domain}" }, "\n")
 
   file { '/etc/ssh/shosts.equiv':
     content => $shosts,

@@ -9,7 +9,7 @@ class profile::freeipa {
   }
 }
 
-class profile::freeipa::base (String $domain_name) {
+class profile::freeipa::base (String $ipa_domain) {
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',
@@ -47,18 +47,17 @@ class profile::freeipa::client (String $server_ip) {
   include profile::freeipa::base
   include profile::sssd::client
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
-  $realm = upcase($int_domain_name)
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
       {
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
         'nameservers'     => union([$server_ip], $facts['nameservers']),
       }
     ),
@@ -70,7 +69,7 @@ class profile::freeipa::client (String $server_ip) {
   }
 
   wait_for { 'ipa_https':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${int_domain_name}",
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
     polling_frequency => 5,
     max_retries       => 120,
@@ -100,7 +99,7 @@ class profile::freeipa::client (String $server_ip) {
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
     /sbin/mc-ipa-client-install \
-    --domain ${int_domain_name} \
+    --domain ${ipa_domain} \
     --hostname ${fqdn} \
     --ip-address ${ipaddress} \
     --ssh-trust-dns \
@@ -177,7 +176,7 @@ class profile::freeipa::client (String $server_ip) {
     lens    => 'sssd.lns',
     incl    => '/etc/sssd/sssd.conf',
     changes => [
-      "set target[ . = 'domain/${int_domain_name}']/selinux_provider none",
+      "set target[ . = 'domain/${ipa_domain}']/selinux_provider none",
     ],
     require => Exec['ipa-install'],
     notify  => Service['sssd'],
@@ -199,7 +198,7 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   package { 'ipa-server-dns':
     ensure => 'installed',
@@ -229,9 +228,8 @@ class profile::freeipa::server (
     }
   }
 
-  $int_domain_name = "int.${domain_name}"
-  $realm = upcase($int_domain_name)
-  $fqdn = "${facts['networking']['hostname']}.${int_domain_name}"
+  $realm = upcase($ipa_domain)
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $reverse_zone = profile::getreversezone()
   $ipaddress = lookup('terraform.self.local_ip')
 
@@ -254,7 +252,7 @@ class profile::freeipa::server (
     --allow-zone-overlap \
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
-    --domain=${int_domain_name} \
+    --domain=${ipa_domain} \
     --no_hbac_allow
     | IPASERVERINSTALL
 
@@ -273,7 +271,7 @@ class profile::freeipa::server (
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
       {
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
         'nameservers'     => ['127.0.0.1'],
       }
     ),
@@ -284,7 +282,7 @@ class profile::freeipa::server (
   file_line { 'ipa_server_fileline':
     ensure  => present,
     path    => '/etc/ipa/default.conf',
-    after   => "domain = ${int_domain_name}",
+    after   => "domain = ${ipa_domain}",
     line    => "server = ${fqdn}",
     require => Exec['ipa-install'],
   }
@@ -294,10 +292,10 @@ class profile::freeipa::server (
       { 'method': 'config_mod', 'params': [[], {'ipauserauthtype': 'otp'}]},
       { 'method': 'config_mod', 'params': [[], {'ipadefaultloginshell': '/bin/bash'}]},
       { 'method': 'pwpolicy_add', 'params': [['admins'], {'krbminpwdlife': 0, 'krbmaxpwdlife': 0, 'cospriority': 1}]},
-      { 'method': 'dnsrecord_add', 'params': [['${int_domain_name}', 'ipa'], {'cnamerecord': '${facts['networking']['hostname']}'}]},
-      { 'method': 'host_add', 'params': [['ipa.${int_domain_name}'], {'force': True}]},
-      { 'method': 'service_add_principal', 'params': [['HTTP/${fqdn}', 'HTTP/ipa.${int_domain_name}'], {}]},
-      { 'method': 'service_add_principal', 'params': [['ldap/${fqdn}', 'ldap/ipa.${int_domain_name}'], {}]},
+      { 'method': 'dnsrecord_add', 'params': [['${ipa_domain}', 'ipa'], {'cnamerecord': '${facts['networking']['hostname']}'}]},
+      { 'method': 'host_add', 'params': [['ipa.${ipa_domain}'], {'force': True}]},
+      { 'method': 'service_add_principal', 'params': [['HTTP/${fqdn}', 'HTTP/ipa.${ipa_domain}'], {}]},
+      { 'method': 'service_add_principal', 'params': [['ldap/${fqdn}', 'ldap/ipa.${ipa_domain}'], {}]},
     )
     |EOF
 
@@ -328,7 +326,7 @@ class profile::freeipa::server (
 
   $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
   exec { 'ipa_regen_cert':
-    command   => "${regen_cert_cmd} -D ipa.${int_domain_name}",
+    command   => "${regen_cert_cmd} -D ipa.${ipa_domain}",
     path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
@@ -349,7 +347,7 @@ class profile::freeipa::server (
       {
         'tags'          => $tags,
         'prefixes_tags' => $prefixes_tags,
-        'domain_name'   => $domain_name,
+        'domain_name'   => $ipa_domain,
         'hbac_services' => $hbac_services,
       }
     ),
@@ -387,8 +385,8 @@ class profile::freeipa::server (
       'profile/freeipa/ipa-rewrite.conf',
       {
         'referee'     => $fqdn,
-        'referer'     => "ipa.${domain_name}",
-        'referer_int' => "ipa.${int_domain_name}",
+        'referer'     => "ipa.${ipa_domain}",
+        'referer_int' => "ipa.${ipa_domain}",
       }
     ),
     notify  => Service['httpd'],
@@ -402,7 +400,7 @@ class profile::freeipa::server (
   # This is needed because the password is generated by
   # the puppet server during the bootstrap phase and it can
   # change if the puppet server is reinstalled.
-  $ds_domain = upcase(regsubst($int_domain_name, '\.', '-', 'G'))
+  $ds_domain = upcase(regsubst($ipa_domain, '\.', '-', 'G'))
   $ds_file = "/etc/dirsrv/slapd-${ds_domain}/dse.ldif"
   $reset_ds_password_cmd = @("EOT")
     dsctl ${ds_domain} stop && \
@@ -420,7 +418,7 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  $ldap_dc_string = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reset_admin_password_cmd = @("EOT")
     ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
       -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
@@ -465,8 +463,7 @@ class profile::freeipa::mokey (
   }
 
   $ipa_passwd = lookup('profile::freeipa::server::admin_password')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   mysql::db { 'mokey':
     ensure   => present,
@@ -524,7 +521,6 @@ class profile::freeipa::mokey (
     require => Package['mokey'],
   }
 
-  # TODO: Fix server hostname to ipa.${int_domain_name}
   exec { 'ipa_getkeytab_mokeyapp':
     command     => 'kinit_wrapper ipa-getkeytab -p mokey/mokey -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
     creates     => '/etc/mokey/keytab/mokeyapp.keytab',
@@ -565,8 +561,8 @@ class profile::freeipa::mokey (
         'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${domain_name}/",
-        'email_from'           => "admin@${domain_name}",
+        'email_link_base'      => "https://${lookup('terraform.data.domain_name')}/",
+        'email_from'           => "admin@${lookup('terraform.data.domain_name')}",
       }
     ),
   }
@@ -617,7 +613,7 @@ class profile::freeipa::mokey (
   # We had to come up with this automember rule because Mokey does not provide the ability
   # to assign a group to users who self-signup.
   exec { 'ipa_self-signup_automember-rule':
-    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${int_domain_name}$\'",
+    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
     refreshonly => true,
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
     require     => [File['kinit_wrapper'],],
