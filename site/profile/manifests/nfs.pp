@@ -12,14 +12,13 @@ class profile::nfs (String $domain) {
 class profile::nfs::client (
   String $server_ip,
 ) {
-
+  $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
     client_enabled      => true,
     nfs_v4_client       => true,
     nfs_v4_idmap_domain => $nfs_domain,
   }
 
-  $nfs_domain = lookup('profile::nfs::domain')
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
