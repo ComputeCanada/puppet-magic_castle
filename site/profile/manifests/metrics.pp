@@ -5,6 +5,7 @@
 class profile::metrics::node_exporter {
   include profile::consul
   include prometheus::node_exporter
+  include nftables::rules::node_exporter
   consul::service { 'node-exporter':
     port  => 9100,
     tags  => ['node-exporter'],

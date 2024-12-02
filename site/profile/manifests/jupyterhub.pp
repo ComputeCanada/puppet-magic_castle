@@ -16,6 +16,9 @@ class profile::jupyterhub::hub (
   }
   include profile::slurm::submitter
 
+  nftables::rule { 'default_in-jupyterhub_tcp':
+    content => 'tcp dport 8081 accept comment "Accept jupyterhub"',
+  }
   consul::service { 'jupyterhub':
     port  => 8081,
     tags  => ['jupyterhub'],
@@ -39,6 +42,9 @@ class profile::jupyterhub::node {
     if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
       Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
     }
+  }
+  nftables::rule { 'default_in-jupyter_server':
+    content => "tcp dport 32768-60999 accept comment \"Accept jupyter_server\"",
   }
 }
 

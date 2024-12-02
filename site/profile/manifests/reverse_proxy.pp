@@ -4,6 +4,8 @@ class profile::reverse_proxy (
   Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
 ) {
+  include profile::firewall
+
   selinux::boolean { 'httpd_can_network_connect': }
 
   selinux::module { 'caddy':
@@ -11,13 +13,7 @@ class profile::reverse_proxy (
     source_pp => 'puppet:///modules/profile/reverse_proxy/caddy.pp',
   }
 
-  firewall { '200 httpd public':
-    chain  => 'INPUT',
-    dport  => [80, 443],
-    proto  => 'tcp',
-    source => '0.0.0.0/0',
-    action => 'accept',
-  }
+  include nftables::rules::https
 
   yumrepo { 'caddy-copr-repo':
     enabled             => true,
