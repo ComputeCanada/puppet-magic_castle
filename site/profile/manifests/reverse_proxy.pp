@@ -12,11 +12,10 @@ class profile::reverse_proxy (
   }
 
   firewall { '200 httpd public':
-    chain  => 'INPUT',
-    dport  => [80, 443],
-    proto  => 'tcp',
-    source => '0.0.0.0/0',
-    action => 'accept',
+    chain => 'INPUT',
+    dport => [80, 443],
+    proto => 'tcp',
+    jump  => 'accept',
   }
 
   yumrepo { 'caddy-copr-repo':
