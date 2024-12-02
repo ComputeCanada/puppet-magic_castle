@@ -223,6 +223,28 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
+  include nftables::rules::dns
+  include nftables::rules::http
+  include nftables::rules::https
+  include nftables::rules::ldap
+  include nftables::rules::ssdp
+
+  nftables::rule { 'default_in-kerberos_tcp':
+    content => 'tcp dport 88 accept comment "Accept kerberos"',
+  }
+  nftables::rule { 'default_in-kerberos_udp':
+    content => 'udp dport 88 accept comment "Accept kerberos"',
+  }
+  nftables::rule { 'default_in-kpasswd_tcp':
+    content => 'tcp dport 464 accept comment "Accept kpasswd"',
+  }
+  nftables::rule { 'default_in-kpasswd_udp':
+    content => 'udp dport 464 accept comment "Accept kpasswd"',
+  }
+  nftables::rule { 'default_in-kadmind':
+    content => 'tcp dport 749 accept comment "Accept kadmind"',
+  }
+
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
     source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
@@ -302,7 +324,11 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
-      File['/etc/ipa/dse-init.ldif']
+      File['/etc/ipa/dse-init.ldif'],
+      Class['nftables::rules::dns'],
+      Class['nftables::rules::https'],
+      Class['nftables::rules::ldap'],
+      Class['nftables::rules::ssdp'],
     ],
     notify  => [
       Service['systemd-logind'],
@@ -543,6 +569,10 @@ class profile::freeipa::mokey (
   Boolean $require_verify_admin,
 ) {
   include mysql::server
+
+  nftables::rule { 'default_in-mokey_tcp':
+    content => 'tcp dport 12345 accept comment "Accept mokey"',
+  }
 
   yumrepo { 'mokey-copr-repo':
     enabled             => true,

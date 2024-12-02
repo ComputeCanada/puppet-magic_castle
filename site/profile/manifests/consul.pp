@@ -17,6 +17,13 @@ class profile::consul (
     $retry_join = $servers
   }
 
+  nftables::rule { 'default_in-consul_tcp':
+    content => 'tcp dport {8300,8301,8302,8500,8501,8502,8503,8600} accept comment "Accept consul"',
+  }
+  nftables::rule { 'default_in-consul_udp':
+    content => 'udp dport {8301,8302,8600} accept comment "Accept consul"',
+  }
+
   class { 'consul':
     config_mode   => '0640',
     acl_api_token => $acl_api_token,

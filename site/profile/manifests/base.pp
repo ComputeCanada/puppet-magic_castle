@@ -58,14 +58,6 @@ class profile::base (
     ensure => 'installed',
   }
 
-  package { 'firewalld':
-    ensure => 'absent',
-  }
-
-  class { 'firewall':
-    tag => 'mc_bootstrap',
-  }
-
   # Sometimes systemd-tmpfiles-setup.service fails to create
   # /run/lock/subsys folder which is required by iptables.
   # This exec runs the command that should have created the folder
@@ -74,23 +66,6 @@ class profile::base (
     unless => 'test -d /run/lock/subsys',
     path   => ['/bin'],
     notify => [Service['iptables'], Service['ip6tables']],
-  }
-
-  firewall { '001 accept all from local network':
-    chain  => 'INPUT',
-    proto  => 'all',
-    source => profile::getcidr(),
-    action => 'accept',
-    tag    => 'mc_bootstrap',
-  }
-
-  firewall { '001 drop access to metadata server':
-    chain       => 'OUTPUT',
-    proto       => 'tcp',
-    destination => '169.254.169.254',
-    action      => 'drop',
-    uid         => '! root',
-    tag         => 'mc_bootstrap',
   }
 
   package { 'clustershell':

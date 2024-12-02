@@ -349,6 +349,10 @@ class profile::slurm::accounting(
     port => $dbd_port,
   }
 
+  nftables::rule { 'default_in-slurmdbd':
+    content => "tcp dport ${dbd_port} accept comment \"Accept slurmdbd\"",
+  }
+
   wait_for { 'slurmdbd_started':
     query             => 'cat /var/log/slurm/slurmdbd.log',
     regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+(-\d+){0,1}(rc\d+){0,1} started$',
@@ -514,6 +518,10 @@ export TFE_VAR_POOL=${tfe_var_pool}
     port => 6817,
   }
 
+  nftables::rule { 'default_in-slurmctld':
+    content => 'tcp dport 6817 accept comment "Accept slurmctld"',
+  }
+
   package { 'slurm-slurmctld':
     ensure  => 'installed',
     require => [
@@ -558,6 +566,10 @@ class profile::slurm::node (
   Array[String] $pam_access_groups = ['wheel'],
 ) {
   contain profile::slurm::base
+
+  nftables::rule { 'default_in-slurmd':
+    content => 'tcp dport 6818 accept comment "Accept slurmd"',
+  }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
@@ -801,4 +813,7 @@ class profile::slurm::node (
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
+  nftables::rule { 'default_in-slurm_srun':
+    content => "tcp dport 32768-60999 accept comment \"Accept srun\"",
+  }
 }
