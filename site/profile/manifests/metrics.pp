@@ -89,7 +89,6 @@ class profile::metrics::slurm_exporter {
     require => [
       Package['prometheus-slurm-exporter'],
       File['/etc/systemd/system/prometheus-slurm-exporter.service'],
-      Wait_for['slurmctldhost_set'],
     ],
   }
 }
