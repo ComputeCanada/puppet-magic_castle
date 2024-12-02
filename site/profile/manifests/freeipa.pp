@@ -351,7 +351,7 @@ class profile::freeipa::server (
       {
         'tags'          => $tags,
         'prefixes_tags' => $prefixes_tags,
-        'domain_name'   => $ipa_domain,
+        'ipa_domain'    => $ipa_domain,
         'hbac_services' => $hbac_services,
       }
     ),
