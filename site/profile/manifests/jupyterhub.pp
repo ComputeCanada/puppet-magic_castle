@@ -21,6 +21,10 @@ class profile::jupyterhub::hub (
     tags => ['jupyterhub'],
   }
 
+  nftables::rule { 'default_in-jupyterhub_tcp':
+    content => 'tcp dport 8081 accept comment "Accept jupyterhub"',
+  }
+
   file { "${jupyterhub::prefix}/bin/ipa_create_user.py":
     source  => 'puppet:///modules/profile/users/ipa_create_user.py',
     mode    => '0755',
@@ -38,6 +42,9 @@ class profile::jupyterhub::node {
   include jupyterhub::node
   if lookup('jupyterhub::kernel::install_method') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
     Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
+  }
+  nftables::rule { 'default_in-jupyter_server':
+    content => "tcp dport 32768-60999 accept comment \"Accept jupyter_server\"",
   }
 }
 
