@@ -487,6 +487,7 @@ class profile::freeipa::mokey (
     subscribe   => Mysql::Db['mokey'],
   }
 
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "mokey/${fqdn}"
   $service_register_script = @("EOF")
     api.Command.batch(
