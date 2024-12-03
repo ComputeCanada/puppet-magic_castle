@@ -570,6 +570,8 @@ class profile::freeipa::mokey (
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+    charset  => 'utf8mb4',
+    collate  => 'utf8mb4_unicode_ci',
   }
 
   exec { 'mysql_mokey_schema':
