@@ -306,6 +306,8 @@ class profile::slurm::accounting(
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+    charset  => 'utf8mb4',
+    collate  => 'utf8mb4_unicode_ci',
   }
 
   file { '/etc/slurm/slurmdbd.conf':
