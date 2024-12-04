@@ -44,6 +44,8 @@ class profile::jupyterhub::node {
 
 class profile::jupyterhub::hub::keytab {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $jupyterhub_prefix = lookup('jupyterhub::prefix')
+
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "jupyterhub/${fqdn}"
   $service_register_script = @("EOF")
@@ -57,14 +59,14 @@ class profile::jupyterhub::hub::keytab {
     )
     |EOF
 
-  file { "${jupyterhub::prefix}/bin/ipa_register_service.py":
+  file { "${jupyterhub_prefix}/bin/ipa_register_service.py":
     content => $service_register_script,
     require => Exec['jupyterhub_venv'],
   }
 
   $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $keytab_command = @("EOT")
-    kinit_wrapper ipa console ${jupyterhub::prefix}/bin/ipa_register_service.py && \
+    kinit_wrapper ipa console ${jupyterhub_prefix}/bin/ipa_register_service.py && \
     kinit_wrapper ipa-getkeytab -p jupyterhub/jupyterhub -k /etc/jupyterhub/jupyterhub.keytab
     |EOT
   exec { 'jupyterhub_keytab':
@@ -72,12 +74,12 @@ class profile::jupyterhub::hub::keytab {
     creates     => '/etc/jupyterhub/jupyterhub.keytab',
     require     => [
       File['/etc/jupyterhub'],
-      File["${jupyterhub::prefix}/bin/kinit_wrapper"],
+      File["${jupyterhub_prefix}/bin/kinit_wrapper"],
       Exec['ipa-install'],
     ],
-    subscribe   => File["${jupyterhub::prefix}/bin/ipa_register_service.py"],
+    subscribe   => File["${jupyterhub_prefix}/bin/ipa_register_service.py"],
     environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub::prefix}/bin"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub_prefix}/bin"],
   }
 
   file { '/etc/jupyterhub/jupyterhub.keytab':
