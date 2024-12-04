@@ -44,7 +44,7 @@ class profile::jupyterhub::node {
 
 class profile::jupyterhub::hub::keytab {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $jupyterhub_prefix = lookup('jupyterhub::prefix')
+  $jupyterhub_prefix = lookup('jupyterhub::prefix', undef, undef, '/opt/jupyterhub')
 
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "jupyterhub/${fqdn}"
