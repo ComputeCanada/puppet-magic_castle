@@ -269,7 +269,7 @@ class profile::freeipa::server (
       Package['ipa-server-dns'],
       File['/etc/hosts'],
     ],
-    notify    => [
+    notify  => [
       Service['systemd-logind'],
       Service['sssd'],
     ],
