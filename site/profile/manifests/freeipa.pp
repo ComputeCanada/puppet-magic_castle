@@ -195,6 +195,7 @@ class profile::freeipa::server (
 ) {
   include profile::base::etc_hosts
   include profile::freeipa::base
+  include profile::sssd::client
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
@@ -268,7 +269,10 @@ class profile::freeipa::server (
       Package['ipa-server-dns'],
       File['/etc/hosts'],
     ],
-    notify  => Service['systemd-logind'],
+    notify    => [
+      Service['systemd-logind'],
+      Service['sssd'],
+    ],
   }
 
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
