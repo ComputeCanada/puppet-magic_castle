@@ -24,6 +24,12 @@ class profile::firewall::pre {
     state => ['RELATED', 'ESTABLISHED'],
     jump  => 'accept',
   }
+  -> firewall { '004 accept sshd':
+    chain => 'INPUT',
+    dport => 22,
+    proto => 'tcp',
+    jump  => 'accept',
+  }
 }
 
 class profile::firewall {
@@ -36,6 +42,10 @@ class profile::firewall {
 
   class { 'firewall': }
   -> class {['profile::firewall::pre', 'profile::firewall::post']: }
+
+  resources { 'firewall':
+    purge => true,
+  }
 
   firewall { '004 accept all from local network':
     chain  => 'INPUT',
