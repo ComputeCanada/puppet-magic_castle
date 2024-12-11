@@ -41,11 +41,11 @@ class profile::firewall {
     before  => Class['profile::firewall::post'],
     require => Class['profile::firewall::pre'],
   }
-
+  Package <| tag == firewall |> -> Firewall <||>
   resources { 'firewall':
     purge => true,
   }
-  -> class {['profile::firewall::pre', 'profile::firewall::post']: }
+  class {['profile::firewall::pre', 'profile::firewall::post']: }
 
   firewall { '004 accept all from local network':
     chain  => 'INPUT',
