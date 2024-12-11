@@ -4,6 +4,8 @@ class profile::reverse_proxy (
   Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
 ) {
+  include profile::firewall
+
   selinux::boolean { 'httpd_can_network_connect': }
 
   selinux::module { 'caddy':
