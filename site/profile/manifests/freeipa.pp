@@ -214,7 +214,7 @@ class profile::freeipa::server (
     # https://pagure.io/freeipa/issue/9358
     # TODO: remove this patch once FreeIPA >= 4.10 is made available
     # in RHEL 8.
-    ensure_packages(['patch'], { ensure => 'present' })
+    stdlib::ensure_packages(['patch'], { ensure => 'present' })
     $python_version = lookup('os::redhat::python3::version')
     file { 'freeipa_27e9181bdc.patch':
       path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
