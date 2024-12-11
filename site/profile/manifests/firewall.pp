@@ -30,8 +30,8 @@ class profile::firewall {
   tag 'mc_bootstrap'
 
   Firewall {
-    before  => Class['profile::firewall::::post'],
-    require => Class['profile::firewall::::pre'],
+    before  => Class['profile::firewall::post'],
+    require => Class['profile::firewall::pre'],
   }
 
   class { 'firewall': }
