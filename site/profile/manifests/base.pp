@@ -60,31 +60,6 @@ class profile::base (
     ensure => 'absent',
   }
 
-  class { 'firewall':
-    tag => 'mc_bootstrap',
-  }
-
-  Firewall {
-    require => Class['firewall'],
-  }
-
-  firewall { '001 accept all from local network':
-    chain  => 'INPUT',
-    proto  => 'all',
-    source => profile::getcidr(),
-    jump   => 'accept',
-    tag    => 'mc_bootstrap',
-  }
-
-  firewall { '001 drop access to metadata server':
-    chain       => 'OUTPUT',
-    proto       => 'tcp',
-    destination => '169.254.169.254',
-    jump        => 'drop',
-    uid         => '! root',
-    tag         => 'mc_bootstrap',
-  }
-
   package { 'haveged':
     ensure  => 'installed',
     require => Yumrepo['epel'],
