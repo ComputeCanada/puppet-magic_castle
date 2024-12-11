@@ -34,8 +34,8 @@ class profile::firewall {
     require => Class['profile::firewall::pre'],
   }
 
-  class {['profile::firewall::pre', 'profile::firewall::post']: }
   class { 'firewall': }
+  -> class {['profile::firewall::pre', 'profile::firewall::post']: }
 
   firewall { '004 accept all from local network':
     chain  => 'INPUT',
