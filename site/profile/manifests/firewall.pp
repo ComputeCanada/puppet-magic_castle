@@ -35,14 +35,14 @@ class profile::firewall::pre {
 
 class profile::firewall {
   tag 'mc_bootstrap'
+  require firewall
 
   Firewall {
     before  => Class['profile::firewall::post'],
     require => Class['profile::firewall::pre'],
   }
 
-  class { 'firewall': }
-  -> resources { 'firewall':
+  resources { 'firewall':
     purge => true,
   }
   -> class {['profile::firewall::pre', 'profile::firewall::post']: }
