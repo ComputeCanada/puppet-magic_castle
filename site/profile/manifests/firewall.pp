@@ -1,4 +1,5 @@
 class profile::firewall::pre {
+  tag 'mc_bootstrap'
   Firewall {
     require => undef,
   }
@@ -63,6 +64,7 @@ class profile::firewall {
 }
 
 class profile::firewall::post {
+  tag 'mc_bootstrap'
   firewall { '999 drop all':
     proto  => 'all',
     jump   => 'drop',
