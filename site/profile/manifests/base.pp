@@ -64,6 +64,10 @@ class profile::base (
     tag => 'mc_bootstrap',
   }
 
+  Firewall {
+    require => Class['firewall'],
+  }
+
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
