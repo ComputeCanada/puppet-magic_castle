@@ -204,7 +204,7 @@ class profile::slurm::base (
   # slurm-contribs command "seff" requires Sys/hostname.pm
   # which is not packaged by default with perl in RHEL >= 9.
   if versioncmp($facts['os']['release']['major'], '9') >= 0 {
-    ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
+    stdlib::ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
   }
 
   package { 'slurm-libpmi':

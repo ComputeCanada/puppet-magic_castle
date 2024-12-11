@@ -246,7 +246,7 @@ class profile::freeipa::server (
     # https://pagure.io/freeipa/issue/9358
     # TODO: remove this patch once FreeIPA >= 4.10 is made available
     # in RHEL 8.
-    ensure_packages(['patch'], { ensure => 'present' })
+    stdlib::ensure_packages(['patch'], { ensure => 'present' })
     $python_version = lookup('os::redhat::python3::version')
     file { 'freeipa_27e9181bdc.patch':
       path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
@@ -659,8 +659,8 @@ class profile::freeipa::mokey (
         'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => stdlib::seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => stdlib::seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",
