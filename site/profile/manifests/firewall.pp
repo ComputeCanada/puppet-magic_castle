@@ -41,11 +41,10 @@ class profile::firewall {
   }
 
   class { 'firewall': }
-  -> class {['profile::firewall::pre', 'profile::firewall::post']: }
-
-  resources { 'firewall':
+  -> resources { 'firewall':
     purge => true,
   }
+  -> class {['profile::firewall::pre', 'profile::firewall::post']: }
 
   firewall { '004 accept all from local network':
     chain  => 'INPUT',
