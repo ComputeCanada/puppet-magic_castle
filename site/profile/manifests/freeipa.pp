@@ -203,6 +203,7 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
+  $proxy_domain = lookup('profile::reverse_proxy::domain_name')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   package { 'ipa-server-dns':
@@ -392,9 +393,9 @@ class profile::freeipa::server (
     content => epp(
       'profile/freeipa/ipa-rewrite.conf',
       {
-        'referee'     => $fqdn,
-        'referer'     => "ipa.${ipa_domain}",
-        'referer_int' => "ipa.${ipa_domain}",
+        'referee'           => $fqdn,
+        'external_hostname' => "ipa.${proxy_domain}",
+        'internal_hosntmae' => "ipa.${ipa_domain}",
       }
     ),
     notify  => Service['httpd'],
