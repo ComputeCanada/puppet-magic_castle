@@ -395,7 +395,7 @@ class profile::freeipa::server (
       {
         'referee'           => $fqdn,
         'external_hostname' => "ipa.${proxy_domain}",
-        'internal_hosntmae' => "ipa.${ipa_domain}",
+        'internal_hostname' => "ipa.${ipa_domain}",
       }
     ),
     notify  => Service['httpd'],
