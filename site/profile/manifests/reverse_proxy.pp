@@ -14,6 +14,7 @@ class profile::reverse_proxy (
     source_pp => 'puppet:///modules/profile/reverse_proxy/caddy.pp',
   }
 
+  include nftables::rules::http
   include nftables::rules::https
 
   yumrepo { 'caddy-copr-repo':
