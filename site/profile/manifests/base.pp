@@ -56,31 +56,6 @@ class profile::base (
     ensure => 'installed',
   }
 
-  package { 'firewalld':
-    ensure => 'absent',
-  }
-
-  class { 'firewall':
-    tag => 'mc_bootstrap',
-  }
-
-  firewall { '001 accept all from local network':
-    chain  => 'INPUT',
-    proto  => 'all',
-    source => profile::getcidr(),
-    action => 'accept',
-    tag    => 'mc_bootstrap',
-  }
-
-  firewall { '001 drop access to metadata server':
-    chain       => 'OUTPUT',
-    proto       => 'tcp',
-    destination => '169.254.169.254',
-    action      => 'drop',
-    uid         => '! root',
-    tag         => 'mc_bootstrap',
-  }
-
   package { 'haveged':
     ensure  => 'installed',
     require => Yumrepo['epel'],
@@ -97,7 +72,7 @@ class profile::base (
     require => Package['haveged'],
   }
 
-  ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
+  stdlib::ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure

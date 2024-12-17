@@ -5,6 +5,10 @@ class profile::squid::server (
 ) {
   include profile::consul
 
+  nftables::rule { 'default_in-squid':
+    content => "tcp dport 3128 accept comment \"Accept squid\"",
+  }
+
   class { 'squid': }
   squid::http_port { String($port): }
   squid::acl { 'SSL_ports':

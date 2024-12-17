@@ -10,6 +10,7 @@ lookup_options:
 magic_castle::site::all:
   - profile::base
   - profile::consul
+  - profile::firewall
   - profile::freeipa
   - profile::users::local
   - profile::sssd::client
@@ -58,5 +59,7 @@ magic_castle::site::tags:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
     - profile::reverse_proxy
+  puppet:
+    - profile::puppetserver
   efa:
     - profile::efa

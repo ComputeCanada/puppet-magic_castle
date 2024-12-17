@@ -5,6 +5,7 @@
 class profile::metrics::node_exporter {
   include profile::consul
   include prometheus::node_exporter
+  include nftables::rules::node_exporter
   consul::service { 'node-exporter':
     port  => 9100,
     tags  => ['node-exporter'],
@@ -89,6 +90,8 @@ class profile::metrics::slurm_exporter {
     require => [
       Package['prometheus-slurm-exporter'],
       File['/etc/systemd/system/prometheus-slurm-exporter.service'],
+      User['slurm'],
+      Group['slurm'],
     ],
   }
 }
