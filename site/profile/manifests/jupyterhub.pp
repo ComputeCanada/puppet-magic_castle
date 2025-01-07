@@ -44,7 +44,7 @@ class profile::jupyterhub::node {
     }
   }
   nftables::rule { 'default_in-jupyter_server':
-    content => "tcp dport 32768-60999 accept comment \"Accept jupyter_server\"",
+    content => "tcp dport 32768-60999 accept comment 'Accept jupyter_server'",
   }
 }
 
