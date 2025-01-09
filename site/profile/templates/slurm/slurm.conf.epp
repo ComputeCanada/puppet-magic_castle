@@ -34,7 +34,7 @@ ReturnToService=2 # A DOWN node will become available for use upon registration 
 RebootProgram=/usr/sbin/reboot
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
-ResumeFailProgram=/usr/bin/slurm_suspend
+ResumeFailProgram=/usr/bin/slurm_resume_fail
 ResumeTimeout=<%= $resume_timeout %>
 SuspendTime=<%= $suspend_time %>
 SuspendRate=20
@@ -46,6 +46,7 @@ SuspendExcNodes=<%= $suspend_exc_nodes %>
 SchedulerParameters=salloc_wait_nodes
 SlurmctldParameters=idle_on_node_suspend,cloud_dns
 CommunicationParameters=NoAddrCache
+DebugFlags=Power
 
 # PARTITION CONFIGURATIONS
 DisableRootJobs=YES
