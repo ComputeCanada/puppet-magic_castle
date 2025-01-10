@@ -1,0 +1,5 @@
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::bin::source: https://go.microsoft.com/fwlink/?linkid=874272
+profile::gpu::install::vgpu::bin::gridd_content: |
+  IgnoreSP=FALSE
+  EnableUI=FALSE
