@@ -43,7 +43,7 @@ class profile::volumes (
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
           quota         => pick_default($values['quota'], ''),
-          mkfs_options  => pick($values['mkfs_options'], ''),
+          mkfs_options  => pick_default($values['mkfs_options'], ''),
         }
       }
     }
