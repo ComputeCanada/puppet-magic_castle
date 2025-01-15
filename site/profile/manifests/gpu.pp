@@ -1,7 +1,7 @@
 class profile::gpu {
   if $facts['nvidia_gpu_count'] > 0 {
     require profile::gpu::install
-    if ! $facts['nvidia_grid_vgpu'] {
+    if ! profile::is_grid_vgpu() {
       service { 'nvidia-persistenced':
         ensure => 'running',
         enable => true,
@@ -32,7 +32,7 @@ class profile::gpu::install (
     source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
   }
 
-  if ! $facts['nvidia_grid_vgpu'] {
+  if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
@@ -43,7 +43,7 @@ class profile::gpu::install (
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
-  if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
+  if ! profile::is_grid_vgpu() or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
