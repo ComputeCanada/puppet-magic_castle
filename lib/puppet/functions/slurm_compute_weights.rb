@@ -14,11 +14,7 @@ Puppet::Functions.create_function(:slurm_compute_weights) do
         end
         weights_per_node = Hash.new
         for inst in instances
-            if inst[1].key?("weight") and inst[1]['weight'].is_a? Numeric then
-                weights_per_node[inst[0]] = inst[1]['weight']
-            else
-                weights_per_node[inst[0]] = weights[inst[1]['specs']]
-            end
+            weights_per_node[inst[0]] = weights[inst[1]['specs']]
         end
         return weights_per_node
       end
