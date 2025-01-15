@@ -1,4 +1,4 @@
-function profile::generate_slurm_node_line($name, $attr, $weight) >> String {
+function profile::generate_slurm_node_line($name, $attr, $comp_weight) >> String {
   if $attr['specs']['gpus'] > 0 {
     if $attr['specs']['mig'] and ! $attr['specs']['mig'].empty {
       $gpu = $attr['specs']['mig'].map|$key,$value| {
@@ -16,5 +16,6 @@ function profile::generate_slurm_node_line($name, $attr, $weight) >> String {
   } else {
     $gres = 'gpu:0'
   }
+  $weight = pick($attr['specs']['weight'], $comp_weight)
   "NodeName=${name} CPUs=${attr['specs']['cpus']} RealMemory=${attr['specs']['ram']} Gres=${gres} Weight=${weight}"
 }
