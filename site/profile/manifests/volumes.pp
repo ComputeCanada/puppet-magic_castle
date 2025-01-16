@@ -43,6 +43,7 @@ class profile::volumes (
           filesystem    => pick($values['filesystem'], 'xfs'),
           require       => File["/mnt/${volume_tag}"],
           quota         => pick_default($values['quota'], ''),
+          mkfs_options  => pick_default($values['mkfs_options'], ''),
         }
       }
     }
@@ -62,6 +63,7 @@ define profile::volumes::volume (
   Boolean $enable_resize,
   Enum['xfs', 'ext3', 'ext4'] $filesystem,
   String $quota = '',
+  String $mkfs_options = '',
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
 
@@ -104,6 +106,7 @@ define profile::volumes::volume (
     ensure            => present,
     volume_group      => "${name}_vg",
     fs_type           => $filesystem,
+    mkfs_options      => $mkfs_options,
     mountpath         => "/mnt/${volume_tag}/${volume_name}",
     mountpath_require => true,
     options           => $options,
