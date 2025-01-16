@@ -43,7 +43,7 @@ define profile::volumes::volume (
   Boolean $bind_mount = true,
   String $seltype = 'home_root_t',
   Boolean $enable_resize = false,
-  Enum['xfs', 'ext3', 'ext4'] $filesystem = 'xfs',
+  Enum['xfs', 'ext4'] $filesystem = 'xfs',
   Optional[String[1]] $quota = undef,
   Optional[String[1]] $type = undef,
   Optional[String[1]] $mkfs_options = undef,
