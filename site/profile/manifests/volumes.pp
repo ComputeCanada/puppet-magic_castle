@@ -17,53 +17,40 @@
 class profile::volumes (
   Hash[String, Hash[String, Hash]] $devices,
 ) {
-
-  file { '/etc/xfs_quota':
-    ensure  => 'directory',
+  package { 'lvm2':
+    ensure => installed,
   }
-
-  if $devices =~ Hash[String, Hash[String, Hash]] {
-    package { 'lvm2':
-      ensure => installed,
-    }
-    $devices.each | String $volume_tag, $device_map | {
-      ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
-      $device_map.each | String $key, $values | {
-        profile::volumes::volume { "${volume_tag}-${key}":
-          volume_name   => $key,
-          volume_tag    => $volume_tag,
-          glob          => $values['glob'],
-          bind_mount    => pick($values['bind_mount'], true),
-          bind_target   => pick($values['bind_target'], "/${key}"),
-          owner         => pick($values['owner'], 'root'),
-          group         => pick($values['group'], 'root'),
-          mode          => pick($values['mode'], '0755'),
-          seltype       => pick($values['seltype'], 'home_root_t'),
-          enable_resize => pick($values['enable_resize'], false),
-          filesystem    => pick($values['filesystem'], 'xfs'),
-          require       => File["/mnt/${volume_tag}"],
-          quota         => pick_default($values['quota'], ''),
-        }
+  $devices.each | String $volume_tag, $device_map | {
+    ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
+    $device_map.each | String $key, $values | {
+      profile::volumes::volume { "${volume_tag}-${key}":
+        volume_name => $key,
+        volume_tag  => $volume_tag,
+        *           => $values,
       }
     }
   }
 }
 
 define profile::volumes::volume (
-  String $volume_name,
-  String $volume_tag,
-  String $glob,
-  String $owner,
-  String $mode,
-  String $group,
-  String $bind_target,
-  Boolean $bind_mount,
-  String $seltype,
-  Boolean $enable_resize,
-  Enum['xfs', 'ext3', 'ext4'] $filesystem,
-  String $quota = '',
+  String[1] $volume_name,
+  String[1] $volume_tag,
+  String[1] $glob,
+  Integer[1] $size,
+  String[1] $owner = 'root',
+  String[1] $group = 'root',
+  String[3,4] $mode = '0755',
+  String[1] $seltype = 'home_root_t',
+  Boolean $bind_mount = true,
+  Boolean $enable_resize = false,
+  Enum['xfs', 'ext4'] $filesystem = 'xfs',
+  Optional[String[1]] $bind_target = undef,
+  Optional[String[1]] $type = undef,
+  Optional[String[1]] $quota = undef,
+  Optional[String[1]] $mkfs_options = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
+  $bind_target_ = pick($bind_target, "/${volume_name}")
 
   file { "/mnt/${volume_tag}/${volume_name}":
     ensure  => 'directory',
@@ -104,6 +91,7 @@ define profile::volumes::volume (
     ensure            => present,
     volume_group      => "${name}_vg",
     fs_type           => $filesystem,
+    mkfs_options      => $mkfs_options,
     mountpath         => "/mnt/${volume_tag}/${volume_name}",
     mountpath_require => true,
     options           => $options,
@@ -150,32 +138,33 @@ define profile::volumes::volume (
   selinux::exec_restorecon { "/mnt/${volume_tag}/${volume_name}": }
 
   if $bind_mount {
-    ensure_resource('file', $bind_target, { 'ensure' => 'directory', 'seltype' => $seltype })
-    mount { $bind_target:
+    ensure_resource('file', $bind_target_, { 'ensure' => 'directory', 'seltype' => $seltype })
+    mount { $bind_target_:
       ensure  => mounted,
       device  => "/mnt/${volume_tag}/${volume_name}",
       fstype  => none,
       options => 'rw,bind',
       require => [
-        File[$bind_target],
+        File[$bind_target_],
         Lvm::Logical_volume[$name],
       ],
     }
   } elsif (
-    $facts['mountpoints'][$bind_target] != undef and
-    $facts['mountpoints'][$bind_target]['device'] == $dev_mapper_id
+    $facts['mountpoints'][$bind_target_] != undef and
+    $facts['mountpoints'][$bind_target_]['device'] == $dev_mapper_id
   ) {
-    mount { $bind_target:
+    mount { $bind_target_:
       ensure  => absent,
     }
   }
 
-  if $filesystem == 'xfs' and $quota != '' {
+  if $quota and $filesystem == 'xfs' {
+    ensure_resource('file', '/etc/xfs_quota', { 'ensure' => 'directory' })
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
       content => "#FILE TRACKED BY PUPPET DO NOT EDIT MANUALLY\n${quota}",
-      require => File['/etc/xfs_quota']
+      require => File['/etc/xfs_quota'],
     }
 
     exec { "apply-quota-${name}":
