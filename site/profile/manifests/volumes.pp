@@ -17,18 +17,16 @@
 class profile::volumes (
   Hash[String, Hash[String, Hash]] $devices,
 ) {
-  if $devices =~ Hash[String, Hash[String, Hash]] {
-    package { 'lvm2':
-      ensure => installed,
-    }
-    $devices.each | String $volume_tag, $device_map | {
-      ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
-      $device_map.each | String $key, $values | {
-        profile::volumes::volume { "${volume_tag}-${key}":
-          volume_name => $key,
-          volume_tag  => $volume_tag,
-          *           => $values,
-        }
+  package { 'lvm2':
+    ensure => installed,
+  }
+  $devices.each | String $volume_tag, $device_map | {
+    ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
+    $device_map.each | String $key, $values | {
+      profile::volumes::volume { "${volume_tag}-${key}":
+        volume_name => $key,
+        volume_tag  => $volume_tag,
+        *           => $values,
       }
     }
   }
