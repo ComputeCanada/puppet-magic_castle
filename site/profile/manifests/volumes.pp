@@ -17,7 +17,6 @@
 class profile::volumes (
   Hash[String, Hash[String, Hash]] $devices,
 ) {
-
   file { '/etc/xfs_quota':
     ensure  => 'directory',
   }
