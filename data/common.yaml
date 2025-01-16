@@ -293,6 +293,7 @@ profile::reverse_proxy::subdomains:
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
 
+profile::gpu::restrict_profiling: false
 profile::gpu::install::passthrough::packages:
   - nvidia-driver-cuda-libs
   - nvidia-driver

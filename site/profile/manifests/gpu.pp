@@ -1,5 +1,5 @@
 class profile::gpu (
-  Boolean $restrict_profiling = false,
+  Boolean $restrict_profiling,
 ) {
   if $facts['nvidia_gpu_count'] > 0 {
     require profile::gpu::install
