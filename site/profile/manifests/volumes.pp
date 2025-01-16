@@ -17,10 +17,6 @@
 class profile::volumes (
   Hash[String, Hash[String, Hash]] $devices,
 ) {
-  file { '/etc/xfs_quota':
-    ensure  => 'directory',
-  }
-
   if $devices =~ Hash[String, Hash[String, Hash]] {
     package { 'lvm2':
       ensure => installed,
@@ -165,11 +161,12 @@ define profile::volumes::volume (
   }
 
   if $quota and $filesystem == 'xfs' {
+    ensure_resource('file', '/etc/xfs_quota', { 'ensure' => 'directory' })
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
       content => "#FILE TRACKED BY PUPPET DO NOT EDIT MANUALLY\n${quota}",
-      require => File['/etc/xfs_quota']
+      require => File['/etc/xfs_quota'],
     }
 
     exec { "apply-quota-${name}":
