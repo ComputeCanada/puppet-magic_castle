@@ -30,20 +30,9 @@ class profile::volumes (
       ensure_resource('file', "/mnt/${volume_tag}", { 'ensure' => 'directory' })
       $device_map.each | String $key, $values | {
         profile::volumes::volume { "${volume_tag}-${key}":
-          volume_name   => $key,
-          volume_tag    => $volume_tag,
-          glob          => $values['glob'],
-          bind_mount    => pick($values['bind_mount'], true),
-          bind_target   => pick($values['bind_target'], "/${key}"),
-          owner         => pick($values['owner'], 'root'),
-          group         => pick($values['group'], 'root'),
-          mode          => pick($values['mode'], '0755'),
-          seltype       => pick($values['seltype'], 'home_root_t'),
-          enable_resize => pick($values['enable_resize'], false),
-          filesystem    => pick($values['filesystem'], 'xfs'),
-          require       => File["/mnt/${volume_tag}"],
-          quota         => pick_default($values['quota'], ''),
-          mkfs_options  => pick_default($values['mkfs_options'], ''),
+          volume_name => $key,
+          volume_tag  => $volume_tag,
+          *           => $values,
         }
       }
     }
@@ -54,18 +43,21 @@ define profile::volumes::volume (
   String $volume_name,
   String $volume_tag,
   String $glob,
-  String $owner,
-  String $mode,
-  String $group,
-  String $bind_target,
-  Boolean $bind_mount,
-  String $seltype,
-  Boolean $enable_resize,
-  Enum['xfs', 'ext3', 'ext4'] $filesystem,
-  String $quota = '',
-  String $mkfs_options = '',
+  Integer $size,
+  String $owner = 'root',
+  String $mode = '0755',
+  String $group = 'root',
+  Boolean $bind_mount = true,
+  String $seltype = 'home_root_t',
+  Boolean $enable_resize = false,
+  Enum['xfs', 'ext3', 'ext4'] $filesystem = 'xfs',
+  Optional[String[1]] $quota = undef,
+  Optional[String[1]] $type = undef,
+  Optional[String[1]] $mkfs_options = undef,
+  Optional[String[1]] $bind_target = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
+  $bind_target_ = pick($bind_target, "/${volume_name}")
 
   file { "/mnt/${volume_tag}/${volume_name}":
     ensure  => 'directory',
@@ -153,27 +145,27 @@ define profile::volumes::volume (
   selinux::exec_restorecon { "/mnt/${volume_tag}/${volume_name}": }
 
   if $bind_mount {
-    ensure_resource('file', $bind_target, { 'ensure' => 'directory', 'seltype' => $seltype })
-    mount { $bind_target:
+    ensure_resource('file', $bind_target_, { 'ensure' => 'directory', 'seltype' => $seltype })
+    mount { $bind_target_:
       ensure  => mounted,
       device  => "/mnt/${volume_tag}/${volume_name}",
       fstype  => none,
       options => 'rw,bind',
       require => [
-        File[$bind_target],
+        File[$bind_target_],
         Lvm::Logical_volume[$name],
       ],
     }
   } elsif (
-    $facts['mountpoints'][$bind_target] != undef and
-    $facts['mountpoints'][$bind_target]['device'] == $dev_mapper_id
+    $facts['mountpoints'][$bind_target_] != undef and
+    $facts['mountpoints'][$bind_target_]['device'] == $dev_mapper_id
   ) {
-    mount { $bind_target:
+    mount { $bind_target_:
       ensure  => absent,
     }
   }
 
-  if $filesystem == 'xfs' and $quota != '' {
+  if $quota and $filesystem == 'xfs' {
     # Save the xfs quota setting to avoid applying at every iteration
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
