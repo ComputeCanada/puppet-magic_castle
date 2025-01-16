@@ -33,21 +33,21 @@ class profile::volumes (
 }
 
 define profile::volumes::volume (
-  String $volume_name,
-  String $volume_tag,
-  String $glob,
-  Integer $size,
-  String $owner = 'root',
-  String $mode = '0755',
-  String $group = 'root',
+  String[1] $volume_name,
+  String[1] $volume_tag,
+  String[1] $glob,
+  Integer[1] $size,
+  String[1] $owner = 'root',
+  String[1] $group = 'root',
+  String[3,4] $mode = '0755',
+  String[1] $seltype = 'home_root_t',
   Boolean $bind_mount = true,
-  String $seltype = 'home_root_t',
   Boolean $enable_resize = false,
   Enum['xfs', 'ext4'] $filesystem = 'xfs',
-  Optional[String[1]] $quota = undef,
-  Optional[String[1]] $type = undef,
-  Optional[String[1]] $mkfs_options = undef,
   Optional[String[1]] $bind_target = undef,
+  Optional[String[1]] $type = undef,
+  Optional[String[1]] $quota = undef,
+  Optional[String[1]] $mkfs_options = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
   $bind_target_ = pick($bind_target, "/${volume_name}")
