@@ -1,4 +1,6 @@
-class profile::gpu {
+class profile::gpu (
+  Boolean $restrict_profiling = false,
+) {
   if $facts['nvidia_gpu_count'] > 0 {
     require profile::gpu::install
     if ! $facts['nvidia_grid_vgpu'] {
@@ -21,8 +23,8 @@ class profile::gpu {
 
 class profile::gpu::install (
   String $lib_symlink_path = undef,
-  Boolean $allow_profiling_for_all = false
 ) {
+  $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
   ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
   ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
@@ -31,6 +33,19 @@ class profile::gpu::install (
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
     source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
+  }
+
+  file { '/etc/modprobe.d/nvidia.conf':
+    ensure => file,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+  file_line { 'nvidia_restrict_profiling':
+    path    => '/etc/modprobe.d/nvidia.conf',
+    line    => "options nvidia NVreg_RestrictProfilingToAdminUsers=${Integer($restrict_profiling)}",
+    require => File['/etc/modprobe.d/nvidia.conf'],
+    notify  => Kmod::Load[$nvidia_kmod],
   }
 
   if ! $facts['nvidia_grid_vgpu'] {
@@ -59,21 +74,6 @@ class profile::gpu::install (
   }
 
   kmod::load { $nvidia_kmod: }
-
-  if $allow_profiling_for_all {
-    file { '/etc/modprobe.d/nvidia.conf':
-      ensure => file,
-      owner  => 'root',
-      group  => 'root',
-      mode   => '0755',
-    }
-    file_line { 'allow_profiling_for_all':
-      path    => '/etc/modprobe.d/nvidia.conf',
-      line    => 'options nvidia NVreg_RestrictProfilingToAdminUsers=0',
-      require => File['/etc/modprobe.d/nvidia.conf'],
-      before  => (if ! $facts['nvidia_grid_gpu'] { Class['profile::gpu::install::passthrough'] } else { Class['profile::gpu::install::vgpu'] }),
-    }
-  }
 
   if $lib_symlink_path {
     $lib_symlink_path_split = split($lib_symlink_path, '/')

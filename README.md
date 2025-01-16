@@ -659,6 +659,20 @@ For VGPU, the driver source is cloud provider specific and has to be specified
 via either `profile::gpu::install::vgpu::rpm::source` for rpms or
 `profile::gpu::install::vgpu::bin::source` for binary installer.
 
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `restrict_profiling`   | Restrict access to NVIDIA GPU Performance Counters to root     | Boolean       |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::gpu::restrict_profiling: false
+```
+</details>
+
 ## `profile::jupyterhub::hub`
 
 > JupyterHub is a multi-user server for Jupyter Notebooks. It is designed to support many users by
