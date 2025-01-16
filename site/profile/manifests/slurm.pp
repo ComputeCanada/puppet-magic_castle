@@ -167,7 +167,7 @@ class profile::slurm::base (
   # slurm-contribs command "seff" requires Sys/hostname.pm
   # which is not packaged by default with perl in RHEL >= 9.
   if versioncmp($facts['os']['release']['major'], '9') >= 0 {
-    ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
+    stdlib::ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
   }
 
   package { 'slurm-libpmi':
@@ -266,6 +266,8 @@ class profile::slurm::accounting(
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+    charset  => 'utf8mb4',
+    collate  => 'utf8mb4_unicode_ci',
   }
 
   file { '/etc/slurm/slurmdbd.conf':
@@ -301,6 +303,10 @@ class profile::slurm::accounting(
       Mysql::Db['slurm_acct_db'],
     ],
     before    => Service['slurmctld']
+  }
+
+  nftables::rule { 'default_in-slurmdbd':
+    content => "tcp dport ${dbd_port} accept comment \"Accept slurmdbd\"",
   }
 
   consul::service { 'slurmdbd':
@@ -395,7 +401,7 @@ class profile::slurm::controller (
     mode   => '0755',
   }
 
-  ensure_packages(['python3'], { ensure => 'present' })
+  stdlib::ensure_packages(['python3'], { ensure => 'present' })
 
   $autoscale_env_prefix = '/opt/software/slurm/autoscale_env'
   exec { 'autoscale_slurm_env':
@@ -475,6 +481,10 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ),
   }
 
+  nftables::rule { 'default_in-slurmctld':
+    content => 'tcp dport 6817 accept comment "Accept slurmctld"',
+  }
+
   consul::service { 'slurmctld':
     port    => 6817,
     require => Tcp_conn_validator['consul'],
@@ -524,6 +534,10 @@ class profile::slurm::node (
   Boolean $enable_tmpfs_mounts = true,
 ) {
   contain profile::slurm::base
+
+  nftables::rule { 'default_in-slurmd':
+    content => 'tcp dport 6818 accept comment "Accept slurmd"',
+  }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
@@ -736,4 +750,7 @@ class profile::slurm::node (
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
+  nftables::rule { 'default_in-slurm_srun':
+    content => "tcp dport 32768-60999 accept comment \"Accept srun\"",
+  }
 }
