@@ -3,3 +3,7 @@ profile::gpu::install::vgpu::bin::source: https://go.microsoft.com/fwlink/?linki
 profile::gpu::install::vgpu::bin::gridd_content: |
   IgnoreSP=FALSE
   EnableUI=FALSE
+profile::gpu::install::vgpu::grid_vgpu_types:
+  - "^Standard_NV(6|12|18|36|72)ad[m]*s_A10_v5$"
+  - "^Standard_NV(12|24|48)s_v3$"
+  - "^Standard_NC(4|8|16|64)as_T4_v3$"

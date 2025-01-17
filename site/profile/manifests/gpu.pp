@@ -235,6 +235,7 @@ class profile::gpu::config::mig (
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
   String $nvidia_ml_py_version = '11.515.75',
+  Array[String] $grid_vgpu_types = [],
 ) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
