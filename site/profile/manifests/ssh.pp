@@ -47,40 +47,15 @@ class profile::ssh::base {
       source => 'puppet:///modules/profile/base/opensshserver.config',
       notify => Service['sshd'],
     }
-  } elsif versioncmp($::facts['os']['release']['major'], '8') >= 1 {
-    # In RedHat 9, the sshd policies are defined as an include that of the
+  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+    # In RedHat 9, the sshd policies are defined as an include of the
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
     file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
+      mode   => '0700',
+      owner  => 'root',
+      group  => 'root',
       source => 'puppet:///modules/profile/base/opensshserver-9.config',
-      notify => Service['sshd'],
-    }
-  } elsif versioncmp($::facts['os']['release']['major'], '8') < 0 {
-    file_line { 'MACs':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'MACs umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'KexAlgorithms':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'HostKeyAlgorithms':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'HostKeyAlgorithms ssh-rsa',
-      notify => Service['sshd'],
-    }
-
-    file_line { 'Ciphers':
-      ensure => present,
-      path   => '/etc/ssh/sshd_config',
-      line   => 'Ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com',
       notify => Service['sshd'],
     }
   }
@@ -90,8 +65,7 @@ class profile::ssh::base {
 # for host based authentication
 class profile::ssh::known_hosts {
   $instances = lookup('terraform.instances')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   file { '/etc/ssh/ssh_known_hosts':
     content => '# This file is managed by Puppet',
@@ -109,7 +83,7 @@ class profile::ssh::known_hosts {
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${int_domain_name}", $v['local_ip'],],
+          'host_aliases' => ["${k}.${ipa_domain}", $v['local_ip'],],
           'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]
@@ -125,25 +99,23 @@ class profile::ssh::hostbased_auth::server (
   include profile::ssh::known_hosts
 
   $instances = lookup('terraform.instances')
-  $domain_name = lookup('profile::freeipa::base::domain_name')
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $hosts = $instances.filter |$k, $v| { ! intersection($v['tags'], $shosts_tags).empty }
-  $shosts = join($hosts.map |$k, $v| { "${k}.int.${domain_name}" }, "\n")
+  $shosts = join($hosts.map |$k, $v| { "${k}.${ipa_domain}" }, "\n")
 
   file { '/etc/ssh/shosts.equiv':
     content => $shosts,
   }
 
-  file_line { 'HostbasedAuthentication':
+  sshd_config { 'HostbasedAuthentication':
     ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'HostbasedAuthentication yes',
+    value  => 'yes',
     notify => Service['sshd'],
   }
 
-  file_line { 'UseDNS':
+  sshd_config { 'UseDNS':
     ensure => present,
-    path   => '/etc/ssh/sshd_config',
-    line   => 'UseDNS yes',
+    value  => 'yes',
     notify => Service['sshd'],
   }
 

@@ -1,5 +1,20 @@
-include /etc/slurm/slurm-consul.conf
 include /etc/slurm/nodes.conf
+
+<% if ! $slurmctl.empty { -%>
+SlurmctldHost=<%= join($slurmctl, ',') %>
+<% } -%>
+SlurmctldPort=6817
+
+## Accounting
+<% if ! $slurmdb.empty { -%>
+AccountingStorageHost=<%= join($slurmdb, ',') %>
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageTRES=gres/gpu,cpu,mem
+AccountingStorageEnforce=associations
+JobAcctGatherType=jobacct_gather/cgroup
+JobAcctGatherFrequency=task=30
+JobAcctGatherParams=NoOverMemoryKill,UsePSS
+<% } -%>
 
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
@@ -12,10 +27,11 @@ SelectType=select/cons_tres
 SelectTypeParameters=CR_Core_Memory
 
 # NODE CONFIGURATIONS
-GresTypes=gpu
+GresTypes=gpu,shard
 
 TreeWidth=<%= $nb_nodes %>
 ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
+RebootProgram=/usr/sbin/reboot
 ResumeProgram=/usr/bin/slurm_resume
 SuspendProgram=/usr/bin/slurm_suspend
 ResumeFailProgram=/usr/bin/slurm_suspend
@@ -57,30 +73,21 @@ X11Parameters=home_xauthority
 <% } else { -%>
 PrologFlags=alloc,contain
 <% } -%>
+<% if $enable_scrontab { -%>
+ScronParameters=enable
+<% } -%>
 # Prolog=/etc/slurm/prolog
 Epilog=/etc/slurm/epilog
 PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
-<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 TaskPlugin=task/affinity,task/cgroup
-<% } else { -%>
-TaskPlugin=task/cgroup
-<% } -%>
 PropagateResourceLimits=NONE
 MailProg=/usr/sbin/slurm_mail
 
 StateSaveLocation=/var/spool/slurm
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step,disable_send_gids
-<% if versioncmp($slurm_version, '21.08') >= 0 { -%>
 JobSubmitPlugins=lua
-<% } -%>
-
-<% if versioncmp($slurm_version, '23.02') < 0 { -%>
-# The autoscaling compute nodes are not showed by sinfo unless we set PrivateData=cloud
-# Not needed for Slurm >= 23.02
-PrivateData=cloud
-<% } -%>
 
 include /etc/slurm/slurm-addendum.conf

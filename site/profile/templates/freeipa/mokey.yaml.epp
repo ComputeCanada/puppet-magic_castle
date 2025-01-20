@@ -68,7 +68,7 @@ templates: /usr/share/mokey/templates
 # FreeIPA)
 #------------------------------------------------------------------------------
 keytab: "/etc/mokey/keytab/mokeyapp.keytab"
-ktuser: "mokeyapp"
+ktuser: "mokey/mokey"
 
 #------------------------------------------------------------------------------
 # Enable rate limiting based on remote ip (requires redis)

@@ -14,19 +14,21 @@ rm -f /var/log/ipaclient-install.log
 rm -rf /etc/sssd/sssd.conf.deleted
 
 rm -rf /etc/puppetlabs
-rm -rf /opt/puppetlabs/puppet/cache
+rm -rf /opt/puppetlabs/puppet/cache/{clientbucket,client_data,client_yaml,state}
 rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
 
 # Turn off swap
 swapoff -a
 grep -q "swap" /etc/fstab && rm -f $(grep "swap" /etc/fstab | cut -f 1)
 # Unmount filesystems
-grep -v -P '(ext4|xfs|vfat|swap|^#|^$)' /etc/fstab | cut -f 2 | xargs umount
-grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab > /etc/fstab.new
+umount -a --types cephfs,nfs4
+# for xfs, we unmount only what's in /mnt, not things like / or /boot
+grep xfs /etc/fstab | cut -f 2 | grep /mnt | xargs --no-run-if-empty umount
+grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab | grep -v /mnt > /etc/fstab.new
 mv -f /etc/fstab.new /etc/fstab
 systemctl daemon-reload
 
-systemctl stop syslog
+systemctl stop rsyslog
 : > /var/log/messages
 : > /var/log/munge/munged.log
 : > /var/log/secure
@@ -50,6 +52,10 @@ rm -f /etc/hostname
 rm -f /etc/udev/rules.d/70-persistent-net.rules
 : > /etc/sysconfig/network
 : > /etc/machine-id
+
+rm /etc/NetworkManager/conf.d/zzz-puppet.conf
+: > /etc/resolv.conf
+
 cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
 DEVICE=eth0
 TYPE=Ethernet

@@ -1,5 +1,5 @@
 profile::gpu::install::vgpu::installer: rpm
-profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/centos/arbutus-cloud-vgpu-repo.el%{facts.os.release.major}.noarch.rpm
+profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/alma%{facts.os.release.major}/Packages/a/arbutus-cloud-vgpu-repo-1.0-1.el%{facts.os.release.major}.noarch.rpm
 profile::gpu::install::vgpu::rpm::packages:
   - nvidia-vgpu-kmod
   - nvidia-vgpu-gridd

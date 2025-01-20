@@ -20,6 +20,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::cvmfs::client`](#profilecvmfsclient)
 - [`profile::cvmfs::local_user`](#profilecvmfslocal_user)
 - [`profile::cvmfs::alien_cache`](#profilecvmfsalien_cache)
+- [`profile::efa`](#profileefa)
 - [`profile::fail2ban`](#profilefail2ban)
 - [`profile::freeipa`](#profilefreeipa)
 - [`profile::freeipa::base`](#profilefreeipabase)
@@ -39,9 +40,11 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::base`](#profilersyslogbase)
 - [`profile::rsyslog::client`](#profilersyslogclient)
 - [`profile::rsyslog::server`](#profilersyslogserver)
+- [`profile::vector`](#profilervector)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
+- [`profile::slurm::node`](#profileslurmnode)
 - [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
@@ -51,6 +54,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::ssh::hostbased_auth::server`](#profilesshhostbased_authserver)
 - [`profile::users::ldap`](#profileusersldap)
 - [`profile::users::local`](#profileuserslocal)
+- [`profile::volumes`](#profilevolumes)
 
 For classes with parameters, a folded **default values** subsection provides the default
 value of each parameter as it would be defined in hieradata. For some parameters, the value is
@@ -126,6 +130,8 @@ magic_castle::site::tags:
     - profile::reverse_proxy
     - profile::freeipa::client
     - profile::rsyslog::client
+  efa:
+    - profile::efa
 ```
 </details>
 
@@ -178,13 +184,18 @@ This class configures two services to bridge LDAP users, Slurm accounts and user
 | :-------------- | :------------------------------------------------------------ | :--------  |
 | `project_regex` | Regex identifying FreeIPA groups that require a corresponding Slurm account | String     |
 | `skel_archives` | Archives extracted in each FreeIPA user's home when created | Array[Struct[{filename => String[1], source => String[1]}]] |
-
+| `manage_home`   | When true, `mkhome` create home folder for new FreeIPA users | Boolean |
+| `manage_scratch`| When true, `mkhome` create scratch folder for new FreeIPA users | Boolean |
+| `manage_project`| When true, `mkproject` create project folder for new FreeIPA users | Boolean |
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::accounts::project_regex: '(ctb\|def\|rpp\|rrg)-[a-z0-9_-]*'
 profile::accounts::skel_archives: []
+profile::accounts::manage_home: true
+profile::accounts::manage_scratch: true
+profile::accounts::manage_project: true
 ```
 </details>
 
@@ -219,6 +230,7 @@ cluster operations.
 | :------------- | :------------------------------------------------------------------------------------- | :----- |
 | `version`      | Current version number of Magic Castle                                                 | String |
 | `admin_email`  | Email of the cluster administrator, use to send log and report cluster related issues  | String |
+| `packages`     | List of additional OS packages that should be installed                                | Array[String] |
 
 <details>
 <summary>default values</summary>
@@ -226,6 +238,7 @@ cluster operations.
 ```yaml
 profile::base::version: '13.0.0'
 profile::base::admin_emain: ~ #undef
+profile::base::packages: []
 ```
 </details>
 
@@ -235,6 +248,9 @@ profile::base::admin_emain: ~ #undef
 ```yaml
 profile::base::version: '13.0.0-rc.2'
 profile::base::admin_emain: "you@email.com"
+profile::base::packages:
+  - gcc-c++
+  - make
 ```
 </details>
 
@@ -274,49 +290,34 @@ that provides object storage, block storage, and file storage built on a common 
 cluster foundation.
 [reference](https://en.wikipedia.org/wiki/Ceph_(software))
 
-This class install Ceph packages, and configure and mount a CephFS share.
+This class installs the Ceph packages, and configure and mount CephFS shares.
 
 ### parameters
 
-| Variable                     | Description                                                 | Type          |
-| :--------------------------- | :---------------------------------------------------------- | ------------- |
-| `share_name`                 | CEPH share name                                             | String        |
-| `access_key`                 | CEPH share access key                                       | String        |
-| `export_path`                | Path of the share as exported by the monitors               | String        |
-| `mon_host`                   | List of CEPH monitor hostnames                              | Array[String] |
-| `mount_binds`                | List of CEPH share folders that will bind mounted under `/` | Array[String] |
-| `mount_name`                 | Name to give to the CEPH share once mounted under `/mnt`    | String        |
-| `binds_fcontext_equivalence` | SELinux file context equivalence for the CEPH share         | String        |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::ceph::client::mount_binds: []
-profile::ceph::client::mount_name: 'cephfs01'
-profile::ceph::client::binds_fcontext_equivalence: '/home'
-```
-</details>
+| Variable      | Description                                                 | Type                 |
+| :------------ | :---------------------------------------------------------- | -------------------- |
+| `mon_host`    | List of Ceph monitor hostnames                              | Array[String]        |
+| `shares`      | List of Ceph share structures                               | Hash[String, CephFS] |
 
 <details>
 <summary>example</summary>
 
 ```yaml
-profile::ceph::client::share_name: "your-project-shared-fs"
-profile::ceph::client::access_key: "MTIzNDU2Nzg5cHJvZmlsZTo6Y2VwaDo6Y2xpZW50OjphY2Nlc3Nfa2V5"
-profile::ceph::client::export_path: "/volumes/_nogroup/"
 profile::ceph::client::mon_host:
   - 192.168.1.3:6789
   - 192.168.2.3:6789
   - 192.168.3.3:6789
-profile::ceph::client::mount_binds:
-  - home
-  - project
-  - software
-profile::ceph::client::mount_name: 'cephfs'
-profile::ceph::client::binds_fcontext_equivalence: '/home'
+profile::ceph::client::shares:
+  home: 
+    
+  project:
+    
 ```
 </details>
+
+## profile::ceph::client::install
+
+This class only installs the Ceph packages. 
 
 ## `profile::consul`
 
@@ -388,14 +389,16 @@ This class installs CVMFS client and configure repositories.
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `repositories`            | List of CVMFS repositories to mount  | Array[String] |
-| `alien_cache_repositories`| List of CVMFS repositories that need an alien cache | Array[String] |
+| `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
+| `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
+| `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
   - pilot.eessi-hpc.org
   - software.eessi.io
@@ -467,6 +470,32 @@ profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
 ```
 </details>
 
+## `profile::efa`
+This class installs the Elastic Fabric Adapter drivers on an AWS instance with an EFA network interface.
+[reference](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html)
+
+### parameters
+
+| Variable        | Description                                                   | Type       |
+| :-------------- | :------------------------------------------------------------ | :--------  |
+| `version`       | EFA driver version | String     |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::efa::version: 'latest'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::efa::version: '1.30.0'
+```
+</details>
+
 ## `profile::fail2ban`
 
 > [Fail2ban](https://github.com/fail2ban/fail2ban) is an intrusion prevention software framework.
@@ -475,7 +504,31 @@ Written in the Python programming language, it is designed to prevent brute-forc
 
 This class installs and configures fail2ban.
 
-Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for parameters to configure.
+### parameters
+
+| Variable          | Description      | Type    |
+| :---------------- | :--------------- | :------ |
+| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
+
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more parameters to configure.
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::fail2ban::ignoreip: []
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::fail2ban::ignoreip:
+  - 132.203.0.0/16
+  - 10.0.0.0/8
+```
+</details>
 
 ### dependencies
 
@@ -590,13 +643,6 @@ profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
 ```
 </details>
 
@@ -751,41 +797,19 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class install NFS and configure an NFS server that will export all provided devices.
-The class also make sure that devices sharing a common export name form an LVM volume group
-that is exported as a single LVM logical volume formated as XFS.
-
-If a volume's size associated with an NFS server device is expanded after the initial configuration,
-the class will not expand the LVM volume automatically. These operations currently have to be
-accomplished manually.
+This class install NFS and configure an NFS server that will export all volumes tagged as `nfs`.
 
 ### parameters
 
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
-| `devices` | Mapping between NFS share and devices to export. | Hash[String, Array[String]]   |
-
+| `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
-```
-</details>
-
-<details>
-<summary>example</summary>
-
-```yaml
-profile::nfs::server::devices:
-  home:
-    - /dev/disk/by-id/b0b686f6-62c8-11ee-8c99-0242ac120002
-    - /dev/disk/by-id/b65acc52-62c8-11ee-8c99-0242ac120002
-  scratch:
-    - bfd50252-62c8-11ee-8c99-0242ac120002
-  project:
-    - c3b99e00-62c8-11ee-8c99-0242ac120002
+profile::nfs::server::no_root_squash_tags: ['mgmt']
 ```
 </details>
 
@@ -818,10 +842,10 @@ internal services to the Internet.
 ```yaml
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:
-  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
-profile::reverse_proxy::main2sub_redit: "jupyter"
+profile::reverse_proxy::main2sub_redir: "jupyter"
 profile::reverse_proxy::remote_ips: {}
 ```
 </details>
@@ -868,6 +892,17 @@ When `profile::rsyslog::server` is included, these classes are included too:
 - [profile::consul](#profileconsul)
 - [profile::rsyslog::base](#profilersyslogbase)
 
+## `profile::vector`
+
+This class install and configures vector.dev service to manage logs.
+Refer to the [documentation](https://vector.dev/docs/) for configuration.
+
+### parameters
+
+| Variable                | Description              | Type    | Optional ? |
+| :---------------------- | :----------------------- | :------ | ---------  |
+| `config`                | Content of the yaml configuration file | String  | Yes  |
+
 ## `profile::slurm::base`
 
 > The [Slurm](https://github.com/schedmd/slurm) Workload Manager, formerly
@@ -890,11 +925,12 @@ to all Slurm's roles. It also installs and configure Munge service.
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
 | `munge_key`             | Base64 encoded Munge key | String  |
-| `slurm_version`         | Slurm version to install | Enum[20.11, 21.08, 22.05, 23.02] |
+| `slurm_version`         | Slurm version to install | Enum['23.02', '23.11', '24.05'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
+| `enable_scrontab`       | Enable user's Slurm-managed crontab | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 
@@ -904,7 +940,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 ```yaml
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 profile::slurm::base::munge_key: ENC[PKCS7, ...]
-profile::slurm::base::slurm_version: '21.08'
+profile::slurm::base::slurm_version: '23.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600
 profile::slurm::base::resume_timeout: 3600
@@ -1034,6 +1070,38 @@ When `profile::slurm::accounting` is included, these classes are included too:
 - [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::mail::server`](#profilemailserver)
+
+
+## `profile::slurm::node`
+
+This class installs and configure the Slurm node daemon - **slurmd**.
+
+### parameters
+
+| Variable                | Description                                                                                   | Type    |
+| :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
+| `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::slurm::node::enable_tmpfs_mounts: true
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::slurm::node::enable_tmpfs_mounts: false
+```
+</details>
+
+### dependency
+
+When `profile::slurm::node` is included, this class is included too:
+- [`profile::slurm::base`](#profileslurmbase)
 
 ## `profile::software_stack`
 
@@ -1316,7 +1384,7 @@ A `profile::users::local_user` is defined as a dictionary with the following key
 | `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes        |
 | `selinux_user`    | SELinux context for the user                    | String          | Yes        |
 | `mls_range`       | MLS Range for the user                          | String          | Yes        |
-
+| `authenticationmethods` | Specifies AuthenticationMethods value for this user in sshd_config | String          | Yes        |
 
 <details>
 <summary>default values</summary>
@@ -1327,6 +1395,7 @@ profile::users::local::users:
     public_keys: "%{alias('terraform.data.public_keys')}"
     groups: ['adm', 'wheel', 'systemd-journal']
     sudoer: true
+    authenticationmethods: 'publickey'
 ```
 
 If `profile::users::local::users` is present in more than one YAML file in the hierarchy,
@@ -1347,5 +1416,49 @@ profile::users::local::users:
     # sudoer: false
     # selinux_user: 'unconfined_u'
     # mls_range: ''s0-s0:c0.c1023'
+    # authenticationmethods: 'publickey,password publickey,keyboard-interactive'
+```
+</details>
+
+## `profile::volumes`
+
+This class creates and mounts LVM volume groups. Each volume is formated as XFS.
+
+If a volume is expanded after the initial configuration, the class will not expand the
+LVM volume automatically. These operations currently have to be accomplished manually.
+
+### parameters
+
+| Variable   | Description                                                                    | Type                                      |
+| :--------- | :----------------------------------------------------------------------------- | :---------------------------------------- |
+| `devices`  | Hash of devices | Hash[String, Hash[String, Hash]] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::volumes::devices: "%{lookup('terraform.self.volumes')}"
+```
+</details>
+
+
+<details>
+<summary>examples</summary>
+
+```yaml
+profile::volumes::devices:
+  "local":
+    "tmp":
+      "glob": "/dev/vdc",
+      "size": 100,
+      #"bind_mount": true,
+      #"bind_target": "/tmp",
+      #"owner": "root",
+      #"group": "root",
+      #"mode": "0755",
+      #"seltype": "home_root_t",
+      #"enable_resize": false,
+      #"filesystem": "xfs",
+      #"quota": nil
 ```
 </details>

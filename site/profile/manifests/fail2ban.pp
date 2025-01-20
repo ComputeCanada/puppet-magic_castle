@@ -1,8 +1,10 @@
-class profile::fail2ban {
+class profile::fail2ban (
+  Array[String] $ignoreip = [],
+) {
   include epel
 
   class { 'fail2ban' :
-    whitelist => ['127.0.0.1/8', profile::getcidr()] + lookup('fail2ban::ignoreip', undef, undef, []),
+    whitelist => ['127.0.0.1/8', profile::getcidr()] + $ignoreip,
   }
 
   file_line { 'fail2ban_sshd_recv_disconnect':

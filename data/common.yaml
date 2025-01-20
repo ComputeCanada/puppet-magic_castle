@@ -6,8 +6,11 @@ lookup_options:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
+  prometheus::alerts:
+    merge: 'deep'
 
-profile::base::version: 13.3.2
+profile::base::version: 14.1.2
+profile::base::packages: []
 
 motd::content: ""
 
@@ -53,21 +56,21 @@ jupyterhub::jupyterhub_config_hash:
     ui_args:
       notebook:
         name: Jupyter Notebook
-        args: ['--SingleUserNotebookApp.default_url=/tree']
+        url: '/tree'
       lab:
         name: JupyterLab
       terminal:
         name: Terminal
-        args: ['--SingleUserNotebookApp.default_url=/terminals/1']
+        url: '/terminals/1'
       rstudio:
         name: RStudio
-        args: ['--SingleUserNotebookApp.default_url=/rstudio']
+        url: '/rstudio'
       code-server:
         name: VS Code
-        args: ['--SingleUserNotebookApp.default_url=/code-server']
+        url: '/code-server'
       desktop:
         name: Desktop
-        args: ['--SingleUserNotebookApp.default_url=/Desktop']
+        url: '/Desktop'
 
   SbatchForm:
     ui:
@@ -183,6 +186,7 @@ prometheus::server::scrape_configs:
           - __meta_consul_node
         target_label: instance
   - job_name: jupyterhub
+    metrics_path: "/hub/metrics"
     scrape_interval: 10s
     scrape_timeout: 10s
     honor_labels: true
@@ -204,11 +208,26 @@ prometheus::server::scrape_configs:
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
+prometheus::alertmanager::version: '0.26.0'
+# The default value has a syntax issue in the original puppet-prometheus
+# https://github.com/voxpupuli/puppet-prometheus/pull/540
+prometheus::alertmanager::receivers:
+  - name: 'Admin'
+    email_configs:
+      - to: 'root@localhost'
+
+prometheus::alertmanagers_config:
+  - static_configs:
+    - targets:
+      - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
+
+
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
+  - '^(object-.*\.cloud\.computecanada\.ca)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
   - '^(.*\.cvmfs\.eessi-infra\.org)$'
@@ -224,8 +243,6 @@ profile::cvmfs::local_user::group: 'cvmfs-reserved'
 profile::cvmfs::local_user::uid: 13000004
 profile::cvmfs::local_user::gid: 8000131
 
-profile::mfa::provider: 'none'
-
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
@@ -234,9 +251,10 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
 
-profile::slurm::base::slurm_version: '22.05'
+profile::slurm::base::slurm_version: '24.05'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.5.1'
+profile::slurm::node::enable_tmpfs_mounts: true
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
 profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
@@ -252,26 +270,36 @@ profile::users::local::users:
     public_keys: "%{alias('terraform.data.public_keys')}"
     groups: ['adm', 'wheel', 'systemd-journal']
     sudoer: true
+    authenticationmethods: 'publickey'
 
 
-profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::freeipa::base::ipa_domain: "int.%{lookup('terraform.data.domain_name')}"
 
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 
-profile::nfs::server::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
-profile::nfs::client::domain_name: "%{hiera('profile::freeipa::base::domain_name')}"
+profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
 profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
-
-profile::nfs::server::devices: "%{alias('terraform.volumes.nfs')}"
+profile::volumes::devices: "%{alias('terraform.self.volumes')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:
-  ipa: "ipa.int.%{lookup('terraform.data.domain_name')}"
+  ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
+
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-driver-devel
+  - nvidia-driver-libs
+  - nvidia-driver-NVML
+  - nvidia-modprobe
+  - nvidia-xconfig
+  - nvidia-persistenced
+  - nvidia-driver-cuda

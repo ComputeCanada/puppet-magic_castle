@@ -1,13 +1,2 @@
 ---
 os::redhat::python3::version: 3.9
-profile::freeipa::server::regen_cert_cmd: ipa-getcert list | grep -oP "Request ID '\K[^']+" | xargs -I '{}' ipa-getcert resubmit -i '{}' -w
-profile::gpu::install::passthrough::packages:
-    - kmod-nvidia-latest-dkms # require to be first package, otherwise kmod-nivida is installed
-    - nvidia-driver-cuda-libs
-    - nvidia-driver
-    - nvidia-driver-devel
-    - nvidia-driver-libs
-    - nvidia-driver-NVML
-    - nvidia-modprobe
-    - nvidia-xconfig
-    - nvidia-persistenced

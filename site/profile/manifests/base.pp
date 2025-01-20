@@ -1,5 +1,6 @@
 class profile::base (
   String $version,
+  Array[String] $packages,
   Optional[String] $admin_email = undef,
 ) {
   include stdlib
@@ -16,12 +17,6 @@ class profile::base (
   file { '/usr/sbin/prepare4image.sh':
     source => 'puppet:///modules/profile/base/prepare4image.sh',
     mode   => '0755',
-  }
-
-  if dig($::facts, 'os', 'release', 'major') == '7' {
-    package { 'yum-plugin-priorities':
-      ensure => 'installed',
-    }
   }
 
   file { '/etc/localtime':
@@ -65,13 +60,16 @@ class profile::base (
     ensure => 'absent',
   }
 
-  class { 'firewall': }
+  class { 'firewall':
+    tag => 'mc_bootstrap',
+  }
 
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
     source => profile::getcidr(),
     action => 'accept',
+    tag    => 'mc_bootstrap',
   }
 
   firewall { '001 drop access to metadata server':
@@ -80,6 +78,7 @@ class profile::base (
     destination => '169.254.169.254',
     action      => 'drop',
     uid         => '! root',
+    tag         => 'mc_bootstrap',
   }
 
   package { 'haveged':
@@ -97,6 +96,8 @@ class profile::base (
     enable  => true,
     require => Package['haveged'],
   }
+
+  ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
@@ -132,8 +133,7 @@ class profile::base::azure {
 
 # build /etc/hosts
 class profile::base::etc_hosts {
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $instances = lookup('terraform.instances')
 
   # build /etc/hosts
@@ -144,28 +144,21 @@ class profile::base::etc_hosts {
     content => epp('profile/base/hosts',
       {
         'instances'       => $instances,
-        'int_domain_name' => $int_domain_name,
+        'int_domain_name' => $ipa_domain,
       }
     ),
   }
 }
 
 class profile::base::powertools {
-  if versioncmp($::facts['os']['release']['major'], '8') >= 0 {
-    if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-      $repo_name = 'powertools'
-    } else {
-      $repo_name = 'crb'
-    }
-    exec { 'enable_powertools':
-      command => "dnf config-manager --set-enabled ${$repo_name}",
-      unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
-      path    => ['/usr/bin'],
-    }
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    $repo_name = 'powertools'
   } else {
-    exec { 'enable_powertools':
-      command     => '/bin/true',
-      refreshonly => true,
-    }
+    $repo_name = 'crb'
+  }
+  exec { 'enable_powertools':
+    command => "dnf config-manager --set-enabled ${$repo_name}",
+    unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
+    path    => ['/usr/bin'],
   }
 }

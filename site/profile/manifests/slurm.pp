@@ -9,11 +9,12 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['20.11', '21.08', '22.05', '23.02'] $slurm_version,
+  Enum['23.02', '23.11', '24.05'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $resume_timeout = 3600,
   Boolean $enable_x11_forwarding = true,
+  Boolean $enable_scrontab = false,
   String  $config_addendum = '',
 )
 {
@@ -57,7 +58,6 @@ class profile::slurm::base (
 
   package { 'munge':
     ensure  => 'installed',
-    require => Yumrepo['epel']
   }
 
   file { '/var/log/slurm':
@@ -94,15 +94,6 @@ class profile::slurm::base (
         'slurm_version' => $slurm_version,
       }
     ),
-  }
-
-  if versioncmp($slurm_version, '22.05') < 0 {
-    file { '/etc/slurm/cgroup_allowed_devices_file.conf':
-      ensure => 'present',
-      owner  => 'slurm',
-      group  => 'slurm',
-      source => 'puppet:///modules/profile/slurm/cgroup_allowed_devices_file.conf'
-    }
   }
 
   file { '/etc/slurm/epilog':
@@ -160,20 +151,32 @@ class profile::slurm::base (
     require => [
       Exec['enable_powertools'],
       Package['munge'],
-      Yumrepo['slurm-copr-repo']
+      Yumrepo['slurm-copr-repo'],
+      Yumrepo['epel'],
     ],
   }
 
   package { ['slurm-contribs', 'slurm-perlapi' ]:
     ensure  => 'installed',
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']],
+  }
+
+  # slurm-contribs command "seff" requires Sys/hostname.pm
+  # which is not packaged by default with perl in RHEL >= 9.
+  if versioncmp($facts['os']['release']['major'], '9') >= 0 {
+    ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
   }
 
   package { 'slurm-libpmi':
     ensure  => 'installed',
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']]
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   $instances = lookup('terraform.instances')
@@ -188,12 +191,15 @@ class profile::slurm::base (
         'cluster_name'          => $cluster_name,
         'slurm_version'         => $slurm_version,
         'enable_x11_forwarding' => $enable_x11_forwarding,
+        'enable_scrontab'       => $enable_scrontab,
         'nb_nodes'              => length($nodes),
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,
         'suspend_time'          => $suspend_time,
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
+        'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
+        'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -213,25 +219,6 @@ class profile::slurm::base (
     owner   => 'slurm',
     mode    => '0644',
     require => File['/etc/slurm'],
-  }
-
-  file { '/etc/slurm/slurm-consul.tpl':
-    ensure => 'present',
-    source => 'puppet:///modules/profile/slurm/slurm-consul.tpl',
-    notify => Service['consul-template'],
-  }
-
-  wait_for { 'slurmctldhost_set':
-    query             => 'cat /etc/slurm/slurm-consul.conf',
-    regex             => '^SlurmctldHost=',
-    polling_frequency => 10,  # Wait up to 5 minutes (30 * 10 seconds).
-    max_retries       => 30,
-    require           => [
-      Service['consul-template'],
-      Class['consul::reload_service'],
-    ],
-    refreshonly       => true,
-    subscribe         => File['/etc/slurm/slurm-consul.tpl'],
   }
 
   # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
@@ -255,44 +242,6 @@ class profile::slurm::base (
         'memlimit' => $os_reserved_memory,
         'weights'  => slurm_compute_weights($nodes),
       }),
-  }
-
-  file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => epp('profile/slurm/gres.conf',
-      {
-        'nodes' => $nodes,
-      }
-    ),
-    seltype => 'etc_t'
-  }
-
-  file { '/opt/software/slurm/bin/cond_restart_slurm_services':
-    require => Package['slurm'],
-    mode    => '0755',
-    content => @("EOT"),
-#!/bin/bash
-{
-  /usr/bin/systemctl -q is-active slurmd && /usr/bin/systemctl restart slurmd || /usr/bin/true
-  /usr/bin/systemctl -q is-active slurmctld && /usr/bin/systemctl restart slurmctld || /usr/bin/true
-} &> /var/log/slurm/cond_restart_slurm_services.log
-|EOT
-  }
-
-
-  consul_template::watch { 'slurm-consul.conf':
-    require     => [
-      File['/etc/slurm/slurm-consul.tpl'],
-      File['/opt/software/slurm/bin/cond_restart_slurm_services'],
-    ],
-    config_hash => {
-      perms       => '0644',
-      source      => '/etc/slurm/slurm-consul.tpl',
-      destination => '/etc/slurm/slurm-consul.conf',
-      command     => '/opt/software/slurm/bin/cond_restart_slurm_services',
-    }
   }
 
 }
@@ -334,8 +283,11 @@ class profile::slurm::accounting(
   package { 'slurm-slurmdbd':
     ensure  => present,
     name    => "slurm-slurmdbd-${slurm_version}*",
-    require => [Package['munge'],
-                Yumrepo['slurm-copr-repo']],
+    require => [
+      Package['slurm'],
+      Package['munge'],
+      Yumrepo['slurm-copr-repo']
+    ],
   }
 
   service { 'slurmdbd':
@@ -389,7 +341,6 @@ class profile::slurm::accounting(
     require     => [
       Service['slurmdbd'],
       Wait_for['slurmdbd_started'],
-      Wait_for['slurmctldhost_set'],
     ],
     before      => [
       Service['slurmctld']
@@ -423,6 +374,20 @@ class profile::slurm::controller (
 ) {
   contain profile::slurm::base
   include profile::mail::server
+
+  $instances = lookup('terraform.instances')
+  $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
+  file { '/etc/slurm/gres.conf':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/gres.conf',
+      {
+        'nodes' => $nodes,
+      }
+    ),
+    seltype => 'etc_t'
+  }
 
   file { '/usr/sbin/slurm_mail':
     ensure => 'present',
@@ -499,31 +464,29 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
-
-  $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if versioncmp($slurm_version, '21.08') >= 0 {
-    file { '/etc/slurm/job_submit.lua':
-      ensure  => 'present',
-      owner   => 'slurm',
-      group   => 'slurm',
-      content => epp('profile/slurm/job_submit.lua',
-        {
-          'selinux_context' => $selinux_context,
-        }
-      ),
-    }
+  file { '/etc/slurm/job_submit.lua':
+    ensure  => 'present',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/job_submit.lua',
+      {
+        'selinux_context' => $selinux_context,
+      }
+    ),
   }
 
   consul::service { 'slurmctld':
     port    => 6817,
     require => Tcp_conn_validator['consul'],
     token   => lookup('profile::consul::acl_api_token'),
-    before  => Wait_for['slurmctldhost_set'],
   }
 
   package { 'slurm-slurmctld':
     ensure  => 'installed',
-    require => Package['munge']
+    require => [
+      Package['munge'],
+      Package['slurm'],
+    ],
   }
 
   service { 'slurmctld':
@@ -531,7 +494,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     enable    => true,
     require   => [
       Package['slurm-slurmctld'],
-      Wait_for['slurmctldhost_set'],
     ],
     subscribe => [
       File['/etc/slurm/slurm.conf'],
@@ -558,47 +520,46 @@ export TFE_VAR_POOL=${tfe_var_pool}
 }
 
 # Slurm node class. This is where slurmd is ran.
-class profile::slurm::node {
+class profile::slurm::node (
+  Boolean $enable_tmpfs_mounts = true,
+) {
   contain profile::slurm::base
-
-  $slurm_version = lookup('profile::slurm::base::slurm_version')
-  if versioncmp($slurm_version, '22.05') >= 0 {
-    $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
-  } else {
-    $cc_tmpfs_mounts_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts/'
-  }
-
-  yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
-    enabled             => true,
-    descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
-    baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
-    skip_if_unavailable => true,
-    gpgcheck            => 1,
-    gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
-    repo_gpgcheck       => 0,
-  }
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
-    require => Package['slurm']
+    require => Package['slurm'],
   }
 
-  package { 'spank-cc-tmpfs_mounts':
-    ensure  => 'installed',
-    require => [
-      Package['slurm-slurmd'],
-      Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
-    ]
+  if $enable_tmpfs_mounts {
+    $slurm_version = lookup('profile::slurm::base::slurm_version')
+    $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
+
+    yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
+      enabled             => true,
+      descr               => 'Copr repo for spank-cc-tmpfs_mounts owned by cmdntrf',
+      baseurl             => "${cc_tmpfs_mounts_url}/epel-\$releasever-\$basearch/",
+      skip_if_unavailable => true,
+      gpgcheck            => 1,
+      gpgkey              => "${cc_tmpfs_mounts_url}/pubkey.gpg",
+      repo_gpgcheck       => 0,
+    }
+    package { 'spank-cc-tmpfs_mounts':
+      ensure  => 'installed',
+      require => [
+        Package['slurm-slurmd'],
+        Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
+      ]
+    }
+    $plugstack = 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
+  } else {
+    $plugstack = ''
   }
 
   file { '/etc/slurm/plugstack.conf':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
-    content => @(EOT/L),
-      required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so \
-      bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/
-      |EOT
+    content => $plugstack,
   }
 
   pam { 'Add pam_slurm_adopt':
@@ -643,9 +604,54 @@ class profile::slurm::node {
     source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
   }
 
-  file { '/localscratch':
-    ensure  => 'directory',
-    seltype => 'tmp_t'
+
+  # Implementation of user limits as recommended in
+  # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
+  # + some common values found on Compute Canada clusters
+  limits::limits{'*/core':
+    soft => '0',
+    hard => 'unlimited'
+  }
+
+  limits::limits{'*/nproc':
+    soft => '4096',
+  }
+
+  limits::limits{'root/nproc':
+    soft => 'unlimited',
+  }
+
+  limits::limits{'*/memlock':
+    both => 'unlimited',
+  }
+
+  limits::limits{'*/stack':
+    both => 'unlimited',
+  }
+
+  limits::limits{'*/nofile':
+    both => '1048576',
+  }
+
+  limits::limits{'*/cpu':
+    both => 'unlimited',
+  }
+
+  limits::limits{'*/rtprio':
+    both => 'unlimited',
+  }
+
+  ensure_resource('file', '/localscratch', { 'ensure' => 'directory', 'seltype' => 'tmp_t' })
+  if '/dev/disk/by-label/ephemeral0' in $facts['/dev/disk'] {
+    mount { '/localscratch':
+      ensure  => mounted,
+      device  => '/mnt/ephemeral0',
+      fstype  => none,
+      options => 'rw,bind',
+      require => [
+        File['/localscratch'],
+      ],
+    }
   }
 
   file { '/var/spool/slurmd':
@@ -654,9 +660,34 @@ class profile::slurm::node {
     group  => 'slurm'
   }
 
+  file { '/opt/software/slurm/bin/nvidia_gres.sh':
+    source  => 'puppet:///modules/profile/slurm/nvidia_gres.sh',
+    mode    => '0755',
+    require => Package['slurm'],
+  }
+
+  if $facts['nvidia_gpu_count'] > 0 {
+    file { '/etc/slurm/gres.conf':
+      ensure => present,
+    }
+    exec { 'slurm-nvidia_gres':
+      command     => '/opt/software/slurm/bin/nvidia_gres.sh > /etc/slurm/gres.conf',
+      refreshonly => true,
+      notify      => Service['slurmd'],
+      subscribe   => [
+        File['/opt/software/slurm/bin/nvidia_gres.sh'],
+        File['/etc/slurm/gres.conf'],
+      ]
+    }
+    Kmod::Load <| tag == profile::gpu  |> -> Exec['slurm-nvidia_gres']
+    Exec <| tag == profile::gpu |> ~> Exec['slurm-nvidia_gres']
+    Exec <| tag == profile::gpu::install::mig |> ~> Exec['slurm-nvidia_gres']
+  }
+
   Exec <| tag == profile::cvmfs |> -> Service['slurmd']
   Exec <| tag == profile::freeipa |> -> Service['slurmd']
   Exec <| tag == profile::gpu |> -> Service['slurmd']
+  Exec <| tag == profile::gpu::install::mig |> ~> Service['slurmd']
   Exec <| tag == profile::jupyterhub |> -> Service['slurmd']
   Kmod::Load <| |> -> Service['slurmd']
   Mount <| |> -> Service['slurmd']
@@ -671,18 +702,16 @@ class profile::slurm::node {
 
   service { 'slurmd':
     ensure    => 'running',
-    enable    => true,
+    enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
       File['/etc/slurm/plugstack.conf'],
       File['/etc/slurm/slurm.conf'],
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
-      File['/etc/slurm/gres.conf'],
     ],
     require   => [
       Package['slurm-slurmd'],
-      Wait_for['slurmctldhost_set'],
     ],
   }
 
@@ -699,17 +728,6 @@ class profile::slurm::node {
     create_owner => 'root',
     create_group => 'root',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmd',
-  }
-
-  $hostname = $facts['networking']['hostname']
-
-  # If slurmctld server is rebooted slurmd needs to be restarted.
-  # Otherwise, slurmd keeps running, but the node is not in any partition
-  # and no job can be scheduled on it.
-  exec { 'systemctl restart slurmd':
-    onlyif  => "test $(sinfo -n ${hostname} -o %t -h | wc -l) -eq 0",
-    path    => ['/usr/bin', '/opt/software/slurm/bin'],
-    require => Service['slurmd'],
   }
 }
 

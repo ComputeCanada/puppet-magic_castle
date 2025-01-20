@@ -3,6 +3,106 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [14.1.2] 2024-11-19
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [14.1.1] 2024-11-19
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [14.1.0] 2024-11-17
+
+### Added
+
+- Added a dependency to ipa-install-client exec on resources that takes most of the configuration time.
+This levels the configuration time of instances resulting in the cluster configuration time corresponds
+to the management instance configuration time.
+
+## [14.0.0] 2024-11-12
+
+### Added
+
+- Added ability to define gieradata per instances group (PR #324)
+- Added option to disable CVMFS_STRICT_MOUNT (PR #335)
+- Added option to install additional OS packages (PR #290)
+- Added enable_scrontab to slurm::base (PR #329)
+- Added support for vector.dev (PR #356)
+- Added user quota support with XFS (PR #308)
+- Added puppet-forge's rsyslog (PR #321)
+- Added support for Slurm 23.11 (PR #359)
+- Added support for Slurm 24.05 (PR #364)
+- Added perl-Sys-hostname in base slurm when os major >= 9 (PR #366)
+- Added option to disable Slurm's spank plugin to manage tmpfs mounts (PR #337)
+- Added authenticationmethods param to local user (PR #340)
+- Added option for user to specify CephFS version (PR #380)
+- Provided JupyterHub the ability to create users in FreeIPA (PR #397)
+
+### Changed
+
+- Fixed issue #351 - "prepare4image.sh fails to run to completion..." (PR #352)
+- Generalized ceph.pp to allow multiple cephfs mounting (PR #313)
+- Adjusted user limits on compute node (PR #311)
+- Refactored NFS server and client to allow running nfs and mgmt on distinct instances (PR #300)
+- Improved prepare4image.sh handling of mounted volumes (#338)
+- Added firewall definition to bootstrap
+- Made profile::sssd module works on its own with or without profile::freeipa (PR #330)
+- Replaced file_line by sshd_config provider for UseDNS and HostbasedAuthentication (PR #367)
+- Fixed Arbutus vgpu rpm src (PR #369)
+- Changed Nvidia driver source to stream - proprietary version (PR #373)
+- Made prepare4image.sh remove only puppet data cache directories
+- Replaced nvidia-persistenced user by dynamic systemd user (PR #383)
+- Bumped nvidia driver to v550-dkms
+- Upgraded default Compute Canada environment to StdEnv/2023 (PR #390)
+- Bumped puppet-jupyterhub to 6.3.0
+
+### Removed
+
+- Removed branching related to CentOS 7 (PR #358)
+- Pruned slurm versions no longer supported by SchedMD (PR #365)
+
+## [13.5.0] 2024-04-11
+
+### Added
+
+- Support for NVIDIA MIG (PR #276)
+- Support for AWS EFA (PR #331)
+
+### Changed
+
+- Bumped Slurm version to 23.02 (PR #276)
+
+### Removed
+
+- Removed support for Slurm 20.11 (PR #276)
+
+## [13.4.0] 2024-04-09
+
+### Added
+- Added class `software_stack` (PR #304)
+- Enabled Prometheus alertmanager for mgmt (PR #318)
+- Added support for ssh authorized keys options (PR #344)
+
+### Changed
+
+- Moved software stack content out of cvmfs class into its own class (PR #304)
+- Fixed cvmfs configuration order in Puppet (PR #310)
+- Improved error handling in mkhome and mkproject daemon by implementing pipeline with shell fifo (PR #328)
+- Improved mkproject daemon handling of error and of group locking (PR #346)
+
+### Removed
+
+- Remove profile::mfa::provider from common.yaml
+
+## [13.3.2] 2024-02-19
+
+### Changed
+- Bumped puppet-jupyterhub to 5.0.4
+
 ## [13.3.1] 2024-01-17
 
 ### Changed
@@ -107,7 +207,6 @@ definition.
 - Disabled unused epel repos
 - Removed profile::nfs exec `exportfs -ua; cat...; exportfs -a`
 - Removed puppet alias from etc/hosts
-- 
 
 ## [12.6.7] 2023-09-29
 

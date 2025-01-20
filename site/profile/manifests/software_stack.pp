@@ -4,7 +4,7 @@ class profile::software_stack (
   Optional[Array[String]] $lmod_default_modules = undef,
   Optional[Hash[String, String]] $extra_site_env_vars = undef,
 ) {
-  include consul
+  include profile::consul
   include profile::cvmfs::client
 
   package { 'cvmfs-config-eessi':

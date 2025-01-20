@@ -3,9 +3,7 @@ class profile::consul (Array[String] $servers) {
 
   include consul_template
 
-  $interface = profile::getlocalinterface()
-  $ipaddress = $facts['networking']['interfaces'][$interface]['ip']
-
+  $ipaddress = lookup('terraform.self.local_ip')
   if $ipaddress in $servers {
     $is_server = true
     $bootstrap_expect = length($servers)
