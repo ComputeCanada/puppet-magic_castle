@@ -48,6 +48,7 @@ define profile::volumes::volume (
   Optional[String[1]] $type = undef,
   Optional[String[1]] $quota = undef,
   Optional[String[1]] $mkfs_options = undef,
+  Optional[Boolean] $managed = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
   $bind_target_ = pick($bind_target, "/${volume_name}")
