@@ -2,22 +2,8 @@ class profile::gpu (
   Boolean $restrict_profiling,
 ) {
   if $facts['nvidia_gpu_count'] > 0 {
-    require profile::gpu::install
-    if ! $facts['nvidia_grid_vgpu'] {
-      service { 'nvidia-persistenced':
-        ensure => 'running',
-        enable => true,
-      }
-      service { 'nvidia-dcgm':
-        ensure => 'running',
-        enable => true,
-      }
-    } else {
-      service { 'nvidia-gridd':
-        ensure => 'running',
-        enable => true,
-      }
-    }
+    include profile::gpu::install
+    include profile::gpu::services
   }
 }
 
@@ -323,4 +309,19 @@ class profile::gpu::install::vgpu::bin (
     group  => 'root',
     source => $gridd_source,
   }
+}
+
+class profile::gpu::services {
+  if ! $facts['nvidia_grid_vgpu'] {
+    $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
+  } else {
+    $gpu_services = ['nvidia-gridd']
+  }
+  service { $gpu_services:
+    ensure => 'running',
+    enable => true,
+  }
+
+  Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
+  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Exec[$gpu_services]
 }
