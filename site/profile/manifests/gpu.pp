@@ -28,19 +28,23 @@ class profile::gpu::install (
     group  => 'root',
     mode   => '0755',
   }
+
   file_line { 'nvidia_restrict_profiling':
     path    => '/etc/modprobe.d/nvidia.conf',
     match   => '^options nvidia NVreg_RestrictProfilingToAdminUsers',
     line    => "options nvidia NVreg_RestrictProfilingToAdminUsers=${Integer($restrict_profiling)}",
     require => File['/etc/modprobe.d/nvidia.conf'],
     notify  => [
-      Exec['unload nvidia drivers'],
+      Exec['stop_nvidia_services'],
+      Exec['unload_nvidia_drivers'],
     ],
   }
-  exec { 'unload nvidia drivers':
+
+  exec { 'unload_nvidia_drivers':
     command     => sprintf('rmmod %s', $nvidia_kmod.reverse.join(' ')),
     onlyif      => 'grep -qE "^nvidia " /proc/modules',
     refreshonly => true,
+    require     => Exec['stop_nvidia_services'],
     notify      => Kmod::Load[$nvidia_kmod],
     path        => ['/bin', '/sbin'],
   }
@@ -90,6 +94,7 @@ class profile::gpu::install (
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
     Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
+  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
 }
 
 class profile::gpu::install::passthrough (
@@ -320,6 +325,13 @@ class profile::gpu::services {
   service { $gpu_services:
     ensure => 'running',
     enable => true,
+  }
+
+  exec { 'stop_nvidia_services':
+    command     => sprintf('systemctl stop %s', $gpu_services.reverse.join(' ')),
+    onlyif      => sprintf('systemctl is-active %s', $gpu_services.reverse.join(' ')),
+    refreshonly => true,
+    path        => ['/usr/bin'],
   }
 
   Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
