@@ -1,35 +1,52 @@
-class profile::gpu {
+class profile::gpu (
+  Boolean $restrict_profiling,
+) {
   if $facts['nvidia_gpu_count'] > 0 {
-    require profile::gpu::install
-    if ! $facts['nvidia_grid_vgpu'] {
-      service { 'nvidia-persistenced':
-        ensure => 'running',
-        enable => true,
-      }
-      service { 'nvidia-dcgm':
-        ensure => 'running',
-        enable => true,
-      }
-    } else {
-      service { 'nvidia-gridd':
-        ensure => 'running',
-        enable => true,
-      }
-    }
+    include profile::gpu::install
+    include profile::gpu::services
   }
 }
 
 class profile::gpu::install (
-  String $lib_symlink_path = undef
+  String $lib_symlink_path = undef,
 ) {
+  $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
   ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
   ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
   ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
     source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
+  }
+
+  file { '/etc/modprobe.d/nvidia.conf':
+    ensure => file,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+
+  file_line { 'nvidia_restrict_profiling':
+    path    => '/etc/modprobe.d/nvidia.conf',
+    match   => '^options nvidia NVreg_RestrictProfilingToAdminUsers',
+    line    => "options nvidia NVreg_RestrictProfilingToAdminUsers=${Integer($restrict_profiling)}",
+    require => File['/etc/modprobe.d/nvidia.conf'],
+    notify  => [
+      Exec['stop_nvidia_services'],
+      Exec['unload_nvidia_drivers'],
+    ],
+  }
+
+  exec { 'unload_nvidia_drivers':
+    command     => sprintf('rmmod %s', $nvidia_kmod.reverse.join(' ')),
+    onlyif      => 'grep -qE "^nvidia " /proc/modules',
+    refreshonly => true,
+    require     => Exec['stop_nvidia_services'],
+    notify      => Kmod::Load[$nvidia_kmod],
+    path        => ['/bin', '/sbin'],
   }
 
   if ! $facts['nvidia_grid_vgpu'] {
@@ -42,7 +59,6 @@ class profile::gpu::install (
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
-  $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
   if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
@@ -78,6 +94,7 @@ class profile::gpu::install (
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
     Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
+  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
 }
 
 class profile::gpu::install::passthrough (
@@ -297,4 +314,26 @@ class profile::gpu::install::vgpu::bin (
     group  => 'root',
     source => $gridd_source,
   }
+}
+
+class profile::gpu::services {
+  if ! $facts['nvidia_grid_vgpu'] {
+    $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
+  } else {
+    $gpu_services = ['nvidia-gridd']
+  }
+  service { $gpu_services:
+    ensure => 'running',
+    enable => true,
+  }
+
+  exec { 'stop_nvidia_services':
+    command     => sprintf('systemctl stop %s', $gpu_services.reverse.join(' ')),
+    onlyif      => sprintf('systemctl is-active %s', $gpu_services.reverse.join(' ')),
+    refreshonly => true,
+    path        => ['/usr/bin'],
+  }
+
+  Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
+  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Exec[$gpu_services]
 }
