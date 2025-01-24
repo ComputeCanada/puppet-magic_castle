@@ -128,19 +128,39 @@ define profile::users::local_user (
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
   String $authenticationmethods = '',
+  Boolean $manage_home = true,
+  Boolean $purge_ssh_keys = true,
+  Optional[String] $shell = undef,
+  Optional[Integer] $uid = undef,
+  Optional[Integer] $gid = undef,
+  String $group = $name,
+  String $home = "/${name}",
 ) {
+  ensure_resource('group', $group, {
+      ensure     => present,
+      gid        => $gid,
+      forcelocal => true,
+    }
+  )
   # Configure local account and ssh keys
   user { $name:
     ensure         => present,
     forcelocal     => true,
+    uid            => $uid,
+    gid            => $group,
     groups         => $groups,
-    home           => "/${name}",
-    purge_ssh_keys => true,
-    managehome     => true,
-    notify         => Selinux::Exec_restorecon["/${name}"],
+    home           => $home,
+    purge_ssh_keys => $purge_ssh_keys,
+    managehome     => $manage_home,
+    shell          => $shell,
+    require        => Group[$group],
   }
 
-  selinux::exec_restorecon { "/${name}": }
+  if $manage_home {
+    selinux::exec_restorecon { $home:
+      subscribe=> User[$name]
+    }
+  }
 
   $public_keys.each | Integer $index, String $sshkey | {
     $split = split($sshkey, ' ')
