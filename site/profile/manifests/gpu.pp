@@ -8,7 +8,7 @@ class profile::gpu (
 }
 
 class profile::gpu::install (
-  String $lib_symlink_path = undef,
+  Optional[String] $lib_symlink_path = undef
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
@@ -292,8 +292,8 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
-  String $gridd_content = undef,
-  String $gridd_source = undef,
+  Optional[String] $gridd_content = undef,
+  Optional[String] $gridd_source = undef,
 ) {
   exec { 'vgpu-driver-install-bin':
     command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
