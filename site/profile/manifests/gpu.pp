@@ -54,7 +54,6 @@ class profile::gpu::install (
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
     include profile::gpu::install::vgpu
-    Class['profile::gpu::install::vgpu'] -> Exec['dkms_nvidia']
   }
 
   # Binary installer do not build drivers with DKMS
