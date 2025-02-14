@@ -8,7 +8,7 @@ class profile::gpu (
 }
 
 class profile::gpu::install (
-  String $lib_symlink_path = undef,
+  Optional[String] $lib_symlink_path = undef
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
@@ -49,17 +49,16 @@ class profile::gpu::install (
     path        => ['/bin', '/sbin'],
   }
 
-  if ! $facts['nvidia_grid_vgpu'] {
+  if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
     include profile::gpu::install::vgpu
-    Class['profile::gpu::install::vgpu'] -> Exec['dkms_nvidia']
   }
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
-  if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
+  if ! profile::is_grid_vgpu() or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
@@ -235,6 +234,7 @@ class profile::gpu::config::mig (
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
   String $nvidia_ml_py_version = '11.515.75',
+  Array[String] $grid_vgpu_types = [],
 ) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
@@ -291,7 +291,8 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
-  String $gridd_source,
+  Optional[String] $gridd_content = undef,
+  Optional[String] $gridd_source = undef,
 ) {
   exec { 'vgpu-driver-install-bin':
     command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
@@ -307,17 +308,25 @@ class profile::gpu::install::vgpu::bin (
     ],
   }
 
+  if $gridd_content {
+    $gridd_definition = { 'content' => $gridd_content }
+  } elsif $gridd_source {
+    $gridd_definition = { 'source' => $gridd_source }
+  } else {
+    $gridd_definition = {}
+  }
+
   file { '/etc/nvidia/gridd.conf':
     ensure => file,
     mode   => '0644',
     owner  => 'root',
     group  => 'root',
-    source => $gridd_source,
+    *      => $gridd_definition,
   }
 }
 
 class profile::gpu::services {
-  if ! $facts['nvidia_grid_vgpu'] {
+  if ! profile::is_grid_vgpu() {
     $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
   } else {
     $gpu_services = ['nvidia-gridd']
