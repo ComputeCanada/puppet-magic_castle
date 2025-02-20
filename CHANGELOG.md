@@ -3,6 +3,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+# [14.2.0] UNRELEASED
+
+### Added
+
+- Added a check on hostname length before calling ipa-client-install (PR #403)
+- Added an epel dependency on package slurm
+- Defined restart for httpd in FreeIPA
+- Added include sssd::client in freeipa::server
+- Added option to define custom weight for nodes in slurm (PR #410)
+- Added option to define mkfs_options for volumes (PR #408)
+- Added option to restrict NVIDIA profiling (PR #413)
+- Added a parameter to grant groups ssh access to compute nodes (PR #350)
+- Add support for NVIDIA Grid VGPU in Azure (PR #411)
+
+### Changed
+
+- Replaced ipa commands by batch python script with ipa console (PR #404)
+- Replaced mokey user by mokey service
+- Replaced dns records wait_for by just ipa_https
+- Configured internal domain as ipa_domain in only in common.yaml
+- Replaced consul template for slurm.conf by Puppet function + Terraform data (PR #401)
+- Replaced "include consul" by "include profile::consul" in `software_stack`
+- Bumped puppet-jupyterhub to 6.7.0
+- Refactored volumes definition (PR #412)
+- Moved authentication methods to its own sshd config file (PR #416)
+- Generalized local_user to make more parameters parametrizable (PR #312)
+
+### Removed
+
+- Removed munge's epel yumrepo requirement (PR #402)
+- Droped support for ext3 (PR #412)
+
+## [14.1.3] 2025-01-29
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
 ## [14.1.2] 2024-11-19
 
 No changes to Puppet code.
