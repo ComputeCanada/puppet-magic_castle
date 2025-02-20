@@ -25,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configured internal domain as ipa_domain in only in common.yaml
 - Replaced consul template for slurm.conf by Puppet function + Terraform data (PR #401)
 - Replaced "include consul" by "include profile::consul" in `software_stack`
-- Bumped puppet-jupyterhub to 6.7.0
+- Bumped puppet-jupyterhub to 6.8.0
 - Refactored volumes definition (PR #412)
 - Moved authentication methods to its own sshd config file (PR #416)
 - Generalized local_user to make more parameters parametrizable (PR #312)
