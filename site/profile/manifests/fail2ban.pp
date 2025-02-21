@@ -6,7 +6,7 @@ class profile::fail2ban (
   class { 'fail2ban' :
     banaction      => 'nftables-multiport',
     iptables_chain => 'input',
-    whitelist      => ['127.0.0.1/8', profile::getcidr()] + $ignoreip,
+    whitelist      => ['127.0.0.1/8', lookup('terraform.network.cidr')] + $ignoreip,
   }
 
   file_line { 'fail2ban_sshd_recv_disconnect':
