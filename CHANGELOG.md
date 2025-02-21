@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 # [14.2.1] 2025-02-21
 
 ### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.6.1
 - Bumped puppet-jupyterhub to 6.8.1
 
 # [14.2.0] 2025-02-20
