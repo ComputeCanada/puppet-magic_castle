@@ -4,7 +4,7 @@ class profile::squid::server (
   Array[String] $cvmfs_acl_regex,
 ) {
   nftables::rule { 'default_in-squid':
-    content => "tcp dport 3128 accept comment 'Accept squid'",
+    content => 'tcp dport 3128 accept comment "Accept squid"',
   }
 
   class { 'squid': }
