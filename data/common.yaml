@@ -251,7 +251,7 @@ profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tag
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
 
-profile::slurm::base::slurm_version: '24.05'
+profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.6.0'
 profile::slurm::node::enable_tmpfs_mounts: true
