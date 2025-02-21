@@ -11,10 +11,10 @@ class profile::gpu::install (
   Optional[String] $lib_symlink_path = undef
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
-  ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
-  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
-  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  stdlib::ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
+  stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
   $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
@@ -245,7 +245,7 @@ class profile::gpu::install::vgpu (
 
   # Used by slurm-job-exporter to export GPU metrics
   # DCGM does not work with GRID VGPU, most of the stats are missing
-  ensure_packages(['python3', 'python3-pip'], { ensure => 'present' })
+  stdlib::ensure_packages(['python3', 'python3-pip'], { ensure => 'present' })
   $py3_version = lookup('os::redhat::python3::version')
 
   exec { 'pip install nvidia-ml-py':

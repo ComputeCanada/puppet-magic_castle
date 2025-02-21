@@ -48,6 +48,7 @@ class profile::nfs::server (
   Array[String] $no_root_squash_tags = ['mgmt']
 ) {
   include profile::volumes
+  include nftables::rules::nfs
 
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
