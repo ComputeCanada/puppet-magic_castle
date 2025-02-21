@@ -289,7 +289,7 @@ class profile::freeipa::server (
 
   $realm = upcase($ipa_domain)
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
-  $reverse_zone = profile::getreversezone()
+  $reverse_zone = lookup('terraform.network.reverse_zone')
   $ipaddress = lookup('terraform.self.local_ip')
   $ds_domain = regsubst($realm, '\.', '-', 'G')
 
