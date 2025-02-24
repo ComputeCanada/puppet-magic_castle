@@ -44,7 +44,7 @@ class profile::jupyterhub::node {
     Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
   }
   nftables::rule { 'default_in-jupyter_server':
-    content => "tcp dport 32768-60999 accept comment 'Accept jupyter_server'",
+    content => 'tcp dport 32768-60999 accept comment "Accept jupyter_server"',
   }
 }
 
