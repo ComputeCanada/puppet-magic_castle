@@ -943,7 +943,9 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `slurm_version`         | Slurm version to install | Enum['23.02', '23.11', '24.05'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
+| `suspend_rate`          | The rate (nodes per minute) at which nodes are placed into power save mode.| Integer |
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
+| `resume_rate`           | The rate (nodes per minute) at which nodes in power save mode are returned to normal operation. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
 | `enable_scrontab`       | Enable user's Slurm-managed crontab | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
@@ -958,7 +960,9 @@ profile::slurm::base::munge_key: ENC[PKCS7, ...]
 profile::slurm::base::slurm_version: '23.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600
+profile::slurm::base::suspend_rate: 20
 profile::slurm::base::resume_timeout: 3600
+profile::slurm::base::resume_rate: 20
 profile::slurm::base::force_slurm_in_path: false
 profile::slurm::base::enable_x11_forwarding: true
 profile::slurm::base::config_addendum: ''
