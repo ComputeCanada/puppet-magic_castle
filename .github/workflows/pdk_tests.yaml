@@ -1,0 +1,28 @@
+name: PDK Tests
+
+on: pull_request
+
+jobs:
+  run-pdk-tests:
+    name: Run PDK tests
+    runs-on: ubuntu-latest
+    container:
+      image: puppet/pdk:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run PDK version
+        run: pdk --version
+        continue-on-error: false
+
+      - name: Run PDK validate
+        run: pdk validate
+        working-directory: site/profile
+        continue-on-error: true
+
+      - name: Run PDK unit test
+        run: pdk test unit
+        working-directory: site/profile
+        continue-on-error: true

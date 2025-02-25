@@ -43,7 +43,7 @@ class profile::sssd::client(
 SASL_NOCANON    on
 URI ${uris}
 BASE ${values['ldap_search_base']}
-EOT
+  |EOT
       file {'/etc/openldap/ldap.conf':
         content => $ldap_conf_template,
         owner   => 'root',

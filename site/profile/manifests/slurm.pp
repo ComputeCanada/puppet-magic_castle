@@ -437,7 +437,7 @@ class profile::slurm::controller (
 export TFE_TOKEN=${tfe_token}
 export TFE_WORKSPACE=${tfe_workspace}
 export TFE_VAR_POOL=${tfe_var_pool}
-|EOT
+  |EOT
   }
 
   file { '/usr/bin/slurm_resume':
