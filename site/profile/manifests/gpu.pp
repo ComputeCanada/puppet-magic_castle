@@ -229,6 +229,7 @@ class profile::gpu::config::mig (
       Service['nvidia-dcgm'],
     ],
   }
+  Kmod::Load <| tag == profile::gpu::install |> -> Exec['nvidia-mig-parted apply']
 }
 
 class profile::gpu::install::vgpu (
