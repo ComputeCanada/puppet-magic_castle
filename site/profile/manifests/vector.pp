@@ -1,8 +1,8 @@
-class profile::vector
-(
+class profile::vector (
   String $config = file('puppet:///modules/profile/vector/default_config.yaml')
-)
-{
+) {
+  tag 'mc_bootstrap'
+
   yumrepo { 'vector':
     ensure        => present,
     enabled       => true,
@@ -33,4 +33,3 @@ class profile::vector
     require => [Package['vector']],
   }
 }
-
