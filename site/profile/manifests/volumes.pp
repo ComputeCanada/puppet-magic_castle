@@ -70,8 +70,17 @@ define profile::volumes::volume (
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
-  physical_volume { $device:
-    ensure => present,
+  if $device != undef {
+    physical_volume { $device:
+      ensure => present,
+    }
+  } else {
+    notify { "error_${volume_name}":
+      message => @("EOT")
+        WARNING: Could not find device ${glob} associated with ${volume_tag}-${volume_name}.
+        This will cause errors with resources related to ${volume_tag}-${volume_name}.
+        | EOT
+    }
   }
 
   volume_group { "${name}_vg":
