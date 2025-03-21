@@ -60,3 +60,5 @@ magic_castle::site::tags:
     - profile::reverse_proxy
   efa:
     - profile::efa
+  puppet:
+    - profile::puppetserver
