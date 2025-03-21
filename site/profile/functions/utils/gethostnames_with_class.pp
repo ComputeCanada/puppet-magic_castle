@@ -1,4 +1,4 @@
-function profile::gethostnames_with_class($class_name) >> Array[String] {
+function profile::utils::gethostnames_with_class($class_name) >> Array[String] {
   $instances = lookup('terraform.instances')
   $site_all = lookup('magic_castle::site::all')
   $site_tags = lookup('magic_castle::site::tags')

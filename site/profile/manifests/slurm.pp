@@ -202,8 +202,8 @@ class profile::slurm::base (
         'suspend_rate'          => $suspend_rate,
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
-        'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
-        'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
+        'slurmctl'              => profile::utils::gethostnames_with_class('profile::slurm::controller'),
+        'slurmdb'               => profile::utils::gethostnames_with_class('profile::slurm::accounting'),
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -244,7 +244,7 @@ class profile::slurm::base (
       {
         'nodes'    => $nodes,
         'memlimit' => $os_reserved_memory,
-        'weights'  => slurm_compute_weights($nodes),
+        'weights'  => profile::slurm::compute_weights($nodes),
       }),
   }
 
