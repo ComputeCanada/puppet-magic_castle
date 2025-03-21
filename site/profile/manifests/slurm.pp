@@ -280,7 +280,7 @@ class profile::slurm::base (
       {
         'nodes'    => $nodes,
         'memlimit' => $os_reserved_memory,
-        'weights'  => slurm_compute_weights($nodes),
+        'weights'  => profile::slurm::compute_weights($nodes),
       }),
   }
 

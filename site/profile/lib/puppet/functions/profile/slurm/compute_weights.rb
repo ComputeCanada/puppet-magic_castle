@@ -1,10 +1,10 @@
-Puppet::Functions.create_function(:slurm_compute_weights) do
-    dispatch :slurm_compute_weights do
+Puppet::Functions.create_function(:'profile::slurm::compute_weights') do
+    dispatch :'profile::slurm::compute_weights' do
         param 'Hash', :instances
         return_type 'Hash'
     end
 
-    def slurm_compute_weights(instances)
+    def profile::slurm::compute_weights(instances)
         require 'set'
         unique_specs = Set.new(instances.values.map {|i| i['specs']})
         sorted_specs = unique_specs.sort_by{|spec| [spec['gpus'], spec['ram'], spec['cpus']]}
