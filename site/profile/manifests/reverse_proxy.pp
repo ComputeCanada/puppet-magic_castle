@@ -3,6 +3,7 @@ class profile::reverse_proxy (
   Hash[String, String] $subdomains,
   Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
+  String $robots_txt = "User-agent: *\nDisallow: /",
 ) {
   selinux::boolean { 'httpd_can_network_connect': }
 
@@ -87,8 +88,12 @@ import conf.d/*
   $host_conf_template = @("END")
     ${domain_name} {
       import tls
+      respond /robots.txt 200 {
+        body "${robots_txt}"
+        close
+      }
     <% if '${main2sub_redir}' != '' { -%>
-      redir https://${main2sub_redir}.${domain_name}
+      redir / https://${main2sub_redir}.${domain_name}
     <% } -%>
     }
     |END
@@ -112,10 +117,11 @@ import conf.d/*
       content => epp(
         'profile/reverse_proxy/subdomain.conf',
         {
-          'domain'    => $domain_name,
-          'subdomain' => $key,
-          'server'    => $value,
-          'remote_ip' => $remote_ips.get($key, ''),
+          'domain'     => $domain_name,
+          'subdomain'  => $key,
+          'server'     => $value,
+          'remote_ip'  => $remote_ips.get($key, ''),
+          'robots_txt' => $robots_txt
         }
       ),
     }
