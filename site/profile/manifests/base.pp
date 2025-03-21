@@ -79,7 +79,7 @@ class profile::base (
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
-    source => profile::getcidr(),
+    source => profile::utils::getcidr(),
     action => 'accept',
     tag    => 'mc_bootstrap',
   }
