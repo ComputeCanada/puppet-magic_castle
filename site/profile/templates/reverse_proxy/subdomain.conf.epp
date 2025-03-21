@@ -4,6 +4,10 @@
   @allowed_ips remote_ip <%= join($remote_ip, ' ') %>
 <% } -%>
   route <% if $remote_ip != '' { %>@allowed_ips <% } %>{
+    respond /robots.txt 200 {
+      body "<%= $robots_txt %>"
+      close
+    }
     reverse_proxy <%= $server %> <% if $server =~ /^https/ { -%> {
       transport http {
         tls_insecure_skip_verify

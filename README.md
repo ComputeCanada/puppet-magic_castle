@@ -850,6 +850,7 @@ internal services to the Internet.
 | `main2sub_redir` | Subdomain to redirect to when hitting domain name directly. Empty means no redirect. | String                      |
 | `subdomains`     | Subdomain names used to create vhosts to internal http endpoints                     | Hash[String, String]        |
 | `remote_ips`     | List of allowed ip addresses per subdomain. Undef mean no restrictions.              | Hash[String, Array[String]] |
+| `robots_txt`     | Content of a robots.txt file which will be served for all hosts.                     | String                      |
 
 <details>
 <summary>default values</summary>
@@ -862,6 +863,7 @@ profile::reverse_proxy::subdomains:
   jupyter: "https://127.0.0.1:8000"
 profile::reverse_proxy::main2sub_redir: "jupyter"
 profile::reverse_proxy::remote_ips: {}
+profile::reverse_proxy::robots_txt: "User-agent: *\nDisallow: /"
 ```
 </details>
 
