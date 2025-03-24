@@ -34,6 +34,7 @@ magic_castle::site::tags:
     - prometheus::server
     - prometheus::alertmanager
     - profile::metrics::slurm_exporter
+    - profile::metrics::apache_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller

@@ -1,0 +1,14 @@
+[Unit]
+Description=Exporter for apache stats
+After=network.target
+
+[Service]
+DynamicUser=yes
+Type=simple
+ExecStart=/opt/apache_exporter/apache_exporter --web.listen-address=:9117
+PIDFile=/var/run/apache_exporter/apache_exporter.pid
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
