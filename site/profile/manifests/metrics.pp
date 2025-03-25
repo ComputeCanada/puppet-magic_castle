@@ -7,7 +7,7 @@ class profile::metrics::node_exporter {
   include prometheus::node_exporter
   consul::service { 'node-exporter':
     port  => 9100,
-    tags  => ['node-exporter'],
+    tags  => ['exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 }
@@ -27,7 +27,7 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
 
   consul::service { 'slurm-job-exporter':
     port  => 9798,
-    tags  => ['slurm-job-exporter'],
+    tags  => ['slurm', 'exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 
@@ -62,7 +62,7 @@ class profile::metrics::slurm_exporter {
 
   consul::service { 'slurm-exporter':
     port  => 8081,
-    tags  => ['slurm-exporter'],
+    tags  => ['slurm', 'exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 
@@ -98,7 +98,7 @@ class profile::metrics::apache_exporter {
   include prometheus::apache_exporter
   consul::service { 'apache_exporter':
     port  => 9117,
-    tags  => ['apache_exporter'],
+    tags  => ['exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
   realize File['/etc/httpd/conf.d/server-status.conf']
