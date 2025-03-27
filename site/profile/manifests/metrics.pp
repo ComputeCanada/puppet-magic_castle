@@ -93,43 +93,11 @@ class profile::metrics::slurm_exporter {
   }
 }
 
-class profile::metrics::apache_exporter (String $version = '1.0.10') {
-  $arch = $::facts['os']['architecture'] ? {
-    'x86_64'  => 'amd64',
-    'aarch64' => 'arm64',
-  }
-
-  file { '/opt/apache_exporter':
-    ensure => directory,
-  }
-
-  archive { 'apache_exporter':
-    path            => "/opt/puppetlabs/puppet/cache/puppet-archive/apache_exporter-${version}.tar.gz",
-    extract         => true,
-    extract_command => 'tar xfz %s --strip-components=1',
-    extract_path    => '/opt/apache_exporter',
-    source          => "https://github.com/Lusitaniae/apache_exporter/releases/download/v${version}/apache_exporter-${version}.linux-${arch}.tar.gz",
-    creates         => '/opt/apache_exporter/apache_exporter',
-    require         => File['/opt/apache_exporter'],
-  }
-
+class profile::metrics::apache_exporter {
+  include prometheus::apache_exporter
   consul::service { 'apache_exporter':
     port  => 9117,
     tags  => ['exporter'],
     token => lookup('profile::consul::acl_api_token'),
-  }
-
-  file { '/etc/systemd/system/apache_exporter.service':
-    source => 'puppet:///modules/profile/metrics/apache_exporter.service',
-    notify => Service['apache_exporter'],
-  }
-
-  service { 'apache_exporter':
-    ensure  => running,
-    enable  => true,
-    require => [
-      Archive['apache_exporter'],
-      File['/etc/systemd/system/apache_exporter.service'],
-    ],
   }
 }

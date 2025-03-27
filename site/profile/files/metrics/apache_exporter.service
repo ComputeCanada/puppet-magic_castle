@@ -6,7 +6,7 @@ After=network.target
 DynamicUser=yes
 Type=simple
 ExecStart=/opt/apache_exporter/apache_exporter --web.listen-address=:9117
-PIDFile=/var/run/apache_exporter/apache_exporter.pid
+PIDFile=/run/apache_exporter/apache_exporter.pid
 KillMode=process
 Restart=always
 
