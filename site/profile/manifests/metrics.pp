@@ -94,6 +94,7 @@ class profile::metrics::slurm_exporter {
 }
 
 class profile::metrics::apache_exporter {
+  include profile::consul
   include prometheus::apache_exporter
   consul::service { 'apache_exporter':
     port  => 9117,
