@@ -3,13 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-# [14.2.1] 2025-02-21
+## [14.3.0] UNRELEASED
+
+### Added
+- Added parameters to define suspend and resume rates in Slurm (PR #421)
+- Added dependency on kmod::load for nvidia-mig-parted apply (PR #422)
+- Added annotations using `rake test` results (PR #423)
+- Added bootstrap tag to profile::vector
+- Add alias for sudoer account to display eyaml bootstrap values (PR #426)
+- Added a default robots.txt that disallows indexing of reverse proxy subdomains (PR #427)
+
+### Changed
+- Declaration of physical_volume is now ignored if device isn't found
+- Fixed munge systemd service file (PR #431)
+
+### Removed
+
+## [14.2.1] 2025-02-21
 
 ### Changed
 - Bumped Slurm Terraform Cloud autoscaler to 0.6.1
 - Bumped puppet-jupyterhub to 6.8.1
 
-# [14.2.0] 2025-02-20
+## [14.2.0] 2025-02-20
 
 ### Added
 
