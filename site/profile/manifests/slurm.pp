@@ -62,6 +62,41 @@ class profile::slurm::base (
     ensure  => 'installed',
   }
 
+  # Sometime /var/run/munge is not created.
+  # Munge RPM provides /usr/lib/tmpfiles.d/munge.conf
+  # tmpfiles.d config was replaced with RuntimeDirectory as of munge 0.5.14
+  # but we are stuck with 0.5.13 as upstream has not updated munge
+  # since 2021. The next 2 file_lines make sure munge does not rely on
+  # systemd-tmpfiles-setup.service.
+  # Ref: https://github.com/dun/munge/commit/3eed37e3ca73c14b679394df7be151d27566b0fe
+  # Ref: https://github.com/dun/munge/issues/75
+  file_line { 'munge_runtimedirectory':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^RuntimeDirectory=',
+    line    => 'RuntimeDirectory=munge',
+    after   => 'Group=munge',
+    require => Package['munge'],
+    notify  => Service['munge'],
+  }
+
+  file_line { 'munge_runtimedirectorymode':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^RuntimeDirectoryMode=',
+    line    => 'RuntimeDirectory=0755',
+    after   => 'Group=munge',
+    require => Package['munge'],
+    notify  => Service['munge'],
+  }
+
+  # Fix a warning in systemctl status munge about the location of the PID file.
+  file_line { 'munge_pidfile':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^PIDFile=',
+    line    => 'PIDFile=/run/munge/munged.pid',
+    require => Package['munge'],
+    notify  => Service['munge'],
+  }
+
   file { '/var/log/slurm':
     ensure => 'directory',
     owner  => 'slurm',
