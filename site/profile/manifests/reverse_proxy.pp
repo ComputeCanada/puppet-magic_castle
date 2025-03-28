@@ -80,6 +80,9 @@ class profile::reverse_proxy (
     content => @("EOT"),
 {
   admin off
+  metrics {
+    per_host
+  }
 }
 :2020 {
   metrics
