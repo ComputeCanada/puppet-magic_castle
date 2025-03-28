@@ -78,6 +78,12 @@ class profile::reverse_proxy (
     seltype => 'httpd_config_t',
     require => Package['caddy'],
     content => @("EOT"),
+{
+  admin off
+}
+:2020 {
+  metrics
+}
 (tls) {
   ${tls_string}
 }

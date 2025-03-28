@@ -102,3 +102,12 @@ class profile::metrics::apache_exporter {
     token => lookup('profile::consul::acl_api_token'),
   }
 }
+
+class profile::metrics::caddy_exporter {
+  include profile::consul
+  consul::service { 'caddy_exporter':
+    port  => 2020,
+    tags  => ['exporter'],
+    token => lookup('profile::consul::acl_api_token'),
+  }
+}
