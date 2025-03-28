@@ -103,3 +103,26 @@ class profile::metrics::apache_exporter {
   }
   realize File['/etc/httpd/conf.d/server-status.conf']
 }
+
+class profile::metrics::caddy_exporter (Integer $port = 2020) {
+  include profile::consul
+  consul::service { 'caddy_exporter':
+    port  => $port,
+    tags  => ['exporter'],
+    token => lookup('profile::consul::acl_api_token'),
+  }
+
+  $caddy_metrics_content = @("EOT")
+    :${port} {
+      metrics
+    }
+    | EOT
+  file { '/etc/caddy/conf.d/local_metrics.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    seltype => 'httpd_config_t',
+    require => Package['caddy'],
+    content => $caddy_metrics_content,
+  }
+}

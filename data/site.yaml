@@ -59,6 +59,7 @@ magic_castle::site::tags:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
     - profile::reverse_proxy
+    - profile::metrics::caddy_exporter
   efa:
     - profile::efa
   puppet:
