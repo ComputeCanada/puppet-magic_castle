@@ -7,7 +7,7 @@ User=slurm
 Group=slurm
 Type=simple
 ExecStart=/usr/bin/prometheus-slurm-exporter --collector.partition --listen-address=":8081"
-PIDFile=/var/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
+PIDFile=/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
 KillMode=process
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/puppetlabs/bin:/opt/software/slurm/bin:/root/bin
 Restart=always

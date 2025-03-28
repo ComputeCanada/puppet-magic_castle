@@ -5,9 +5,9 @@
 class profile::metrics::node_exporter {
   include profile::consul
   include prometheus::node_exporter
-  consul::service { 'node-exporter':
+  consul::service { 'node_exporter':
     port  => 9100,
-    tags  => ['node-exporter'],
+    tags  => ['exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 }
@@ -27,7 +27,7 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
 
   consul::service { 'slurm-job-exporter':
     port  => 9798,
-    tags  => ['slurm-job-exporter'],
+    tags  => ['slurm', 'exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 
@@ -62,7 +62,7 @@ class profile::metrics::slurm_exporter {
 
   consul::service { 'slurm-exporter':
     port  => 8081,
-    tags  => ['slurm-exporter'],
+    tags  => ['slurm', 'exporter'],
     token => lookup('profile::consul::acl_api_token'),
   }
 
@@ -90,5 +90,24 @@ class profile::metrics::slurm_exporter {
       Package['prometheus-slurm-exporter'],
       File['/etc/systemd/system/prometheus-slurm-exporter.service'],
     ],
+  }
+}
+
+class profile::metrics::apache_exporter {
+  include profile::consul
+  include prometheus::apache_exporter
+  consul::service { 'apache_exporter':
+    port  => 9117,
+    tags  => ['exporter'],
+    token => lookup('profile::consul::acl_api_token'),
+  }
+}
+
+class profile::metrics::caddy_exporter {
+  include profile::consul
+  consul::service { 'caddy_exporter':
+    port  => 2020,
+    tags  => ['exporter'],
+    token => lookup('profile::consul::acl_api_token'),
   }
 }
