@@ -3,12 +3,10 @@
 # - memory usage
 # It should run on every server of the cluster.
 class profile::metrics::node_exporter {
-  include profile::consul
   include prometheus::node_exporter
-  consul::service { 'node_exporter':
-    port  => 9100,
-    tags  => ['exporter'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'node_exporter':
+    port => 9100,
+    tags => ['exporter'],
   }
 }
 
@@ -23,12 +21,9 @@ class profile::metrics::node_exporter {
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
 class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
-  include profile::consul
-
-  consul::service { 'slurm-job-exporter':
-    port  => 9798,
-    tags  => ['slurm', 'exporter'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'slurm-job-exporter':
+    port => 9798,
+    tags => ['slurm', 'exporter'],
   }
 
   $el = $facts['os']['release']['major']
@@ -58,12 +53,9 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
 # This exporter typically runs on the Slurm controller server, but it can run on any server
 # with a functional Slurm command-line installation.
 class profile::metrics::slurm_exporter {
-  include profile::consul
-
-  consul::service { 'slurm-exporter':
-    port  => 8081,
-    tags  => ['slurm', 'exporter'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'slurm-exporter':
+    port => 8081,
+    tags => ['slurm', 'exporter'],
   }
 
   $slurm_exporter_url = 'https://download.copr.fedorainfracloud.org/results/cmdntrf/prometheus-slurm-exporter/'
@@ -94,22 +86,19 @@ class profile::metrics::slurm_exporter {
 }
 
 class profile::metrics::apache_exporter {
-  include profile::consul
   include prometheus::apache_exporter
-  consul::service { 'apache_exporter':
-    port  => 9117,
-    tags  => ['exporter'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'apache_exporter':
+    port => 9117,
+    tags => ['exporter'],
   }
   realize File['/etc/httpd/conf.d/server-status.conf']
 }
 
 class profile::metrics::caddy_exporter (Integer $port = 2020) {
   include profile::consul
-  consul::service { 'caddy_exporter':
-    port  => $port,
-    tags  => ['exporter'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'caddy_exporter':
+    port => $port,
+    tags => ['exporter'],
   }
 
   $caddy_metrics_content = @("EOT")

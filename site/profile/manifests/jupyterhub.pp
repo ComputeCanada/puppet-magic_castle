@@ -16,10 +16,9 @@ class profile::jupyterhub::hub (
   }
   include profile::slurm::submitter
 
-  consul::service { 'jupyterhub':
-    port  => 8081,
-    tags  => ['jupyterhub'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'jupyterhub':
+    port => 8081,
+    tags => ['jupyterhub'],
   }
 
   file { "${jupyterhub::prefix}/bin/ipa_create_user.py":

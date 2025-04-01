@@ -1,4 +1,7 @@
-class profile::consul (Array[String] $servers) {
+class profile::consul (
+  Array[String] $servers,
+  String $acl_api_token,
+) {
   tag 'mc_bootstrap'
 
   include consul_template
@@ -16,7 +19,7 @@ class profile::consul (Array[String] $servers) {
 
   class { 'consul':
     config_mode   => '0640',
-    acl_api_token => lookup('profile::consul::acl_api_token'),
+    acl_api_token => $acl_api_token,
     config_hash   => {
       'bootstrap_expect' => $bootstrap_expect,
       'bind_addr'        => $ipaddress,
@@ -29,8 +32,8 @@ class profile::consul (Array[String] $servers) {
         'enabled'        => true,
         'default_policy' => 'deny',
         'tokens'         => {
-          'initial_management' => lookup('profile::consul::acl_api_token'),
-          'agent'              => lookup('profile::consul::acl_api_token'),
+          'initial_management' => $acl_api_token,
+          'agent'              => $acl_api_token,
         },
       },
     },
@@ -59,6 +62,8 @@ class profile::consul (Array[String] $servers) {
   }
 
   include profile::consul::puppet_watch
+  Consul::Service <| |> { token => $acl_api_token }
+  Consul::Watch <| |> { token => $acl_api_token }
 }
 
 class profile::consul::puppet_watch {
@@ -89,11 +94,10 @@ class profile::consul::puppet_watch {
     source => 'puppet:///modules/profile/consul/puppet_event_handler.sh',
   }
 
-  consul::watch { 'puppet_event':
+  @consul::watch { 'puppet_event':
     ensure     => present,
     type       => 'event',
     event_name => 'puppet',
     args       => ['/usr/bin/puppet_event_handler.sh'],
-    token      => lookup('profile::consul::acl_api_token'),
   }
 }

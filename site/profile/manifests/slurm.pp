@@ -22,7 +22,6 @@ class profile::slurm::base (
 {
   include epel
   include profile::base::powertools
-  include profile::consul
 
   group { 'slurm':
     ensure => 'present',
@@ -342,10 +341,9 @@ class profile::slurm::accounting(
     before    => Service['slurmctld']
   }
 
-  consul::service { 'slurmdbd':
+  @consul::service { 'slurmdbd':
     port    => $dbd_port,
     require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
   }
 
   wait_for { 'slurmdbd_started':
@@ -529,10 +527,9 @@ export TFE_VAR_POOL=${tfe_var_pool}
     ),
   }
 
-  consul::service { 'slurmctld':
+  @consul::service { 'slurmctld':
     port    => 6817,
     require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
   }
 
   package { 'slurm-slurmctld':
