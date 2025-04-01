@@ -11,4 +11,8 @@ class profile::puppetserver {
       }
     }
   }
+
+  @user { 'puppet':
+    ensure => present,
+  }
 }
