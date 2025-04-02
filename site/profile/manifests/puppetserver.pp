@@ -20,5 +20,11 @@ class profile::puppetserver {
 
   @user { 'puppet':
     ensure => present,
+    notify => Service['puppetserver'],
+  }
+
+  service { 'puppetserver':
+    ensure => running,
+    enable => true,
   }
 }
