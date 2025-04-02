@@ -16,6 +16,7 @@ class profile::puppetserver {
     owner   => 'root',
     group   => 'root',
     content => "---\ntextfile_directory: /var/lib/node_exporter",
+    tag     => ['mc_bootstrap'],
   }
 
   @user { 'puppet':
