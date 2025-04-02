@@ -12,6 +12,12 @@ class profile::puppetserver {
     }
   }
 
+  file { '/etc/puppetlabs/puppet/prometheus.yaml':
+    owner   => 'root',
+    group   => 'root',
+    content => "---\ntextfile_directory: /var/lib/node_exporter",
+  }
+
   @user { 'puppet':
     ensure => present,
   }
