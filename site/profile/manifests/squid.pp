@@ -3,8 +3,6 @@ class profile::squid::server (
   Integer $cache_size,
   Array[String] $cvmfs_acl_regex,
 ) {
-  include profile::consul
-
   class { 'squid': }
   squid::http_port { String($port): }
   squid::acl { 'SSL_ports':
@@ -68,9 +66,8 @@ class profile::squid::server (
     percent => 20,
   }
 
-  consul::service { 'squid':
+  @consul::service { 'squid':
     port    => $port,
     require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
   }
 }

@@ -76,10 +76,9 @@ class profile::software_stack (
     ),
   }
 
-  consul::service { 'software_stack':
+  @consul::service { 'software_stack':
     ensure  => $ensure_stack,
     require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
     meta    => $software_stack_meta,
   }
 }

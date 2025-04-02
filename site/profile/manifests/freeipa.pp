@@ -403,6 +403,19 @@ class profile::freeipa::server (
     seltype => 'httpd_config_t',
   }
 
+  $server_status = @(EOF)
+    <Location /server-status>
+      SetHandler server-status
+      Require local
+    </Location>
+    |EOF
+  @file { '/etc/httpd/conf.d/server-status.conf':
+    content => $server_status,
+    notify  => Service['httpd'],
+    require => Exec['ipa-install'],
+    seltype => 'httpd_config_t',
+  }
+
   # Monitor change of the directory server password
   # and apply change if the current password hash does
   # not correspond to the password definned in the hieradata.

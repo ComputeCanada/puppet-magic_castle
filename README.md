@@ -335,12 +335,14 @@ if its local ip address is declared in `profile::consul::servers`. Otherwise, it
 | Variable  | Description                         | Type          |
 | :-------- | :---------------------------------- | ------------- |
 | `servers` | IP addresses of the consul servers  | Array[String] |
+| `acl_api_token` | Secret in the UUID form allowing agents to interact with consul API | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
+profile::consul::acl_api_token: ENC[PKCS7,...]
 ```
 </details>
 

@@ -34,6 +34,7 @@ magic_castle::site::tags:
     - prometheus::server
     - prometheus::alertmanager
     - profile::metrics::slurm_exporter
+    - profile::metrics::apache_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
@@ -58,6 +59,7 @@ magic_castle::site::tags:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
     - profile::reverse_proxy
+    - profile::metrics::caddy_exporter
   efa:
     - profile::efa
   puppet:

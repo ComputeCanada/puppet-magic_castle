@@ -71,18 +71,25 @@ class profile::reverse_proxy (
     require => Package['caddy'],
   }
 
+  $caddyfile_content = @("EOT")
+    {
+      admin off
+      metrics {
+        per_host
+      }
+    }
+    (tls) {
+      ${tls_string}
+    }
+    import conf.d/*
+    | EOT
   file { '/etc/caddy/Caddyfile':
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => Package['caddy'],
-    content => @("EOT"),
-(tls) {
-  ${tls_string}
-}
-import conf.d/*
-| EOT
+    content => $caddyfile_content,
   }
 
   $host_conf_template = @("END")
