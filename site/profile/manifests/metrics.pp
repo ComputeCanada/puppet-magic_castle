@@ -92,3 +92,14 @@ class profile::metrics::slurm_exporter {
     ],
   }
 }
+
+class profile::metrics::apache_exporter {
+  include profile::consul
+  include prometheus::apache_exporter
+  consul::service { 'apache_exporter':
+    port  => 9117,
+    tags  => ['apache_exporter'],
+    token => lookup('profile::consul::acl_api_token'),
+  }
+  realize File['/etc/httpd/conf.d/server-status.conf']
+}
