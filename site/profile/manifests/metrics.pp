@@ -80,6 +80,7 @@ class profile::metrics::slurm_exporter {
     enable  => true,
     require => [
       Package['prometheus-slurm-exporter'],
+      Package['slurm'],
       File['/etc/systemd/system/prometheus-slurm-exporter.service'],
     ],
   }
