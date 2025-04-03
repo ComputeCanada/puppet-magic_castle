@@ -67,7 +67,6 @@ class profile::squid::server (
   }
 
   @consul::service { 'squid':
-    port    => $port,
-    require => Tcp_conn_validator['consul'],
+    port => $port,
   }
 }

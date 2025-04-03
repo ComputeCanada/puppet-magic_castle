@@ -342,8 +342,7 @@ class profile::slurm::accounting(
   }
 
   @consul::service { 'slurmdbd':
-    port    => $dbd_port,
-    require => Tcp_conn_validator['consul'],
+    port => $dbd_port,
   }
 
   wait_for { 'slurmdbd_started':
@@ -528,8 +527,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
   }
 
   @consul::service { 'slurmctld':
-    port    => 6817,
-    require => Tcp_conn_validator['consul'],
+    port => 6817,
   }
 
   package { 'slurm-slurmctld':
