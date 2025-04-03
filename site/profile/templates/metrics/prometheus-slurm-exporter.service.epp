@@ -6,7 +6,7 @@ After=network-online.target
 User=slurm
 Group=slurm
 Type=simple
-ExecStart=/usr/bin/prometheus-slurm-exporter --collector.partition --listen-address=":<%= $port %>"
+ExecStart=/usr/bin/prometheus-slurm-exporter <%= $collectors %> --listen-address=":<%= $port %>"
 PIDFile=/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
 KillMode=process
 Environment=PATH=/usr/bin:/opt/software/slurm/bin
