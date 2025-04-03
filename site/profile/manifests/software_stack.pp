@@ -77,8 +77,7 @@ class profile::software_stack (
   }
 
   @consul::service { 'software_stack':
-    ensure  => $ensure_stack,
-    require => Tcp_conn_validator['consul'],
-    meta    => $software_stack_meta,
+    ensure => $ensure_stack,
+    meta   => $software_stack_meta,
   }
 }

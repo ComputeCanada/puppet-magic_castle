@@ -41,7 +41,7 @@ class profile::consul (
 
   if ! $is_server {
     $consul_validators = $servers.map | $index, $server_ip | {
-      tcp_conn_validator { "consul-server-${index}":
+      tcp_conn_validator { "${server_ip}:8300":
         host      => $server_ip,
         port      => 8300,
         try_sleep => 5,
@@ -53,17 +53,15 @@ class profile::consul (
     $consul_validators = []
   }
 
-  tcp_conn_validator { 'consul':
-    host      => '127.0.0.1',
-    port      => 8500,
+  tcp_conn_validator { '127.0.0.1:8500':
     try_sleep => 5,
     timeout   => 60,
     require   => [Service['consul']] + $consul_validators,
   }
 
   include profile::consul::puppet_watch
-  Consul::Service <| |> { token => $acl_api_token }
-  Consul::Watch <| |> { token => $acl_api_token }
+  Consul::Service <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
+  Consul::Watch <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
 }
 
 class profile::consul::puppet_watch {
