@@ -52,9 +52,12 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
 # - completed jobs
 # This exporter typically runs on the Slurm controller server, but it can run on any server
 # with a functional Slurm command-line installation.
-class profile::metrics::slurm_exporter {
+class profile::metrics::slurm_exporter (
+  Integer $port = 8081,
+  Array[String] $collectors = ['partition'],
+) {
   @consul::service { 'slurm-exporter':
-    port => 8081,
+    port => $port,
     tags => ['slurm', 'exporter'],
   }
 
@@ -71,8 +74,13 @@ class profile::metrics::slurm_exporter {
   -> package { 'prometheus-slurm-exporter': }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
-    source => 'puppet:///modules/profile/metrics/prometheus-slurm-exporter.service',
-    notify => Service['prometheus-slurm-exporter'],
+    content => epp('profile/metrics/prometheus-slurm-exporter.service',
+      {
+        port       => $port,
+        collectors => $collectors.map |$collector| { "--collector.${collector}" }.join(' '),
+      }
+    ),
+    notify  => Service['prometheus-slurm-exporter'],
   }
 
   service { 'prometheus-slurm-exporter':
@@ -80,6 +88,7 @@ class profile::metrics::slurm_exporter {
     enable  => true,
     require => [
       Package['prometheus-slurm-exporter'],
+      Package['slurm'],
       File['/etc/systemd/system/prometheus-slurm-exporter.service'],
     ],
   }

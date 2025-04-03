@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus exporter of Slurm metrics
+After=network-online.target
+
+[Service]
+User=slurm
+Group=slurm
+Type=simple
+ExecStart=/usr/bin/prometheus-slurm-exporter <%= $collectors %> --listen-address=":<%= $port %>"
+PIDFile=/run/prometheus-slurm-exporter/prometheus-slurm-exporter.pid
+KillMode=process
+Environment=PATH=/usr/bin:/opt/software/slurm/bin
+Restart=always
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target
