@@ -8,6 +8,8 @@ lookup_options:
     merge: 'deep'
   prometheus::alerts:
     merge: 'deep'
+  prometheus::extra_alert:
+    merge: 'hash'
 
 profile::base::version: 14.2.1
 profile::base::packages: []
@@ -102,40 +104,60 @@ mysql::server::override_options:
 
 prometheus::alerts:
   groups:
-    - name: 'recorder.rules'
+    - name: puppet
       rules:
-      - record: slurm_job:allocated_core:count
-        expr: count(slurm_job_core_usage_total)
-      - record: slurm_job:allocated_core:count_user_account
-        expr: count(slurm_job_core_usage_total) by (user,account)
-      - record: slurm_job:used_core:sum
-        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000)
-      - record: slurm_job:used_core:sum_user_account
-        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000) by (user,account)
-      - record: slurm_job:allocated_memory:sum
-        expr: sum(slurm_job_memory_limit{})
-      - record: slurm_job:allocated_memory:sum_user_account
-        expr: sum(slurm_job_memory_limit{}) by (user,account)
-      - record: slurm_job:rss_memory:sum
-        expr: sum(slurm_job_memory_rss)
-      - record: slurm_job:rss_memory:sum_user_account
-        expr: sum(slurm_job_memory_rss) by (user, account)
-      - record: slurm_job:max_memory:sum_user_account
-        expr: sum(slurm_job_memory_max) by (user, account)
-      - record: slurm_job:allocated_gpu:count
-        expr: count(slurm_job_utilization_gpu)
-      - record: slurm_job:allocated_gpu:count_user_account
-        expr: count(slurm_job_utilization_gpu) by (user, account)
-      - record: slurm_job:used_gpu:sum
-        expr: sum(slurm_job_utilization_gpu) / 100
-      - record: slurm_job:used_gpu:sum_user_account
-        expr: sum(slurm_job_utilization_gpu) by (user,account) / 100
-      - record: slurm_job:non_idle_gpu:sum_user_account
-        expr: count(slurm_job_utilization_gpu > 0) by (user,account)
-      - record: slurm_job:power_gpu:sum
-        expr: sum(slurm_job_power_gpu)
-      - record: slurm_job:power_gpu:sum_user_account
-        expr: sum(slurm_job_power_gpu) by (user,account)
+        - alert: Puppet-Failure
+          expr: puppet_report_events{name="Failure"} > 0
+          for: 1m
+          labels:
+            severity: page
+          annotations:
+            summary: "Instance {{ $labels.host }} reported puppet failure"
+            description: "{{ $labels.host }} reported ${{ value }} errors"
+
+# Prometheus record and alert rules are put in the same type of files
+# that puppet-prometheus classified as "alerts".
+prometheus::extra_alerts:
+  slurm_job:
+    groups:
+      - name: 'slurm_job_core'
+        rules:
+        - record: slurm_job:allocated_core:count
+          expr: count(slurm_job_core_usage_total)
+        - record: slurm_job:allocated_core:count_user_account
+          expr: count(slurm_job_core_usage_total) by (user,account)
+        - record: slurm_job:used_core:sum
+          expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000)
+        - record: slurm_job:used_core:sum_user_account
+          expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000) by (user,account)
+      - name: 'slurm_job_memory'
+        rules:
+        - record: slurm_job:allocated_memory:sum
+          expr: sum(slurm_job_memory_limit{})
+        - record: slurm_job:allocated_memory:sum_user_account
+          expr: sum(slurm_job_memory_limit{}) by (user,account)
+        - record: slurm_job:rss_memory:sum
+          expr: sum(slurm_job_memory_rss)
+        - record: slurm_job:rss_memory:sum_user_account
+          expr: sum(slurm_job_memory_rss) by (user, account)
+        - record: slurm_job:max_memory:sum_user_account
+          expr: sum(slurm_job_memory_max) by (user, account)
+      - name: 'slurm_job_gpu'
+        rules:
+        - record: slurm_job:allocated_gpu:count
+          expr: count(slurm_job_utilization_gpu)
+        - record: slurm_job:allocated_gpu:count_user_account
+          expr: count(slurm_job_utilization_gpu) by (user, account)
+        - record: slurm_job:used_gpu:sum
+          expr: sum(slurm_job_utilization_gpu) / 100
+        - record: slurm_job:used_gpu:sum_user_account
+          expr: sum(slurm_job_utilization_gpu) by (user,account) / 100
+        - record: slurm_job:non_idle_gpu:sum_user_account
+          expr: count(slurm_job_utilization_gpu > 0) by (user,account)
+        - record: slurm_job:power_gpu:sum
+          expr: sum(slurm_job_power_gpu)
+        - record: slurm_job:power_gpu:sum_user_account
+          expr: sum(slurm_job_power_gpu) by (user,account)
 
 prometheus::node_exporter::version: 1.5.0
 prometheus::node_exporter::collectors_enable:
