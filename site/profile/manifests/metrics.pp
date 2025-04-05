@@ -8,6 +8,24 @@ class profile::metrics::node_exporter {
     port => 9100,
     tags => ['exporter'],
   }
+
+  file { '/var/lib/node_exporter':
+    ensure => directory,
+    owner  => 'node-exporter',
+    group  => 'node-exporter',
+    mode   => '0775',
+  }
+
+  # In cases where the puppet user exists, we add it to
+  # node-exporter group so it can write in /var/lib/node_exporter.
+  # If the resource does not exist, the following statement is simply
+  # ignored. Puppet needs to be added to node-exporter group before
+  # the group of /var/lib/node_exporter is changed from puppet to
+  # node-exporter. Otherwise, we risk not being able to write reports
+  User <| title == 'puppet' |> {
+    groups +> 'node-exporter',
+    before => File['/var/lib/node_exporter']
+  }
 }
 
 # Configure a Prometheus exporter that exports the Slurm compute node metrics, for example:
