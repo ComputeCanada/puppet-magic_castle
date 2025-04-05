@@ -218,6 +218,8 @@ prometheus::alertmanagers_config:
     - targets:
       - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
 
+prometheus::external_url: "https://metrics.%{lookup('terraform.data.domain_name')}/"
+prometheus::alertmanager::extra_options: "--web.external-url=%{lookup('prometheus::external_url')}"
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
