@@ -112,7 +112,7 @@ prometheus::alerts:
             severity: critical
           annotations:
             summary: "Slurm reports down or error nodes"
-            description: "slurmctld on {{ $labels.instance }} reports {{ $values }} nodes in the DOWN state"
+            description: "slurmctld on {{ $labels.instance }} reports {{ $value }} nodes in the DOWN state"
     - name: filesystem
       rules:
         - record: node_fileystem_avail_ratio
