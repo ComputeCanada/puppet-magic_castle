@@ -113,7 +113,7 @@ prometheus::alerts:
             severity: warning
           annotations:
             summary: "Instance {{ $labels.instance }}'s {{ $labels.device }} has less than 10% space available"
-            description: "{{ $labels.instance }}'s {{ $labels.device }}(`{{ $labels.mountpoint }}`) has {{ printf \"%.2f\" $value }}% space available"
+            description: "{{ $labels.instance }}'s {{ $labels.device }}(mountpoint={{ $labels.mountpoint }}) has {{ printf \"%.2f\" $value }}% space available"
     - name: puppet
       rules:
         - alert: Puppet-Failure
