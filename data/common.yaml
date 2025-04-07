@@ -113,7 +113,7 @@ prometheus::alerts:
             severity: page
           annotations:
             summary: "Instance {{ $labels.host }} reported puppet failure"
-            description: "{{ $labels.host }} reported ${{ value }} errors"
+            description: "{{ $labels.host }} reported {{ $value }} errors"
 
 # Prometheus record and alert rules are put in the same type of files
 # that puppet-prometheus classified as "alerts".
