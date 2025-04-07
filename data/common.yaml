@@ -104,6 +104,17 @@ mysql::server::override_options:
 
 prometheus::alerts:
   groups:
+    - name: filesystem
+      rules:
+        - alert: Filesystem-low-on-avail-space
+          expr: node_filesystem_avail_bytes{device=~"/dev/.*"} / node_filesystem_size_bytes{device=~"/dev/.*"} < 0.10
+          for: 5m
+          labels:
+            severity: page
+          annotations:
+            summary: "Instance {{ $labels.instance }}'s {{ $labels.device }} has less than 10% space available"
+            description: "{{ $labels.instance }}'s {{ $labels.device }} has {{ $value }} space available"
+
     - name: puppet
       rules:
         - alert: Puppet-Failure
