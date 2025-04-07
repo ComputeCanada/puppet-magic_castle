@@ -104,6 +104,15 @@ mysql::server::override_options:
 
 prometheus::alerts:
   groups:
+    - name: slurm
+      rules:
+        - alert: Slurm-nodes-down
+          expr: slurm_nodes_down  > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: "Slurm reports down nodes"
+            description: "slurmctld on {{ $labels.instance }} reports {{ $value }} nodes in the DOWN state"
     - name: filesystem
       rules:
         - record: node_fileystem_avail_ratio
