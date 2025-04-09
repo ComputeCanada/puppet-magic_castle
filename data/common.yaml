@@ -111,7 +111,7 @@ prometheus::alerts:
           labels:
             severity: critical
           annotations:
-            summary: "Slurm reports down or error nodes"
+            summary: "Slurm reports down nodes"
             description: "slurmctld on {{ $labels.instance }} reports {{ $value }} nodes in the DOWN state"
     - name: filesystem
       rules:
