@@ -247,6 +247,11 @@ prometheus::alertmanagers_config:
     - targets:
       - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
 
+prometheus::alertmanager::inhibit_rules:
+  - source_matchers: [ severity = critical ]
+    target_matchers: [ severity = warning ]
+    equal: ['instance', 'alertname']
+
 prometheus::external_url: "https://metrics.%{lookup('terraform.data.domain_name')}/"
 prometheus::alertmanager::extra_options: "--web.external-url=%{lookup('prometheus::external_url')}"
 
