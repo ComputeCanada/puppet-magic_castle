@@ -330,7 +330,7 @@ class profile::gpu::services {
   if ! profile::is_grid_vgpu() {
     $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
   } else {
-    $gpu_services = ['nvidia-gridd']
+    $gpu_services = ['nvidia-persistenced', 'nvidia-gridd']
   }
   service { $gpu_services:
     ensure => 'running',
