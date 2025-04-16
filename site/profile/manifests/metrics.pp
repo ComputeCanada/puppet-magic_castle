@@ -41,7 +41,15 @@ class profile::metrics::slurm_job_exporter (String $version = '0.3.0') {
     require => [
       Package['slurm-job-exporter'],
       Package['python3-prometheus_client'],
+      Service['slurmd'],
     ],
+  }
+
+  @exec { 'stop_slurm-job-exporter':
+    command     => 'systemctl stop slurm-job-exporter',
+    onlyif      => 'systemctl is-active slurm-job-exporter',
+    refreshonly => true,
+    path        => ['/usr/bin'],
   }
 }
 

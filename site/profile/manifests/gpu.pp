@@ -41,13 +41,15 @@ class profile::gpu::install (
   }
 
   exec { 'unload_nvidia_drivers':
-    command     => sprintf('rmmod %s', $nvidia_kmod.reverse.join(' ')),
+    command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
     onlyif      => 'grep -qE "^nvidia " /proc/modules',
     refreshonly => true,
     require     => Exec['stop_nvidia_services'],
     notify      => Kmod::Load[$nvidia_kmod],
     path        => ['/bin', '/sbin'],
   }
+  File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
+  Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
 
   if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
@@ -330,7 +332,7 @@ class profile::gpu::services {
   if ! profile::is_grid_vgpu() {
     $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
   } else {
-    $gpu_services = ['nvidia-gridd']
+    $gpu_services = ['nvidia-persistenced', 'nvidia-gridd']
   }
   service { $gpu_services:
     ensure => 'running',
