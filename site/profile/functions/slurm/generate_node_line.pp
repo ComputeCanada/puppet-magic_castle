@@ -1,4 +1,4 @@
-function profile::generate_slurm_node_line($name, $attr, $comp_weight) >> String {
+function profile::slurm::generate_node_line($name, $attr, $comp_weight) >> String {
   if $attr['specs']['gpus'] > 0 {
     if $attr['specs']['mig'] and ! $attr['specs']['mig'].empty {
       $gpu = $attr['specs']['mig'].map|$key,$value| {
