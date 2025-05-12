@@ -51,7 +51,7 @@ magic_castle::site::tags:
     - profile::nfs::client
     - profile::software_stack
   nfs:
-    - profile::nfs::server
+    - profile::nfs
     - profile::cvmfs::alien_cache
   proxy:
     - profile::jupyterhub::hub
