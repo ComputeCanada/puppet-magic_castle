@@ -397,9 +397,6 @@ class profile::slurm::accounting(
     create_group => 'slurm',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmdbd',
   }
-
-  Service <| tag == profile::slurm::accounting |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
-  Service <| tag == profile::slurm::accounting |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 # Slurm controller class. This where slurmctld is ran.
@@ -568,9 +565,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
     create_group => 'slurm',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmctld',
   }
-
-  Service <| tag == profile::slurm::controller |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
-  Service <| tag == profile::slurm::controller |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 # Slurm node class. This is where slurmd is ran.
