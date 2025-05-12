@@ -99,4 +99,6 @@ class profile::nfs::server (
       }
     }
   }
+  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }

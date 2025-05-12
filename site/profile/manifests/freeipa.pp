@@ -463,8 +463,8 @@ class profile::freeipa::server (
     ],
   }
 
-  Service <| tag == 'profile::accounts' and title == 'mkhome' |>
-  Service <| tag == 'profile::accounts' and title == 'mkproject' |>
+  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 class profile::freeipa::mokey (
