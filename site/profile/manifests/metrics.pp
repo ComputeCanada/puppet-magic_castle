@@ -108,7 +108,7 @@ class profile::metrics::apache_exporter {
     port => 9117,
     tags => ['exporter'],
   }
-  realize File['/etc/httpd/conf.d/server-status.conf']
+  File<| title == '/etc/httpd/conf.d/server-status.conf' |>
 }
 
 class profile::metrics::caddy_exporter (Integer $port = 2020) {
