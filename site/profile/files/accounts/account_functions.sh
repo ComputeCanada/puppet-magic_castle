@@ -138,9 +138,13 @@ mkproject() {
             fi
         fi
         # We create the associated account in slurm
-        /opt/software/slurm/bin/sacctmgr add account $GROUP -i &> /dev/null
+        local sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1)
         if [ $? -eq 0 ]; then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
+        else
+            echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
+            echo "${sacctmgr_output}" | sed 's/^/\t/'
+            return 1
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
     fi
@@ -216,9 +220,13 @@ modproject() {
                 fi
             done
         fi
-        /opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i &> /dev/null
+        local sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1)
         if [ $? -eq 0 ]; then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+        else
+            echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
+            echo "${sacctmgr_output}" | sed 's/^/\t/'
+            return 1
         fi
     else
         # If group has been modified but no uid were found in the log, it means
