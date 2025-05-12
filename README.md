@@ -111,7 +111,6 @@ magic_castle::site::tags:
     - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
-    - profile::users::ldap
   node:
     - profile::cvmfs::client
     - profile::gpu

@@ -196,6 +196,7 @@ class profile::freeipa::server (
   include profile::base::etc_hosts
   include profile::freeipa::base
   include profile::sssd::client
+  include profile::users::ldap
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
