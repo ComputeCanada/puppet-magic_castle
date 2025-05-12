@@ -38,7 +38,6 @@ magic_castle::site::tags:
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
-    - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
     - profile::nfs
