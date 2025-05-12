@@ -462,6 +462,9 @@ class profile::freeipa::server (
       Exec['reset ds password'],
     ],
   }
+
+  Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 class profile::freeipa::mokey (

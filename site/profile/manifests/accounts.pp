@@ -95,7 +95,7 @@ class profile::accounts (
   }
 
   $mkhome_running = $manage_home or $manage_scratch
-  service { 'mkhome':
+  @service { 'mkhome':
     ensure    => $mkhome_running,
     enable    => $mkhome_running,
     subscribe => [
@@ -123,7 +123,7 @@ class profile::accounts (
 
   # mkproject is always running even if /project does not exist
   # because it also handles the creation of Slurm accounts
-  service { 'mkproject':
+  @service { 'mkproject':
     ensure    => running,
     enable    => true,
     subscribe => [
