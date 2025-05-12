@@ -67,8 +67,8 @@ SlurmctldLogFile=/var/log/slurm/slurmctld.log
 SlurmdDebug=debug
 SlurmdLogFile=/var/log/slurm/slurmd.log
 
-SlurmctldPidFile=/var/run/slurmctld.pid
-SlurmdPidFile=/var/run/slurmd.pid
+SlurmctldPidFile=/var/run/slurmctld/slurmctld.pid
+SlurmdPidFile=/var/run/slurmd/slurmd.pid
 
 # JOBS AND TASKS/RESOURCES CONTROL
 TmpFS=/localscratch
