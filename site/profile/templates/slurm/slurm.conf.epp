@@ -1,8 +1,9 @@
 include /etc/slurm/nodes.conf
 
 <% if ! $slurmctl.empty { -%>
-SlurmctldHost=<%= join($slurmctl, ',') %>
-<% } -%>
+<% $slurmctl.each | $hostname| { -%>
+SlurmctldHost=<%= $hostname %>
+<% }} -%>
 SlurmctldPort=6817
 
 ## Accounting
