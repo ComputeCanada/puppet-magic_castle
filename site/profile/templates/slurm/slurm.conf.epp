@@ -7,7 +7,7 @@ SlurmctldPort=6817
 
 ## Accounting
 <% if ! $slurmdb.empty { -%>
-AccountingStorageHost=<%= join($slurmdb, ',') %>
+AccountingStorageHost=<%= $slurmdb[0] %>
 AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 AccountingStorageEnforce=associations
