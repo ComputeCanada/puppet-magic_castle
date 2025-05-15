@@ -28,7 +28,7 @@ class profile::nfs::client (
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
     $nfs_export_list.each | String $name | {
       if $self_volumes.any |$tag, $volume_hash| { $name in $volume_hash } {
-        $mount_name = "nfs-${name}"
+        $mount_name = "nfs/${name}"
       } else {
         $mount_name = $name
       }
