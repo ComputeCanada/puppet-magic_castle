@@ -11,13 +11,6 @@ class profile::accounts (
   Boolean $manage_project = true,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],
 ) {
-  Service <| tag == profile::slurm |> -> Service['mkhome']
-  Service <| tag == profile::slurm |> -> Service['mkproject']
-  Service <| tag == profile::freeipa |> -> Service['mkhome']
-  Service <| tag == profile::freeipa |> -> Service['mkproject']
-  Mount <| |> -> Service['mkhome']
-  Mount <| |> -> Service['mkproject']
-
   package { 'rsync':
     ensure => 'installed',
   }
@@ -95,7 +88,7 @@ class profile::accounts (
   }
 
   $mkhome_running = $manage_home or $manage_scratch
-  service { 'mkhome':
+  @service { 'mkhome':
     ensure    => $mkhome_running,
     enable    => $mkhome_running,
     subscribe => [
@@ -123,7 +116,7 @@ class profile::accounts (
 
   # mkproject is always running even if /project does not exist
   # because it also handles the creation of Slurm accounts
-  service { 'mkproject':
+  @service { 'mkproject':
     ensure    => running,
     enable    => true,
     subscribe => [

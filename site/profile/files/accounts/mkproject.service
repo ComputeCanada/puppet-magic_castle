@@ -4,8 +4,8 @@ BindsTo=ipa.service
 
 [Service]
 Type=simple
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=mkproject
 ExecStart=/sbin/mkproject.sh
 

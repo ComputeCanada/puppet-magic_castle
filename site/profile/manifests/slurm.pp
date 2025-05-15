@@ -397,7 +397,6 @@ class profile::slurm::accounting(
     create_group => 'slurm',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmdbd',
   }
-
 }
 
 # Slurm controller class. This where slurmctld is ran.

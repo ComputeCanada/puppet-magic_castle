@@ -38,11 +38,9 @@ magic_castle::site::tags:
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
-    - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
     - profile::nfs
-    - profile::users::ldap
   node:
     - profile::gpu
     - profile::jupyterhub::node
@@ -50,10 +48,10 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
-    - profile::nfs::client
+    - profile::nfs
     - profile::software_stack
   nfs:
-    - profile::nfs::server
+    - profile::nfs
     - profile::cvmfs::alien_cache
   proxy:
     - profile::jupyterhub::hub

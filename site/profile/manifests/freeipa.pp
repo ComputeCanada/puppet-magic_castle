@@ -192,10 +192,16 @@ class profile::freeipa::server (
   String $admin_password,
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
+  Boolean $enable_mokey = true,
 ) {
   include profile::base::etc_hosts
   include profile::freeipa::base
   include profile::sssd::client
+  include profile::users::ldap
+
+  if $enable_mokey {
+    include profile::freeipa::mokey
+  }
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
@@ -456,6 +462,9 @@ class profile::freeipa::server (
       Exec['reset ds password'],
     ],
   }
+
+  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 class profile::freeipa::mokey (

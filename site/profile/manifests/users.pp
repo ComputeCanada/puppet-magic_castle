@@ -2,7 +2,8 @@ class profile::users::ldap (
   Hash $users,
   Array[String] $access_tags,
 ) {
-  Exec <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
+  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_user <| |>
+  Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_user <| |>
   Exec <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
   Service <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
   Service <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
@@ -87,7 +88,6 @@ define profile::users::ldap_user (
         returns     => [0, 1, 2],
         subscribe   => [
           Exec["ldap_user_${name}"],
-          Exec['hbac_rules'],
         ],
       }
     }

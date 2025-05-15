@@ -22,11 +22,19 @@ class profile::nfs::client (
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
+  $self_volumes = lookup('terraform.self.volumes')
   if $nfs_volumes =~ Hash[String, Hash] {
     $nfs_export_list = keys($nfs_volumes)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
-    $nfs_export_list.each | String $name | {
-      nfs::client::mount { "/${name}":
+    $nfs_export_list.each | String $share_name | {
+      # If the instance has a volume mounted under the same name as the nfs share,
+      # we mount the nfs share under /nfs/${share_name}.
+      if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
+        $mount_name = "nfs/${share_name}"
+      } else {
+        $mount_name = $share_name
+      }
+      nfs::client::mount { "/${mount_name}":
         ensure        => present,
         server        => $server_ip,
         share         => $name,
@@ -93,4 +101,6 @@ class profile::nfs::server (
       }
     }
   }
+  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }

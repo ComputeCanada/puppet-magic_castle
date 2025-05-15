@@ -1,13 +1,17 @@
 include /etc/slurm/nodes.conf
 
 <% if ! $slurmctl.empty { -%>
-SlurmctldHost=<%= join($slurmctl, ',') %>
-<% } -%>
+<% $slurmctl.each | $hostname| { -%>
+SlurmctldHost=<%= $hostname %>
+<% }} -%>
 SlurmctldPort=6817
 
 ## Accounting
 <% if ! $slurmdb.empty { -%>
-AccountingStorageHost=<%= join($slurmdb, ',') %>
+AccountingStorageHost=<%= $slurmdb[0] %>
+<% if length($slurmdb) > 1 { -%>
+AccountingStorageBackupHost=<%= $slurmdb[1] %>
+<% } -%>
 AccountingStorageType=accounting_storage/slurmdbd
 AccountingStorageTRES=gres/gpu,cpu,mem
 AccountingStorageEnforce=associations
@@ -63,8 +67,8 @@ SlurmctldLogFile=/var/log/slurm/slurmctld.log
 SlurmdDebug=debug
 SlurmdLogFile=/var/log/slurm/slurmd.log
 
-SlurmctldPidFile=/var/run/slurmctld.pid
-SlurmdPidFile=/var/run/slurmd.pid
+SlurmctldPidFile=/var/run/slurmctld/slurmctld.pid
+SlurmdPidFile=/var/run/slurmd/slurmd.pid
 
 # JOBS AND TASKS/RESOURCES CONTROL
 TmpFS=/localscratch
