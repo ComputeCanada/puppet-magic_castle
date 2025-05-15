@@ -26,11 +26,13 @@ class profile::nfs::client (
   if $nfs_volumes =~ Hash[String, Hash] {
     $nfs_export_list = keys($nfs_volumes)
     $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
-    $nfs_export_list.each | String $name | {
-      if $self_volumes.any |$tag, $volume_hash| { $name in $volume_hash } {
-        $mount_name = "nfs/${name}"
+    $nfs_export_list.each | String $share_name | {
+      # If the instance has a volume mounted under the same name as the nfs share,
+      # we mount the nfs share under /nfs/${share_name}.
+      if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
+        $mount_name = "nfs/${share_name}"
       } else {
-        $mount_name = $name
+        $mount_name = $share_name
       }
       nfs::client::mount { "/${mount_name}":
         ensure        => present,

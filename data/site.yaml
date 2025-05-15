@@ -48,7 +48,7 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
     - profile::metrics::slurm_job_exporter
-    - profile::nfs::client
+    - profile::nfs
     - profile::software_stack
   nfs:
     - profile::nfs
