@@ -30,14 +30,14 @@ class profile::nfs::client (
       # If the instance has a volume mounted under the same name as the nfs share,
       # we mount the nfs share under /nfs/${share_name}.
       if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
-        $mount_name = "nfs/${share_name}"
+        $mount_point = "/nfs/${share_name}"
       } else {
-        $mount_name = $share_name
+        $mount_point = "/${share_name}"
       }
-      nfs::client::mount { "/${mount_name}":
+      nfs::client::mount { $mount_point:
         ensure        => present,
         server        => $server_ip,
-        share         => $name,
+        share         => $share_name,
         options_nfsv4 => $options_nfsv4,
         notify        => Systemd::Daemon_reload['nfs-automount'],
       }
