@@ -11,4 +11,21 @@ class profile::puppetserver {
       }
     }
   }
+
+  file { '/etc/puppetlabs/puppet/prometheus.yaml':
+    owner   => 'root',
+    group   => 'root',
+    content => "---\ntextfile_directory: /var/lib/node_exporter",
+    tag     => ['mc_bootstrap'],
+  }
+
+  @user { 'puppet':
+    ensure => present,
+    notify => Service['puppetserver'],
+  }
+
+  service { 'puppetserver':
+    ensure => running,
+    enable => true,
+  }
 }
