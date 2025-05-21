@@ -81,7 +81,7 @@ class profile::slurm::base (
   file_line { 'munge_runtimedirectorymode':
     path    => '/usr/lib/systemd/system/munge.service',
     match   => '^RuntimeDirectoryMode=',
-    line    => 'RuntimeDirectory=0755',
+    line    => 'RuntimeDirectoryMode=0755',
     after   => 'Group=munge',
     require => Package['munge'],
     notify  => Service['munge'],
