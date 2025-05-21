@@ -79,7 +79,7 @@ EOT
     incl    => '/etc/sssd/sssd.conf',
     changes => [
       "set target[ . = 'sssd'] 'sssd'",
-      "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh'",
+      "set target[ . = 'sssd']/services 'nss, sudo, pam, ssh, ifp'",
       $augeas_domains,
     ],
     require => File['/etc/sssd/sssd.conf'],
