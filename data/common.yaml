@@ -11,7 +11,7 @@ lookup_options:
   prometheus::extra_alert:
     merge: 'hash'
 
-profile::base::version: 14.2.1
+profile::base::version: 14.3.0
 profile::base::packages: []
 
 motd::content: ""
