@@ -64,6 +64,16 @@ class profile::base (
     tag => 'mc_bootstrap',
   }
 
+  # Sometimes systemd-tmpfiles-setup.service fails to create
+  # /run/lock/subsys folder which is required by iptables.
+  # This exec runs the command that should have created the folder
+  # if it is missing.
+  exec { 'systemd-tmpfiles --create --prefix=/run/lock/subsys':
+    unless => 'test -d /run/lock/subsys',
+    path   => ['/bin'],
+    notify => Service['iptables'],
+  }
+
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
