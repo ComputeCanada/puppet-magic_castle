@@ -170,9 +170,11 @@ class profile::base::powertools {
   } else {
     $repo_name = 'crb'
   }
+  package { 'dnf-plugins-core': }
   exec { 'enable_powertools':
     command => "dnf config-manager --set-enabled ${$repo_name}",
     unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
     path    => ['/usr/bin'],
+    require => Package['dnf-plugins-core'],
   }
 }
