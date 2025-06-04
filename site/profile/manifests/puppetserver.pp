@@ -6,8 +6,9 @@ class profile::puppetserver {
   $local_users.each | $user, $attrs | {
     if pick($attrs['sudoer'], false) {
       file_line { "${user}_eyamlbootstrap":
-        path => "/${user}/.bashrc",
-        line => "alias eyamlbootstrap=\"sudo ${eyaml_path} decrypt --pkcs7-private-key ${boot_private_key_path} -f ${boot_eyaml} | less\"",
+        path    => "/${user}/.bashrc",
+        line    => "alias eyamlbootstrap=\"sudo ${eyaml_path} decrypt --pkcs7-private-key ${boot_private_key_path} -f ${boot_eyaml} | less\"",
+        require => User[$user],
       }
     }
   }
