@@ -10,6 +10,9 @@ class profile::base (
   include profile::base::powertools
   include profile::ssh::base
 
+  package { 'selinux-policy': }
+  Package['selinux-policy'] -> Class['selinux::config']
+
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
