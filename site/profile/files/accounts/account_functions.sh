@@ -138,8 +138,7 @@ mkproject() {
             fi
         fi
         # We create the associated account in slurm
-        local sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1)
-        if [ $? -eq 0 ]; then
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
@@ -220,8 +219,7 @@ modproject() {
                 fi
             done
         fi
-        local sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1)
-        if [ $? -eq 0 ]; then
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
@@ -279,8 +277,7 @@ delproject() {
     # symlinks and remove the users from the slurm account.
     local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
     if [[ ! -z "$USERNAMES" ]]; then
-        /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
-        if [ $? -eq 0 ]; then
+        if /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null; then
             echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
         else
             echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
