@@ -138,7 +138,7 @@ mkproject() {
             fi
         fi
         # We create the associated account in slurm
-        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account Clusters=phoenix $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
             local return_code=0
         else
