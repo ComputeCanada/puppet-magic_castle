@@ -152,17 +152,17 @@ mkproject() {
                 echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
             fi
         fi
+        rmdir /var/lock/mkproject.$GROUP.lock
         # We create the associated account in slurm
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
-            local return_code=0
+        elif [[ "${sacctmgr_output}" == *"Already existing account ${GROUP}"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP}: SlurmDB account already exists"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
-            local return_code=1
+            return 1
         fi
-        rmdir /var/lock/mkproject.$GROUP.lock
-        return $return_code
     fi
 }
 
@@ -238,6 +238,8 @@ modproject() {
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+        elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: already added to SlurmDB account"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
             echo "${sacctmgr_output}" | sed 's/^/\t/'

@@ -120,7 +120,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     esac
 done &
 
-tail -F /var/log/dirsrv/slapd-*/access |
+tail -n +1 -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
 sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
 while read CONN OP GROUP; do
