@@ -124,7 +124,7 @@ mkproject() {
         return 1
     fi
 
-    if mkdir /var/lock/mkproject.$GROUP.lock; then
+    if mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
         # A new group has been created
         if [ "$WITH_FOLDER" == "true" ]; then
             local GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
@@ -162,6 +162,8 @@ mkproject() {
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
+    else
+        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
     fi
 }
 
