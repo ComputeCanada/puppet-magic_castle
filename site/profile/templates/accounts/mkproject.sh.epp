@@ -22,7 +22,7 @@ PREV_CONN=""
 
 source /sbin/account_functions.sh
 
-MKHOME_PROJECT_DIR="/run/mkhome_project/"
+MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 mkdir -p ${MKHOME_PROJECT_DIR}
 
 MODPROJECT_CACHE=${MKHOME_PROJECT_DIR}/modproject.cache
@@ -30,6 +30,8 @@ MODPROJECT_CACHE_SIZE=50
 
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=50
+
+LAST_TIMESTAMP=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
 # FIFO pipes could eventually be replaced by sockets
 # to allow input from other instances, like login nodes
@@ -123,10 +125,20 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     esac
 done &
 
-tail -n +1 -F /var/log/dirsrv/slapd-*/access |
+# Do not reprocess previous entries if we remember the last timestamp treated
+if [ -e $LAST_TIMESTAMP ]; then
+    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
+    if [ -z $start_index ]; then
+        start_index=1
+    fi
+else
+    start_index=1
+fi
+
+tail -n +${start_index} -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
-sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
-while read CONN OP GROUP; do
+sed -u -r 's/^\[(.*) \+[0-9]{4}\] conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3 \4/' |
+while read TIMESTAMP CONN OP GROUP; do
     # An operation has been done on a group in LDAP
     # We have already completed this request
     if [[ "${PREV_CONN}" == "${CONN}" ]]; then
@@ -175,4 +187,5 @@ while read CONN OP GROUP; do
             ;;
     esac
     PREV_CONN="${CONN}"
+    echo "${TIMESTAMP}" > ${LAST_TIMESTAMP}
 done
