@@ -31,7 +31,7 @@ MODPROJECT_CACHE_SIZE=50
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=50
 
-LAST_TIMESTAMP=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
+LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
 # FIFO pipes could eventually be replaced by sockets
 # to allow input from other instances, like login nodes
@@ -126,7 +126,8 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
 done &
 
 # Do not reprocess previous entries if we remember the last timestamp treated
-if [ -e $LAST_TIMESTAMP ]; then
+if [ -e $LAST_TIMESTAMP_FILE ]; then
+    LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
     start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
     if [ -z $start_index ]; then
         start_index=1
