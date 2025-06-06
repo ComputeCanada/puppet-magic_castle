@@ -12,7 +12,7 @@ wait_for_slurm() {
     while ! [ -e /opt/software/slurm/bin/sacctmgr ]; do
         sleep 15
     done
-    while ; ; do
+    while : ; do
         CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P)
         if [ -z ${CLUSTER_INFO} ]; then
             sleep 15
