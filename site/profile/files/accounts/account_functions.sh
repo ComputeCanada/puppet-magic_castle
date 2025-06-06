@@ -8,6 +8,21 @@ kexec () {
     rm -f $TMP_KRB_CACHE
 }
 
+wait_for_slurm() {
+    while ! [ -e /opt/software/slurm/bin/sacctmgr ]; do
+        sleep 15
+    done
+    while ; ; do
+        CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P)
+        if [ -z ${CLUSTER_INFO} ]; then
+            sleep 15
+        else
+            break
+        fi
+    done
+    CLUSTER_NAME=$(echo $CLUSTER_INFO | cut -d'|' -f1)
+}
+
 mkhome () {
     local USERNAME=$1
 
@@ -138,7 +153,7 @@ mkproject() {
             fi
         fi
         # We create the associated account in slurm
-        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account Clusters=phoenix $GROUP -i 2>&1); then
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
             local return_code=0
         else

@@ -53,6 +53,8 @@ fi
 install -m 600 /dev/null ${MKPROJECT_CACHE}
 install -m 600 /dev/null ${MODPROJECT_CACHE}
 
+wait_for_slurm
+
 # Loop over three sources of project modification
 # 1. Modification coming from SLAPD log
 # 2. Modification coming from mkhome daemon
