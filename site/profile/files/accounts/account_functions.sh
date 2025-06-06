@@ -9,12 +9,10 @@ kexec () {
 }
 
 wait_for_slurm() {
-    while ! [ -e /opt/software/slurm/bin/sacctmgr ]; do
-        sleep 15
-    done
     while : ; do
-        CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P)
+        CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P 2> /dev/null)
         if [ -z ${CLUSTER_INFO} ]; then
+            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting 15s..."
             sleep 15
         else
             break
