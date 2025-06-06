@@ -141,6 +141,7 @@ while read TIMESTAMP CONN OP GROUP; do
     # An operation has been done on a group in LDAP
     # We have already completed this request
     if [[ "${PREV_CONN}" == "${CONN}" ]]; then
+        echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
         continue
     fi
 
@@ -156,6 +157,7 @@ while read TIMESTAMP CONN OP GROUP; do
     case ${OP} in
         ADD)
             if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
+                echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
                 continue
             fi
 
