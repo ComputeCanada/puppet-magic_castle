@@ -140,12 +140,14 @@ mkproject() {
         # We create the associated account in slurm
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
+            local return_code=0
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
-            return 1
+            local return_code=1
         fi
         rmdir /var/lock/mkproject.$GROUP.lock
+        return $return_code
     fi
 }
 

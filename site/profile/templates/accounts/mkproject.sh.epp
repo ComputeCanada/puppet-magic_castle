@@ -83,6 +83,18 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         # sleeps to give time to the system internal to adjust before retrying.
         sleep 5
     fi
+    if [ -e /var/tmp/${GROUP}.slurm.failed ]; then
+        if mkproject ${GROUP} ${WITH_FOLDER}; then
+            rm /var/tmp/${GROUP}.slurm.failed
+            echo "${GROUP}" >> ${MKPROJECT_CACHE}
+            if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
+                sed -i '1d' ${MKPROJECT_CACHE}
+            fi
+        else
+            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            continue
+        fi
+    fi
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
         0)
@@ -130,12 +142,14 @@ while read CONN OP GROUP; do
             if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
                 continue
             fi
-            mkproject ${GROUP} ${WITH_FOLDER}
-            if [[ $? -eq 0 ]]; then
+
+            if mkproject ${GROUP} ${WITH_FOLDER}; then
                 echo "${GROUP}" >> ${MKPROJECT_CACHE}
                 if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                     sed -i '1d' ${MKPROJECT_CACHE}
                 fi
+            else
+                touch /var/tmp/"${GROUP}".slurm.failed
             fi
             ;;
         MOD)
