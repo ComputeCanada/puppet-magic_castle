@@ -3,10 +3,13 @@ source /sbin/account_functions.sh
 
 PROJECT_REGEX="<%= $project_regex %>"
 
-MKHOME_RETRY_PIPE="/run/mkhome/mkhome_retry.pipe"
-MKHOME_MODPROJECT_PIPE="/run/mkproject/mkhome_modproject.pipe"
+MKHOME_PROJECT_DIR="/run/mkhome_project"
+MKHOME_RETRY_PIPE="${MKHOME_PROJECT_DIR}/mkhome_retry.pipe"
+MKHOME_MODPROJECT_PIPE="${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe"
 
 trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
+
+mkdir -p ${MKHOME_PROJECT_DIR}
 
 if [[ ! -p ${MKHOME_RETRY_PIPE} ]]; then
     mkfifo -m=600 ${MKHOME_RETRY_PIPE}
