@@ -23,9 +23,7 @@ fi
 if [ -e $LAST_TIMESTAMP_FILE ]; then
     LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
     start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
-    if [ -z $start_index ]; then
-        start_index=1
-    fi
+    start_index=$(($start_index+1))
 else
     start_index=1
 fi
