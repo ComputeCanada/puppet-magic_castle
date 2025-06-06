@@ -158,6 +158,7 @@ while read TIMESTAMP CONN OP GROUP; do
         ADD)
             if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
                 echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
+                PREV_CONN="${CONN}"
                 continue
             fi
 

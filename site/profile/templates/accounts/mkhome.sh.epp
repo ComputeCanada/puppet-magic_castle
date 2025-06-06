@@ -35,15 +35,18 @@ fi
     tail -F ${MKHOME_RETRY_PIPE}
 ) |
 while read TIMESTAMP USERNAME; do
+    if [[ "${TIMESTAMP}" != "retry" ]]; then
+        echo $TIMESTAMP > $LAST_TIMESTAMP_FILE
+    fi
     <% if $manage_home { -%>
     if ! mkhome $USERNAME; then
-        echo $TIMESTAMP $USERNAME > ${MKHOME_RETRY_PIPE} &
+        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
         continue
     fi
     <% } -%>
     <% if $manage_scratch { -%>
     if ! mkscratch $USERNAME <%= $manage_home %>; then
-        echo $TIMESTAMP $USERNAME > ${MKHOME_RETRY_PIPE} &
+        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
         continue
     fi
     <% } -%>
@@ -51,5 +54,4 @@ while read TIMESTAMP USERNAME; do
     for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
         echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
     done
-    echo $TIMESTAMP > $LAST_TIMESTAMP_FILE
 done
