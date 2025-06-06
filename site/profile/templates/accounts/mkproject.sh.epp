@@ -22,10 +22,13 @@ PREV_CONN=""
 
 source /sbin/account_functions.sh
 
-MODPROJECT_CACHE=/var/tmp/modproject.cache
+MKPROJECT_HOME="/run/mkproject"
+mkdir -p ${MKPROJECT_HOME}
+
+MODPROJECT_CACHE=${MKPROJECT_HOME}/modproject.cache
 MODPROJECT_CACHE_SIZE=50
 
-MKPROJECT_CACHE=/var/tmp/mkproject.cache
+MKPROJECT_CACHE=${MKPROJECT_HOME}/mkproject.cache
 MKPROJECT_CACHE_SIZE=50
 
 # FIFO pipes could eventually be replaced by sockets
@@ -35,9 +38,9 @@ MKPROJECT_CACHE_SIZE=50
 #   nc -lkU /var/tmp/dsocket
 # To write data to the UNIX socket:
 #   echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" | nc -N -U /var/tmp/dsocket
-MODPROJECT_PIPE=/var/tmp/modproject.pipe
-MODPROJECT_RETRY_PIPE=/var/tmp/modproject_retry.pipe
-MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject.pipe
+MODPROJECT_PIPE=${MKPROJECT_HOME}/modproject.pipe
+MODPROJECT_RETRY_PIPE=${MKPROJECT_HOME}/modproject_retry.pipe
+MKHOME_MODPROJECT_PIPE=${MKPROJECT_HOME}/mkhome_modproject.pipe
 
 trap "rm -f ${MODPROJECT_PIPE} ${MODPROJECT_RETRY_PIPE} ${MODPROJECT_CACHE} ${MKPROJECT_CACHE}" EXIT
 
@@ -85,9 +88,9 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         # sleeps to give time to the system internal to adjust before retrying.
         sleep 5
     fi
-    if [ -e /var/tmp/${GROUP}.slurm.failed ]; then
+    if [ -e ${MKPROJECT_HOME}/${GROUP}.slurm.failed ]; then
         if mkproject ${GROUP} ${WITH_FOLDER}; then
-            rm /var/tmp/${GROUP}.slurm.failed
+            rm ${MKPROJECT_HOME}/${GROUP}.slurm.failed
             echo "${GROUP}" >> ${MKPROJECT_CACHE}
             if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                 sed -i '1d' ${MKPROJECT_CACHE}
@@ -151,7 +154,7 @@ while read CONN OP GROUP; do
                     sed -i '1d' ${MKPROJECT_CACHE}
                 fi
             else
-                touch /var/tmp/"${GROUP}".slurm.failed
+                touch "${MKPROJECT_HOME}/${GROUP}.slurm.failed"
             fi
             ;;
         MOD)
