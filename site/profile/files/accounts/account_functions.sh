@@ -8,12 +8,25 @@ kexec () {
     rm -f $TMP_KRB_CACHE
 }
 
+wait_for_slurm() {
+    while : ; do
+        CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P 2> /dev/null)
+        if [ -z ${CLUSTER_INFO} ]; then
+            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting 15s..."
+            sleep 15
+        else
+            break
+        fi
+    done
+    CLUSTER_NAME=$(echo $CLUSTER_INFO | cut -d'|' -f1)
+}
+
 mkhome () {
     local USERNAME=$1
 
     if [ -z "${USERNAME}" ]; then
         echo "ERROR::${FUNCNAME}: username unspecified"
-        return 1
+        return 3
     fi
 
     if id $USERNAME &> /dev/null; then
@@ -62,7 +75,7 @@ mkscratch () {
 
     if [ -z "${USERNAME}" ]; then
         echo "ERROR::${FUNCNAME}: username unspecified"
-        return 1
+        return 3
     fi
 
     if id $USERNAME &> /dev/null; then
@@ -108,10 +121,10 @@ mkproject() {
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
-        return 1
+        return 3
     fi
 
-    if mkdir /var/lock/mkproject.$GROUP.lock; then
+    if mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
         # A new group has been created
         if [ "$WITH_FOLDER" == "true" ]; then
             local GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
@@ -121,6 +134,7 @@ mkproject() {
 
             if [ -z "${GID}" ]; then
                 echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+                rmdir /var/lock/mkproject.$GROUP.lock
                 return 1
             fi
 
@@ -137,15 +151,19 @@ mkproject() {
                 echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
             fi
         fi
+        rmdir /var/lock/mkproject.$GROUP.lock
         # We create the associated account in slurm
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
+        elif [[ "${sacctmgr_output}" == *"Already existing account ${GROUP}"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP}: SlurmDB account already exists"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
-        rmdir /var/lock/mkproject.$GROUP.lock
+    else
+        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
     fi
 }
 
@@ -166,15 +184,15 @@ modproject() {
 
     local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
-    if [ -d /var/lock/mkproject.$GROUP.lock ]; then
-        echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES group folder is locked"
-        return 1
-    fi
+    while [ -d /var/lock/mkproject.$GROUP.lock ]; do
+        echo "WARN::${FUNCNAME}: $GROUP $USERNAMES group folder is locked, waiting 2s..."
+        sleep 2
+    done
     local GROUP_LINK=$(readlink /project/${GROUP})
     # mkproject has yet been ran for this group, skip it
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         if [[ -z "${GROUP_LINK}" ]]; then
-            echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group, skip it"
+            echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group"
             return 1
         fi
     else
@@ -221,6 +239,8 @@ modproject() {
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+        elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: already added to SlurmDB account"
         else
             echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
             echo "${sacctmgr_output}" | sed 's/^/\t/'

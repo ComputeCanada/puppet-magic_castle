@@ -22,11 +22,16 @@ PREV_CONN=""
 
 source /sbin/account_functions.sh
 
-MODPROJECT_CACHE=/var/tmp/modproject.cache
+MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
+mkdir -p ${MKHOME_PROJECT_DIR}
+
+MODPROJECT_CACHE=${MKHOME_PROJECT_DIR}/modproject.cache
 MODPROJECT_CACHE_SIZE=50
 
-MKPROJECT_CACHE=/var/tmp/mkproject.cache
+MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=50
+
+LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
 # FIFO pipes could eventually be replaced by sockets
 # to allow input from other instances, like login nodes
@@ -35,9 +40,9 @@ MKPROJECT_CACHE_SIZE=50
 #   nc -lkU /var/tmp/dsocket
 # To write data to the UNIX socket:
 #   echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" | nc -N -U /var/tmp/dsocket
-MODPROJECT_PIPE=/var/tmp/modproject.pipe
-MODPROJECT_RETRY_PIPE=/var/tmp/modproject_retry.pipe
-MKHOME_MODPROJECT_PIPE=/var/tmp/mkhome_modproject.pipe
+MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/modproject.pipe
+MODPROJECT_RETRY_PIPE=${MKHOME_PROJECT_DIR}/modproject_retry.pipe
+MKHOME_MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe
 
 trap "rm -f ${MODPROJECT_PIPE} ${MODPROJECT_RETRY_PIPE} ${MODPROJECT_CACHE} ${MKPROJECT_CACHE}" EXIT
 
@@ -53,6 +58,9 @@ fi
 install -m 600 /dev/null ${MKPROJECT_CACHE}
 install -m 600 /dev/null ${MODPROJECT_CACHE}
 
+wait_for_slurm
+
+CONSECUTIVE_FAILURES=0
 # Loop over three sources of project modification
 # 1. Modification coming from SLAPD log
 # 2. Modification coming from mkhome daemon
@@ -77,11 +85,24 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             continue
         fi
     fi
-    if [[ ${NRETRY} -gt 0 ]]; then
+    if [[ ${CONSECUTIVE_FAILURES} -gt 0 ]] && [[ ${NRETRY} -gt 0 ]]; then
         # NRETRY corresponds to the number of times that modproject has been called
         # with these arguments without success. If it is greater than 0, the script
         # sleeps to give time to the system internal to adjust before retrying.
-        sleep 5
+        sleep ${CONSECUTIVE_FAILURES}
+    fi
+    if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
+        if mkproject ${GROUP} ${WITH_FOLDER}; then
+            rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
+            echo "${GROUP}" >> ${MKPROJECT_CACHE}
+            if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
+                sed -i '1d' ${MKPROJECT_CACHE}
+            fi
+        else
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
+            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            continue
+        fi
     fi
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
@@ -93,26 +114,39 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
                 echo "${GROUP}" "${WITH_FOLDER}" "${USERNAME}" >> ${MODPROJECT_CACHE}
             done
             echo "$(tail -n ${MODPROJECT_CACHE_SIZE} ${MODPROJECT_CACHE})" > ${MODPROJECT_CACHE}
+            CONSECUTIVE_FAILURES=0
             ;;
         1)
             # modproject was not successul, but the arguments are valid, so we should try again
             # later. We increment the number of retry and add the arguments the retry pipeline.
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
             ;;
         *)
             # modproject was not successful and the return code indicates the function should not be
             # called again with these arguments (invalid arguments, do not retry).
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             ;;
     esac
 done &
 
-tail -F /var/log/dirsrv/slapd-*/access |
+# Do not reprocess previous entries if we remember the last timestamp treated
+if [ -e $LAST_TIMESTAMP_FILE ]; then
+    LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
+    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
+    start_index=$(($start_index+1))
+else
+    start_index=1
+fi
+
+tail -n +${start_index} -F /var/log/dirsrv/slapd-*/access |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
-sed -u -r 's/^.*conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3/' |
-while read CONN OP GROUP; do
+sed -u -r 's/^\[(.*) \+[0-9]{4}\] conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3 \4/' |
+while read TIMESTAMP CONN OP GROUP; do
     # An operation has been done on a group in LDAP
     # We have already completed this request
     if [[ "${PREV_CONN}" == "${CONN}" ]]; then
+        echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
         continue
     fi
 
@@ -128,14 +162,18 @@ while read CONN OP GROUP; do
     case ${OP} in
         ADD)
             if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
+                echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
+                PREV_CONN="${CONN}"
                 continue
             fi
-            mkproject ${GROUP} ${WITH_FOLDER}
-            if [[ $? -eq 0 ]]; then
+
+            if mkproject ${GROUP} ${WITH_FOLDER}; then
                 echo "${GROUP}" >> ${MKPROJECT_CACHE}
                 if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                     sed -i '1d' ${MKPROJECT_CACHE}
                 fi
+            else
+                touch "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
             fi
             ;;
         MOD)
@@ -156,4 +194,5 @@ while read CONN OP GROUP; do
             ;;
     esac
     PREV_CONN="${CONN}"
+    echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
 done

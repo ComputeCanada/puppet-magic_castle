@@ -1,6 +1,7 @@
 [Unit]
 Description=Create home directory for new IPA users
 BindsTo=ipa.service
+After=ipa.service
 
 [Service]
 Type=simple
