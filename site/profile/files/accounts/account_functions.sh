@@ -134,6 +134,7 @@ mkproject() {
 
             if [ -z "${GID}" ]; then
                 echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+                rmdir /var/lock/mkproject.$GROUP.lock
                 return 1
             fi
 
