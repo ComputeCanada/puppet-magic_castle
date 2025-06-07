@@ -184,10 +184,10 @@ modproject() {
 
     local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
-    if [ -d /var/lock/mkproject.$GROUP.lock ]; then
-        echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES group folder is locked"
-        return 1
-    fi
+    while [ -d /var/lock/mkproject.$GROUP.lock ]; do
+        echo "WARN::${FUNCNAME}: $GROUP group folder is locked, waiting 2s..."
+        sleep 2
+    done
     local GROUP_LINK=$(readlink /project/${GROUP})
     # mkproject has yet been ran for this group, skip it
     if [[ "${WITH_FOLDER}" == "true" ]]; then
