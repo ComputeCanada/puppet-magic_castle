@@ -85,7 +85,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             continue
         fi
     fi
-    if [[ ${CONSECUTIVE_FAILURES} -gt 1 -a ${NRETRY} -gt 1 ]]; then
+    if [[ ${CONSECUTIVE_FAILURES} -gt 1]] && [[ ${NRETRY} -gt 1 ]]; then
         # NRETRY corresponds to the number of times that modproject has been called
         # with these arguments without success. If it is greater than 0, the script
         # sleeps to give time to the system internal to adjust before retrying.

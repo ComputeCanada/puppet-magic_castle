@@ -185,7 +185,7 @@ modproject() {
     local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
     while [ -d /var/lock/mkproject.$GROUP.lock ]; do
-        echo "WARN::${FUNCNAME}: $GROUP group folder is locked, waiting 2s..."
+        echo "WARN::${FUNCNAME}: $GROUP $USERNAMES group folder is locked, waiting 2s..."
         sleep 2
     done
     local GROUP_LINK=$(readlink /project/${GROUP})
