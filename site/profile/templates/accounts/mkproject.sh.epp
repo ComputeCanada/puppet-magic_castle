@@ -84,12 +84,12 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             continue
         fi
     fi
-    if [[ ${NRETRY} -gt 0 ]]; then
-        # NRETRY corresponds to the number of times that modproject has been called
-        # with these arguments without success. If it is greater than 0, the script
-        # sleeps to give time to the system internal to adjust before retrying.
-        sleep 5
-    fi
+    # if [[ ${NRETRY} -gt 0 ]]; then
+    #     # NRETRY corresponds to the number of times that modproject has been called
+    #     # with these arguments without success. If it is greater than 0, the script
+    #     # sleeps to give time to the system internal to adjust before retrying.
+    #     sleep 5
+    # fi
     if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
         if mkproject ${GROUP} ${WITH_FOLDER}; then
             rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
