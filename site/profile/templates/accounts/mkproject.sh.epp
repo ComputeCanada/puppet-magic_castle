@@ -60,6 +60,7 @@ install -m 600 /dev/null ${MODPROJECT_CACHE}
 
 wait_for_slurm
 
+CONSECUTIVE_FAILURES=0
 # Loop over three sources of project modification
 # 1. Modification coming from SLAPD log
 # 2. Modification coming from mkhome daemon
@@ -84,12 +85,12 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             continue
         fi
     fi
-    # if [[ ${NRETRY} -gt 0 ]]; then
-    #     # NRETRY corresponds to the number of times that modproject has been called
-    #     # with these arguments without success. If it is greater than 0, the script
-    #     # sleeps to give time to the system internal to adjust before retrying.
-    #     sleep 5
-    # fi
+    if [[ ${CONSECUTIVE_FAILURES} -gt 1 -a ${NRETRY} -gt 1 ]]; then
+        # NRETRY corresponds to the number of times that modproject has been called
+        # with these arguments without success. If it is greater than 0, the script
+        # sleeps to give time to the system internal to adjust before retrying.
+        sleep ${CONSECUTIVE_FAILURES}
+    fi
     if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
         if mkproject ${GROUP} ${WITH_FOLDER}; then
             rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
@@ -98,6 +99,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
                 sed -i '1d' ${MKPROJECT_CACHE}
             fi
         else
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
             continue
         fi
@@ -112,15 +114,18 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
                 echo "${GROUP}" "${WITH_FOLDER}" "${USERNAME}" >> ${MODPROJECT_CACHE}
             done
             echo "$(tail -n ${MODPROJECT_CACHE_SIZE} ${MODPROJECT_CACHE})" > ${MODPROJECT_CACHE}
+            CONSECUTIVE_FAILURES=0
             ;;
         1)
             # modproject was not successul, but the arguments are valid, so we should try again
             # later. We increment the number of retry and add the arguments the retry pipeline.
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
             ;;
         *)
             # modproject was not successful and the return code indicates the function should not be
             # called again with these arguments (invalid arguments, do not retry).
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             ;;
     esac
 done &
