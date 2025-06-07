@@ -91,20 +91,24 @@ class profile::base (
     tag         => 'mc_bootstrap',
   }
 
-  package { 'haveged':
-    ensure  => 'installed',
-    require => Yumrepo['epel'],
-  }
-
   package { 'clustershell':
     ensure  => 'installed',
     require => Yumrepo['epel'],
   }
 
-  service { 'haveged':
-    ensure  => running,
-    enable  => true,
-    require => Package['haveged'],
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # haveged service is no longer required for kernel >= 5.4
+    # RHEL 8 is the last release with a kernel < 5
+    package { 'haveged':
+      ensure  => 'installed',
+      require => Yumrepo['epel'],
+    }
+
+    service { 'haveged':
+      ensure  => running,
+      enable  => true,
+      require => Package['haveged'],
+    }
   }
 
   ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
