@@ -11,9 +11,7 @@ class profile::accounts (
   Boolean $manage_project = true,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],
 ) {
-  package { 'rsync':
-    ensure => 'installed',
-  }
+  ensure_packages(['rsync'], { ensure => 'installed' })
 
   file { 'account_functions.sh':
     path   => '/sbin/account_functions.sh',
@@ -91,6 +89,7 @@ class profile::accounts (
   @service { 'mkhome':
     ensure    => $mkhome_running,
     enable    => $mkhome_running,
+    require   => Package['rsync'],
     subscribe => [
       File['/sbin/mkhome.sh'],
       File['/sbin/account_functions.sh'],
@@ -119,6 +118,7 @@ class profile::accounts (
   @service { 'mkproject':
     ensure    => running,
     enable    => true,
+    require   => Package['slurm'],
     subscribe => [
       File['/sbin/mkproject.sh'],
       File['/sbin/account_functions.sh'],
