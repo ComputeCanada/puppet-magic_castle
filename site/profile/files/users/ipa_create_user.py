@@ -76,15 +76,18 @@ def user_add(uid, first, last, password, shell, sshpubkeys):
 
 def group_add(name, nonposix=False):
     try:
+        iau_logger.info("adding group {group}".format(group=name))
         return api.Command.group_add(text_type(name), nonposix=nonposix)
     except errors.DuplicateEntry:
         return
 
 
-def group_add_members(group, members):
-    api.Command.group_add_member(
-        cn=text_type(group), user=list(map(text_type, members))
-    )
+def group_add_members(group, members, page_size=50):
+    for i in range(0, len(members), page_size):
+        iau_logger.info("adding members {begin}:{end} to {group}".format(begin=members[i], end=members[min(i+page_size, len(members)-1)],group=group))
+        api.Command.group_add_member(
+            cn=text_type(group), user=list(map(text_type, members[i:i+page_size]))
+        )
 
 
 def kinit(username, password):
