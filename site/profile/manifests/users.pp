@@ -48,50 +48,56 @@ define profile::users::ldap_user (
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
   $cmd_args = "${posix_group} ${nonposix_group} ${$sshpubkey_string}"
   if $count > 1 {
+    $page_size = 50
     $prefix = $name
-    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${cmd_args}"
-    $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
+    $exec_name = range(1, $count, $page_size).map |$i| {
+      "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
+    }
+    $command = range(1, $count, $page_size).map |$i| {
+      "kinit_wrapper ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+    }
+    $unless = range(1, $count, $page_size).map |$i| {
+      "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})"
+    }
     $timeout = $count * 10
   } elsif $count == 1 {
-    $command = "kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"
-    $unless = "getent passwd ${name}"
+    $exec_name = ["ldap_user_${name}"]
+    $command = ["kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"]
+    $unless = ["getent passwd ${name}"]
     $timeout = 10
   }
 
-  if $passwd {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_password}", "IPA_USER_PASSWD=${passwd}"]
-  } else {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
-  }
+  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
 
   if $count > 0 {
-    exec { "ldap_user_${name}" :
-      command     => $command,
-      unless      => $unless,
-      environment => $environment,
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-      timeout     => $timeout,
-      require     => [
-        File['kinit_wrapper'],
-        File['/sbin/ipa_create_user.py'],
-      ],
+    $exec_name.each |Integer $i, String $exec_name_i| {
+      exec { $exec_name_i:
+        command     => $command[$i],
+        unless      => $unless[$i],
+        environment => $environment,
+        path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+        timeout     => $timeout,
+        require     => [
+          File['kinit_wrapper'],
+          File['/sbin/ipa_create_user.py'],
+        ],
+      }
     }
-
     $access_tags.each |$tag| {
       exec { "ipa_hbacrule_${name}_${tag}":
         command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=${unique_group}",
         refreshonly => true,
-        environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+        environment => $environment,
         require     => [File['kinit_wrapper'],],
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
         returns     => [0, 1, 2],
-        subscribe   => [
-          Exec["ldap_user_${name}"],
-        ],
+        subscribe   => $exec_name.map |$exec_name_i| {
+          Exec[$exec_name_i]
+        },
       }
     }
 
-    if $manage_password and $passwd {
+    if $passwd {
       $ds_password = lookup('profile::freeipa::server::ds_password')
       $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
       $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
@@ -103,18 +109,27 @@ define profile::users::ldap_user (
         -S "uid={},cn=users,cn=accounts,${ldap_dc_string}" \
         -s "${passwd}"
         |EOT
+
       if $count > 1 {
-        $reset_password_cmd = "seq -w ${count} | sed 's/^/${prefix}/' | xargs -I '{}' ${ldad_passwd_cmd}"
-        $check_password_cmd = "echo ${passwd} | kinit $(seq -w ${count} | sed 's/^/${prefix}/' | head -n1) && kdestroy"
+        $set_password_cmd = range(1, $count, $page_size).map |$i| {
+          "seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | xargs -I '{}' ${ldad_passwd_cmd}"
+        }
+        $check_password_cmd = range(1, $count, $page_size).map |$i| {
+          "echo ${passwd} | kinit $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | shuf | head -n1) && kdestroy"
+        }
       } else {
-        $reset_password_cmd = regsubst($ldad_passwd_cmd, '{}', $name)
-        $check_password_cmd = "echo ${passwd} | kinit ${name} && kdestroy"
+        $set_password_cmd = [regsubst($ldad_passwd_cmd, '{}', $name)]
+        $check_password_cmd = ["echo ${passwd} | kinit ${name} && kdestroy"]
       }
 
-      exec { "ldap_reset_password_${name}":
-        command => Sensitive($reset_password_cmd),
-        unless  => Sensitive($check_password_cmd),
-        path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      $exec_name.each |Integer $i, String $exec_name_i| {
+        exec { "ldap_set_password_${$exec_name_i}":
+          command     => Sensitive($set_password_cmd[$i]),
+          unless      => Sensitive($check_password_cmd[$i]),
+          path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+          refreshonly => ! $manage_password,
+          subscribe   => Exec[$exec_name_i],
+        }
       }
     }
   }
