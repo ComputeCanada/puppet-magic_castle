@@ -53,7 +53,8 @@ class profile::nfs::client (
 }
 
 class profile::nfs::server (
-  Array[String] $no_root_squash_tags = ['mgmt']
+  Array[String] $no_root_squash_tags = ['mgmt'],
+  Boolean $enable_client_quotas = false,
 ) {
   include profile::volumes
 
@@ -75,7 +76,28 @@ class profile::nfs::server (
     notify => Service[$nfs::server_service_name],
   }
 
-  service { ['rpc-statd', 'rpcbind', 'rpcbind.socket']:
+  if $enable_client_quotas {
+    package { 'quota-rpc':
+      ensure => 'installed'
+    }
+    service { 'rpc-rquotad':
+      ensure  => 'running',
+      enable  => true,
+      require => [Service['rpcbind'], Service['rpcbind.socket'], Package['quota-rpc']]
+    }
+    service { ['rpcbind', 'rpcbind.socket']:
+      enable => true,
+      notify => Service[$nfs::server_service_name],
+    }
+  }
+  else {
+    service { ['rpcbind', 'rpcbind.socket']:
+      ensure => stopped,
+      enable => mask,
+      notify => Service[$nfs::server_service_name],
+    }
+  }
+  service { 'rpc-statd':
     ensure => stopped,
     enable => mask,
     notify => Service[$nfs::server_service_name],
