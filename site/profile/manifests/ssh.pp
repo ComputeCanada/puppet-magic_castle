@@ -4,6 +4,12 @@ class profile::ssh::base {
     enable => true,
   }
 
+  sshd_config { 'Include':
+    ensure => present,
+    value  => '/etc/ssh/sshd_config.d/*',
+    notify => Service['sshd'],
+  }
+
   sshd_config { 'PermitRootLogin':
     ensure => present,
     value  => 'no',
