@@ -1,4 +1,6 @@
-class profile::ssh::base {
+class profile::ssh::base (
+  Boolean $disable_passwd_auth = false,
+) {
   service { 'sshd':
     ensure => running,
     enable => true,
@@ -13,6 +15,13 @@ class profile::ssh::base {
   sshd_config { 'PermitRootLogin':
     ensure => present,
     value  => 'no',
+    notify => Service['sshd'],
+  }
+
+  $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
+  sshd_config { 'PasswordAuthentication':
+    ensure => present,
+    value  => $password_auth,
     notify => Service['sshd'],
   }
 
