@@ -74,6 +74,43 @@ class profile::ssh::base (
       notify => Service['sshd'],
     }
   }
+
+  sshd_config { 'tf_sshd_AuthenticationMethods':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthenticationMethods',
+    value     => 'publickey',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+  }
+
+  sshd_config { 'tf_sshd_AuthorizedKeysFile':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthorizedKeysFile',
+    value     => '/etc/ssh/authorized_keys.%u',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+  }
+
+  $tf_public_key = lookup('terraform.data.tf_public_key')
+  $tags          = lookup('terraform.self.tags')
+  $puppetserver_ips = lookup('terraform.tag_ip.puppet')
+
+  if 'puppet' in $tags {
+    $tf_authorized_keys_options = 'pty'
+  } else {
+    $permitopen = $puppetserver_ips.map |$ip| { "permitopen=\"${ip}:22\"" }.join(',')
+    $tf_authorized_keys_options = "${permitopen},port-forwarding,command=\"/sbin/nologin\""
+  }
+
+  $tf_authorized_keys = "restrict,${tf_authorized_keys_options} ${tf_public_key}"
+  file { '/etc/ssh/authorized_keys.tf':
+    content => $tf_authorized_keys,
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
+  }
 }
 
 # building /etc/ssh/ssh_known_hosts
