@@ -1,0 +1,11 @@
+#!/bin/bash
+# 1. Create an automember rule for each group
+# 2. Add a condition to the automember rule to add all users to that group
+# 3. Rebuild the automember rules
+api.Command.batch(
+<% $automember_groups.each |$group| { -%>
+  { 'method': 'automember_add', 'params': [[], {'cn': '<%= $group %>', 'type': 'group', 'all': False, 'raw': False}]},
+  { 'method': 'automember_add_condition', 'params': [[], {'cn': '<%= $group %>', 'key': 'uid', 'type': 'group', 'all': False, 'raw': False, 'automemberinclusiveregex': '.*'}]},
+<% } -%>
+  { 'method': 'automember_rebuild', 'params': [[], {'type': 'group'}] },
+)
