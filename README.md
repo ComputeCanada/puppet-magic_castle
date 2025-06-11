@@ -607,6 +607,7 @@ This class configures files and services of a FreeIPA server.
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
 | `enable_mokey`   | Enable the [mokey service](#profilefreeipamokey) | Booelan   |
+| `groups_hbacrules`   | Add a group to an array of HBAC rules | Optional[Hash[String, Array[String]]] |
 
 <details>
 <summary>default values</summary>
@@ -617,6 +618,7 @@ profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
 profile::freeipa::server::enable_mokey: true
+profile::freeipa::server::groups_hbacrules: undef
 ```
 
 </details>

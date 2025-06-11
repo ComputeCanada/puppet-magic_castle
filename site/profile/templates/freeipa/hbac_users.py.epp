@@ -1,0 +1,8 @@
+#!/bin/bash
+api.Command.batch(
+<% $groups_hbacrules.each |$group, $hbacrules| { -%>
+  <% $hbacrules.each |$rule| { -%>
+    { 'method': 'hbacrule_add_user', 'params': [['<%= $rule %>'], {'group': '<%= $group %>'}] },
+  <% } -%>
+<% } -%>
+)
