@@ -1340,6 +1340,7 @@ or to use [Mokey](#profilefreeipamokey).
 | Variable      | Description                                               | Type                            |
 | ------------- | :-------------------------------------------------------- | :------------------------------ |
 | `users`       | Dictionary of users to be created in LDAP                 | Hash[profile::users::ldap_user] |
+| `groups`      | Dictionary of users to be created in LDAP                 | Hash[String, profile::users::ldap_group_rules] |
 | `access_tags` | List of `'tag:service'` that LDAP user can connect to     | Array[String]                   |
 
 A `profile::users::ldap_user` is defined as a dictionary with the following keys:
@@ -1349,6 +1350,12 @@ A `profile::users::ldap_user` is defined as a dictionary with the following keys
 | `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
+
+A `profile::users::ldap_group_rules` is defined as a dictionary with the following keys:
+| Variable          | Description                                               | Type                            | Optional ? |
+| ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
+| `automember`      | Whether users are automatically member of that group      | Boolean                         | Yes        |
+| `hbacrules`       | List of HBAC rules that apply to this group               | Array[String]                   | Yes        |
 
 
 By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
@@ -1367,6 +1374,10 @@ profile::users::ldap::users:
     manage_password: true
 
 profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+profile::users::ldap::groups:
+  'def-sponsor00':
+    automember: true
+    hbacrules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 ```
 
 If `profile::users::ldap::users` is present in more than one YAML file in the hierarchy,
