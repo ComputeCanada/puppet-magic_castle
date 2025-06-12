@@ -1,5 +1,7 @@
 function slurm_job_submit(job_desc, part_list, submit_uid)
+<% if $selinux_context { -%>
   job_desc.selinux_context = "<%= $selinux_context %>"
+<% } -%>
   return slurm.SUCCESS
 end
 
