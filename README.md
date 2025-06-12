@@ -635,7 +635,6 @@ This class installs mokey, configures its files and manage its service.
 | `port`                 | Mokey internal web server port                                 | Integer       |
 | `enable_user_signup`   | Allow users to create an account on the cluster                | Boolean       |
 | `require_verify_admin` | Require a FreeIPA to enable Mokey created account before usage | Boolean       |
-| `access_tags`          | HBAC rule access tags for users created via mokey self-signup  | Array[String] |
 
 <details>
 <summary>default values</summary>
@@ -645,7 +644,6 @@ profile::freeipa::mokey::password: ENC[PKCS7,...]
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
-profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 ```
 </details>
 
@@ -1340,7 +1338,6 @@ or to use [Mokey](#profilefreeipamokey).
 | ------------- | :-------------------------------------------------------- | :------------------------------ |
 | `users`       | Dictionary of users to be created in LDAP                 | Hash[profile::users::ldap_user] |
 | `groups`      | Dictionary of users to be created in LDAP                 | Hash[String, profile::users::ldap_group_rules] |
-| `access_tags` | List of `'tag:service'` that LDAP user can connect to     | Array[String]                   |
 
 A `profile::users::ldap_user` is defined as a dictionary with the following keys:
 | Variable          | Description                                               | Type                            | Optional ? |
@@ -1372,7 +1369,6 @@ profile::users::ldap::users:
     groups: ['def-sponsor00']
     manage_password: true
 
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 profile::users::ldap::groups:
   'def-sponsor00':
     automember: true
@@ -1406,7 +1402,9 @@ profile::users::ldap::users:
 
 Allowing LDAP users to connect to the cluster only via JupyterHub:
 ```yaml
-profile::users::ldap::access_tags: ['proxy:jupyterhub-login']
+profile::users::ldap::groups:
+  'def-sponsor00':
+    hbacrules: ['proxy:jupyterhub-login']
 ```
 
 </details>

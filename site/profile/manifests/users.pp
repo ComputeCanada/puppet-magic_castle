@@ -1,7 +1,6 @@
 class profile::users::ldap (
   Hash $users,
   Hash $groups,
-  Array[String] $access_tags,
 ) {
   Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_user <| |>
   Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_user <| |>
@@ -13,9 +12,9 @@ class profile::users::ldap (
     mode   => '0755',
   }
 
-  ensure_resources(profile::users::ldap_user, $users, { 'access_tags' => $access_tags })
+  ensure_resources(profile::users::ldap_user, $users)
   $groups.each |$group, $params| {
-    if "posix" in $params {
+    if 'posix' in $params {
       ensure_resource(profile::users::ldap_group, $group, { posix => $params['posix'] })
     }
     else {
@@ -104,18 +103,15 @@ define profile::users::ldap_group_rules (
 
 define profile::users::ldap_user (
   Array[String] $groups,
-  Array[String] $access_tags,
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $unique_group = "hbac-${name}"
   $posix_group = join($groups.map |$group| { "--posix_group ${group}" }, ' ')
-  $nonposix_group = "--nonposix_group ${unique_group}"
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
-  $cmd_args = "${posix_group} ${nonposix_group} ${$sshpubkey_string}"
+  $cmd_args = "${posix_group} ${$sshpubkey_string}"
   if $count > 1 {
     $page_size = 50
     $prefix = $name
@@ -136,7 +132,6 @@ define profile::users::ldap_user (
     $timeout = 10
   }
 
-  ensure_resource(profile::users::ldap_group, "hbac-${name}", { posix => false })
   $groups.each |$group| {
     ensure_resource(profile::users::ldap_group, $group, { posix => true })
   }
@@ -156,19 +151,6 @@ define profile::users::ldap_user (
           File['kinit_wrapper'],
           File['/sbin/ipa_create_user.py'],
         ],
-      }
-    }
-    $access_tags.each |$tag| {
-      exec { "ipa_hbacrule_${name}_${tag}":
-        command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=${unique_group}",
-        refreshonly => true,
-        environment => $environment,
-        require     => [File['kinit_wrapper'],],
-        path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-        returns     => [0, 1, 2],
-        subscribe   => $exec_name.map |$exec_name_i| {
-          Exec[$exec_name_i]
-        },
       }
     }
 
