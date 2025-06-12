@@ -115,12 +115,10 @@ def main(users, posix_groups, nonposix_groups, passwd, sshpubkeys):
 
     if posix_groups:
         for group in posix_groups:
-            group_add(group)
             group_add_members(group, users)
 
     if nonposix_groups:
         for group in nonposix_groups:
-            group_add(group, nonposix=True)
             group_add_members(group, users)
 
     if passwd:

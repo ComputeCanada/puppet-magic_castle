@@ -2,6 +2,8 @@
 lookup_options:
   profile::users::ldap::users:
     merge: 'deep'
+  profile::users::ldap::groups:
+    merge: 'deep'
   profile::users::local::users:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
@@ -296,6 +298,10 @@ profile::users::ldap::users:
     passwd: "%{alias('terraform.data.guest_passwd')}"
     groups: ['def-sponsor00']
     manage_password: true
+profile::users::ldap::groups:
+  'def-sponsor00':
+    automember: true
+    hbacrules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
