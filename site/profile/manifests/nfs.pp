@@ -11,6 +11,7 @@ class profile::nfs (String $domain) {
 
 class profile::nfs::client (
   String $server_ip,
+  Optional[Array[string]] $share_names = undef,
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
@@ -21,26 +22,29 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
-  $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
-  $self_volumes = lookup('terraform.self.volumes')
-  if $nfs_volumes =~ Hash[String, Hash] {
+  if $share_names == undef {
+    $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
     $nfs_export_list = keys($nfs_volumes)
-    $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
-    $nfs_export_list.each | String $share_name | {
-      # If the instance has a volume mounted under the same name as the nfs share,
-      # we mount the nfs share under /nfs/${share_name}.
-      if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
-        $mount_point = "/nfs/${share_name}"
-      } else {
-        $mount_point = "/${share_name}"
-      }
-      nfs::client::mount { $mount_point:
-        ensure        => present,
-        server        => $server_ip,
-        share         => $share_name,
-        options_nfsv4 => $options_nfsv4,
-        notify        => Systemd::Daemon_reload['nfs-automount'],
-      }
+  } else {
+    $nfs_export_list = $share_names
+  }
+
+  $self_volumes = lookup('terraform.self.volumes')
+  $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
+  $nfs_export_list.each | String $share_name | {
+    # If the instance has a volume mounted under the same name as the nfs share,
+    # we mount the nfs share under /nfs/${share_name}.
+    if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
+      $mount_point = "/nfs/${share_name}"
+    } else {
+      $mount_point = "/${share_name}"
+    }
+    nfs::client::mount { $mount_point:
+      ensure        => present,
+      server        => $server_ip,
+      share         => $share_name,
+      options_nfsv4 => $options_nfsv4,
+      notify        => Systemd::Daemon_reload['nfs-automount'],
     }
   }
 
@@ -53,7 +57,8 @@ class profile::nfs::client (
 }
 
 class profile::nfs::server (
-  Array[String] $no_root_squash_tags = ['mgmt']
+  Array[String] $no_root_squash_tags = ['mgmt'],
+  Array[String] $export_paths = [],
 ) {
   include profile::volumes
 
@@ -81,26 +86,30 @@ class profile::nfs::server (
     notify => Service[$nfs::server_service_name],
   }
 
-  $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
-  if $devices =~ Hash[String, Hash] {
+  if $export_paths == undef {
+    $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
+    if $devices =~ Hash[String, Hash] {
+      $export_paths = $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
+    }
+  }
+
+  if $export_paths {
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
     $common_options = 'rw,async,no_all_squash,security_label'
     $prefixes  = $instances.filter|$key, $values| { ! intersection($values['tags'], $no_root_squash_tags ).empty }.map|$key, $values| { $values['prefix'] }.unique
     $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(${common_options},no_root_squash)" }.join(' ')
     $clients = "${prefix_rules} *.${nfs_domain}(${common_options},root_squash)"
-    $devices.each | String $key, $glob | {
-      nfs::server::export { "/mnt/nfs/${key}":
+    $export_paths.each | String $path| {
+      nfs::server::export { $path:
         ensure  => 'mounted',
         clients => $clients,
         notify  => Service[$nfs::server_service_name],
-        require => [
-          Profile::Volumes::Volume["nfs-${key}"],
-          Class['nfs'],
-        ],
+        require => Class['nfs'],
       }
     }
   }
+  Profile::Volumes::Volume<| |> -> Nfs::Server::Export <| |>
   Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
