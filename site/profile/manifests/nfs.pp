@@ -28,7 +28,15 @@ class profile::nfs::client (
   }
 
   $self_volumes = lookup('terraform.self.volumes')
-  $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
+  if $facts['virtual'] =~ /^(container|lxc).*$/ {
+    # automount relies on a kernel module that currently does not support namespace.
+    # Therefore it is not compatible with containers.
+    # https://superuser.com/a/1372700
+    $automount = ''
+  } else {
+    $automount = 'x-systemd.automount'
+  }
+  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.mount-timeout=30,_netdev,${automount}"
   $share_names.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
