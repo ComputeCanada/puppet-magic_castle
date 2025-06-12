@@ -24,14 +24,12 @@ class profile::nfs::client (
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
   if $share_names == undef {
     $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
-    $nfs_export_list = keys($nfs_volumes)
-  } else {
-    $nfs_export_list = $share_names
+    $share_names = keys($nfs_volumes)
   }
 
   $self_volumes = lookup('terraform.self.volumes')
   $options_nfsv4 = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.automount,x-systemd.mount-timeout=30,_netdev'
-  $nfs_export_list.each | String $share_name | {
+  $share_names.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
     if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
