@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     main(
         users=args.users,
-        group=args.group,
+        groups=args.group,
         passwd=passwd,
         sshpubkeys=args.sshpubkey
     )
