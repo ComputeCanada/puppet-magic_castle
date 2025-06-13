@@ -1416,19 +1416,20 @@ or to use [Mokey](#profilefreeipamokey).
 | Variable      | Description                                               | Type                            |
 | ------------- | :-------------------------------------------------------- | :------------------------------ |
 | `users`       | Dictionary of users to be created in LDAP                 | Hash[profile::users::ldap_user] |
-| `groups`      | Dictionary of users to be created in LDAP                 | Hash[String, profile::users::ldap_group_rules] |
+| `groups`      | Dictionary of groups to be created in LDAP                | Hash[profile::users::ldap_group] |
 
 A `profile::users::ldap_user` is defined as a dictionary with the following keys:
 | Variable          | Description                                               | Type                            | Optional ? |
 | ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
-| `groups`          | List of groups the user has to be part of                 | Array[String]                   | No         |
+| `groups`          | List of groups the user has to be part of                 | Array[String]                   | Yes        |
 | `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
 
-A `profile::users::ldap_group_rules` is defined as a dictionary with the following keys:
+A `profile::users::ldap_group` is defined as a dictionary with the following keys:
 | Variable          | Description                                               | Type                            | Optional ? |
 | ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
+| `posix`           | Whether this is a posix group or not                      | Boolean                         | Yes        |
 | `automember`      | Whether users are automatically member of that group      | Boolean                         | Yes        |
 | `hbacrules`       | List of HBAC rules that apply to this group               | Array[String]                   | Yes        |
 
