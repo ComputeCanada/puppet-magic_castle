@@ -2,26 +2,20 @@ class profile::users::ldap (
   Hash $users,
   Hash $groups,
 ) {
-  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_user <| |>
-  Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_user <| |>
-  Exec <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
-  Service <| |> -> Profile::Users::Ldap_user <| |>
+  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group <| |>
+  Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_group <| |>
+  Exec <| tag == profile::accounts |> ->  Profile::Users::Ldap_group <| |>
+  Service <| |> ->  Profile::Users::Ldap_group <| |>
+  Profile::Users::Ldap_group <| |> -> Profile::Users::Ldap_user <| |>
 
   file { '/sbin/ipa_create_user.py':
     source => 'puppet:///modules/profile/users/ipa_create_user.py',
     mode   => '0755',
   }
 
+  $users_groups = Hash(unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| { [$group_name, {}] })
+  ensure_resources(profile::users::ldap_group, $users_groups + $groups)
   ensure_resources(profile::users::ldap_user, $users)
-  $groups.each |$group, $params| {
-    if 'posix' in $params {
-      ensure_resource(profile::users::ldap_group, $group, { posix => $params['posix'] })
-    }
-    else {
-      ensure_resource(profile::users::ldap_group, $group, { posix => true })
-    }
-  }
-  ensure_resources(profile::users::ldap_group_rules, $groups)
 }
 
 class profile::users::local (
@@ -44,6 +38,8 @@ class profile::users::local (
 
 define profile::users::ldap_group (
   Boolean $posix = true,
+  Boolean $automember = false,
+  Optional[Array[String]] $hbacrules = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
@@ -59,17 +55,10 @@ define profile::users::ldap_group (
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     unless      => "kinit_wrapper ipa group-show ${name}",
     require     => [
+      Exec['ipa-install'],
       File['kinit_wrapper'],
     ],
   }
-}
-
-define profile::users::ldap_group_rules (
-  Boolean $automember = false,
-  Optional[Array[String]] $hbacrules = undef,
-  Optional[Boolean] $posix = undef,
-) {
-  $admin_password = lookup('profile::freeipa::server::admin_password')
 
   if $hbacrules != undef or $automember {
     file { "/etc/ipa/group_rules_${name}.py":
@@ -83,18 +72,17 @@ define profile::users::ldap_group_rules (
         }
       ),
     }
-    Profile::Users::Ldap_group<| |> -> Exec["group_rules_${name}"]
     exec { "group_rules_${name}":
       command     => "kinit_wrapper ipa console /etc/ipa/group_rules_${name}.py",
       refreshonly => true,
       require     => [
         File['kinit_wrapper'],
-        Exec['hbac_rules']
       ],
-      environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+      environment => $environment,
       path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       subscribe   => [
         File["/etc/ipa/group_rules_${name}.py"],
+        Exec['hbac_rules'],
         Exec['ipa-install'],
       ],
     }
@@ -132,15 +120,10 @@ define profile::users::ldap_user (
     $timeout = 10
   }
 
-  $groups.each |$group| {
-    ensure_resource(profile::users::ldap_group, $group, { posix => true })
-  }
-
   $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
 
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
-      Profile::Users::Ldap_group<| |> -> Exec[$exec_name_i]
       exec { $exec_name_i:
         command     => $command[$i],
         unless      => $unless[$i],
