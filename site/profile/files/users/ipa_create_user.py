@@ -3,6 +3,8 @@ import argparse
 import logging
 import os
 import time
+import grp
+import pwd
 
 from ipalib import api, errors
 from ipalib.cli import cli
@@ -89,6 +91,26 @@ def kdestroy():
     ipautil.run([paths.KDESTROY])
 
 
+def dry_run(users, groups):
+    "Verify if changes are required and true if needed."
+    users = set(users)
+    if groups:
+        for group in groups:
+            try:
+                members = set(grp.getgrnam(group).gr_mem)
+            except KeyError:
+                return True
+            if not members.issuperset(users):
+                return True
+    else:
+        for user in users:
+            try:
+                pwd.getpwnam(user)
+            except KeyError:
+                return True
+    return False
+
+
 def main(users, groups, passwd, sshpubkeys):
     init_api()
     added_users = set()
@@ -123,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
     parser.add_argument("--passwd", help="users's password")
     parser.add_argument("--sshpubkey", action="append", help="SSH public key (can be specified multiple times)")
+    parser.add_argument("--dry", help="determine if changes are required", action='store_true')
     args = parser.parse_args()
 
     if args.passwd is not None:
@@ -132,9 +155,13 @@ if __name__ == "__main__":
     else:
         passwd = None
 
-    main(
-        users=args.users,
-        groups=args.group,
-        passwd=passwd,
-        sshpubkeys=args.sshpubkey
-    )
+    if args.dry:
+        if dry_run(args.users, args.group):
+            exit(1)
+    else:
+        main(
+            users=args.users,
+            groups=args.group,
+            passwd=passwd,
+            sshpubkeys=args.sshpubkey
+        )
