@@ -97,6 +97,10 @@ class profile::nfs::server (
     if $devices =~ Hash[String, Hash] {
       $export_paths = $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
     }
+  } else {
+    $export_paths.each |$path| {
+      ensure_resource('file', $path, { ensure => directory, before => Nfs::Server::Export[$path] })
+    }
   }
 
   if $export_paths {
