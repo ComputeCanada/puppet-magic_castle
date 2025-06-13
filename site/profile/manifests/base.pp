@@ -10,6 +10,9 @@ class profile::base (
   include profile::base::powertools
   include profile::ssh::base
 
+  package { 'selinux-policy': }
+  Package['selinux-policy'] -> Class['selinux::config']
+
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
@@ -91,20 +94,24 @@ class profile::base (
     tag         => 'mc_bootstrap',
   }
 
-  package { 'haveged':
-    ensure  => 'installed',
-    require => Yumrepo['epel'],
-  }
-
   package { 'clustershell':
     ensure  => 'installed',
     require => Yumrepo['epel'],
   }
 
-  service { 'haveged':
-    ensure  => running,
-    enable  => true,
-    require => Package['haveged'],
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # haveged service is no longer required for kernel >= 5.4
+    # RHEL 8 is the last release with a kernel < 5
+    package { 'haveged':
+      ensure  => 'installed',
+      require => Yumrepo['epel'],
+    }
+
+    service { 'haveged':
+      ensure  => running,
+      enable  => true,
+      require => Package['haveged'],
+    }
   }
 
   ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
@@ -166,9 +173,11 @@ class profile::base::powertools {
   } else {
     $repo_name = 'crb'
   }
+  package { 'dnf-plugins-core': }
   exec { 'enable_powertools':
     command => "dnf config-manager --set-enabled ${$repo_name}",
     unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
     path    => ['/usr/bin'],
+    require => Package['dnf-plugins-core'],
   }
 }
