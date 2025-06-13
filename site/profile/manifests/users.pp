@@ -110,10 +110,13 @@ define profile::users::ldap_user (
       "kinit_wrapper ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
     }
     $unless = range(1, $count, $page_size).map |$i| {
-      [
-        "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})",
-        "! getent group ${$groups.join(' ')} | cut -d: -f4 | sed 's/,/\n/g' | sort | paste -sd',' | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')",
-      ].join('&&')
+      (
+        [
+          "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})",
+        ] + length($groups) > 0 ? {
+          true  => ["! getent group ${$groups.join(' ')} | cut -d: -f4 | sed 's/,/\n/g' | sort | paste -sd',' | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')",],
+          false => [],
+      }).join('&&')
     }
     $timeout = $count * 10
   } elsif $count == 1 {
