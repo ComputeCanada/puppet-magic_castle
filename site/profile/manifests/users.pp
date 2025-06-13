@@ -102,16 +102,16 @@ define profile::users::ldap_group_rules (
 }
 
 define profile::users::ldap_user (
-  Array[String] $groups,
+  Array[String] $groups = [],
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $posix_group = join($groups.map |$group| { "--posix_group ${group}" }, ' ')
+  $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
-  $cmd_args = "${posix_group} ${$sshpubkey_string}"
+  $cmd_args = "${group_args} ${$sshpubkey_string}"
   if $count > 1 {
     $page_size = 50
     $prefix = $name
