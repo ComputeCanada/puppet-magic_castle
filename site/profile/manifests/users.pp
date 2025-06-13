@@ -2,7 +2,7 @@ class profile::users::ldap (
   Hash $users,
   Hash $groups,
 ) {
-  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group
+  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group <| |>
   Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_group <| |>
   Exec <| tag == profile::accounts |> ->  Profile::Users::Ldap_group <| |>
   Service <| |> ->  Profile::Users::Ldap_group <| |>
