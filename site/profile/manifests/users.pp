@@ -112,7 +112,7 @@ define profile::users::ldap_user (
     $unless = range(1, $count, $page_size).map |$i| {
       [
         "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})",
-        "! getent group ${$groups.join(' ')} | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')",
+        "! getent group ${$groups.join(' ')} | cut -d: -f4 | sed 's/,/\n/g' | sort | paste -sd',' | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')",
       ].join('&&')
     }
     $timeout = $count * 10
