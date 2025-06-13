@@ -112,21 +112,34 @@ define profile::users::ldap_user (
     $unless = range(1, $count, $page_size).map |$i| {
       (
         [
+          # Verify every username exists in the database
           "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})",
-        ] + length($groups) > 0 ? {
-          true  => ["! getent group ${$groups.join(' ')} | cut -d: -f4 | sed 's/,/\n/g' | sort | paste -sd',' | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')",],
-          false => [],
-      }).join('&&')
+        ] + (
+          length($groups) > 0 ? {
+            # If there are groups defined for these users, verify all users are part of all groups.
+            true  => ["! getent group ${$groups.join(' ')} | cut -d: -f4 | sed 's/,/\n/g' | sort | paste -sd',' | grep -qv $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | paste -sd',')"],
+            false => [],
+          }
+        )
+      ).join('&&')
     }
     $timeout = $count * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
     $command = ["kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"]
-    $unless = ["getent passwd ${name}"]
+    $unless = (
+      ["getent passwd ${name}"] +
+      (
+        length($groups) > 0 ? {
+          true  => ["! getent group ${$groups.join(' ')} | grep -qv ${name}"],
+          false => [],
+        }
+      )
+    ).join('&&')
     $timeout = 10
   }
 
-  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
+  $environment = ["IPA_ADMIN_PASSWD=${admin_password}", 'SSS_NSS_USE_MEMCACHE=no']
 
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
