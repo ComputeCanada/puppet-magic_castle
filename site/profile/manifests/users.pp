@@ -109,14 +109,12 @@ define profile::users::ldap_user (
     $command = range(1, $count, $page_size).map |$i| {
       "kinit_wrapper ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
     }
-    $unless = range(1, $count, $page_size).map |$i| {
-      "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})"
-    }
-    $timeout = $count * 10
+    $unless = $command.map|$cmd| { "${cmd} --dry" }
+    $timeout = $page_size * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
     $command = ["kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"]
-    $unless = ["getent passwd ${name}"]
+    $unless = ["${command} --dry"]
     $timeout = 10
   }
 
