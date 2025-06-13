@@ -13,7 +13,7 @@ class profile::users::ldap (
     mode   => '0755',
   }
 
-  $users_groups = unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| {{ $group_name => {} } } or Hash()
+  $users_groups = Hash(unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| { [$group_name, {}] })
   ensure_resources(profile::users::ldap_group, $users_groups + $groups)
   ensure_resources(profile::users::ldap_user, $users)
 }
