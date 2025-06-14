@@ -1,0 +1,30 @@
+name: PDK Tests
+
+on: pull_request
+
+jobs:
+  run-pdk-tests:
+    name: Run PDK tests
+    runs-on: ubuntu-latest
+    env:
+      PUPPET_MODULE: site/profile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PDK
+        run: |
+          wget https://apt.puppet.com/puppet-tools-release-jammy.deb
+          sudo dpkg -i puppet-tools-release-jammy.deb
+          sudo apt-get update
+          sudo apt-get install pdk
+
+      - name: Run PDK validate
+        run: pdk validate --format=junit | "${{github.workspace}}/.github/scripts/pdk_validate" --only-errors --module ${{env.PUPPET_MODULE}}
+        working-directory: "${{env.PUPPET_MODULE}}"
+
+      - name: Run PDK unit test
+        run: pdk test unit
+        continue-on-error: true
+        working-directory: "${{env.PUPPET_MODULE}}"
