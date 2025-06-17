@@ -13,6 +13,16 @@ class profile::users::ldap (
     mode   => '0755',
   }
 
+  # After adding a user or a group, we need to invalidate the SSS cache
+  # that could otherwise return that the user or the group does not exist
+  # when probing the Unix user account and password database or
+  # the Unix group database. The command is only executed when a user or
+  # a group has been created during a Puppet run.
+  exec { 'sss_cache -E':
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
   $users_groups = Hash(unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| { [$group_name, {}] })
   ensure_resources(profile::users::ldap_group, $users_groups + $groups)
   ensure_resources(profile::users::ldap_user, $users)
@@ -53,7 +63,8 @@ define profile::users::ldap_group (
     command     => "kinit_wrapper ipa group-add ${name} ${arg}",
     environment => $environment,
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    unless      => "kinit_wrapper ipa group-show ${name}",
+    unless      => "getent group ${name}",
+    notify      => Exec['sss_cache -E'],
     require     => [
       Exec['ipa-install'],
       File['kinit_wrapper'],
@@ -132,11 +143,6 @@ define profile::users::ldap_user (
         ],
         notify      => Exec['sss_cache -E'],
       }
-    }
-
-    exec { 'sss_cache -E':
-      refreshonly => true,
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     }
 
     if $passwd {
