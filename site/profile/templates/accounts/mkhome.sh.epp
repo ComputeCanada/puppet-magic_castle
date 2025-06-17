@@ -32,7 +32,7 @@ fi
     tail -n +${start_index} -F /var/log/dirsrv/slapd-*/access | 
     grep --line-buffered -P 'ADD dn=\"uid=\K([a-z0-9A-Z-_]*)(?=,cn=users)' |
     sed -u -r 's/^\[(.*) \+[0-9]{4}\].*uid=(\w+).*$/\1 \2/' &
-    tail -F ${MKHOME_RETRY_PIPE}
+    tail -n+1 -F ${MKHOME_RETRY_PIPE}
 ) |
 while read TIMESTAMP USERNAME; do
     if [[ "${TIMESTAMP}" != "retry" ]]; then
