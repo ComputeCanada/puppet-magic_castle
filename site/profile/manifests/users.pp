@@ -39,7 +39,7 @@ class profile::users::local (
 define profile::users::ldap_group (
   Boolean $posix = true,
   Boolean $automember = false,
-  Optional[Array[String]] $hbacrules = undef,
+  Optional[Array[String]] $hbac_rules = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
@@ -60,7 +60,7 @@ define profile::users::ldap_group (
     ],
   }
 
-  if $hbacrules != undef or $automember {
+  if $hbac_rules != undef or $automember {
     file { "/etc/ipa/group_rules_${name}.py":
       mode    => '0700',
       content => epp(
@@ -68,7 +68,7 @@ define profile::users::ldap_group (
         {
           'group'      => $name,
           'automember' => $automember,
-          'hbacrules'  => $hbacrules,
+          'hbac_rules' => $hbac_rules,
         }
       ),
     }
