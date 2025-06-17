@@ -1427,11 +1427,11 @@ A `profile::users::ldap_user` is defined as a dictionary with the following keys
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
 
 A `profile::users::ldap_group` is defined as a dictionary with the following keys:
-| Variable          | Description                                               | Type                            | Optional ? |
-| ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
-| `posix`           | Whether this is a posix group or not                      | Boolean                         | Yes        |
-| `automember`      | Whether users are automatically member of that group      | Boolean                         | Yes        |
-| `hbacrules`       | List of HBAC rules that apply to this group               | Array[String]                   | Yes        |
+| Variable          | Description                                                        | Type                            | Optional ? |
+| ----------------- | :----------------------------------------------------------------- | :------------------------------ | ---------  |
+| `posix`           | Whether this is a posix group or not                               | Boolean                         | Yes        |
+| `automember`      | Whether users are automatically member of that group               | Boolean                         | Yes        |
+| `hbac_rules`      | List of HBAC rule names (`"tag:service"`) that apply to this group | Array[String]                   | Yes        |
 
 
 By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
@@ -1451,7 +1451,7 @@ profile::users::ldap::users:
 profile::users::ldap::groups:
   'def-sponsor00':
     automember: true
-    hbacrules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 ```
 
 If `profile::users::ldap::users` is present in more than one YAML file in the hierarchy,
@@ -1483,7 +1483,7 @@ Allowing LDAP users to connect to the cluster only via JupyterHub:
 ```yaml
 profile::users::ldap::groups:
   'def-sponsor00':
-    hbacrules: ['proxy:jupyterhub-login']
+    hbac_rules: ['proxy:jupyterhub-login']
 ```
 
 </details>

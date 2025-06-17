@@ -299,7 +299,7 @@ profile::users::ldap::users:
 profile::users::ldap::groups:
   'def-sponsor00':
     automember: true
-    hbacrules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
