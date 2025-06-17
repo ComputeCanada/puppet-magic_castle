@@ -66,9 +66,9 @@ CONSECUTIVE_FAILURES=0
 # 2. Modification coming from mkhome daemon
 # 3. Modification coming from the loop that have errored on a previous try.
 (
-    tail -F ${MODPROJECT_PIPE} &
-    tail -F ${MODPROJECT_RETRY_PIPE} &
-    tail -F ${MKHOME_MODPROJECT_PIPE}
+    tail -n+1 -F ${MODPROJECT_PIPE} &
+    tail -n+1 -F ${MODPROJECT_RETRY_PIPE} &
+    tail -n+1 -F ${MKHOME_MODPROJECT_PIPE}
 ) |
 while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     if [[ ! -z "${USERNAMES}" ]]; then
