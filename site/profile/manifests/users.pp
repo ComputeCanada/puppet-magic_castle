@@ -107,14 +107,12 @@ define profile::users::ldap_user (
       "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
     }
     $command = range(1, $count, $page_size).map |$i| {
-      "kinit_wrapper ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
     }
-    $unless = $command.map|$cmd| { "${cmd} --dry" }
     $timeout = $page_size * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
-    $command = ["kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"]
-    $unless = ["${command} --dry"]
+    $command = ["ipa_create_user.py ${name} ${cmd_args}"]
     $timeout = 10
   }
 
@@ -123,8 +121,8 @@ define profile::users::ldap_user (
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
       exec { $exec_name_i:
-        command     => $command[$i],
-        unless      => $unless[$i],
+        command     => "kinit_wrapper ${command[$i]}",
+        unless      => "${command[$i]} --dry",
         environment => $environment,
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
         timeout     => $timeout,
@@ -132,7 +130,13 @@ define profile::users::ldap_user (
           File['kinit_wrapper'],
           File['/sbin/ipa_create_user.py'],
         ],
+        notify      => Exec['sss_cache -E'],
       }
+    }
+
+    exec { 'sss_cache -E':
+      refreshonly => true,
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     }
 
     if $passwd {
