@@ -39,7 +39,7 @@ while read TIMESTAMP USERNAME; do
     if [[ "${TIMESTAMP}" != "retry" ]]; then
         echo $TIMESTAMP > $LAST_TIMESTAMP_FILE
     fi
-    if [[ "${USERNAME}" == "admin" ]]; then
+    if [[ "${USERNAME}" == "admin" ]] || [[ "${USERNAME}" == "pkiuser" ]]; then
         continue
     fi
     <% if $manage_home { -%>
