@@ -98,6 +98,11 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                 sed -i '1d' ${MKPROJECT_CACHE}
             fi
+            # Identify usernames that are already member of the group - most likely through automembership
+            USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
+            if [[ ! -z ${USERNAMES} ]]; then
+                echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+            fi
         else
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
@@ -171,6 +176,11 @@ while read TIMESTAMP CONN OP GROUP; do
                 echo "${GROUP}" >> ${MKPROJECT_CACHE}
                 if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                     sed -i '1d' ${MKPROJECT_CACHE}
+                fi
+                # Identify usernames that are already member of the group - most likely through automembership
+                USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
+                if [[ ! -z ${USERNAMES} ]]; then
+                    echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
                 fi
             else
                 touch "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
