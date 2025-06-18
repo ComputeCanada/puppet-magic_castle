@@ -3,8 +3,6 @@ class profile::users::ldap (
   Hash $groups,
 ) {
   Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group <| |>
-  Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_group <| |>
-  Exec <| tag == profile::accounts |> ->  Profile::Users::Ldap_group <| |>
   Service <| |> ->  Profile::Users::Ldap_group <| |>
   Profile::Users::Ldap_group <| |> -> Profile::Users::Ldap_user <| |>
 
@@ -94,7 +92,7 @@ define profile::users::ldap_group (
       subscribe   => [
         File["/etc/ipa/group_rules_${name}.py"],
         Exec['hbac_rules'],
-        Exec['ipa-install'],
+        Exec["ldap_group_${name}"],
       ],
     }
   }
