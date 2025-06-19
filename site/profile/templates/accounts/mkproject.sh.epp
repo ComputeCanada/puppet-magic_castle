@@ -17,6 +17,7 @@
 
 
 PROJECT_REGEX="<%= $project_regex %>"
+BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 WITH_FOLDER="<%= $manage_folder %>"
 PREV_CONN=""
 

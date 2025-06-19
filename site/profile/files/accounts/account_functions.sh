@@ -124,14 +124,21 @@ mkproject() {
         return 3
     fi
 
+    if [ -z "${BASEDN}" ]; then
+        local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
+    fi
+
     if mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
         # A new group has been created
-        if [ "$WITH_FOLDER" == "true" ]; then
-            local GID=$(SSS_NSS_USE_MEMCACHE=no getent group $GROUP 2> /dev/null | cut -d: -f3)
-            if [ $? -eq 0 ]; then
-                local GID=$(kexec ipa group-show ${GROUP} | grep -oP 'GID: \K([0-9].*)')
-            fi
-
+        local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "gidNumber" "objectClass")
+        if [ ! $? -eq 0 ]; then
+            echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
+            rmdir /var/lock/mkproject.$GROUP.lock
+            return 1
+        fi
+        local IS_POSIX=$(echo "${GROUP_INFO}" | grep -q posixgroup && echo "true" || echo "false")
+        if [[ "${IS_POSIX}" == "true" ]] && [[ "${WITH_FOLDER}" == "true" ]]; then
+            local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
             if [ -z "${GID}" ]; then
                 echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
                 rmdir /var/lock/mkproject.$GROUP.lock
