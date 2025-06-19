@@ -124,13 +124,13 @@ mkproject() {
         return 3
     fi
 
-    if [ -z "${BASEDN}" ]; then
-        local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
-    fi
-
     if ! mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
         echo "WARN::${FUNCNAME} ${GROUP}: already running..."
         return 0
+    fi
+
+    if [ -z "${BASEDN}" ]; then
+        local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
     # A new group has been created
@@ -141,28 +141,29 @@ mkproject() {
         return 1
     fi
 
-    # If the group is a POSIX group, we create the corresponding folder under /project
-    # Otherwise, we only create its Slurm account.
-    local IS_POSIX=$(echo "${GROUP_INFO}" | grep -q posixgroup && echo "true" || echo "false")
-    if [[ "${IS_POSIX}" == "true" ]] && [[ "${WITH_FOLDER}" == "true" ]]; then
-        local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
-        if [ -z "${GID}" ]; then
-            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-            rmdir /var/lock/mkproject.$GROUP.lock
-            return 1
-        fi
+    # Function is called with the intent to create folders under /project
+    if [[ "${WITH_FOLDER}" == "true" ]]; then
+        # Folders under /project are only created for posix groups
+        if echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
+            local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
+            if [ -z "${GID}" ]; then
+                echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+                rmdir /var/lock/mkproject.$GROUP.lock
+                return 1
+            fi
 
-        local PROJECT_GID="/project/$GID"
-        if [ ! -d ${PROJECT_GID} ]; then
-            local PROJECT_GROUP="/project/$GROUP"
-            mkdir -p ${PROJECT_GID}
-            chown root:${GID} ${PROJECT_GID}
-            chmod 2770 ${PROJECT_GID}
-            ln -sfT "/project/$GID" ${PROJECT_GROUP}
-            restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
-            echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
-        else
-            echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
+            local PROJECT_GID="/project/$GID"
+            if [ ! -d ${PROJECT_GID} ]; then
+                local PROJECT_GROUP="/project/$GROUP"
+                mkdir -p ${PROJECT_GID}
+                chown root:${GID} ${PROJECT_GID}
+                chmod 2770 ${PROJECT_GID}
+                ln -sfT "/project/$GID" ${PROJECT_GROUP}
+                restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
+                echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
+            else
+                echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
+            fi
         fi
     fi
 
