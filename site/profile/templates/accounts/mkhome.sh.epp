@@ -54,7 +54,7 @@ while read TIMESTAMP USERNAME; do
     fi
     <% } -%>
 
-    for PROJECT in $((id -Gn ${USERNAME} 2> /dev/null || kexec ipa user-show ${USERNAME} | grep 'Member of groups:') | grep -P -o "${PROJECT_REGEX}"); do
+    for PROJECT in $(kexec ldapsearch -o ldif-wrap=no -LLL "(uid=${USERNAME})" memberOf 2> /dev/null | grep -P -o ${PROJECT_REGEX}); do
         if [[ ! -z "${PROJECT}" ]]; then
             echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
         fi
