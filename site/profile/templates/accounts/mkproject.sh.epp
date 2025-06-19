@@ -100,7 +100,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             fi
         else
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             continue
         fi
     fi
@@ -120,7 +120,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             # modproject was not successul, but the arguments are valid, so we should try again
             # later. We increment the number of retry and add the arguments the retry pipeline.
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             ;;
         *)
             # modproject was not successful and the return code indicates the function should not be
