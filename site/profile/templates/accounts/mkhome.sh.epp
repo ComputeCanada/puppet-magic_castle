@@ -7,6 +7,7 @@ MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 MKHOME_RETRY_PIPE="${MKHOME_PROJECT_DIR}/mkhome_retry.pipe"
 MKHOME_MODPROJECT_PIPE="${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe"
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkhome.last_timestamp
+BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 
 trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
 
@@ -54,7 +55,7 @@ while read TIMESTAMP USERNAME; do
     fi
     <% } -%>
 
-    for PROJECT in $(kexec ldapsearch -o ldif-wrap=no -LLL "(uid=${USERNAME})" memberOf 2> /dev/null | grep -P -o ${PROJECT_REGEX}); do
+    for PROJECT in $(kexec ldapsearch -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null | grep -P -o ${PROJECT_REGEX}); do
         if [[ ! -z "${PROJECT}" ]]; then
             echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
         fi
