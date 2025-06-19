@@ -141,29 +141,32 @@ mkproject() {
         return 1
     fi
 
+    # If group is not posix, we disable folder creation.
+    if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
+        WITH_FOLDER="false"
+    fi
+
     # Function is called with the intent to create folders under /project
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         # Folders under /project are only created for posix groups
-        if echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-            local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
-            if [ -z "${GID}" ]; then
-                echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-                rmdir /var/lock/mkproject.$GROUP.lock
-                return 1
-            fi
+        local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
+        if [ -z "${GID}" ]; then
+            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+            rmdir /var/lock/mkproject.$GROUP.lock
+            return 1
+        fi
 
-            local PROJECT_GID="/project/$GID"
-            if [ ! -d ${PROJECT_GID} ]; then
-                local PROJECT_GROUP="/project/$GROUP"
-                mkdir -p ${PROJECT_GID}
-                chown root:${GID} ${PROJECT_GID}
-                chmod 2770 ${PROJECT_GID}
-                ln -sfT "/project/$GID" ${PROJECT_GROUP}
-                restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
-                echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
-            else
-                echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
-            fi
+        local PROJECT_GID="/project/$GID"
+        if [ ! -d ${PROJECT_GID} ]; then
+            local PROJECT_GROUP="/project/$GROUP"
+            mkdir -p ${PROJECT_GID}
+            chown root:${GID} ${PROJECT_GID}
+            chmod 2770 ${PROJECT_GID}
+            ln -sfT "/project/$GID" ${PROJECT_GROUP}
+            restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
+            echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
+        else
+            echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
         fi
     fi
 
@@ -204,9 +207,14 @@ modproject() {
         echo "WARN::${FUNCNAME}: $GROUP $USERNAMES group folder is locked, waiting 2s..."
         sleep 2
     done
-    local GROUP_LINK=$(readlink /project/${GROUP})
-    # mkproject has yet been ran for this group, skip it
+
+    # If the group is not a posix group, we disable folder creation
+    if ! kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass" | grep -q "objectClass: posixGroup"; then
+        WITH_FOLDER="false"
+    fi
+
     if [[ "${WITH_FOLDER}" == "true" ]]; then
+        local GROUP_LINK=$(readlink /project/${GROUP})
         if [[ -z "${GROUP_LINK}" ]]; then
             echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group"
             return 1
