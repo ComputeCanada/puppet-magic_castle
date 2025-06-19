@@ -128,50 +128,58 @@ mkproject() {
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
-    if mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
-        # A new group has been created
-        local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "gidNumber" "objectClass")
-        if [ ! $? -eq 0 ]; then
-            echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
+    if ! mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
+        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
+        return 0
+    fi
+
+    # A new group has been created
+    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "gidNumber" "objectClass")
+    if [ ! $? -eq 0 ]; then
+        echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
+        rmdir /var/lock/mkproject.$GROUP.lock
+        return 1
+    fi
+
+    # If the group is a POSIX group, we create the corresponding folder under /project
+    # Otherwise, we only create its Slurm account.
+    local IS_POSIX=$(echo "${GROUP_INFO}" | grep -q posixgroup && echo "true" || echo "false")
+    if [[ "${IS_POSIX}" == "true" ]] && [[ "${WITH_FOLDER}" == "true" ]]; then
+        local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
+        if [ -z "${GID}" ]; then
+            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
             rmdir /var/lock/mkproject.$GROUP.lock
             return 1
         fi
-        local IS_POSIX=$(echo "${GROUP_INFO}" | grep -q posixgroup && echo "true" || echo "false")
-        if [[ "${IS_POSIX}" == "true" ]] && [[ "${WITH_FOLDER}" == "true" ]]; then
-            local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
-            if [ -z "${GID}" ]; then
-                echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-                rmdir /var/lock/mkproject.$GROUP.lock
-                return 1
-            fi
 
-            local PROJECT_GID="/project/$GID"
-            if [ ! -d ${PROJECT_GID} ]; then
-                local PROJECT_GROUP="/project/$GROUP"
-                mkdir -p ${PROJECT_GID}
-                chown root:${GID} ${PROJECT_GID}
-                chmod 2770 ${PROJECT_GID}
-                ln -sfT "/project/$GID" ${PROJECT_GROUP}
-                restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
-                echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
-            else
-                echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
-            fi
-        fi
-        rmdir /var/lock/mkproject.$GROUP.lock
-        # We create the associated account in slurm
-        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
-            echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
-        elif [[ "${sacctmgr_output}" == *"Already existing account ${GROUP}"* ]]; then
-            echo "WARN::${FUNCNAME} ${GROUP}: SlurmDB account already exists"
+        local PROJECT_GID="/project/$GID"
+        if [ ! -d ${PROJECT_GID} ]; then
+            local PROJECT_GROUP="/project/$GROUP"
+            mkdir -p ${PROJECT_GID}
+            chown root:${GID} ${PROJECT_GID}
+            chmod 2770 ${PROJECT_GID}
+            ln -sfT "/project/$GID" ${PROJECT_GROUP}
+            restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
+            echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
         else
-            echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
-            echo "${sacctmgr_output}" | sed 's/^/\t/'
-            return 1
+            echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
         fi
-    else
-        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
     fi
+
+    # We create the associated account in slurm
+    if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add account $GROUP -i 2>&1); then
+        echo "INFO::${FUNCNAME} ${GROUP}: SlurmDB account created"
+    elif [[ "${sacctmgr_output}" == *"Already existing account ${GROUP}"* ]]; then
+        echo "WARN::${FUNCNAME} ${GROUP}: SlurmDB account already exists"
+    else
+        echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
+        echo "${sacctmgr_output}" | sed 's/^/\t/'
+        rmdir /var/lock/mkproject.$GROUP.lock
+        return 1
+    fi
+
+    rmdir /var/lock/mkproject.$GROUP.lock
+    return 0
 }
 
 # return codes
