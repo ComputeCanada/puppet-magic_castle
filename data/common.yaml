@@ -10,6 +10,8 @@ lookup_options:
     merge: 'deep'
   prometheus::extra_alert:
     merge: 'hash'
+  profile::volumes::devices:
+    merge: 'deep'
 
 profile::base::version: 14.3.0
 profile::base::packages: []
