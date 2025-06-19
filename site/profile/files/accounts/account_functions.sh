@@ -208,8 +208,12 @@ modproject() {
         sleep 2
     done
 
+    if [ -z "${BASEDN}" ]; then
+        local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
+    fi
+
     # If the group is not a posix group, we disable folder creation
-    if ! kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass" | grep -q "objectClass: posixGroup"; then
+    if ! kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass" | grep -q -i "objectClass: posixgroup"; then
         WITH_FOLDER="false"
     fi
 
