@@ -52,6 +52,12 @@ mkhome () {
         return 1
     fi
 
+    if [ -d ${USER_HOME} ]; then
+        local HOME_EXISTS=1
+    else
+        local HOME_EXISTS=0
+    fi
+
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
         rsync -opg -r -u --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
@@ -66,7 +72,11 @@ mkhome () {
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
     else
-        echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
+        if [ $HOME_EXISTS -eq 0 ]; then
+            echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
+        else
+            echo "INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already exists)"
+        fi
     fi
     restorecon -F -R ${USER_HOME}
 }
