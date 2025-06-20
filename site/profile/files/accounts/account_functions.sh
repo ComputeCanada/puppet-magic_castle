@@ -35,19 +35,19 @@ mkhome () {
     local USER_HOME=${USER_INFO[2]}
 
     if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
         sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
         sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
         sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
