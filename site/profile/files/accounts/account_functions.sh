@@ -92,7 +92,7 @@ mkscratch () {
     fi
 
     if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
         sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
