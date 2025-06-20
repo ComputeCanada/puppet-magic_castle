@@ -29,30 +29,32 @@ mkhome () {
         return 3
     fi
 
-    if id $USERNAME &> /dev/null; then
-        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-        local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
-        local METHOD="getent/id"
-    else
-        local USER_INFO=$(kexec ipa user-show ${USERNAME})
-        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-        local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
-        local METHOD="ipa"
+    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+    local USER_UID=${USER_INFO[0]}
+    local USER_GID=${USER_INFO[1]}
+    local USER_HOME=${USER_INFO[2]}
+
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        sss_cache --user=${USERNAME}
+        return 1
+    fi
+
+    if [ -z "${USER_GID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        sss_cache --user=${USERNAME}
+        return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
-        return 1
-    fi
-
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+        sss_cache --user=${USERNAME}
         return 1
     fi
 
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
-        rsync -opg -r -u --chown=$USER_UID:$USER_UID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
+        rsync -opg -r -u --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
         if [ $? -eq 0 ]; then
             RSYNC_DONE=1
             break
@@ -78,24 +80,26 @@ mkscratch () {
         return 3
     fi
 
-    if id $USERNAME &> /dev/null; then
-        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-        local USER_UID=$(SSS_NSS_USE_MEMCACHE=no id -u $USERNAME)
-        local METHOD="getent/id"
-    else
-        local USER_INFO=$(kexec ipa user-show ${USERNAME})
-        local USER_HOME=$(echo "${USER_INFO}" | grep -oP 'Home directory: \K(.*)$')
-        local USER_UID=$(echo "${USER_INFO}" | grep -oP 'UID: \K([0-9].*)')
-        local METHOD="ipa"
-    fi
+    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+    local USER_UID=${USER_INFO[0]}
+    local USER_GID=${USER_INFO[1]}
+    local USER_HOME=${USER_INFO[2]}
 
-    if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+    if [ -z "${USER_UID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
+        sss_cache --user=${USERNAME}
         return 1
     fi
 
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
+    if [ -z "${USER_GID}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
+        sss_cache --user=${USERNAME}
+        return 1
+    fi
+
+    if [ -z "${USER_HOME}" ]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
+        sss_cache --user=${USERNAME}
         return 1
     fi
 
@@ -104,9 +108,9 @@ mkscratch () {
         mkdir -p ${USER_SCRATCH}
         if [ "$WITH_HOME" == "true" ]; then
             ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch"
-            chown -h ${USER_UID}:${USER_UID} "${USER_HOME}/scratch"
+            chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch"
         fi
-        chown -h ${USER_UID}:${USER_UID} ${USER_SCRATCH}
+        chown -h ${USER_UID}:${USER_GID} ${USER_SCRATCH}
         chmod 750 ${USER_SCRATCH}
         restorecon -F -R ${USER_SCRATCH}
         echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_SCRATCH}"
@@ -133,8 +137,9 @@ mkproject() {
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
-    # A new group has been created
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "gidNumber" "objectClass")
+    # Retrieve the group information that are only available in LDAP:
+    # - is it a posix group (objectClass: posixgroup)?
+    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
     if [ ! $? -eq 0 ]; then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         rmdir /var/lock/mkproject.$GROUP.lock
@@ -149,9 +154,12 @@ mkproject() {
     # Function is called with the intent to create folders under /project
     if [[ "${WITH_FOLDER}" == "true" ]]; then
         # Folders under /project are only created for posix groups
-        local GID=$(echo "${GROUP_INFO}" | grep -o -P "gidNumber: \K.*")
+        # We use getent to retrieve the group number because the GID needs
+        # to be readily available in via sssd for chown to work properly
+        local GID=$(getent group -s sss ${GROUP} | cut -d: -f3)
         if [ -z "${GID}" ]; then
             echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
+            sss_cache -g ${GROUP}
             rmdir /var/lock/mkproject.$GROUP.lock
             return 1
         fi
@@ -235,7 +243,7 @@ modproject() {
     if [[ ! -z "${USERNAMES}" ]]; then
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
-                if ! SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME; then
+                if ! getent passwd -s sss $USERNAME > /dev/null; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
                     sss_cache --user=${USERNAME}
                     return 1
@@ -243,13 +251,19 @@ modproject() {
             done
             for USERNAME in $USERNAMES; do
                 # Slurm needs the UID to be available via SSSD
-                local USER_INFO=($(getent passwd $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
                 local USER_UID=${USER_INFO[0]}
                 local USER_GID=${USER_INFO[1]}
                 local USER_HOME=${USER_INFO[2]}
 
                 if [ -z "${USER_UID}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
+                    sss_cache --user=${USERNAME}
+                    return 1
+                fi
+
+                if [ -z "${USER_GID}" ]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
                     sss_cache --user=${USERNAME}
                     return 1
                 fi
