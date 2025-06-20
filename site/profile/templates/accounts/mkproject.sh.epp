@@ -17,6 +17,7 @@
 
 
 PROJECT_REGEX="<%= $project_regex %>"
+BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 WITH_FOLDER="<%= $manage_folder %>"
 PREV_CONN=""
 
@@ -26,10 +27,10 @@ MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 mkdir -p ${MKHOME_PROJECT_DIR}
 
 MODPROJECT_CACHE=${MKHOME_PROJECT_DIR}/modproject.cache
-MODPROJECT_CACHE_SIZE=50
+MODPROJECT_CACHE_SIZE=1000
 
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
-MKPROJECT_CACHE_SIZE=50
+MKPROJECT_CACHE_SIZE=1000
 
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
@@ -66,9 +67,9 @@ CONSECUTIVE_FAILURES=0
 # 2. Modification coming from mkhome daemon
 # 3. Modification coming from the loop that have errored on a previous try.
 (
-    tail -F ${MODPROJECT_PIPE} &
-    tail -F ${MODPROJECT_RETRY_PIPE} &
-    tail -F ${MKHOME_MODPROJECT_PIPE}
+    tail -n+1 -F ${MODPROJECT_PIPE} &
+    tail -n+1 -F ${MODPROJECT_RETRY_PIPE} &
+    tail -n+1 -F ${MKHOME_MODPROJECT_PIPE}
 ) |
 while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     if [[ ! -z "${USERNAMES}" ]]; then
@@ -98,9 +99,14 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                 sed -i '1d' ${MKPROJECT_CACHE}
             fi
+            # Identify usernames that are already member of the group - most likely through automembership
+            USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
+            if [[ ! -z ${USERNAMES} ]]; then
+                echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+            fi
         else
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             continue
         fi
     fi
@@ -120,7 +126,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             # modproject was not successul, but the arguments are valid, so we should try again
             # later. We increment the number of retry and add the arguments the retry pipeline.
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" > ${MODPROJECT_RETRY_PIPE} &
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             ;;
         *)
             # modproject was not successful and the return code indicates the function should not be
@@ -171,6 +177,11 @@ while read TIMESTAMP CONN OP GROUP; do
                 echo "${GROUP}" >> ${MKPROJECT_CACHE}
                 if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
                     sed -i '1d' ${MKPROJECT_CACHE}
+                fi
+                # Identify usernames that are already member of the group - most likely through automembership
+                USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
+                if [[ ! -z ${USERNAMES} ]]; then
+                    echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
                 fi
             else
                 touch "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
