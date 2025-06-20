@@ -235,6 +235,13 @@ modproject() {
     if [[ ! -z "${USERNAMES}" ]]; then
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
+                if ! SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME; then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                    sss_cache --user=${USERNAME}
+                    return 1
+                fi
+            done
+            for USERNAME in $USERNAMES; do
                 # Slurm needs the UID to be available via SSSD
                 local USER_INFO=($(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
                 local USER_UID=${USER_INFO[0]}
