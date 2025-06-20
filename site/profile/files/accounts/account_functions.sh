@@ -36,19 +36,19 @@ mkhome () {
 
     if [ -z "${USER_UID}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_GID}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined (${METHOD})"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
@@ -87,19 +87,19 @@ mkscratch () {
 
     if [ -z "${USER_UID}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_GID}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-        sss_cache --user=${USERNAME}
+        sss_cache --user=${USERNAME} 2> /dev/null
         return 1
     fi
 
@@ -159,7 +159,7 @@ mkproject() {
         local GID=$(getent group -s sss ${GROUP} | cut -d: -f3)
         if [ -z "${GID}" ]; then
             echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-            sss_cache -g ${GROUP}
+            sss_cache -g ${GROUP} 2> /dev/null
             rmdir /var/lock/mkproject.$GROUP.lock
             return 1
         fi
@@ -245,7 +245,7 @@ modproject() {
             for USERNAME in $USERNAMES; do
                 if ! getent passwd -s sss $USERNAME > /dev/null; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                    sss_cache --user=${USERNAME}
+                    sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
             done
@@ -258,19 +258,19 @@ modproject() {
 
                 if [ -z "${USER_UID}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-                    sss_cache --user=${USERNAME}
+                    sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
 
                 if [ -z "${USER_GID}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-                    sss_cache --user=${USERNAME}
+                    sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
 
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME}
+                    sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
 
