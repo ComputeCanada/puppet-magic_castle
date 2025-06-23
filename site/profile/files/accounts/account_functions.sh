@@ -54,7 +54,7 @@ mkhome () {
 
     # Home folder can be created by modproject function, but it will only create ~/project folder
     # and not the dot files and other files from /etc/skel.ipa
-    if [[ -d ${USER_HOME} && -n "$(find ${USER_HOME} -mindepth 1 -maxdepth 1 -not -path ${USER_HOME}/project)" ]]; then
+    if [[ -d ${USER_HOME} && -n "$(find ${USER_HOME} -mindepth 1 -maxdepth 1 -not -path ${USER_HOME}/projects)" ]]; then
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
     else
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already created)"
