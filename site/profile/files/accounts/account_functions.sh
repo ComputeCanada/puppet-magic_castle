@@ -252,7 +252,7 @@ modproject() {
         if [ "$WITH_FOLDER" == "true" ]; then
             for USERNAME in $USERNAMES; do
                 if ! getent passwd -s sss $USERNAME > /dev/null; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: could not find ${USERNAME} in password database"
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
                     sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
