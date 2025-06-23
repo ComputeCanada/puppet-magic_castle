@@ -52,10 +52,12 @@ mkhome () {
         return 1
     fi
 
-    if [ -d ${USER_HOME} ]; then
-        local HOME_EXISTS=1
+    # Home folder can be created by modproject function, but it will only create ~/project folder
+    # and not the dot files and other files from /etc/skel.ipa
+    if [[ -d ${USER_HOME} && -n "$(find ${USER_HOME} -mindepth 1 -maxdepth 1 -not -path ${USER_HOME}/projects)" ]]; then
+        local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already created)"
     else
-        local HOME_EXISTS=0
+        local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
     fi
 
     local RSYNC_DONE=0
@@ -72,11 +74,7 @@ mkhome () {
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
     else
-        if [ $HOME_EXISTS -eq 0 ]; then
-            echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
-        else
-            echo "INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already exists)"
-        fi
+        echo ${SUCCESS_LOG}
     fi
     restorecon -F -R ${USER_HOME}
 }
