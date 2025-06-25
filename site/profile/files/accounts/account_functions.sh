@@ -359,11 +359,14 @@ modproject() {
                     fi
                 done
             fi
-            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
-            if [ $? -eq 0 ]; then
+            if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1)
                 echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+            elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
+                echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
             else
                 echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+                echo "${sacctmgr_output}" | sed 's/^/\t/'
+                return 1
             fi
         else
             echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
