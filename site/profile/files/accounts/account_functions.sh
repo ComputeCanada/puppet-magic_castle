@@ -375,33 +375,57 @@ delproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
 
+    # Retrieve the group information that are only available in LDAP:
+    # - does the group exist?
+    # - is it a posix group (objectClass: posixgroup)?
+    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
+    if [ ! $? -eq 0 ]; then
+        echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
+        return 1
+    fi
+
+    # If group is not posix, we disable folder creation.
+    if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
+        WITH_FOLDER="false"
+    fi
+
     # A group has been removed.
     # Since we do not want to delete any data we only remove the
     # symlinks and remove the users from the slurm account.
     local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
     if [[ ! -z "$USERNAMES" ]]; then
-        if /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null; then
-            echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
-        else
-            echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
-        fi
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                if id $USERNAME &> /dev/null; then
-                    local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-                    local METHOD="getent/id"
-                else
-                    local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
-                    local METHOD="ipa"
+                if ! getent passwd -s sss $USERNAME > /dev/null; then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                    sss_cache --user=${USERNAME} 2> /dev/null
+                    return 1
                 fi
+            done
+            for USERNAME in $USERNAMES; do
+                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+                local USER_HOME=${USER_INFO[2]}
 
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined (${METHOD})"
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
+                    sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
+                fi
+
+                if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
+                    echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
+                    continue
                 fi
 
                 rm "${USER_HOME}/projects/$GROUP"
             done
+        fi
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
+            echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
+        else
+            echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
+            echo "${sacctmgr_output}" | sed 's/^/\t/'
+            return 1
         fi
     fi
 }
