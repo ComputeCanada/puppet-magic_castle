@@ -323,7 +323,7 @@ modproject() {
         # user(s) have been removed from the groups.
         # We identify which ones by comparing Slurm account with group.
         local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
-        local USER_GROUP=$(kexec ipa group-show ${GROUP} --raw | grep -oP 'uid=\K([a-z0-9]*)' | sort)
+        local USER_GROUP=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member" | grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
         local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
         if [[ ! -z "$USERNAMES" ]]; then
             if [[ "${WITH_FOLDER}" == "true" ]]; then
