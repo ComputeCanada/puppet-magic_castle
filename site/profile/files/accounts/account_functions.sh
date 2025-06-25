@@ -259,7 +259,7 @@ modproject() {
     # If we found none, $USERNAMES will be empty, and it means we don't have
     # anything to add to Slurm and /project
     if [[ ! -z "${USERNAMES}" ]]; then
-        if [ "$WITH_FOLDER" == "true" ]; then
+        if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
                 if ! getent passwd -s sss $USERNAME > /dev/null; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
@@ -332,7 +332,7 @@ modproject() {
             else
                 echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
             fi
-            if [ "$WITH_FOLDER" == "true" ]; then
+            if [[ "${WITH_FOLDER}" == "true" ]]; then
                 for USERNAME in $USERNAMES; do
                     if id $USERNAME &> /dev/null; then
                         local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
@@ -374,7 +374,7 @@ delproject() {
         else
             echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
         fi
-        if [ "$WITH_FOLDER" == "true" ]; then
+        if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
                 if id $USERNAME &> /dev/null; then
                     local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
