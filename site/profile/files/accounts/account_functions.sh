@@ -326,12 +326,6 @@ modproject() {
         local USER_GROUP=$(kexec ipa group-show ${GROUP} --raw | grep -oP 'uid=\K([a-z0-9]*)' | sort)
         local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
         if [[ ! -z "$USERNAMES" ]]; then
-            /opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i &> /dev/null
-            if [ $? -eq 0 ]; then
-                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-            else
-                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-            fi
             if [[ "${WITH_FOLDER}" == "true" ]]; then
                 for USERNAME in $USERNAMES; do
                     if ! getent passwd -s sss $USERNAME > /dev/null; then
@@ -364,6 +358,15 @@ modproject() {
                         return 1
                     fi
                 done
+            fi
+            if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
+                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+            elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
+                echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
+            else
+                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+                echo "${sacctmgr_output}" | sed 's/^/\t/'
+                return 1
             fi
         else
             echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
