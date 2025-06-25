@@ -146,6 +146,7 @@ mkproject() {
     fi
 
     # Retrieve the group information that are only available in LDAP:
+    # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
     if [ ! $? -eq 0 ]; then
@@ -228,8 +229,17 @@ modproject() {
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
-    # If the group is not a posix group, we disable folder creation
-    if ! kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass" | grep -q -i "objectClass: posixgroup"; then
+    # Retrieve the group information that are only available in LDAP:
+    # - does the group exist?
+    # - is it a posix group (objectClass: posixgroup)?
+    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
+    if [ ! $? -eq 0 ]; then
+        echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
+        return 1
+    fi
+
+    # If group is not posix, we disable folder creation.
+    if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
         WITH_FOLDER="false"
     fi
 
