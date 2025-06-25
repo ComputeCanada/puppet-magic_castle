@@ -334,22 +334,33 @@ modproject() {
             fi
             if [[ "${WITH_FOLDER}" == "true" ]]; then
                 for USERNAME in $USERNAMES; do
-                    if id $USERNAME &> /dev/null; then
-                        local USER_HOME=$(SSS_NSS_USE_MEMCACHE=no getent passwd $USERNAME | cut -d: -f6)
-                    else
-                        local USER_HOME=$(kexec ipa user-show ${USERNAME} | grep -oP 'Home directory: \K(.*)$')
+                    if ! getent passwd -s sss $USERNAME > /dev/null; then
+                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                        sss_cache --user=${USERNAME} 2> /dev/null
+                        return 1
                     fi
+                done
+                for USERNAME in $USERNAMES; do
+                    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+                    local USER_HOME=${USER_INFO[2]}
 
                     if [ -z "${USER_HOME}" ]; then
-                        echo "ERROR::${FUNCNAME} ${GROUP}: ${USERNAME} home path not defined"
+                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
+                        sss_cache --user=${USERNAME} 2> /dev/null
                         return 1
                     fi
 
-                    rm "${USER_HOME}/projects/$GROUP" &> /dev/null
+                    if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
+                        echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
+                        continue
+                    fi
+
+                    local RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1)
                     if [ $? -eq 0 ]; then
                         echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                     else
                         echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                        echo "\t${RM_OUTPUT}"
                         return 1
                     fi
                 done
