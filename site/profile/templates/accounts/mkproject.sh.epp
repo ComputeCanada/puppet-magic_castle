@@ -113,13 +113,26 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
         0)
-            # modproject has been successful, so we wad all usernames individually to
-            # the cache, then we restrict the size of the cache to its maximum value
-            # by keeping the N most recent element added.
-            for USERNAME in ${USERNAMES}; do
-                echo "${GROUP}" "${WITH_FOLDER}" "${USERNAME}" >> ${MODPROJECT_CACHE}
-            done
-            echo "$(tail -n ${MODPROJECT_CACHE_SIZE} ${MODPROJECT_CACHE})" > ${MODPROJECT_CACHE}
+            # modproject has been successful
+            if [[ ! -z "${USERNAMES}" ]]; then
+                # If usernames were determined from the logs, it means we added user to a group,
+                # so we add all usernames individually with the group name to
+                # the cache
+                for USERNAME in ${USERNAMES}; do
+                    echo "${GROUP}" "${WITH_FOLDER}" "${USERNAME}" >> ${MODPROJECT_CACHE}
+                done
+                # then we restrict the size of the cache to its maximum value
+                # by keeping the N most recent element added.
+                echo "$(tail -n ${MODPROJECT_CACHE_SIZE} ${MODPROJECT_CACHE})" > ${MODPROJECT_CACHE}
+            elif [[ ! -z "${REMOVED_USERNAMES}" ]]; then
+                # If the usernames were not found from the logs, it means we removed user
+                # from the group. The variable $REMOVE_USERNAMES is configured by modproject and
+                # contains all usernames that were successfully removed from the group $GROUP
+                for USERNAME in ${REMOVED_USERNAMES}; do
+                    sed -i "/${GROUP} ${WITH_FOLDER} ${USERNAME}/d" ${MODPROJECT_CACHE}
+                done
+                unset REMOVED_USERNAMES
+            fi
             CONSECUTIVE_FAILURES=0
             ;;
         1)
