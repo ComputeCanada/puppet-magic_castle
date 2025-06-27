@@ -368,6 +368,7 @@ modproject() {
                 echo "${sacctmgr_output}" | sed 's/^/\t/'
                 return 1
             fi
+            REMOVED_USERNAMES=$USERNAMES
         else
             echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
         fi
