@@ -1,18 +1,29 @@
 class profile::users::ldap (
   Hash $users,
-  Array[String] $access_tags,
+  Hash $groups,
 ) {
-  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_user <| |>
-  Exec <| title == 'hbac_rules' |> ~> Profile::Users::Ldap_user <| |>
-  Exec <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
-  Service <| |> -> Profile::Users::Ldap_user <| |>
+  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group <| |>
+  Service <| |> ->  Profile::Users::Ldap_group <| |>
+  Profile::Users::Ldap_group <| |> -> Profile::Users::Ldap_user <| |>
 
   file { '/sbin/ipa_create_user.py':
     source => 'puppet:///modules/profile/users/ipa_create_user.py',
     mode   => '0755',
   }
 
-  ensure_resources(profile::users::ldap_user, $users, { 'access_tags' => $access_tags })
+  # After adding a user or a group, we need to invalidate the SSS cache
+  # that could otherwise return that the user or the group does not exist
+  # when probing the Unix user account and password database or
+  # the Unix group database. The command is only executed when a user or
+  # a group has been created during a Puppet run.
+  exec { 'sss_cache -E':
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
+  $users_groups = Hash(unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| { [$group_name, {}] })
+  ensure_resources(profile::users::ldap_group, $users_groups + $groups)
+  ensure_resources(profile::users::ldap_user, $users)
 }
 
 class profile::users::local (
@@ -33,20 +44,71 @@ class profile::users::local (
   ensure_resources(profile::users::local_user, $users)
 }
 
+define profile::users::ldap_group (
+  Boolean $posix = true,
+  Boolean $automember = false,
+  Optional[Array[String]] $hbac_rules = undef,
+) {
+  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
+  if $posix {
+    $arg = ''
+  }
+  else {
+    $arg = '--nonposix'
+  }
+  exec { "ldap_group_${name}":
+    command     => "kinit_wrapper ipa group-add ${name} ${arg}",
+    environment => $environment,
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    unless      => "getent group ${name}",
+    notify      => Exec['sss_cache -E'],
+    require     => [
+      Exec['ipa-install'],
+      File['kinit_wrapper'],
+    ],
+  }
+
+  if $hbac_rules != undef or $automember {
+    file { "/etc/ipa/group_rules_${name}.py":
+      mode    => '0700',
+      content => epp(
+        'profile/freeipa/group_rules.py',
+        {
+          'group'      => $name,
+          'automember' => $automember,
+          'hbac_rules' => $hbac_rules,
+        }
+      ),
+    }
+    exec { "group_rules_${name}":
+      command     => "kinit_wrapper ipa console /etc/ipa/group_rules_${name}.py",
+      refreshonly => true,
+      require     => [
+        File['kinit_wrapper'],
+      ],
+      environment => $environment,
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      subscribe   => [
+        File["/etc/ipa/group_rules_${name}.py"],
+        Exec['hbac_rules'],
+        Exec["ldap_group_${name}"],
+      ],
+    }
+  }
+}
+
 define profile::users::ldap_user (
-  Array[String] $groups,
-  Array[String] $access_tags,
+  Array[String] $groups = [],
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $unique_group = "hbac-${name}"
-  $posix_group = join($groups.map |$group| { "--posix_group ${group}" }, ' ')
-  $nonposix_group = "--nonposix_group ${unique_group}"
+  $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
-  $cmd_args = "${posix_group} ${nonposix_group} ${$sshpubkey_string}"
+  $cmd_args = "${group_args} ${$sshpubkey_string}"
   if $count > 1 {
     $page_size = 50
     $prefix = $name
@@ -54,16 +116,12 @@ define profile::users::ldap_user (
       "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
     }
     $command = range(1, $count, $page_size).map |$i| {
-      "kinit_wrapper ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
     }
-    $unless = range(1, $count, $page_size).map |$i| {
-      "getent passwd $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})"
-    }
-    $timeout = $count * 10
+    $timeout = $page_size * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
-    $command = ["kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"]
-    $unless = ["getent passwd ${name}"]
+    $command = ["ipa_create_user.py ${name} ${cmd_args}"]
     $timeout = 10
   }
 
@@ -72,8 +130,8 @@ define profile::users::ldap_user (
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
       exec { $exec_name_i:
-        command     => $command[$i],
-        unless      => $unless[$i],
+        command     => "kinit_wrapper ${command[$i]}",
+        unless      => "${command[$i]} --dry",
         environment => $environment,
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
         timeout     => $timeout,
@@ -81,19 +139,7 @@ define profile::users::ldap_user (
           File['kinit_wrapper'],
           File['/sbin/ipa_create_user.py'],
         ],
-      }
-    }
-    $access_tags.each |$tag| {
-      exec { "ipa_hbacrule_${name}_${tag}":
-        command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=${unique_group}",
-        refreshonly => true,
-        environment => $environment,
-        require     => [File['kinit_wrapper'],],
-        path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-        returns     => [0, 1, 2],
-        subscribe   => $exec_name.map |$exec_name_i| {
-          Exec[$exec_name_i]
-        },
+        notify      => Exec['sss_cache -E'],
       }
     }
 
