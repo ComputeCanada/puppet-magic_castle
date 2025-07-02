@@ -66,7 +66,7 @@ class profile::nfs::client (
 
 class profile::nfs::server (
   Array[String] $no_root_squash_tags = ['mgmt'],
-  Array[String] $export_paths = [],
+  Optional[Array[String]] $export_paths = undef,
 ) {
   include profile::volumes
 
@@ -97,22 +97,25 @@ class profile::nfs::server (
   if $export_paths == undef {
     $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
     if $devices =~ Hash[String, Hash] {
-      $export_paths = $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
+      $export_path_list = $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
+    } else {
+      $export_path_list = []
     }
   } else {
     $export_paths.each |$path| {
       ensure_resource('file', $path, { ensure => directory, before => Nfs::Server::Export[$path] })
     }
+    $export_path_list = $export_paths
   }
 
-  if $export_paths {
+  if $export_path_list {
     # Allow instances with specific tags to mount NFS without root squash
     $instances = lookup('terraform.instances')
     $common_options = 'rw,async,no_all_squash,security_label'
     $prefixes  = $instances.filter|$key, $values| { ! intersection($values['tags'], $no_root_squash_tags ).empty }.map|$key, $values| { $values['prefix'] }.unique
     $prefix_rules = $prefixes.map|$string| { "${string}*.${nfs_domain}(${common_options},no_root_squash)" }.join(' ')
     $clients = "${prefix_rules} *.${nfs_domain}(${common_options},root_squash)"
-    $export_paths.each | String $path| {
+    $export_path_list.each | String $path| {
       nfs::server::export { $path:
         ensure  => 'mounted',
         clients => $clients,
