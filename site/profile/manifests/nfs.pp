@@ -34,11 +34,11 @@ class profile::nfs::client (
     # automount relies on a kernel module that currently does not support namespace.
     # Therefore it is not compatible with containers.
     # https://superuser.com/a/1372700
-    $automount = ''
+    $automount = 'x-systemd.mount-timeout=infinity,retry=10000,fg,nofail'
   } else {
-    $automount = 'x-systemd.automount'
+    $automount = 'x-systemd.automount,x-systemd.mount-timeout=30'
   }
-  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,x-systemd.mount-timeout=30,_netdev,${automount}"
+  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,_netdev,${automount}"
   $shares_to_mount.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
