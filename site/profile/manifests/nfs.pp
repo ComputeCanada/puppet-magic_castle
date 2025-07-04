@@ -34,7 +34,7 @@ class profile::nfs::client (
     # automount relies on a kernel module that currently does not support namespace.
     # Therefore it is not compatible with containers.
     # https://superuser.com/a/1372700
-    $automount = 'x-systemd.mount-timeout=infinity,retry=10000,fg,nofail'
+    $automount = 'x-systemd.mount-timeout=infinity,retry=10000,fg'
   } else {
     $automount = 'x-systemd.automount,x-systemd.mount-timeout=30'
   }
