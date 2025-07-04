@@ -34,11 +34,20 @@ class profile::nfs::client (
     # automount relies on a kernel module that currently does not support namespace.
     # Therefore it is not compatible with containers.
     # https://superuser.com/a/1372700
-    $automount = 'x-systemd.mount-timeout=infinity,retry=10000,fg'
+    $mount_options = 'x-systemd.mount-timeout=infinity,retry=10000,fg'
+    $mount_notify = []
   } else {
-    $automount = 'x-systemd.automount,x-systemd.mount-timeout=30'
+    $mount_options = 'x-systemd.automount,x-systemd.mount-timeout=30'
+    ensure_resource('systemd::daemon_reload', 'nfs-automount')
+    exec { 'systemctl restart remote-fs.target':
+      subscribe   => Systemd::Daemon_reload['nfs-automount'],
+      refreshonly => true,
+      path        => ['/bin', '/usr/bin'],
+    }
+    $mount_notify = [Systemd::Daemon_reload['nfs-automount']]
   }
-  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,_netdev,${automount}"
+
+  $options_nfsv4 = "proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel,_netdev,${mount_options}"
   $shares_to_mount.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
@@ -52,15 +61,8 @@ class profile::nfs::client (
       server        => $server_ip,
       share         => $share_name,
       options_nfsv4 => $options_nfsv4,
-      notify        => Systemd::Daemon_reload['nfs-automount'],
+      notify        => $mount_notify,
     }
-  }
-
-  ensure_resource('systemd::daemon_reload', 'nfs-automount')
-  exec { 'systemctl restart remote-fs.target':
-    subscribe   => Systemd::Daemon_reload['nfs-automount'],
-    refreshonly => true,
-    path        => ['/bin', '/usr/bin'],
   }
 }
 
