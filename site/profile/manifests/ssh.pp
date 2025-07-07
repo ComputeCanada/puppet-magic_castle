@@ -135,7 +135,7 @@ class profile::ssh::known_hosts {
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${ipa_domain}", $v['local_ip'],],
+          'host_aliases' => ["${k}.${ipa_domain}"] + ( $v['local_ip'] != '' ? { true => [$v['local_ip']], false => [] }),
           'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]
