@@ -48,8 +48,7 @@ SuspendExcNodes=<%= $suspend_exc_nodes %>
 <% } -%>
 
 SchedulerParameters=salloc_wait_nodes
-SlurmctldParameters=idle_on_node_suspend,cloud_dns
-CommunicationParameters=NoAddrCache
+SlurmctldParameters=idle_on_node_suspend
 DebugFlags=Power
 
 # PARTITION CONFIGURATIONS
