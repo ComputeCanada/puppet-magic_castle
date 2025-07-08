@@ -43,6 +43,8 @@ class profile::nfs::client (
   exec { 'systemctl restart remote-fs.target':
     subscribe   => Systemd::Daemon_reload['nfs-client'],
     refreshonly => true,
+    tries       => 20, # trye to connect the nfs mounts for 5 minutes
+    try_sleep   => 15,
     path        => ['/bin', '/usr/bin'],
   }
 
