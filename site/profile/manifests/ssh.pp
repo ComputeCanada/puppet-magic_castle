@@ -1,12 +1,27 @@
-class profile::ssh::base {
+class profile::ssh::base (
+  Boolean $disable_passwd_auth = false,
+) {
   service { 'sshd':
     ensure => running,
     enable => true,
   }
 
+  sshd_config { 'Include':
+    ensure => present,
+    value  => '/etc/ssh/sshd_config.d/*',
+    notify => Service['sshd'],
+  }
+
   sshd_config { 'PermitRootLogin':
     ensure => present,
     value  => 'no',
+    notify => Service['sshd'],
+  }
+
+  $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
+  sshd_config { 'PasswordAuthentication':
+    ensure => present,
+    value  => $password_auth,
     notify => Service['sshd'],
   }
 
@@ -59,6 +74,43 @@ class profile::ssh::base {
       notify => Service['sshd'],
     }
   }
+
+  sshd_config { 'tf_sshd_AuthenticationMethods':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthenticationMethods',
+    value     => 'publickey',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+  }
+
+  sshd_config { 'tf_sshd_AuthorizedKeysFile':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthorizedKeysFile',
+    value     => '/etc/ssh/authorized_keys.%u',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+  }
+
+  $tf_public_key = lookup('terraform.data.tf_public_key')
+  $tags          = lookup('terraform.self.tags')
+  $puppetserver_ips = lookup('terraform.tag_ip.puppet')
+
+  if 'puppet' in $tags {
+    $tf_authorized_keys_options = 'pty'
+  } else {
+    $permitopen = $puppetserver_ips.map |$ip| { "permitopen=\"${ip}:22\"" }.join(',')
+    $tf_authorized_keys_options = "${permitopen},port-forwarding,command=\"/sbin/nologin\""
+  }
+
+  $tf_authorized_keys = "restrict,${tf_authorized_keys_options} ${tf_public_key}"
+  file { '/etc/ssh/authorized_keys.tf':
+    content => $tf_authorized_keys,
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
+  }
 }
 
 # building /etc/ssh/ssh_known_hosts
@@ -83,7 +135,7 @@ class profile::ssh::known_hosts {
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${ipa_domain}", $v['local_ip'],],
+          'host_aliases' => ["${k}.${ipa_domain}"] + ( $v['local_ip'] != '' ? { true => [$v['local_ip']], false => [] }),
           'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]

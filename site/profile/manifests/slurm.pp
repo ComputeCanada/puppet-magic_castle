@@ -751,6 +751,19 @@ class profile::slurm::node (
   Group <| |> -> Service['slurmd']
   Pam <| |> -> Service['slurmd']
 
+  if $facts['virtual'] =~ /^(container|lxc).*$/ {
+    # When running slurmd in containers, the reported boot time
+    # corresponds to the host boot time. This leads slurmctld to
+    # think the node has not properly booted when using
+    # slurm powersaving / autoscaling function. By adding `-b`
+    # option to slurmd, the reported boot time corresponds to the
+    # time when slurmd started instead.
+    # Ref: https://support.schedmd.com/show_bug.cgi?id=4039
+    file { '/etc/sysconfig/slurmd':
+      content => 'SLURMD_OPTIONS="-b"',
+    }
+  }
+
   service { 'slurmd':
     ensure    => 'running',
     enable    => false,
