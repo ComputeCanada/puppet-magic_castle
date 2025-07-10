@@ -1,0 +1,13 @@
+#!/bin/bash
+api.Command.batch(
+<% if $hbac_rules != undef { -%>
+  <% $hbac_rules.each |$rule| { -%>
+  { 'method': 'hbacrule_add_user', 'params': [['<%= $rule %>'], {'group': '<%= $group %>'}] },
+  <% } -%>
+<% } -%>
+<% if $automember { -%>
+  { 'method': 'automember_add', 'params': [[], {'cn': '<%= $group %>', 'type': 'group', 'all': False, 'raw': False}]},
+  { 'method': 'automember_add_condition', 'params': [[], {'cn': '<%= $group %>', 'key': 'mail', 'type': 'group', 'all': False, 'raw': False, 'automemberinclusiveregex': '^(?!\s*$).+'}]},
+  { 'method': 'automember_rebuild', 'params': [[], {'type': 'group'}] },
+<% } -%>
+)
