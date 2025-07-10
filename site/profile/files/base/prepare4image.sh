@@ -30,10 +30,10 @@ systemctl daemon-reload
 
 systemctl stop rsyslog
 : > /var/log/messages
-: > /var/log/munge/munged.log
+test -d /var/log/munge && : > /var/log/munge/munged.log
 : > /var/log/secure
 : > /var/log/cron
-: > /var/log/audit/audit.log
+test -d /var/log/audit && : > /var/log/audit/audit.log
 
 if [ -f /etc/cloud/cloud-init.disabled ]; then
   # This is for GCP where we install cloud-init on first boot
