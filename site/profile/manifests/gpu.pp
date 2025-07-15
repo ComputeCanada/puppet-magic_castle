@@ -5,6 +5,14 @@ class profile::gpu (
     include profile::gpu::install
     include profile::gpu::services
   }
+  if facts['amd_gpu_count'] > 0 {
+    include profile::gpu::amd::install
+  }
+}
+
+class profile::gpu::amd::install {
+  # Puppetize this:
+  # https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html
 }
 
 class profile::gpu::install (
