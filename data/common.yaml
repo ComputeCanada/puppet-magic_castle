@@ -265,6 +265,7 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.genap\.ca)$'
   - '^(.*s1\.eessi\.science)$'
 
+profile::cvmfs::client::disable_autofs: "%{facts.is_unprivileged_container}"
 profile::cvmfs::client::quota_limit: 4096
 profile::cvmfs::client::repositories:
   - software.eessi.io
