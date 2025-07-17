@@ -263,12 +263,10 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(object-.*\.cloud\.computecanada\.ca)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
-  - '^(.*\.cvmfs\.eessi-infra\.org)$'
   - '^(.*s1\.eessi\.science)$'
 
 profile::cvmfs::client::quota_limit: 4096
 profile::cvmfs::client::repositories:
-  - pilot.eessi-hpc.org
   - software.eessi.io
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
