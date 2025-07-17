@@ -402,7 +402,6 @@ This class installs CVMFS client and configure repositories.
 profile::cvmfs::client::quota_limit: 4096
 profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
-  - pilot.eessi-hpc.org
   - software.eessi.io
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
