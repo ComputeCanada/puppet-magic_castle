@@ -53,6 +53,17 @@ class profile::freeipa::client (String $server_ip) {
   $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
 
+  if $facts['virtual'] =~ /^(container|lxc).*$/ {
+    file_line { 'chronyd_disable_clock_control':
+      ensure  => present,
+      require => Package['ipa-client'],
+      before  => Exec['ipa-install'],
+      path    => '/etc/sysconfig/chronyd',
+      match   => '^OPTIONS',
+      line    => 'OPTIONS="-F 2 -x"',
+    }
+  }
+
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
