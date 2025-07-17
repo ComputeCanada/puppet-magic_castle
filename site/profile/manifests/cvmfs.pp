@@ -29,6 +29,13 @@ class profile::cvmfs::client (
     seltype => 'root_t',
   }
 
+  file_line { 'cvmfs_default':
+    path    => '/etc/cvmfs/default.conf',
+    match   => '^CVMFS_HTTP_PROXY',
+    line    => 'CVMFS_HTTP_PROXY=DIRECT',
+    require => Package['cvmfs'],
+  }
+
   file { '/etc/cvmfs/default.local.ctmpl':
     content => epp('profile/cvmfs/default.local', {
         'strict_mount' => $strict_mount ? { true => 'yes', false => 'no' }, # lint:ignore:selector_inside_resource
@@ -71,6 +78,7 @@ class profile::cvmfs::client (
         fstype  => 'cvmfs',
         require => [
           Package['cvmfs'],
+          File_line['cvmfs_default'],
         ],
       }
       Package<| tag == profile::software_stack |> -> Mount["/cvmfs/${repository}"]
