@@ -514,12 +514,14 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
+
   file { '/etc/slurm/job_submit.lua':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/job_submit.lua',
       {
+        'selinux_enabled' => $facts['os']['selinux']['enabled'],
         'selinux_context' => $selinux_context,
       }
     ),
@@ -655,41 +657,42 @@ class profile::slurm::node (
     source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
   }
 
+  if !($facts['virtual'] =~ /^(container|lxc).*$/) {
+    # Implementation of user limits as recommended in
+    # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
+    # + some common values found on Compute Canada clusters
+    limits::limits{'*/core':
+      soft => '0',
+      hard => 'unlimited'
+    }
 
-  # Implementation of user limits as recommended in
-  # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
-  # + some common values found on Compute Canada clusters
-  limits::limits{'*/core':
-    soft => '0',
-    hard => 'unlimited'
-  }
+    limits::limits{'*/nproc':
+      soft => '4096',
+    }
 
-  limits::limits{'*/nproc':
-    soft => '4096',
-  }
+    limits::limits{'root/nproc':
+      soft => 'unlimited',
+    }
 
-  limits::limits{'root/nproc':
-    soft => 'unlimited',
-  }
+    limits::limits{'*/memlock':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/memlock':
-    both => 'unlimited',
-  }
+    limits::limits{'*/stack':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/stack':
-    both => 'unlimited',
-  }
+    limits::limits{'*/nofile':
+      both => '1048576',
+    }
 
-  limits::limits{'*/nofile':
-    both => '1048576',
-  }
+    limits::limits{'*/cpu':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/cpu':
-    both => 'unlimited',
-  }
-
-  limits::limits{'*/rtprio':
-    both => 'unlimited',
+    limits::limits{'*/rtprio':
+      both => 'unlimited',
+    }
   }
 
   ensure_resource('file', '/localscratch', { 'ensure' => 'directory', 'seltype' => 'tmp_t' })
