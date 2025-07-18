@@ -514,12 +514,14 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
+
   file { '/etc/slurm/job_submit.lua':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/job_submit.lua',
       {
+        'selinux_enabled' => $facts['os']['selinux']['enabled'],
         'selinux_context' => $selinux_context,
       }
     ),
