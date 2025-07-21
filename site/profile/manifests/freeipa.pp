@@ -483,7 +483,6 @@ class profile::freeipa::mokey (
   String $password,
   Boolean $enable_user_signup,
   Boolean $require_verify_admin,
-  Array[String] $access_tags,
 ) {
   include mysql::server
 
@@ -665,20 +664,5 @@ class profile::freeipa::mokey (
     subscribe   => [
       Exec['ipa_self-signup_automember'],
     ],
-  }
-
-  $access_tags.each |$tag| {
-    exec { "ipa_hbacrule_self-signup_${tag}":
-      command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=self-signup",
-      refreshonly => true,
-      environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-      require     => [File['kinit_wrapper'],],
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-      returns     => [0, 1, 2],
-      subscribe   => [
-        Exec['ipa_group_self-signup'],
-        Exec['hbac_rules'],
-      ],
-    }
   }
 }
