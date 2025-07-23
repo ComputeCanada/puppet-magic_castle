@@ -93,6 +93,13 @@ class profile::mail::dkim (
   $domain_name = lookup('profile::mail::base::origin')
   $cidr = profile::getcidr()
 
+  user { 'postfix':
+    ensure     => present,
+    groups     => ['opendkim'],
+    membership => minimum,
+    require    => Package['opendkim'],
+  }
+
   package { 'opendkim':
     ensure  => 'installed',
     require => Yumrepo['epel'],
@@ -204,7 +211,7 @@ class profile::mail::dkim (
 
   postfix::config { 'smtpd_milters':
     ensure => present,
-    value  => 'inet:127.0.0.1:8891',
+    value  => 'local:/run/opendkim/opendkim.sock',
   }
 
   postfix::config { 'non_smtpd_milters':
