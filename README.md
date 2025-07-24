@@ -30,6 +30,10 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::gpu`](#profilegpu)
 - [`profile::jupyterhub::hub`](#profilejupyterhubhub)
 - [`profile::jupyterhub::node`](#profilejupyterhubnode)
+- [`profile::mail`](#profilemail)
+- [`profile::mail::dkim`](#profilemaildkim)
+- [`profile::mail::relayhost`](#profilemailrelayhost)
+- [`profile::mail::sender`](#profilemailsender)
 - [`profile::metrics::node_exporter`](#profilemetricsnode_exporter)
 - [`profile::metrics::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
 - [`profile::metrics::slurm_exporter`](#profilemetricsslurm_exporter)
@@ -84,6 +88,7 @@ magic_castle::site::all:
   - profile::consul
   - profile::users::local
   - profile::sssd::client
+  - profile::mail
   - profile::metrics::node_exporter
   - swap_file
 magic_castle::site::tags:
@@ -264,7 +269,6 @@ When `profile::base` is included, these classes are included too:
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
 - [`profile::ssh::base`](#profilesshbase)
-- [`profile::mail::server`](#profilemailserver) (when parameter `admin_email` is defined)
 
 ## `profile::base::azure`
 
@@ -715,6 +719,82 @@ When `profile::jupyterhub::node` is included, these classes are included too:
 - [jupyterhub::node](https://github.com/computecanada/puppet-jupyterhub)
 - [jupyterhub::kernel::venv](https://github.com/computecanada/puppet-jupyterhub)
 
+## `profile::mail`
+
+> Postfix is a free and open-source mail transfer agent that routes and delivers
+electronic mail.
+
+This class instantiates postfix either as mail client or a relayhost.
+If the instance's local ip address is included in `profile::mail::sender::relayhosts`,
+the relayhost class is included - [`profile::mail::relayhost`](#profilemailrelayhost), otherwise the
+sender class is included - [`profile::mail::sender`](#profilemailsender).
+
+## `profile::mail::base`
+
+This class gathers configurations that are common between [sender](#profilemailsender) and
+[relayhosts](#profilemailrelayhost).
+
+### parameters
+
+| Variable                  | Description                                                                | Type          |
+| :------------------------ | :------------------------------------------------------------------------- | :------------ |
+| `origin`                  | Define the origin domain of outgoing emails                                | String        |
+| `authorized_submit_users` | List of user authorized to send emails                                     | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::mail::base::origin: "%{alias('terraform.data.domain_name')}"
+profile::mail::base::authorized_submit_users: ["root", "slurm"]
+```
+</details>
+
+## `profile::mail::dkim`
+
+> DomainKeys Identified Mail (DKIM) is an email authentication method that
+permits a person, role, or organization that owns the signing domain to 
+claim some responsibility for a message by associating the domain 
+with the message.
+
+This class installs and configures OpenDKIM daemon.
+
+### parameters
+
+| Variable       | Description                                                                | Type   |
+| :------------- | :------------------------------------------------------------------------- | :----- |
+| `private_key`  | RSA private key in PEM format that will be used to sign outgoing emails    | String |
+
+## `profile::mail::relayhost`
+
+This class configures Postfix as a relayhost for other instances inside the cluster
+to send emails outside of the internal domain. If an RSA private key is provided via
+`profile::mail::dkim::private_key`, the class also includes `profile::mail::dkim`.
+
+### dependency
+
+When `profile::mail::relayhost` is included, this class may also be included too:
+- [profile::mail::dkim](#profilemaildkim)
+
+## `profile::mail::sender`
+
+This class configures Postfix as a client that will send outgoing to one of
+the relayhosts.
+
+### parameters
+
+| Variable       | Description                                                                | Type          |
+| :------------- | :------------------------------------------------------------------------- | :------------ |
+| `relayhosts`   | List of internal instances that will forward outgoing emails               | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::mail::sender::relayhosts: "%{alias('terraform.tag_ip.public')}"
+```
+</details>
+
 ## `profile::metrics::node_exporter`
 
 > [Prometheus](https://prometheus.io/) is a free software application used for
@@ -1108,7 +1188,6 @@ refer to the [Terraform Cloud](https://github.com/ComputeCanada/magic_castle/blo
 When `profile::slurm::accounting` is included, these classes are included too:
 - [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
 - [`profile::slurm::base`](#profileslurmbase)
-- [`profile::mail::server`](#profilemailserver)
 
 
 ## `profile::slurm::node`
