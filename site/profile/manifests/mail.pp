@@ -74,6 +74,11 @@ class profile::mail::relayhost {
     manage_mailx     => false,
     manage_conffiles => false,
   }
+
+  postfix::config { 'myhostname':
+    ensure => present,
+    value  => "${facts['networking']['hostname']}.${origin}",
+  }
 }
 
 # profile::mail::dkim class
