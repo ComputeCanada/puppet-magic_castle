@@ -408,7 +408,6 @@ class profile::slurm::controller (
   String $tfe_var_pool = 'pool',
 ) {
   contain profile::slurm::base
-  include profile::mail::server
 
   $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
