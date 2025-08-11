@@ -899,12 +899,14 @@ This class install NFS and configure an NFS server that will export all volumes 
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
+| `enable_client_quotas` | Enable query of quotas on NFS clients | Boolean |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::nfs::server::no_root_squash_tags: ['mgmt']
+profile::nfs::server::enable_client_quotas: false
 ```
 </details>
 
