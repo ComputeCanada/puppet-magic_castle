@@ -2,6 +2,8 @@
 lookup_options:
   profile::users::ldap::users:
     merge: 'deep'
+  profile::users::ldap::groups:
+    merge: 'deep'
   profile::users::local::users:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
@@ -278,7 +280,6 @@ profile::cvmfs::local_user::gid: 8000131
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
-profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
@@ -289,13 +290,16 @@ profile::slurm::controller::autoscale_version: '0.7.0'
 profile::slurm::node::enable_tmpfs_mounts: true
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
     passwd: "%{alias('terraform.data.guest_passwd')}"
-    groups: ['def-sponsor00']
     manage_password: true
+
+profile::users::ldap::groups:
+  'def-sponsor00':
+    automember: true
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
