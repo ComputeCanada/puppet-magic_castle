@@ -1,11 +1,19 @@
+# for the default cuda/12.6, need at least 560
+profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
+profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
+
 profile::software_stack::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"
 profile::software_stack::lmod_default_modules:
     - StdEnv/2023
+    - jupyterlab-apps/1.0
+
 profile::software_stack::extra_site_env_vars:
   CC_CLUSTER: "magic_castle"
 lookup_options:
   profile::software_stack::extra_site_env_vars:
     merge: hash
+
+jupyterhub::node::prefix: /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/jupyterhub_node/6.8.2
 
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2023/%{facts.cpu_microarch}/Compiler/gcccore/python/3.11.5/bin/python
 jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
@@ -26,5 +34,6 @@ jupyterhub::jupyterhub_config_hash:
         modules: ['rstudio-server']
       code-server:
         modules: ['code-server']
+      openrefine:
+        modules: ['openrefine']
 
-profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
