@@ -14,9 +14,6 @@ jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
 jupyterhub::kernel::venv::pip_environment:
   PYTHONPATH: "/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:/cvmfs/soft.computecanada.ca/custom/python/site-packages"
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-%{facts.cpu_microarch}-gentoo2023.conf"
-jupyterhub::kernel::venv::kernel_environment:
-  "PYTHONPATH": "/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:${PYTHONPATH}"
-  "EBPYTHONPREFIXES": "${SLURM_TMPDIR}:${EBPYTHONPREFIXES}"
 
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
