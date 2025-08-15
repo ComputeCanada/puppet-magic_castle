@@ -35,9 +35,13 @@ class profile::jupyterhub::hub (
 class profile::jupyterhub::node {
   if lookup('jupyterhub::node::prefix', String, undef, '') !~ /^\/cvmfs.*/ {
     include jupyterhub::node
-    if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
-      Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
-    }
+  }
+  elsif lookup('jupyterhub::kernel::setup') == 'venv' {
+    ensure_resource('class', 'jupyterhub::base', { 'prefix' => lookup('jupyterhub::node::prefix') })
+    include jupyterhub::kernel::venv
+  }
+  if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
+    Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
   }
 }
 
