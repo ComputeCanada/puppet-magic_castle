@@ -1595,4 +1595,17 @@ profile::volumes::devices:
       #"filesystem": "xfs",
       #"quota": nil
 ```
+
+Default quotas on a filesystem can be defined as such:
+```yaml
+profile::volumes::devices:
+  "nfs":
+    "home":
+      "quota":
+        #"bsoft": "1g"
+        "bhard": "1g"
+        #"isoft": "500000"
+        "ihard": "500000"
+```
+
 </details>
