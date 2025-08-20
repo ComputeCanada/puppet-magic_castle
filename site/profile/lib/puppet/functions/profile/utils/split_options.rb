@@ -1,9 +1,9 @@
-Puppet::Functions.create_function(:ssh_split_options) do
-    dispatch :ssh_split_options do
+Puppet::Functions.create_function(:'profile::utils::split_options') do
+    dispatch :split_options do
         param 'String', :options
         return_type 'Array'
     end
-    def ssh_split_options(options)
+    def split_options(options)
         return options.scan(/(\w+=".*?"|[\w-]+)/).flatten
     end
 end

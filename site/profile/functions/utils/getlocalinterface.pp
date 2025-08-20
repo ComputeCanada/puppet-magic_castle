@@ -1,4 +1,4 @@
-function profile::getlocalinterface() >> String {
+function profile::utils::getlocalinterface() >> String {
   $local_ip = lookup('terraform.self.local_ip')
   $interfaces = keys($facts['networking']['interfaces'])
   $search = $interfaces.filter | $interface | {
