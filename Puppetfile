@@ -42,5 +42,5 @@ mod 'treydock-globus', '9.0.0'
 mod 'saz-limits', '3.0.4'
 
 mod 'computecanada-jupyterhub',
-    :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
-    :ref => 'v6.9.0'
+    :git => 'https://github.com/calculquebec/puppet-jupyterhub.git',
+    :ref => 'formation'
