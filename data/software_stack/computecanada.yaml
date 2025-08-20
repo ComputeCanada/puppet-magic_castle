@@ -7,9 +7,15 @@ profile::software_stack::lmod_default_modules:
     - StdEnv/2023
     - jupyterlab-apps/1.0
     - mii
-# ensure that packages installed in the local kernel are found, if the same version of python is used in both cases
+
 profile::software_stack::extra_site_env_vars:
+  CC_CLUSTER: "magic_castle"
+  # ensure that packages installed in the local kernel are found, if the same version of python is used in both cases
   EBPYTHONPREFIXES_PRIORITY: "%{alias('jupyterhub::kernel::venv::prefix')}"
+lookup_options:
+  profile::software_stack::extra_site_env_vars:
+    merge: hash
+
 jupyterhub::node::prefix: /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/jupyterhub_node/6.8.2
 
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2023/%{facts.cpu_microarch}/Compiler/gcccore/python/3.11.5/bin/python
@@ -17,8 +23,11 @@ jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
 jupyterhub::kernel::venv::kernel_name: 'ospython'
 jupyterhub::kernel::venv::display_name: 'Python bundle'
 
+lookup_options:
+  jupyterhub::kernel::venv::pip_environment:
+    merge: "deep"
 jupyterhub::kernel::venv::pip_environment:
-  PYTHONPATH: "/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:/cvmfs/soft.computecanada.ca/custom/python/site-packages"
+  PYTHONPATH: ["/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:/cvmfs/soft.computecanada.ca/custom/python/site-packages"]
   PIP_CONFIG_FILE: "/cvmfs/soft.computecanada.ca/config/python/pip-%{facts.cpu_microarch}-gentoo2023.conf"
 jupyterhub::kernel::venv::kernel_environment:
   "PYTHONPATH": "/cvmfs/soft.computecanada.ca/easybuild/python/site-packages:${PYTHONPATH}"
