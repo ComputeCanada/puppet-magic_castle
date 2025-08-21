@@ -16,8 +16,10 @@ lookup_options:
   profile::software_stack::extra_site_env_vars:
     merge: hash
 
-jupyterhub::node::prefix: /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/jupyterhub_node/6.8.2
+jupyterhub::node::install_method: 'none'
+jupyterhub::node::install::prefix: /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/jupyterhub_node/6.8.2
 
+jupyterhub::kernel::install_method: 'venv'
 jupyterhub::kernel::venv::python: /cvmfs/soft.computecanada.ca/easybuild/software/2023/%{facts.cpu_microarch}/Compiler/gcccore/python/3.11.5/bin/python
 jupyterhub::kernel::venv::prefix: /opt/ipython-kernel-computecanada
 jupyterhub::kernel::venv::kernel_name: 'ospython'
