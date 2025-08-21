@@ -56,7 +56,7 @@ fail2ban::custom_jails:
     filter_includes: 'before = common.conf'
     filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
-jupyterhub::kernel::setup: venv
+jupyterhub::kernel::install_method: venv
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
     ui_args:
