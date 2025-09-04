@@ -357,6 +357,7 @@ trailblazing_turtle::server::prometheus_port: 9090
 trailblazing_turtle::server::db_ip: 127.0.0.1
 trailblazing_turtle::server::db_port: 3306
 trailblazing_turtle::install::version: 1.6.0
+trailblazing_turtle::subdomain: 'metrix'
 
 trailblazing_turtle::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
 trailblazing_turtle::slurm_jobscripts::token: "%{alias('trailblazing_turtle::server::root_api_token')}"
