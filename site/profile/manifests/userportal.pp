@@ -21,4 +21,5 @@ class profile::userportal {
     base_dn         => $base_dn,
     domain_name     => $domain_name,
   }
+  Class['trailblazing_turtle'] ~> Service['httpd']
 }
