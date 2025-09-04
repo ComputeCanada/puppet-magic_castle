@@ -2,8 +2,8 @@ class profile::userportal {
   $instances = lookup('terraform.instances')
   $logins = keys($instances.filter |$keys, $values| { 'login' in $values['tags'] })
 
-  $domain_name = lookup('profile::freeipa::base::domain_name')
-  $int_domain_name = "int.${domain_name}"
+  $domain_name = lookup('terraform.data.domain_name')
+  $int_domain_name = lookup('profile::freeipa::base::ipa_domain')
   $base_dn = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
 
   class { 'trailblazing_turtle':
