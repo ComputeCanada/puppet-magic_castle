@@ -2,7 +2,7 @@
 # - CPU usage
 # - memory usage
 # It should run on every server of the cluster.
-class profile::metrics::node_exporter {
+class profile::prometheus::node_exporter {
   include prometheus::node_exporter
   @consul::service { 'node_exporter':
     port => 9100,
@@ -38,7 +38,7 @@ class profile::metrics::node_exporter {
 # - job power gpu
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
-class profile::metrics::slurm_job_exporter (String $version = '0.4.7') {
+class profile::prometheus::slurm_job_exporter (String $version = '0.4.7') {
   @consul::service { 'slurm-job-exporter':
     port => 9798,
     tags => ['slurm', 'exporter'],
@@ -78,7 +78,7 @@ class profile::metrics::slurm_job_exporter (String $version = '0.4.7') {
 # - completed jobs
 # This exporter typically runs on the Slurm controller server, but it can run on any server
 # with a functional Slurm command-line installation.
-class profile::metrics::slurm_exporter (
+class profile::prometheus::slurm_exporter (
   Integer $port = 8081,
   Array[String] $collectors = ['partition'],
 ) {
@@ -120,7 +120,7 @@ class profile::metrics::slurm_exporter (
   }
 }
 
-class profile::metrics::apache_exporter {
+class profile::prometheus::apache_exporter {
   include prometheus::apache_exporter
   @consul::service { 'apache_exporter':
     port => 9117,
@@ -129,7 +129,7 @@ class profile::metrics::apache_exporter {
   File<| title == '/etc/httpd/conf.d/server-status.conf' |>
 }
 
-class profile::metrics::caddy_exporter (Integer $port = 2020) {
+class profile::prometheus::caddy_exporter (Integer $port = 2020) {
   include profile::consul
   @consul::service { 'caddy_exporter':
     port => $port,

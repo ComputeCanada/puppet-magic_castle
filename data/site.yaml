@@ -13,7 +13,7 @@ magic_castle::site::all:
   - profile::freeipa
   - profile::users::local
   - profile::sssd::client
-  - profile::metrics::node_exporter
+  - profile::prometheus::node_exporter
   - profile::rsyslog::client
   - profile::volumes
   - swap_file
@@ -34,8 +34,8 @@ magic_castle::site::tags:
     - mysql::server
     - prometheus::server
     - prometheus::alertmanager
-    - profile::metrics::slurm_exporter
-    - profile::metrics::apache_exporter
+    - profile::prometheus::slurm_exporter
+    - profile::prometheus::apache_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
@@ -49,7 +49,7 @@ magic_castle::site::tags:
     - profile::slurm::node
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
-    - profile::metrics::slurm_job_exporter
+    - profile::prometheus::slurm_job_exporter
     - profile::nfs
     - profile::software_stack
   nfs:
@@ -61,7 +61,7 @@ magic_castle::site::tags:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
     - profile::reverse_proxy
-    - profile::metrics::caddy_exporter
+    - profile::prometheus::caddy_exporter
   efa:
     - profile::efa
   puppet:
