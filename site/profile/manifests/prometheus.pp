@@ -100,7 +100,7 @@ class profile::prometheus::slurm_exporter (
   -> package { 'prometheus-slurm-exporter': }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
-    content => epp('profile/metrics/prometheus-slurm-exporter.service',
+    content => epp('profile/prometheus/prometheus-slurm-exporter.service',
       {
         port       => $port,
         collectors => $collectors.map |$collector| { "--collector.${collector}" }.join(' '),

@@ -301,7 +301,7 @@ profile::users::ldap::users:
 profile::users::ldap::groups:
   'def-sponsor00':
     automember: true
-    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login', 'portal:login']
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login', 'mgmt:login']
 
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
@@ -330,7 +330,7 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
-  metrix: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
+  metrix: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
@@ -359,5 +359,5 @@ trailblazing_turtle::server::db_port: 3306
 trailblazing_turtle::install::version: 1.6.0
 trailblazing_turtle::subdomain: 'metrix'
 
-trailblazing_turtle::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.portal.0')}:9000"
+trailblazing_turtle::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
 trailblazing_turtle::slurm_jobscripts::token: "%{alias('trailblazing_turtle::server::root_api_token')}"

@@ -43,6 +43,7 @@ magic_castle::site::tags:
     - profile::accounts
     - profile::nfs
     - trailblazing_turtle::slurm_jobscripts
+    - profile::metrix
   node:
     - profile::gpu
     - profile::jupyterhub::node
@@ -55,8 +56,6 @@ magic_castle::site::tags:
   nfs:
     - profile::nfs
     - profile::cvmfs::alien_cache
-  portal:
-    - profile::userportal
   proxy:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab

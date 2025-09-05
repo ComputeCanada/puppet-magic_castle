@@ -1,4 +1,4 @@
-class profile::userportal {
+class profile::metrix {
   $instances = lookup('terraform.instances')
   $logins = keys($instances.filter |$keys, $values| { 'login' in $values['tags'] })
 
