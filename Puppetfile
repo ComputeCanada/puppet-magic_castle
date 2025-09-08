@@ -45,9 +45,9 @@ mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
     :ref => 'v7.0.1'
 
-mod 'computecanada-trailblazing_turtle',
-    :git => 'https://github.com/ComputeCanada/puppet-trailblazing_turtle.git',
-    :ref => 'v0.5.0'
+mod 'computecanada-metrix',
+    :git => 'https://github.com/ComputeCanada/puppet-metrix.git',
+    :ref => 'v1.0.0'
 
 mod 'computecanada-uv',
     :git => 'https://github.com/ComputeCanada/puppet-uv.git',
