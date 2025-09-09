@@ -347,7 +347,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-persistenced
   - nvidia-driver-cuda
 
-profile::prometheus::slurm_job_exporter::version: 0.2.0
+profile::prometheus::slurm_job_exporter::version: 0.4.9
 
 metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
