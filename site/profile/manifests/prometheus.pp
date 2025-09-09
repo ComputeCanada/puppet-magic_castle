@@ -59,7 +59,6 @@ class profile::prometheus::slurm_job_exporter (String $version = '0.4.7') {
     require => [
       Package['slurm-job-exporter'],
       Package['python3-prometheus_client'],
-      Service['slurmd'],
     ],
   }
 
