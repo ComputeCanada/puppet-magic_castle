@@ -433,7 +433,7 @@ class profile::slurm::controller (
   uv::venv { 'autoscale_slurm_env':
     prefix       => $autoscale_env_prefix,
     python       => '3.13',
-    requirements => "https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v${autoscale_version}.tar.gz",
+    requirements => "https://github.com/MagicCastle/slurm-autoscale-tfe/releases/download/v${autoscale_version}/slurm_autoscale_tfe-${autoscale_version}-py3-none-any.whl",
     require      => [
       Package['slurm'],
     ],
