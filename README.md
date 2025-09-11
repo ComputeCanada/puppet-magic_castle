@@ -833,7 +833,7 @@ This exporter needs to run on compute nodes.
 <summary>default values</summary>
 
 ```yaml
-profile::prometheus::slurm_job_exporter::version: '0.0.10'
+profile::prometheus::slurm_job_exporter::version: '0.4.9'
 ```
 </details>
 

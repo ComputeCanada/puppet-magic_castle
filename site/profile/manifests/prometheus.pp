@@ -38,7 +38,7 @@ class profile::prometheus::node_exporter {
 # - job power gpu
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
-class profile::prometheus::slurm_job_exporter (String $version = '0.4.7') {
+class profile::prometheus::slurm_job_exporter (String $version) {
   @consul::service { 'slurm-job-exporter':
     port => 9798,
     tags => ['slurm', 'exporter'],
