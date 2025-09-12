@@ -93,5 +93,7 @@ StateSaveLocation=/var/spool/slurm
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step,disable_send_gids
 JobSubmitPlugins=lua
+AccountingStoreFlags=job_script
+
 
 include /etc/slurm/slurm-addendum.conf

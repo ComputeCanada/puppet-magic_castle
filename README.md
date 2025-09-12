@@ -34,9 +34,9 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::mail::dkim`](#profilemaildkim)
 - [`profile::mail::relayhost`](#profilemailrelayhost)
 - [`profile::mail::sender`](#profilemailsender)
-- [`profile::metrics::node_exporter`](#profilemetricsnode_exporter)
-- [`profile::metrics::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
-- [`profile::metrics::slurm_exporter`](#profilemetricsslurm_exporter)
+- [`profile::prometheus::node_exporter`](#profilemetricsnode_exporter)
+- [`profile::prometheus::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
+- [`profile::prometheus::slurm_exporter`](#profilemetricsslurm_exporter)
 - [`profile::nfs`](#profilenfs)
 - [`profile::nfs::client`](#profilenfsclient)
 - [`profile::nfs::server`](#profilenfsserver)
@@ -89,7 +89,7 @@ magic_castle::site::all:
   - profile::users::local
   - profile::sssd::client
   - profile::mail
-  - profile::metrics::node_exporter
+  - profile::prometheus::node_exporter
   - swap_file
 magic_castle::site::tags:
   dtn:
@@ -108,8 +108,8 @@ magic_castle::site::tags:
   mgmt:
     - mysql::server
     - profile::freeipa::server
-    - profile::metrics::server
-    - profile::metrics::slurm_exporter
+    - profile::prometheus::server
+    - profile::prometheus::slurm_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
@@ -123,7 +123,7 @@ magic_castle::site::tags:
     - profile::slurm::node
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
-    - profile::metrics::slurm_job_exporter
+    - profile::prometheus::slurm_job_exporter
     - profile::nfs::client
     - profile::freeipa::client
     - profile::rsyslog::client
@@ -793,7 +793,7 @@ profile::mail::sender::relayhosts: "%{alias('terraform.tag_ip.public')}"
 ```
 </details>
 
-## `profile::metrics::node_exporter`
+## `profile::prometheus::node_exporter`
 
 > [Prometheus](https://prometheus.io/) is a free software application used for
 event monitoring and alerting. It records metrics in a time series database built
@@ -805,11 +805,11 @@ CPU and memory usage. It should be included on every instances of the cluster.
 
 ### dependencies
 
-When `profile::metrics::node_exporter` is included, these classes are included too:
+When `profile::prometheus::node_exporter` is included, these classes are included too:
 - [`prometheus::node_exporter`](https://forge.puppet.com/modules/puppet/prometheus)
 - [`profile::consul`](#profileconsul)
 
-## `profile::metrics::slurm_job_exporter`
+## `profile::prometheus::slurm_job_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm
 compute node metrics, for example:
@@ -833,17 +833,17 @@ This exporter needs to run on compute nodes.
 <summary>default values</summary>
 
 ```yaml
-profile::metrics::slurm_job_exporter::version: '0.0.10'
+profile::prometheus::slurm_job_exporter::version: '0.4.9'
 ```
 </details>
 
 
 ### dependency
 
-When `profile::metrics::slurm_job_exporter` is included, this class is included too:
+When `profile::prometheus::slurm_job_exporter` is included, this class is included too:
 - `[profile::consul`](#profileconsul)
 
-## `profile::metrics::slurm_exporter`
+## `profile::prometheus::slurm_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm scheduling metrics, for example:
 - allocated nodes

@@ -44,3 +44,11 @@ mod 'saz-limits', '3.0.4'
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
     :ref => 'v7.0.1'
+
+mod 'computecanada-metrix',
+    :git => 'https://github.com/ComputeCanada/puppet-metrix.git',
+    :ref => 'v1.0.3'
+
+mod 'computecanada-uv',
+    :git => 'https://github.com/ComputeCanada/puppet-uv.git',
+    :ref => 'v0.1.0'

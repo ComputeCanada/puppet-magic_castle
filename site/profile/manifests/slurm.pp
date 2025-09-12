@@ -429,34 +429,14 @@ class profile::slurm::controller (
     mode   => '0755',
   }
 
-  ensure_packages(['python3'], { ensure => 'present' })
-
   $autoscale_env_prefix = '/opt/software/slurm/autoscale_env'
-  exec { 'autoscale_slurm_env':
-    command => "python3 -m venv ${autoscale_env_prefix}",
-    creates => "${autoscale_env_prefix}/bin/activate",
-    require => [
-      Package['python3'], Package['slurm']
+  uv::venv { 'autoscale_slurm_env':
+    prefix       => $autoscale_env_prefix,
+    python       => '3.13',
+    requirements => "https://github.com/MagicCastle/slurm-autoscale-tfe/releases/download/v${autoscale_version}/slurm_autoscale_tfe-${autoscale_version}-py3-none-any.whl",
+    require      => [
+      Package['slurm'],
     ],
-    path    => ['/usr/bin'],
-  }
-
-  exec { 'autoscale_slurm_env_upgrade_pip':
-    command     => 'pip install --upgrade pip',
-    subscribe   => Exec['autoscale_slurm_env'],
-    refreshonly => true,
-    path        => ["${autoscale_env_prefix}/bin"],
-  }
-
-
-  $py3_version = lookup('os::redhat::python3::version')
-  exec { 'autoscale_slurm_tf_cloud_install':
-    command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v${autoscale_version}.tar.gz",
-    creates => "${autoscale_env_prefix}/lib/python${py3_version}/site-packages/slurm_autoscale_tfe-${autoscale_version}.dist-info",
-    require => [
-      Exec['autoscale_slurm_env'], Exec['autoscale_slurm_env_upgrade_pip']
-    ],
-    path    => ["${autoscale_env_prefix}/bin"]
   }
 
   file { '/etc/slurm/env.secrets':
@@ -748,7 +728,7 @@ class profile::slurm::node (
   Selinux::Exec_restorecon <| |> -> Service['slurmd']
   Selinux::Boolean <| |> -> Service['slurmd']
   Service <| tag == prometheus |> -> Service['slurmd']
-  Service <| tag == profile::metrics |> -> Service['slurmd']
+  Service <| tag == profile::prometheus |> -> Service['slurmd']
   User <| |> -> Service['slurmd']
   Group <| |> -> Service['slurmd']
   Pam <| |> -> Service['slurmd']

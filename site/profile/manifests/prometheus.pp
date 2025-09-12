@@ -2,7 +2,7 @@
 # - CPU usage
 # - memory usage
 # It should run on every server of the cluster.
-class profile::metrics::node_exporter {
+class profile::prometheus::node_exporter {
   include prometheus::node_exporter
   @consul::service { 'node_exporter':
     port => 9100,
@@ -38,13 +38,17 @@ class profile::metrics::node_exporter {
 # - job power gpu
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
-class profile::metrics::slurm_job_exporter (String $version = '0.4.7') {
+class profile::prometheus::slurm_job_exporter (
+  String $version,
+  String $nvidia_ml_py_version = '11.515.75',
+) {
   @consul::service { 'slurm-job-exporter':
     port => 9798,
     tags => ['slurm', 'exporter'],
   }
 
   $el = $facts['os']['release']['major']
+  ensure_packages(['python3'], { ensure => 'present' })
   package { 'python3-prometheus_client':
     require => Yumrepo['epel'],
   }
@@ -53,13 +57,29 @@ class profile::metrics::slurm_job_exporter (String $version = '0.4.7') {
     provider => 'yum',
   }
 
+  if $facts['nvidia_gpu_count'] > 0 and profile::is_grid_vgpu() {
+    # Used by slurm-job-exporter to export GPU metrics
+    # DCGM does not work with GRID VGPU, most of the stats are missing
+    ensure_packages(['python3-pip'], { ensure => 'present' })
+    $py3_version = lookup('os::redhat::python3::version')
+
+    exec { 'pip install nvidia-ml-py':
+      command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==${nvidia_ml_py_version}",
+      creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
+      notify  => Service['slurm-job-exporter'],
+      require => [
+        Package['python3'],
+        Package['python3-pip'],
+      ],
+    }
+  }
+
   service { 'slurm-job-exporter':
     ensure  => 'running',
     enable  => true,
     require => [
       Package['slurm-job-exporter'],
       Package['python3-prometheus_client'],
-      Service['slurmd'],
     ],
   }
 
@@ -78,7 +98,7 @@ class profile::metrics::slurm_job_exporter (String $version = '0.4.7') {
 # - completed jobs
 # This exporter typically runs on the Slurm controller server, but it can run on any server
 # with a functional Slurm command-line installation.
-class profile::metrics::slurm_exporter (
+class profile::prometheus::slurm_exporter (
   Integer $port = 8081,
   Array[String] $collectors = ['partition'],
 ) {
@@ -100,7 +120,7 @@ class profile::metrics::slurm_exporter (
   -> package { 'prometheus-slurm-exporter': }
 
   file { '/etc/systemd/system/prometheus-slurm-exporter.service':
-    content => epp('profile/metrics/prometheus-slurm-exporter.service',
+    content => epp('profile/prometheus/prometheus-slurm-exporter.service',
       {
         port       => $port,
         collectors => $collectors.map |$collector| { "--collector.${collector}" }.join(' '),
@@ -120,7 +140,7 @@ class profile::metrics::slurm_exporter (
   }
 }
 
-class profile::metrics::apache_exporter {
+class profile::prometheus::apache_exporter {
   include prometheus::apache_exporter
   @consul::service { 'apache_exporter':
     port => 9117,
@@ -129,7 +149,7 @@ class profile::metrics::apache_exporter {
   File<| title == '/etc/httpd/conf.d/server-status.conf' |>
 }
 
-class profile::metrics::caddy_exporter (Integer $port = 2020) {
+class profile::prometheus::caddy_exporter (Integer $port = 2020) {
   include profile::consul
   @consul::service { 'caddy_exporter':
     port => $port,
