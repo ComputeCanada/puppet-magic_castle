@@ -38,19 +38,40 @@ class profile::prometheus::node_exporter {
 # - job power gpu
 # This exporter needs to run on compute nodes.
 # @param version The version of the slurm job exporter to install
-class profile::prometheus::slurm_job_exporter (String $version) {
+class profile::prometheus::slurm_job_exporter (
+  String $version,
+  String $nvidia_ml_py_version = '11.515.75',
+) {
   @consul::service { 'slurm-job-exporter':
     port => 9798,
     tags => ['slurm', 'exporter'],
   }
 
   $el = $facts['os']['release']['major']
+  ensure_packages(['python3'], { ensure => 'present' })
   package { 'python3-prometheus_client':
     require => Yumrepo['epel'],
   }
   package { 'slurm-job-exporter':
     source   => "https://github.com/guilbaults/slurm-job-exporter/releases/download/v${version}/slurm-job-exporter-${version}-1.el${el}.noarch.rpm",
     provider => 'yum',
+  }
+
+  if $facts['nvidia_gpu_count'] > 0 and profile::is_grid_vgpu() {
+    # Used by slurm-job-exporter to export GPU metrics
+    # DCGM does not work with GRID VGPU, most of the stats are missing
+    ensure_packages(['python3-pip'], { ensure => 'present' })
+    $py3_version = lookup('os::redhat::python3::version')
+
+    exec { 'pip install nvidia-ml-py':
+      command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==${nvidia_ml_py_version}",
+      creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
+      notify  => Service['slurm-job-exporter'],
+      require => [
+        Package['python3'],
+        Package['python3-pip'],
+      ],
+    }
   }
 
   service { 'slurm-job-exporter':
