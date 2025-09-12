@@ -347,5 +347,5 @@ class profile::gpu::services {
   }
 
   Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
-  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Exec[$gpu_services]
+  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Service[$gpu_services]
 }
