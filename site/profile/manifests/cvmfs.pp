@@ -19,7 +19,7 @@ class profile::cvmfs::client (
     baseurl             => 'http://cvmrepo.s3.cern.ch/cvmrepo/yum/cvmfs/EL/$releasever/$basearch/ http://cvmrepo.web.cern.ch/cvmrepo/yum/cvmfs/EL/$releasever/$basearch/',
     skip_if_unavailable => true,
     gpgcheck            => 1,
-    gpgkey              => 'http://cvmrepo.s3.cern.ch/cvmrepo/RPM-GPG-KEY-CernVM-2048',
+    gpgkey              => 'http://cvmrepo.s3.cern.ch/cvmrepo/yum/RPM-GPG-KEY-CernVM-2048',
     repo_gpgcheck       => 1,
     protect             => 1,
   }
