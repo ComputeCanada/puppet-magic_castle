@@ -26,27 +26,27 @@ class profile::ssh::base (
   }
 
   file { '/etc/ssh/ssh_host_ed25519_key':
-    mode  => '0640',
+    mode  => '0600',
     owner => 'root',
-    group => 'ssh_keys',
+    group => 'root',
   }
 
   file { '/etc/ssh/ssh_host_ed25519_key.pub':
     mode  => '0644',
     owner => 'root',
-    group => 'ssh_keys',
+    group => 'root',
   }
 
   file { '/etc/ssh/ssh_host_rsa_key':
-    mode  => '0640',
+    mode  => '0600',
     owner => 'root',
-    group => 'ssh_keys',
+    group => 'root',
   }
 
   file { '/etc/ssh/ssh_host_rsa_key.pub':
     mode  => '0644',
     owner => 'root',
-    group => 'ssh_keys',
+    group => 'root',
   }
 
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
