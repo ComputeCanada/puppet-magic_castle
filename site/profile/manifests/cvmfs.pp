@@ -13,16 +13,20 @@ class profile::cvmfs::client (
   $alien_folder_name_raw = lookup('profile::cvmfs::alien_cache::alien_folder_name', undef, undef, 'cvmfs_alien_cache')
   $alien_folder_name = regsubst($alien_folder_name_raw, '^/|/$', '', 'G')
 
-  package { 'cvmfs-repo':
-    ensure   => 'installed',
-    provider => 'rpm',
-    name     => 'cvmfs-release-3-2.noarch',
-    source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
+  yumrepo { 'cvmfs-repo':
+    enabled             => true,
+    descr               => 'CernVM packages',
+    baseurl             => 'http://cvmrepo.s3.cern.ch/cvmrepo/yum/cvmfs/EL/$releasever/$basearch/ http://cvmrepo.web.cern.ch/cvmrepo/yum/cvmfs/EL/$releasever/$basearch/',
+    skip_if_unavailable => true,
+    gpgcheck            => 1,
+    gpgkey              => 'http://cvmrepo.s3.cern.ch/cvmrepo/RPM-GPG-KEY-CernVM-2048',
+    repo_gpgcheck       => 1,
+    protect             => 1,
   }
 
   package { 'cvmfs':
     ensure  => 'installed',
-    require => [Package['cvmfs-repo']],
+    require => [Yumrepo['cvmfs-repo']],
   }
 
   file { $cvmfs_root:
