@@ -7,7 +7,6 @@ class profile::metrix {
   $base_dn = join(split($int_domain_name, '[.]').map |$dc| { "dc=${dc}" }, ',')
 
   class { 'metrix':
-    root_api_token  => lookup('metrix::root_api_token'),
     password        => lookup('metrix::password'),
     prometheus_ip   => lookup('metrix::prometheus_ip'),
     prometheus_port => lookup('metrix::prometheus_port'),

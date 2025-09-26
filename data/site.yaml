@@ -42,7 +42,6 @@ magic_castle::site::tags:
     - profile::slurm::accounting
     - profile::accounts
     - profile::nfs
-    - metrix::slurm_jobscripts
     - profile::metrix
   node:
     - profile::gpu
