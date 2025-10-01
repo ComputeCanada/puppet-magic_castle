@@ -177,6 +177,10 @@ class profile::ssh::hostbased_auth::server (
 class profile::ssh::hostbased_auth::client {
   include profile::ssh::known_hosts
 
+  if versioncmp($::facts['os']['release']['major'], '10') == 0 {
+    ensure_packages(['openssh-keysign'], { ensure => 'present' })
+  }
+
   ssh_config { 'EnableSSHKeysign':
     ensure => present,
     host   => '*',
