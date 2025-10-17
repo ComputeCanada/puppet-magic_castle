@@ -761,6 +761,21 @@ class profile::slurm::node (
     ],
   }
 
+  # If the Slurm SuspendProgram has failed for any reason
+  # during a node power off, it is possible that the node will
+  # still be online, with slurmd running, but the controller will
+  # ignore it until slurmd is restarted. This exec check if the
+  # controller thinks the node is powered off or non responsive
+  # and if it is the case, it restarts slurmd so the state in
+  # in slurmctld can be properly refreshed.
+  $hostname = $facts['networking']['hostname']
+  exec { 'slurmd_state_invalid_restart':
+    command => 'systemctl restart slurmd',
+    onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
+    path    => ['/usr/bin', '/opt/software/slurm/bin'],
+    require => Service['slurmd'],
+  }
+
   logrotate::rule { 'slurmd':
     path         => '/var/log/slurm/slurmd.log',
     rotate       => 5,
