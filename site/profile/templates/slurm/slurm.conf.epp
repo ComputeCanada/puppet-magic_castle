@@ -48,7 +48,7 @@ SuspendExcNodes=<%= $suspend_exc_nodes %>
 <% } -%>
 
 SchedulerParameters=salloc_wait_nodes
-SlurmctldParameters=idle_on_node_suspend
+SlurmctldParameters=idle_on_node_suspend,power_save_interval=30
 DebugFlags=Power
 
 # PARTITION CONFIGURATIONS
