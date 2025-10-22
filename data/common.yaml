@@ -288,7 +288,7 @@ profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')
 
 profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
-profile::slurm::controller::autoscale_version: '0.7.0'
+profile::slurm::controller::autoscale_version: '0.8.0'
 profile::slurm::node::enable_tmpfs_mounts: true
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'

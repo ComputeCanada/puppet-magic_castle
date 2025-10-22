@@ -1034,6 +1034,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `enable_scrontab`       | Enable user's Slurm-managed crontab | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
+| `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
 
 <details>
 <summary>default values</summary>
