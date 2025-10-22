@@ -18,6 +18,7 @@ class profile::slurm::base (
   Boolean $enable_x11_forwarding = true,
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
+  Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
 )
 {
   include epel
@@ -238,6 +239,7 @@ class profile::slurm::base (
         'partitions'            => $partitions,
         'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
         'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
+        'log_level'             => $log_level,
       }),
     group   => 'slurm',
     owner   => 'slurm',

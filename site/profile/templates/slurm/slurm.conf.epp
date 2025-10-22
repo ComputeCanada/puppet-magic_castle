@@ -61,9 +61,9 @@ PartitionName=<%= $name %> Nodes=<%= join($values['nodes'], ',') %>
 
 SlurmdPort=6818
 
-SlurmctldDebug=debug
+SlurmctldDebug=<%= $log_level %>
 SlurmctldLogFile=/var/log/slurm/slurmctld.log
-SlurmdDebug=debug
+SlurmdDebug=<%= $log_level %>
 SlurmdLogFile=/var/log/slurm/slurmd.log
 
 SlurmctldPidFile=/var/run/slurmctld/slurmctld.pid
