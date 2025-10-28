@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+import xml.etree.ElementTree as et
+import sys
+
+PUPPET_MODULE=""
+
+def parse_pdk_validate_results() -> et.ElementTree:
+    """
+    Parse the xml file and return the tree
+
+    Returns:
+        et.ElementTree: The parsed tree
+    """
+    tree = et.parse(sys.stdin)
+    return tree
+
+def add_annotation(testcase:et.Element):
+    """
+    Writes Github commands to stdout to add annotations to the Github Actions
+
+    Args:
+        testcase (et.Element): The testcase to add the annotation for
+    """
+    check=testcase[0].get("classname")
+    file,line,column=testcase[0].get("name").split(":")
+    kind="error" if testcase[1].get("type")=="error" else "warning"
+    message=testcase[1].get("message")
+    print(f"::{kind} file={PUPPET_MODULE}/{file},line={line},col={column},title={check}::{message}")
+
+def scan_testcases(only_errors:bool):
+    """
+    Scan the test cases
+
+    Args:
+        only_errors (bool): Only scan for errors
+    """
+    root = parse_pdk_validate_results().getroot()
+    
+    for testcase in root.iter("testcase"):
+        failure = testcase.find("failure")
+        if failure is None:
+            continue
+        if only_errors and failure.get("type")!="error":
+            continue
+        add_annotation([testcase, failure])
+
+def main(only_errors):
+    scan_testcases(only_errors)
+
+if __name__ == "__main__":
+    if "--module" in sys.argv:
+        PUPPET_MODULE=sys.argv[sys.argv.index("--module")+1]
+    main(sys.argv[1]=="--only-errors")
