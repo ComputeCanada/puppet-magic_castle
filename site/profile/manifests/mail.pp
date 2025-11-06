@@ -62,6 +62,7 @@ class profile::mail::relayhost {
     smtp_listen      => 'all',
     manage_mailx     => false,
     manage_conffiles => false,
+    manage_mailname  => false,
   }
 
   postfix::config { 'myhostname':
