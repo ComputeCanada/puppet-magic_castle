@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.0.1] UNRELEASED
+
+### Changed
+- Fixed issue #471 - /etc/mailname was declared twice on relayhost.
+
 ## [15.0.0] 2025-10-22
 
 ### Added
