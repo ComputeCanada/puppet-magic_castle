@@ -16,7 +16,10 @@ jobs:
         run: |
           sudo nft flush ruleset
       - name: Init incus
-        run: sudo incus admin init --auto
+        run: |
+          sudo incus admin init --auto
+          sudo adduser $USER incus-admin
+          newgrp incus-admin
       - name: Download Magic Castle Incus
         run: |
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
