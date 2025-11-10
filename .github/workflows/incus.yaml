@@ -18,7 +18,7 @@ jobs:
       - name: Init incus
         run: |
           sudo incus admin init --auto
-          sudo adduser $USER incus-admin
+          sudo adduser runner incus-admin
           newgrp incus-admin
       - name: Download Magic Castle Incus
         run: |
@@ -27,8 +27,8 @@ jobs:
       - name: Init and apply
         run: |
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
-          ls -la /usr/lib/systemd/system
+          ls -la /var/lib/incus/
           id
           groups
-          terraform init
-          terraform apply -auto-approve
+          sudo terraform init
+          sudo terraform apply -auto-approve
