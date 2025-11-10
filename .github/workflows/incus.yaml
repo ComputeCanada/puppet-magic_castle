@@ -20,6 +20,7 @@ jobs:
       - name: Download Magic Castle Incus
         run: |
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
+          curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
       - name: Init and apply
         run: |
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
