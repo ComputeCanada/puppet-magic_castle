@@ -28,3 +28,31 @@ jobs:
           sudo chgrp runner /var/lib/incus/unix.socket
           terraform init
           terraform apply -auto-approve
+      - name: Wait for puppet catalog to be applied
+        timeout-minutes: 15
+        run: |
+          for nodename in $(incus list -c n -f csv); do
+            PUPPET_APPLIED=0
+            echo -n $nodename
+            until $PUPPET_APPLIED; do
+              incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"
+              PUPPET_APPLIED=$?
+              echo -n .
+              sleep 10
+            done
+            echo
+          done
+      - name: Verify Puppet catalog for errors
+        run: |
+          SUCCESSFUL=0
+          for nodename in $(incus list -c n -f csv); do
+            incus exec $nodename -- journalctl -u puppet | grep "failed dependencies"
+            if $?; then
+              echo "### ${nodename}" >> $GITHUB_STEP_SUMMARY
+              echo "```"
+              incus exec $nodename -- journalctl -u puppet >> $GITHUB_STEP_SUMMARY
+              echo "```"
+              SUCCESSFUL=1
+            fi
+          done
+          exit $SUCCESSFUL
