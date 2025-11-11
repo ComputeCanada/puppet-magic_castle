@@ -46,11 +46,11 @@ jobs:
           SUCCESSFUL=0
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
-            if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies"; then
+            if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
               echo "### ${nodename}" >> $GITHUB_STEP_SUMMARY
-              echo "```"
+              echo '```' >> $GITHUB_STEP_SUMMARY
               incus exec $nodename -- journalctl -u puppet >> $GITHUB_STEP_SUMMARY
-              echo "```"
+              echo '```' >> $GITHUB_STEP_SUMMARY
               SUCCESSFUL=1
             fi
           done
