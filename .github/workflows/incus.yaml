@@ -35,6 +35,10 @@ jobs:
           for nodename in $(incus list -c n -f csv); do
             PUPPET_APPLIED=1
             echo -n $nodename
+            for i in "1 2 3 4 5"; do
+              incus exec $nodename -- journalctl -u puppet
+              sleep 10
+            done
             # until [ $PUPPET_APPLIED -eq 0 ]; do
             #   incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"
             #   PUPPET_APPLIED=$?
