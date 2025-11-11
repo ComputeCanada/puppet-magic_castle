@@ -30,7 +30,7 @@ jobs:
           terraform apply -auto-approve
       - name: Wait for puppet catalog to be applied
         continue-on-error: true
-        timeout-minutes: 15
+        timeout-minutes: 10
         run: |
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
@@ -46,8 +46,7 @@ jobs:
           SUCCESSFUL=0
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
-            incus exec $nodename -- journalctl -u puppet | grep "failed dependencies"
-            if $?; then
+            if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies"; then
               echo "### ${nodename}" >> $GITHUB_STEP_SUMMARY
               echo "```"
               incus exec $nodename -- journalctl -u puppet >> $GITHUB_STEP_SUMMARY
