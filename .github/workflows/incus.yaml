@@ -33,9 +33,9 @@ jobs:
         run: |
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
-            PUPPET_APPLIED=0
+            PUPPET_APPLIED=1
             echo -n $nodename
-            until $PUPPET_APPLIED; do
+            until [ $PUPPET_APPLIED -eq 0 ]; do
               incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"
               PUPPET_APPLIED=$?
               echo -n .
