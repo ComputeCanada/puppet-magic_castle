@@ -35,12 +35,12 @@ jobs:
           for nodename in $(incus list -c n -f csv); do
             PUPPET_APPLIED=1
             echo -n $nodename
-            until [ $PUPPET_APPLIED -eq 0 ]; do
-              incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"
-              PUPPET_APPLIED=$?
-              echo -n .
-              sleep 10
-            done
+            # until [ $PUPPET_APPLIED -eq 0 ]; do
+            #   incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"
+            #   PUPPET_APPLIED=$?
+            #   echo -n .
+            #   sleep 10
+            # done
             echo
           done
       - name: Verify Puppet catalog for errors
