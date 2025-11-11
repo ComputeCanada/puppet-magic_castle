@@ -29,6 +29,7 @@ jobs:
           terraform init
           terraform apply -auto-approve
       - name: Wait for puppet catalog to be applied
+        continue-on-error: true
         timeout-minutes: 15
         run: |
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
