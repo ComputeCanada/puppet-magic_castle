@@ -31,6 +31,7 @@ jobs:
       - name: Wait for puppet catalog to be applied
         timeout-minutes: 15
         run: |
+          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
             PUPPET_APPLIED=0
             echo -n $nodename
@@ -45,6 +46,7 @@ jobs:
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
+          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
             incus exec $nodename -- journalctl -u puppet | grep "failed dependencies"
             if $?; then
