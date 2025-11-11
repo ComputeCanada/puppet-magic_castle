@@ -24,11 +24,7 @@ jobs:
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
       - name: Init and apply
         run: |
-          sudo adduser runner incus-admin
-          newgrp incus-admin
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
-          sudo ls -la /var/lib/incus/
-          id
-          groups
+          sudo chgrp runner /var/lib/incus/unix.socket
           terraform init
           terraform apply -auto-approve
