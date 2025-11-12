@@ -16,6 +16,7 @@ jobs:
         run: |
           sudo nft flush ruleset
           sudo aa-teardown &> /dev/null || true
+          sudo systemctl disable --now apparmor.service
       - name: Init incus
         run: |
           sudo incus admin init --auto
@@ -62,6 +63,6 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
             incus exec $nodename -- journalctl -u puppet >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-            echo -e '\n</details>' >> $GITHUB_STEP_SUMMARY
+            echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
           done
           exit $SUCCESSFUL
