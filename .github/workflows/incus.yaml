@@ -43,6 +43,10 @@ jobs:
             done
             echo
           done
+      - name: Setup upterm session
+        uses: owenthereal/action-upterm@v1
+        with:
+          limit-access-to-actor: true
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
@@ -69,7 +73,3 @@ jobs:
             echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
           done
           exit $SUCCESSFUL
-      - name: Setup upterm session
-        uses: owenthereal/action-upterm@v1
-        with:
-          limit-access-to-actor: true
