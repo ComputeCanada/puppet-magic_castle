@@ -30,10 +30,6 @@ jobs:
           sudo chgrp runner /var/lib/incus/unix.socket
           terraform init
           terraform apply -auto-approve
-      - name: Setup upterm session
-        uses: owenthereal/action-upterm@v1
-        with:
-          limit-access-to-actor: true
       - name: Wait for puppet catalog to be applied
         continue-on-error: true
         timeout-minutes: 15
@@ -47,10 +43,6 @@ jobs:
             done
             echo
           done
-      - name: Setup upterm session
-        uses: owenthereal/action-upterm@v1
-        with:
-          limit-access-to-actor: true
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
@@ -59,7 +51,7 @@ jobs:
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
             if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
               echo " FAILED" >> $GITHUB_STEP_SUMMARY
-              echo '#### failures'
+              echo '#### failures' >> $GITHUB_STEP_SUMMARY
               echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
               incus exec $nodename -- journalctl -u puppet -p3..4 >> $GITHUB_STEP_SUMMARY
@@ -69,7 +61,7 @@ jobs:
             else
               echo
             fi
-            echo #### successes
+            echo #### successes >> $GITHUB_STEP_SUMMARY
             echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             incus exec $nodename -- journalctl -u puppet -p5..5 >> $GITHUB_STEP_SUMMARY
@@ -77,3 +69,7 @@ jobs:
             echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
           done
           exit $SUCCESSFUL
+      - name: Setup upterm session
+        uses: owenthereal/action-upterm@v1
+        with:
+          limit-access-to-actor: true
