@@ -62,6 +62,6 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
             incus exec $nodename -- journalctl -u puppet >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-            echo -e \n</details>' >> $GITHUB_STEP_SUMMARY
+            echo -e '\n</details>' >> $GITHUB_STEP_SUMMARY
           done
           exit $SUCCESSFUL
