@@ -55,7 +55,7 @@ jobs:
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
             if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
               echo " FAILED" >> $GITHUB_STEP_SUMMARY
-              echo '#### failures
+              echo '#### failures'
               echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
               incus exec $nodename -- journalctl -u puppet -p3..4 >> $GITHUB_STEP_SUMMARY
