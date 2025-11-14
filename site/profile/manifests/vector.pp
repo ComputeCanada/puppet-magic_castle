@@ -6,7 +6,7 @@ class profile::vector (
   yumrepo { 'vector':
     ensure        => present,
     enabled       => true,
-    baseurl       => "https://yum.vector.dev/stable/vector-0/${::facts['architecture']}/",
+    baseurl       => "https://yum.vector.dev/stable/vector-0/${::facts['os']['architecture']}/",
     gpgcheck      => 1,
     gpgkey        => [
       'https://keys.datadoghq.com/DATADOG_RPM_KEY_CURRENT.public',
