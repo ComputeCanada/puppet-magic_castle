@@ -17,5 +17,12 @@ function profile::generate_slurm_node_line($name, $attr, $comp_weight) >> String
     $gres = 'gpu:0'
   }
   $weight = pick($attr['specs']['weight'], $comp_weight)
-  "NodeName=${name} CPUs=${attr['specs']['cpus']} RealMemory=${attr['specs']['ram']} Gres=${gres} Weight=${weight}"
+  if $attr['specs']['features'] and ! $attr['specs']['features'].empty {
+    $features = $attr['specs']['features'].join(',')
+    $features_option = "Features=${features}"
+  }
+  else {
+    $features_option = ''
+  }
+  "NodeName=${name} CPUs=${attr['specs']['cpus']} RealMemory=${attr['specs']['ram']} Gres=${gres} Weight=${weight} ${features_option}"
 }
