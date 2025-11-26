@@ -491,8 +491,8 @@ class profile::freeipa::server (
     ],
   }
 
-  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
-  Service <| tag == profile::freeipa |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
+  Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
 
 class profile::freeipa::mokey (
