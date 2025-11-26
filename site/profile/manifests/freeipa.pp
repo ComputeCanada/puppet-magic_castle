@@ -358,10 +358,7 @@ class profile::freeipa::server (
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
     try_sleep => 10,
-    require   => [
-      Exec['ipa_server_base_config'],
-      Exec['ipa-install'],
-    ],
+    require   => Service['certmonger'],
   }
 
   $instances = lookup('terraform.instances')
@@ -404,6 +401,12 @@ class profile::freeipa::server (
     ensure  => running,
     enable  => true,
     restart => '/usr/bin/systemctl reload httpd',
+    require => Exec['ipa-install'],
+  }
+
+  service { 'certmonger':
+    ensure  => running,
+    enable  => true,
     require => Exec['ipa-install'],
   }
 
