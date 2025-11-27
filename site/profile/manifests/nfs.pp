@@ -11,7 +11,7 @@ class profile::nfs (String $domain) {
 
 class profile::nfs::client (
   String $server_ip,
-  Optional[Array[String]] $share_names = undef,
+  Optional[Array[String]] $share_names = [],
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
@@ -22,12 +22,9 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
-  if $share_names == undef {
-    $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
-    $shares_to_mount = keys($nfs_volumes)
-  } else {
-    $shares_to_mount = $share_names
-  }
+  $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
+  $shares_to_mount = keys($nfs_volumes) + $share_names
+
 
   $self_volumes = lookup('terraform.self.volumes')
   if $facts['virtual'] =~ /^(container|lxc).*$/ {
@@ -70,7 +67,7 @@ class profile::nfs::client (
 class profile::nfs::server (
   Array[String] $no_root_squash_tags = ['mgmt'],
   Boolean $enable_client_quotas = false,
-  Optional[Array[String]] $export_paths = undef,
+  Optional[Array[String]] $export_paths = [],
 ) {
   include profile::volumes
 
@@ -119,18 +116,14 @@ class profile::nfs::server (
     notify => Service[$nfs::server_service_name],
   }
 
-  if $export_paths == undef {
-    $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
-    if $devices =~ Hash[String, Hash] {
-      $export_path_list = $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
-    } else {
-      $export_path_list = []
-    }
+  $devices = lookup('terraform.self.volumes.nfs', Hash, undef, {})
+  if $devices =~ Hash[String, Hash] {
+    $export_path_list = $export_paths + $devices.map | String $key, $glob | { "/mnt/nfs/${key}" }
   } else {
-    $export_paths.each |$path| {
-      ensure_resource('file', $path, { ensure => directory, before => Nfs::Server::Export[$path] })
-    }
     $export_path_list = $export_paths
+  }
+  $export_paths.each |$path| {
+    ensure_resource('file', $path, { ensure => directory, before => Nfs::Server::Export[$path] })
   }
 
   if $export_path_list {
