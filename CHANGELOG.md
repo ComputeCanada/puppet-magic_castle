@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.1.0] UNRELEASED
+
+### Added
+- Added parameter ldapclient_domain (PR #470)
+- Added support for Features in the node list. Comes from the instances list in terraform file (PR #479)
+- Added option to configure puppetserver params that have impact on RAM (PR #482)
+
+### Changed
+
+- Made export_paths and share_names *additive* lists instead of replacing resources configured from terraform (PR #478)
+- Fixed issue #480 - 389 LDAP service can crash and puppet won't restart it (PR #481)
+- Replaced facts['architecture'] by facts['os']['architecture'] (PR #477)
+
+### Removed
+- Removed puppet-yum from Puppetfile (PR #483)
+
 ## [15.0.1] 2025-11-07
 
 ### Changed
