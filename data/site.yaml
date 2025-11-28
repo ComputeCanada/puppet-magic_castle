@@ -29,7 +29,7 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::nfs
     - profile::software_stack
-    - swap_file
+    - profile::swap
   mgmt:
     - mysql::server
     - prometheus::server
@@ -44,7 +44,7 @@ magic_castle::site::tags:
     - profile::nfs
     - metrix::slurm_jobscripts
     - profile::metrix
-    - swap_file
+    - profile::swap
   node:
     - profile::gpu
     - profile::jupyterhub::node
@@ -66,4 +66,4 @@ magic_castle::site::tags:
     - profile::efa
   puppet:
     - profile::puppetserver
-    - swap_file
+    - profile::swap
