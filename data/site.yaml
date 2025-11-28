@@ -16,7 +16,6 @@ magic_castle::site::all:
   - profile::prometheus::node_exporter
   - profile::rsyslog::client
   - profile::volumes
-  - swap_file
   - profile::mail
 
 magic_castle::site::tags:
@@ -30,6 +29,7 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::nfs
     - profile::software_stack
+    - swap_file
   mgmt:
     - mysql::server
     - prometheus::server
@@ -44,6 +44,7 @@ magic_castle::site::tags:
     - profile::nfs
     - metrix::slurm_jobscripts
     - profile::metrix
+    - swap_file
   node:
     - profile::gpu
     - profile::jupyterhub::node
@@ -65,3 +66,4 @@ magic_castle::site::tags:
     - profile::efa
   puppet:
     - profile::puppetserver
+    - swap_file
