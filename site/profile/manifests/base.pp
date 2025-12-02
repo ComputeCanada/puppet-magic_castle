@@ -123,6 +123,11 @@ class profile::base (
   file { glob('/tmp/terraform_*.sh'):
     ensure => absent,
   }
+
+  sysctl { 'kernel.dmesg_restrict':
+    ensure => 'present',
+    value  => 1,
+  }
 }
 
 class profile::base::azure {
