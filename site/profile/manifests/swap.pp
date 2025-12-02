@@ -1,5 +1,6 @@
 class profile::swap (
   String $size = '1 GB',
+  Integer $swappiness = 10,
 ) {
   if $facts['virtual'] !~ /^(container|lxc).*$/ {
     if '/mnt/ephemeral0' in $facts['mountpoints'] {
@@ -12,6 +13,10 @@ class profile::swap (
       ensure       => present,
       swapfile     => $swapfile,
       swapfilesize => $swapfilesize,
+    }
+    sysctl { 'vm.swappiness':
+      ensure => 'present',
+      value  => $swappiness,
     }
   }
 }
