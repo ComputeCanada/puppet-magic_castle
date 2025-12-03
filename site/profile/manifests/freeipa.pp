@@ -491,6 +491,16 @@ class profile::freeipa::server (
     ],
   }
 
+  exec { 'enable-accesslog-compress':
+    command => Sensitive("sconf -w ${ds_password} -D \"cn=Directory Manager\" ldap://${fqdn} logging access set compress-enabled"),
+    unless  => "grep -o 'nsslapd-accesslog-compress: on' ${ds_file}",
+    path    => ['/usr/sbin', '/usr/bin', '/bin'],
+    require => [
+      Service["dirsrv@${ds_domain}"],
+      Exec['reset ds password'],
+    ],
+  }
+
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 }
