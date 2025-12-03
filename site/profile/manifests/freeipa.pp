@@ -227,6 +227,11 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
+  file { '/etc/ipa/dse-init.ldif':
+    source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
+    require => Package['ipa-server-dns'],
+  }
+
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     # Fix FreeIPA issue adding 2 minutes of wait time for nothing
     # https://pagure.io/freeipa/issue/9358
@@ -277,6 +282,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${ipa_domain} \
+    --dirsrv-config-file=/etc/ipa/dse-init.ldif \
     --no_hbac_allow
     | IPASERVERINSTALL
 
@@ -287,6 +293,7 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
+      File['/etc/ipa/dse-init.ldif']
     ],
     notify  => [
       Service['systemd-logind'],
