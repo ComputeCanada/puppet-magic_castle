@@ -227,6 +227,11 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
+  file { '/etc/ipa/dse-init.ldif':
+    source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
+    require => Package['ipa-server-dns'],
+  }
+
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     # Fix FreeIPA issue adding 2 minutes of wait time for nothing
     # https://pagure.io/freeipa/issue/9358
@@ -277,6 +282,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${ipa_domain} \
+    --dirsrv-config-file=/etc/ipa/dse-init.ldif
     --no_hbac_allow
     | IPASERVERINSTALL
 
@@ -287,6 +293,7 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
+      File['/etc/ipa/dse-init.ldif']
     ],
     notify  => [
       Service['systemd-logind'],
@@ -491,15 +498,15 @@ class profile::freeipa::server (
     ],
   }
 
-  exec { 'enable-accesslog-compress':
-    command => Sensitive("sconf -w ${ds_password} -D \"cn=Directory Manager\" ldap://${fqdn} logging access set compress-enabled"),
-    unless  => "grep -o 'nsslapd-accesslog-compress: on' ${ds_file}",
-    path    => ['/usr/sbin', '/usr/bin', '/bin'],
-    require => [
-      Service["dirsrv@${ds_domain}"],
-      Exec['reset ds password'],
-    ],
-  }
+  # exec { 'enable-accesslog-compress':
+  #   command => Sensitive("sconf -w ${ds_password} -D \"cn=Directory Manager\" ldap://${fqdn} logging access set compress-enabled"),
+  #   unless  => "grep -o 'nsslapd-accesslog-compress: on' ${ds_file}",
+  #   path    => ['/usr/sbin', '/usr/bin', '/bin'],
+  #   require => [
+  #     Service["dirsrv@${ds_domain}"],
+  #     Exec['reset ds password'],
+  #   ],
+  # }
 
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
