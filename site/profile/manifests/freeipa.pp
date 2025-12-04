@@ -282,7 +282,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${ipa_domain} \
-    --dirsrv-config-file=/etc/ipa/dse-init.ldif
+    --dirsrv-config-file=/etc/ipa/dse-init.ldif \
     --no_hbac_allow
     | IPASERVERINSTALL
 
