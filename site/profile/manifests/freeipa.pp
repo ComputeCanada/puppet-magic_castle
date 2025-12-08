@@ -493,6 +493,21 @@ class profile::freeipa::server (
 
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
+
+  logrotate::rule { 'pki-tomcat':
+    path         => '/var/log/pki/pki-tomcat/ca/*.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0640',
+    create_owner => 'pkiuser',
+    create_group => 'pkiuser',
+    postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  }
 }
 
 class profile::freeipa::mokey (
