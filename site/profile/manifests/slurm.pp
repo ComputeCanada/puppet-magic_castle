@@ -707,7 +707,7 @@ class profile::slurm::node (
     }
     exec { 'slurm-nvidia_gres':
       command     => '/opt/software/slurm/bin/nvidia_gres.sh > /etc/slurm/gres.conf',
-      refreshonly => true,
+      unless      => "/opt/software/slurm/bin/nvidia_gres.sh | cmp -s - /etc/slurm/gres.conf",
       notify      => Service['slurmd'],
       subscribe   => [
         File['/opt/software/slurm/bin/nvidia_gres.sh'],
