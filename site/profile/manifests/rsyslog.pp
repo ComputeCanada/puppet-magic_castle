@@ -44,10 +44,25 @@ class profile::rsyslog::server {
   file { '/etc/rsyslog.d/98-remotelogs.conf':
     notify  => Service['rsyslog'],
     content => @(EOT)
-      $template RemoteLogs,"/var/log/%HOSTNAME%/%PROGRAMNAME%.log"
+      $template RemoteLogs,"/var/log/instances/%HOSTNAME%/%PROGRAMNAME%.log"
       if $fromhost-ip != '127.0.0.1' then -?RemoteLogs
       & stop
       |EOT
+  }
+
+  logrotate::rule { 'rsyslog_instances':
+    path         => '/var/log/instances/*/*.log',
+    rotate       => 5,
+    ifempty      => false,
+    copytruncate => false,
+    olddir       => false,
+    size         => '5M',
+    compress     => true,
+    create       => true,
+    create_mode  => '0600',
+    create_owner => 'root',
+    create_group => 'root',
+    postrotate   => '/usr/bin/systemctl kill -s HUP rsyslog.service  >/dev/null 2>&1 || true',
   }
 
   file_line { 'rsyslog_modload_imtcp':
