@@ -494,7 +494,6 @@ class profile::freeipa::server (
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 
-  
   logrotate::rule { 'pki-tomcat':
     path         => '/var/log/pki/pki-tomcat/ca/*.log',
     rotate       => 5,
