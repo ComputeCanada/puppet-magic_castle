@@ -109,7 +109,7 @@ define profile::ceph::client::share (
 
   $bind_mounts.each |$mount| {
     file { $mount['dst']:
-      ensure  => pick($mount['type'], 'directory'),
+      ensure => pick($mount['type'], 'directory'),
     }
     mount { $mount['dst']:
       ensure  => 'mounted',

@@ -172,7 +172,7 @@ define profile::volumes::volume (
     $facts['mountpoints'][$bind_target_]['device'] == $dev_mapper_id
   ) {
     mount { $bind_target_:
-      ensure  => absent,
+      ensure => absent,
     }
   }
 
