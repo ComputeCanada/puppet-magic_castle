@@ -14,4 +14,4 @@ jobs:
       - name: Test with Rake
         run: |
           bundle exec rake test
-          local-tests/puppet-missing-files
+          local-tests/puppet-missing-files ./site
