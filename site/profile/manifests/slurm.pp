@@ -59,7 +59,7 @@ class profile::slurm::base (
   }
 
   package { 'munge':
-    ensure  => 'installed',
+    ensure => 'installed',
   }
 
   # Sometime /var/run/munge is not created.

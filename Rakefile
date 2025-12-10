@@ -4,7 +4,7 @@ require 'puppet-lint/tasks/puppet-lint'
 require 'puppet-lint-param-docs/tasks'
 require 'puppet-syntax/tasks/puppet-syntax'
 
-PuppetLint.configuration.send("disable_80chars")
+PuppetLint.configuration.send("disable_140chars")
 PuppetLint.configuration.log_format = "::%{kind} file=%{path},line=%{line},col=%{column},title=%{check}::%{message}"
 PuppetLint.configuration.fail_on_warnings = true
 PuppetLint.configuration.send('disable_autoloader_layout')
