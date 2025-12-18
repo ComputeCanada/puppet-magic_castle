@@ -627,7 +627,7 @@ class profile::freeipa::mokey (
         'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${lookup('terraform.data.domain_name')}/",
+        'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",
         'email_from'           => "admin@${lookup('terraform.data.domain_name')}",
       }
     ),
