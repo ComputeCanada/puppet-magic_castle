@@ -1,6 +1,6 @@
 class profile::puppetserver (
   Integer $jruby_max_active_instances = 1,
-  Integer $java_heap_size = 512,
+  Integer $java_heap_size = 1024,
 ) {
   $eyaml_path = '/opt/puppetlabs/puppet/bin/eyaml'
   $boot_private_key_path = '/etc/puppetlabs/puppet/eyaml/boot_private_key.pkcs7.pem'
