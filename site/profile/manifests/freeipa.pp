@@ -19,7 +19,7 @@ class profile::freeipa::base (String $ipa_domain) {
   }
 
   package { 'systemd':
-    ensure => 'latest',
+    ensure => present,
   }
 
   package { 'NetworkManager':
