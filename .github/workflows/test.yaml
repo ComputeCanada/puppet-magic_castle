@@ -9,9 +9,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.5'
+          ruby-version: '3.4'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Test with Rake
         run: |
           bundle exec rake test
-          local-tests/puppet-missing-files
+          local-tests/puppet-missing-files ./site

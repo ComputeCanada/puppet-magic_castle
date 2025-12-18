@@ -49,7 +49,7 @@ def get_paths(manifests):
 
     for line in manifests:
         try:
-            results = subprocess.check_output(["grep", "puppet:\/", line])
+            results = subprocess.check_output(["grep", "puppet:/", line])
         # we don't care if grep does not find any matches in a file
         except subprocess.CalledProcessError:
             pass
@@ -57,9 +57,9 @@ def get_paths(manifests):
             hits = results.splitlines()
 
             for hit in hits:
-                working_copy = hit.strip()
+                working_copy = hit.decode().strip()
                 # Exclude files with variables and things that aren't files
-                if re.search('\${?',working_copy):
+                if re.search(r'\${?',working_copy):
                     continue
                 if re.search('<%=',working_copy):
                     continue
@@ -97,12 +97,12 @@ def get_paths(manifests):
             hits = results.splitlines()
 
             for hit in hits:
-                working_copy = hit.strip()
-                if re.search('\${?',working_copy):
+                working_copy = hit.decode().strip()
+                if re.search(r'${?',working_copy):
                     continue
-                if re.search('<%=',working_copy):
+                if re.search(r'<%=',working_copy):
                     continue
-                quotesplit = re.compile("[\"']")
+                quotesplit = re.compile(r"[\"']")
                 working_copy = quotesplit.split(working_copy)
                 if len(working_copy) > 1:
                     working_copy = working_copy[1]
