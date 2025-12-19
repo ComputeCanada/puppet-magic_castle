@@ -73,7 +73,7 @@ class profile::base (
   exec { 'systemd-tmpfiles --create --prefix=/run/lock/subsys':
     unless => 'test -d /run/lock/subsys',
     path   => ['/bin'],
-    notify => Service['iptables'],
+    notify => [Service['iptables'], Service['ip6tables']],
   }
 
   firewall { '001 accept all from local network':
