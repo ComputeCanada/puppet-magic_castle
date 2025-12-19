@@ -273,7 +273,8 @@ define profile::users::local_user (
       key       => 'AuthenticationMethods',
       value     => $authenticationmethods,
       target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
-      notify    => Service['sshd']
+      notify    => Service['sshd'],
+      require   => File['/etc/ssh/sshd_config.d'],
     }
   }
 }
