@@ -6,6 +6,18 @@ class profile::ssh::base (
     enable => true,
   }
 
+  file { '/etc/ssh/sshd_config.d':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0700',
+  }
+
+  file { '/etc/ssh/sshd_config.d/50-cloud-init.conf':
+    ensure => absent,
+    notify => Service['sshd'],
+  }
+
   sshd_config { 'Include':
     ensure => present,
     value  => '/etc/ssh/sshd_config.d/*',
@@ -13,16 +25,20 @@ class profile::ssh::base (
   }
 
   sshd_config { 'PermitRootLogin':
-    ensure => present,
-    value  => 'no',
-    notify => Service['sshd'],
+    ensure  => present,
+    value   => 'no',
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d'],
   }
 
   $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
   sshd_config { 'PasswordAuthentication':
-    ensure => present,
-    value  => $password_auth,
-    notify => Service['sshd'],
+    ensure  => present,
+    value   => $password_auth,
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d'],
   }
 
   file { '/etc/ssh/ssh_host_ed25519_key':
@@ -67,11 +83,12 @@ class profile::ssh::base (
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
     file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
-      mode   => '0700',
-      owner  => 'root',
-      group  => 'root',
-      source => 'puppet:///modules/profile/base/opensshserver-9.config',
-      notify => Service['sshd'],
+      mode    => '0700',
+      owner   => 'root',
+      group   => 'root',
+      source  => 'puppet:///modules/profile/base/opensshserver-9.config',
+      notify  => Service['sshd'],
+      require => File['/etc/ssh/sshd_config.d'],
     }
   }
 
