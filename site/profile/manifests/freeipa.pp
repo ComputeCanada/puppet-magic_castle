@@ -79,33 +79,6 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
-  # We want to wait for the FreeIPA server to be fully configured
-  # before launching the FreeIPA client install. The mechanism we
-  # found thus far to validate the server is operational is to
-  # try to fetch the SSL certificate of the host ipa on port 443.
-  # We wait at most 20 minutes - polling every 10 seconds (polling_frequency)
-  # at most 120 times (max_retries). We chose 20 minutes as it
-  # the most time require to fully configure a node with the mgmt
-  # tag as of Magic Castle 15.
-  wait_for { 'ipa_https':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
-    exit_code         => 0,
-    polling_frequency => 10,
-    max_retries       => 120,
-    refreshonly       => true,
-    subscribe         => [
-      Package['ipa-client'],
-      Exec['ipa-client-uninstall_bad-hostname'],
-      Exec['ipa-client-uninstall_bad-server'],
-    ],
-  }
-
-  # Make sure heavy lifting operations are done before waiting on mgmt1
-  Package <| |> -> Wait_for['ipa_https']
-  Selinux::Module <| |> -> Wait_for['ipa_https']
-  Selinux::Boolean <| |> -> Wait_for['ipa_https']
-  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
-
   if length($fqdn) > 63 {
     fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
   }
@@ -133,18 +106,15 @@ class profile::freeipa::client (String $server_ip) {
     | IPACLIENTINSTALL
 
   exec { 'ipa-install':
-    command   => Sensitive($ipa_client_install_cmd),
-    tries     => 2,
-    try_sleep => 60,
-    require   => [
+    command => Sensitive($ipa_client_install_cmd),
+    require => [
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa_https'],
       Augeas['sssd.conf'],
     ],
-    creates   => '/etc/ipa/default.conf',
-    notify    => [
+    creates => '/etc/ipa/default.conf',
+    notify  => [
       Service['systemd-logind'],
       Service['sssd'],
     ],
@@ -522,6 +492,18 @@ class profile::freeipa::server (
     create_owner => 'pkiuser',
     create_group => 'pkiuser',
     postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  }
+
+  exec { 'signal_puppet_restart' :
+    command     => '/usr/local/bin/consul event -token=$(jq -r .acl.tokens.agent /etc/consul/config.json) -name=puppet $(date +%s)',
+    refreshonly => true,
+    subscribe   => [
+      Exec['ipa-install'],
+    ],
+    require     => [
+      Class['profile::consul'],
+      Service[$ipa_services],
+    ],
   }
 }
 
