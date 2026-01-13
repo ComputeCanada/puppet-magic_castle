@@ -79,10 +79,18 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
+  # We want to wait for the FreeIPA server to be fully configured
+  # before launching the FreeIPA client install. The mechanism we
+  # found thus far to validate the server is operational is to
+  # try to fetch the SSL certificate of the host ipa on port 443.
+  # We wait at most 20 minutes - polling every 10 seconds (polling_frequency)
+  # at most 120 times (max_retries). We chose 20 minutes as it
+  # the most time require to fully configure a node with the mgmt
+  # tag as of Magic Castle 15.
   wait_for { 'ipa_https':
     query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
-    polling_frequency => 5,
+    polling_frequency => 10,
     max_retries       => 120,
     refreshonly       => true,
     subscribe         => [
