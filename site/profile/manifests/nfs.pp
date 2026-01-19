@@ -25,7 +25,7 @@ class profile::nfs::client (
   $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
   $shares_to_mount = keys($nfs_volumes) + $share_names
   if $nfs_volumes != undef {
-     $shares_to_mount = keys($nfs_volumes) + $share_names
+    $shares_to_mount = keys($nfs_volumes) + $share_names
   }
 
 
