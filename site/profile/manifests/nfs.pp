@@ -11,7 +11,7 @@ class profile::nfs (String $domain) {
 
 class profile::nfs::client (
   String $server_ip,
-  Optional[Array[String]] $share_names = [],
+  Array[String] $share_names = [],
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
