@@ -1,10 +1,10 @@
 class profile::nfs (String $domain) {
-  $server_ip = lookup('profile::nfs::client::server_ip')
+  $server_ip = lookup('profile::nfs::client::server_ip', undef, undef, '')
   $ipaddress = lookup('terraform.self.local_ip')
 
   if $ipaddress == $server_ip {
     include profile::nfs::server
-  } else {
+  } elsif $server_ip != '' {
     include profile::nfs::client
   }
 }
