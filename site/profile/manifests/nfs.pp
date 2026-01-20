@@ -4,13 +4,13 @@ class profile::nfs (String $domain) {
 
   if $ipaddress == $server_ip {
     include profile::nfs::server
-  } elsif $server_ip != '' {
+  } elsif $server_ip =~ Stdlib::IP::Address::V4::Nosubnet {
     include profile::nfs::client
   }
 }
 
 class profile::nfs::client (
-  String $server_ip,
+  Stdlib::IP::Address::V4::Nosubnet $server_ip,
   Array[String] $share_names = [],
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
