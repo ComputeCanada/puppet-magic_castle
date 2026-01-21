@@ -213,14 +213,6 @@ class profile::freeipa::server (
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
-  include profile::base::etc_hosts
-  include profile::freeipa::base
-  include profile::sssd::client
-  include profile::users::ldap
-
-  if $enable_mokey {
-    include profile::freeipa::mokey
-  }
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
@@ -522,6 +514,15 @@ class profile::freeipa::server (
     create_owner => 'pkiuser',
     create_group => 'pkiuser',
     postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  }
+
+  include profile::base::etc_hosts
+  include profile::freeipa::base
+  include profile::sssd::client
+  include profile::users::ldap
+
+  if $enable_mokey {
+    include profile::freeipa::mokey
   }
 }
 
