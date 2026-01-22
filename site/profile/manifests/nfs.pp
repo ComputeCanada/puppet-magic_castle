@@ -1,17 +1,17 @@
 class profile::nfs (String $domain) {
-  $server_ip = lookup('profile::nfs::client::server_ip')
+  $server_ip = lookup('profile::nfs::client::server_ip', undef, undef, '')
   $ipaddress = lookup('terraform.self.local_ip')
 
   if $ipaddress == $server_ip {
     include profile::nfs::server
-  } else {
+  } elsif $server_ip =~ Stdlib::IP::Address::V4::Nosubnet {
     include profile::nfs::client
   }
 }
 
 class profile::nfs::client (
-  String $server_ip,
-  Optional[Array[String]] $share_names = [],
+  Stdlib::IP::Address::V4::Nosubnet $server_ip,
+  Array[String] $share_names = [],
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
@@ -21,10 +21,9 @@ class profile::nfs::client (
   }
 
   $instances = lookup('terraform.instances')
-  $nfs_server = Hash($instances.map| $key, $values | { [$values['local_ip'], $key] })[$server_ip]
-  $nfs_volumes = $instances.dig($nfs_server, 'volumes', 'nfs')
+  $nfs_server = $instances.filter| $key, $values | { $values['local_ip'] == $server_ip }.map | $key, $values | { $values }
+  $nfs_volumes = $nfs_server.get('0.volumes.nfs', {})
   $shares_to_mount = keys($nfs_volumes) + $share_names
-
 
   $self_volumes = lookup('terraform.self.volumes')
   if $facts['virtual'] =~ /^(container|lxc).*$/ {
