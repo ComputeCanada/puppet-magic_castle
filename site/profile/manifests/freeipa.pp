@@ -216,6 +216,13 @@ class profile::freeipa::server (
   Boolean $enable_mokey = true,
 ) {
 
+  file { '/etc/ipa':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
     source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
@@ -231,7 +238,7 @@ class profile::freeipa::server (
 
   file { '/etc/ipa/dse-init.ldif':
     source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
-    require => Package['ipa-server-dns'],
+    require => File['/etc/ipa'],
   }
 
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
@@ -337,7 +344,7 @@ class profile::freeipa::server (
 
   file { '/etc/ipa/ipa_server_base_config.py':
     content => $ipa_server_base_config,
-    require => Exec['ipa-install'],
+    require => File['/etc/ipa'],
   }
 
   exec { 'ipa_server_base_config':
@@ -384,6 +391,7 @@ class profile::freeipa::server (
         'hbac_services' => $hbac_services,
       }
     ),
+    require => File['/etc/ipa'],
   }
 
   exec { 'hbac_rules':
