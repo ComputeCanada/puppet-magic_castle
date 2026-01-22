@@ -101,10 +101,12 @@ class profile::freeipa::client (String $server_ip) {
   }
 
   # Make sure heavy lifting operations are done before waiting on mgmt1
+  Archive <| |> -> Wait_for['ipa_https']
   Package <| |> -> Wait_for['ipa_https']
   Selinux::Module <| |> -> Wait_for['ipa_https']
   Selinux::Boolean <| |> -> Wait_for['ipa_https']
   Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
+  Uv::Venv <| |> -> Wait_for['ipa_https']
 
   if length($fqdn) > 63 {
     fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
@@ -213,14 +215,6 @@ class profile::freeipa::server (
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
-  include profile::base::etc_hosts
-  include profile::freeipa::base
-  include profile::sssd::client
-  include profile::users::ldap
-
-  if $enable_mokey {
-    include profile::freeipa::mokey
-  }
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
@@ -522,6 +516,15 @@ class profile::freeipa::server (
     create_owner => 'pkiuser',
     create_group => 'pkiuser',
     postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  }
+
+  include profile::base::etc_hosts
+  include profile::freeipa::base
+  include profile::sssd::client
+  include profile::users::ldap
+
+  if $enable_mokey {
+    include profile::freeipa::mokey
   }
 }
 

@@ -8,9 +8,9 @@ lookup_options:
     merge: 'hash'
 
 magic_castle::site::all:
+  - profile::freeipa
   - profile::base
   - profile::consul
-  - profile::freeipa
   - profile::users::local
   - profile::sssd::client
   - profile::prometheus::node_exporter
