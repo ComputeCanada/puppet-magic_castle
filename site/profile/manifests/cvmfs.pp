@@ -16,8 +16,8 @@ class profile::cvmfs::client (
   package { 'cvmfs-repo':
     ensure   => 'installed',
     provider => 'rpm',
-    name     => 'cvmfs-release-3-2.noarch',
-    source   => 'https://ecsft.cern.ch/dist/cvmfs/cvmfs-release/cvmfs-release-3-2.noarch.rpm',
+    name     => 'cvmfs-release-7-2.noarch',
+    source   => 'http://cvmrepo.s3.cern.ch/cvmrepo/cvmfs-release/cvmfs-release-7-2.noarch.rpm',
   }
 
   package { 'cvmfs':
