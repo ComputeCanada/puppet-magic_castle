@@ -12,20 +12,22 @@ jobs:
       - name: Install incus
         run: |
           curl https://pkgs.zabbly.com/get/incus-stable | sudo sh -x
+      - name: Init incus
+        run: |
+          sudo incus admin init --auto
       - name: Reset the firewall and disable apparmor
         run: |
           sudo nft flush ruleset
           sudo aa-teardown &> /dev/null || true
           sudo systemctl disable --now apparmor.service
-      - name: Init incus
-        run: |
-          sudo incus admin init --auto
       - name: Download Magic Castle Incus
         run: |
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
       - name: Init and apply
         run: |
+          echo "/proc/sys/kernel/apparmor_restrict_unprivileged_unconfined"
+          sudo cat /proc/sys/kernel/apparmor_restrict_unprivileged_unconfined
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
           sudo chgrp runner /var/lib/incus/unix.socket
           terraform init
@@ -34,6 +36,8 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: |
+          echo "/proc/sys/kernel/apparmor_restrict_unprivileged_unconfined"
+          sudo cat /proc/sys/kernel/apparmor_restrict_unprivileged_unconfined
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
           for nodename in $(incus list -c n -f csv); do
             echo -n $nodename
