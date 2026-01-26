@@ -3,6 +3,53 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.1.0] UNRELEASED
+
+### Added
+- Added parameter ldapclient_domain (PR #470)
+- Added support for Features in the node list. Comes from the instances list in terraform file (PR #479)
+- Added option to configure puppetserver params that have impact on RAM (PR #482)
+
+### Changed
+
+- Made export_paths and share_names *additive* lists instead of replacing resources configured from terraform (PR #478)
+- Fixed issue #480 - 389 LDAP service can crash and puppet won't restart it (PR #481)
+- Replaced facts['architecture'] by facts['os']['architecture'] (PR #477)
+
+### Removed
+- Removed puppet-yum from Puppetfile (PR #483)
+
+## [15.0.1] 2025-11-07
+
+### Changed
+- Fixed issue #471 - /etc/mailname was declared twice on relayhost.
+
+## [15.0.0] 2025-10-22
+
+### Added
+- Added support for incus provider (PR #446)
+- Added a test for the existence of log subfolder before wiping in prepare4image.sh (PR #456)
+- Added documentation on setting up duo, cron, sudo, and haproxy (PR #417)
+- Added support for specifying bsoft, bhard, isoft, ihard quotas (PR #455)
+- Added support for client side quotas (PR #447)
+- Added configuration of the cvmfs root directory (PR #465)
+- Added service metrix (Trailblazing Turtle) via Puppetfile (PR #349)
+
+### Changed
+- Improved error handling in mkhome and mkproject and add chunking of user/group creation. (PR #450)
+- Had haveged installed only on Rocky/Alma 8. (PR #445)
+- Adapted puppet code to better support unprivileged containers (PR #457)
+- Disabled user limit setting when running in containers (PR #459)
+- Fixed usernames format when piping in modproject pipe (PR #461)
+- Email are now routed through a single relay host (PR #145)
+- Bumped cuda drivers to version currently used by the Alliance (PR #462)
+- Bumped puppet-jupyterhub to v7.0.1
+- Improved logic of daemons creating users, groups and folders (PR #454)
+
+### Removed
+- Removed pilot.eessi-hpc.org from cvmfs repository list (PR #458)
+
+
 ## [14.3.0] 2025-05-22
 
 ### Added

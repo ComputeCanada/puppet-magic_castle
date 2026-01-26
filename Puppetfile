@@ -27,7 +27,6 @@ mod 'puppet-selinux', '3.4.1'
 mod 'puppet-squid', '3.0.0'
 mod 'puppet-swap_file', '5.0.0'
 mod 'puppet-systemd', '3.10.0'
-mod 'puppet-yum', '6.2.0'
 mod 'puppetlabs-concat', '7.4.0'
 mod 'puppetlabs-firewall', '5.0.0'
 mod 'puppetlabs-inifile', '6.1.0'
@@ -42,5 +41,13 @@ mod 'treydock-globus', '9.0.0'
 mod 'saz-limits', '3.0.4'
 
 mod 'computecanada-jupyterhub',
-    :git => 'https://github.com/calculquebec/puppet-jupyterhub.git',
-    :ref => 'formation'
+    :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
+    :ref => 'v7.2.1'
+
+mod 'computecanada-metrix',
+    :git => 'https://github.com/ComputeCanada/puppet-metrix.git',
+    :ref => 'v1.0.3'
+
+mod 'computecanada-uv',
+    :git => 'https://github.com/ComputeCanada/puppet-uv.git',
+    :ref => 'v0.1.0'

@@ -49,7 +49,7 @@ class profile::ceph::client::install (
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
-    baseurl       => "https://download.ceph.com/${repo}/el${$::facts['os']['release']['major']}/${::facts['architecture']}/",
+    baseurl       => "https://download.ceph.com/${repo}/el${$::facts['os']['release']['major']}/${::facts['os']['architecture']}/",
     gpgcheck      => 1,
     gpgkey        => 'https://download.ceph.com/keys/release.asc',
     repo_gpgcheck => 0,
@@ -109,7 +109,7 @@ define profile::ceph::client::share (
 
   $bind_mounts.each |$mount| {
     file { $mount['dst']:
-      ensure  => pick($mount['type'], 'directory'),
+      ensure => pick($mount['type'], 'directory'),
     }
     mount { $mount['dst']:
       ensure  => 'mounted',

@@ -92,13 +92,6 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
-swap_file::files:
-  default:
-    ensure: "present"
-    swapfile: "/mnt/swap"
-    swapfilesize: "1 GB"
-
-
 mysql::server::remove_default_accounts: true
 mysql::server::override_options:
     mysqld:
@@ -288,7 +281,7 @@ profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')
 
 profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
-profile::slurm::controller::autoscale_version: '0.7.0'
+profile::slurm::controller::autoscale_version: '0.8.0'
 profile::slurm::node::enable_tmpfs_mounts: true
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
@@ -330,6 +323,7 @@ profile::reverse_proxy::subdomains:
   ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
+  metrix: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
@@ -345,3 +339,18 @@ profile::gpu::install::passthrough::packages:
   - nvidia-xconfig
   - nvidia-persistenced
   - nvidia-driver-cuda
+
+profile::prometheus::slurm_job_exporter::version: 0.4.9
+
+metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
+metrix::slurm_password: "%{alias('profile::slurm::accounting::password')}"
+metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
+metrix::prometheus_port: 9090
+metrix::db_ip: 127.0.0.1
+metrix::db_port: 3306
+metrix::install::version: 1.6.0
+metrix::subdomain: 'metrix'
+
+metrix::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
+metrix::slurm_jobscripts::token: "%{alias('metrix::root_api_token')}"

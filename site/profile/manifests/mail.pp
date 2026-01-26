@@ -2,29 +2,17 @@ class profile::mail::base (
   String $origin,
   Array[String] $authorized_submit_users = ['root', 'slurm'],
 ) {
-  $cidr = profile::getcidr()
-
   postfix::config { 'authorized_submit_users':
     ensure => present,
     value  => join($authorized_submit_users, ','),
   }
 
-  firewall { '002 drop IPA user access to local smtp server':
-    chain       => 'OUTPUT',
-    proto       => 'tcp',
-    dport       => [25],
-    destination => '127.0.0.0/8',
-    action      => 'drop',
-    uid         => '! 0-60000',
-  }
-
-  firewall { '002 drop IPA user access to internal smtp server':
-    chain       => 'OUTPUT',
-    proto       => 'tcp',
-    dport       => [25],
-    destination => $cidr,
-    action      => 'drop',
-    uid         => '! 0-60000',
+  file { '/etc/mailname':
+    content => $origin,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    seltype => 'postfix_etc_t',
   }
 }
 
@@ -51,6 +39,7 @@ class profile::mail::sender (
     satellite        => true,
     manage_mailx     => false,
     manage_conffiles => false,
+    manage_mailname  => false,
   }
 }
 
@@ -73,6 +62,7 @@ class profile::mail::relayhost {
     smtp_listen      => 'all',
     manage_mailx     => false,
     manage_conffiles => false,
+    manage_mailname  => false,
   }
 
   postfix::config { 'myhostname':

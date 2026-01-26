@@ -33,7 +33,7 @@ SelectTypeParameters=CR_Core_Memory
 # NODE CONFIGURATIONS
 GresTypes=gpu,shard
 
-TreeWidth=<%= $nb_nodes %>
+TreeWidth=<%= max($nb_nodes, 1) %>
 ReturnToService=2 # A DOWN node will become available for use upon registration with a valid configuration.
 RebootProgram=/usr/sbin/reboot
 ResumeProgram=/usr/bin/slurm_resume
@@ -48,7 +48,7 @@ SuspendExcNodes=<%= $suspend_exc_nodes %>
 <% } -%>
 
 SchedulerParameters=salloc_wait_nodes
-SlurmctldParameters=idle_on_node_suspend
+SlurmctldParameters=idle_on_node_suspend,power_save_interval=30
 DebugFlags=Power
 
 # PARTITION CONFIGURATIONS
@@ -61,9 +61,9 @@ PartitionName=<%= $name %> Nodes=<%= join($values['nodes'], ',') %>
 
 SlurmdPort=6818
 
-SlurmctldDebug=debug
+SlurmctldDebug=<%= $log_level %>
 SlurmctldLogFile=/var/log/slurm/slurmctld.log
-SlurmdDebug=debug
+SlurmdDebug=<%= $log_level %>
 SlurmdLogFile=/var/log/slurm/slurmd.log
 
 SlurmctldPidFile=/var/run/slurmctld/slurmctld.pid
@@ -93,5 +93,7 @@ StateSaveLocation=/var/spool/slurm
 InteractiveStepOptions="--interactive --mem-per-cpu=0 --preserve-env --pty $SHELL"
 LaunchParameters=use_interactive_step,disable_send_gids
 JobSubmitPlugins=lua
+AccountingStoreFlags=job_script
+
 
 include /etc/slurm/slurm-addendum.conf

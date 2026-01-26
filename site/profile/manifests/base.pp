@@ -73,7 +73,7 @@ class profile::base (
   exec { 'systemd-tmpfiles --create --prefix=/run/lock/subsys':
     unless => 'test -d /run/lock/subsys',
     path   => ['/bin'],
-    notify => Service['iptables'],
+    notify => [Service['iptables'], Service['ip6tables']],
   }
 
   firewall { '001 accept all from local network':
@@ -122,6 +122,11 @@ class profile::base (
   # Remove scripts leftover by terraform remote-exec provisioner
   file { glob('/tmp/terraform_*.sh'):
     ensure => absent,
+  }
+
+  sysctl { 'kernel.dmesg_restrict':
+    ensure => 'present',
+    value  => 1,
   }
 }
 

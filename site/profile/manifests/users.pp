@@ -218,7 +218,7 @@ define profile::users::local_user (
 
   if $manage_home {
     selinux::exec_restorecon { $home:
-      subscribe=> User[$name]
+      subscribe => User[$name]
     }
   }
 

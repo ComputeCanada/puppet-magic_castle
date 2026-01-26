@@ -236,7 +236,6 @@ class profile::gpu::config::mig (
 
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
-  String $nvidia_ml_py_version = '11.515.75',
   Array[String] $grid_vgpu_types = [],
 ) {
   if $installer == 'rpm' {
@@ -244,18 +243,6 @@ class profile::gpu::install::vgpu (
   } elsif $installer == 'bin' {
     # install from binary installer
     include profile::gpu::install::vgpu::bin
-  }
-
-  # Used by slurm-job-exporter to export GPU metrics
-  # DCGM does not work with GRID VGPU, most of the stats are missing
-  ensure_packages(['python3', 'python3-pip'], { ensure => 'present' })
-  $py3_version = lookup('os::redhat::python3::version')
-
-  exec { 'pip install nvidia-ml-py':
-    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==${nvidia_ml_py_version}",
-    creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
-    before  => Service['slurm-job-exporter'],
-    require => Package['python3'],
   }
 }
 
@@ -347,5 +334,5 @@ class profile::gpu::services {
   }
 
   Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
-  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Exec[$gpu_services]
+  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Service[$gpu_services]
 }
