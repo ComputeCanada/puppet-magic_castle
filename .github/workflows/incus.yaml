@@ -26,8 +26,7 @@ jobs:
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
       - name: Init and apply
         run: |
-          echo "/proc/sys/kernel/apparmor_restrict_unprivileged_unconfined"
-          sudo cat /proc/sys/kernel/apparmor_restrict_unprivileged_unconfined
+          sudo aa-teardown &> /dev/null || true
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
           sudo chgrp runner /var/lib/incus/unix.socket
           terraform init
@@ -36,6 +35,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: |
+          sudo aa-teardown &> /dev/null || true
           echo "/proc/sys/kernel/apparmor_restrict_unprivileged_unconfined"
           sudo cat /proc/sys/kernel/apparmor_restrict_unprivileged_unconfined
           incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
