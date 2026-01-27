@@ -32,7 +32,7 @@ jobs:
           terraform init
           # enable security nesting to allow NFS related mount
           cd .terraform/modules/incus/
-          cat << EOF > git apply - 
+          cat << EOF | git apply -
           diff --git a/incus/infrastructure.tf b/incus/infrastructure.tf
           index 5ad78c8..a3f916a 100644
           --- a/incus/infrastructure.tf
