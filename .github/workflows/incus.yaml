@@ -2,9 +2,6 @@ name: Test complete puppet environment
 
 on: [pull_request]
 
-env:
-  INCUS_SECURITY_APPARMOR: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,23 +45,19 @@ jobs:
           EOF
           cd ../../../
           terraform apply -auto-approve
-      # - name: Wait for puppet catalog to be applied
-      #   continue-on-error: true
-      #   timeout-minutes: 15
-      #   run: |
-      #     incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
-      #     for nodename in $(incus list -c n -f csv); do
-      #       echo -n $nodename
-      #       until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
-      #         echo -n .
-      #         sleep 10
-      #       done
-      #       echo
-      #     done
-      - name: Setup upterm session
-        uses: owenthereal/action-upterm@v1
-        with:
-          limit-access-to-actor: true
+      - name: Wait for puppet catalog to be applied
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
+          for nodename in $(incus list -c n -f csv); do
+            echo -n $nodename
+            until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
+              echo -n .
+              sleep 10
+            done
+            echo
+          done
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
@@ -73,7 +66,7 @@ jobs:
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
             if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
               echo " FAILED" >> $GITHUB_STEP_SUMMARY
-              echo '#### failures' >> $GITHUB_STEP_SUMMARY
+              echo "#### failures" >> $GITHUB_STEP_SUMMARY
               echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
               incus exec $nodename -- journalctl -u puppet -p3..4 >> $GITHUB_STEP_SUMMARY
@@ -81,9 +74,9 @@ jobs:
               echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
               SUCCESSFUL=1
             else
-              echo
+              echo >> $GITHUB_STEP_SUMMARY
             fi
-            echo #### successes >> $GITHUB_STEP_SUMMARY
+            echo "#### successes" >> $GITHUB_STEP_SUMMARY
             echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             incus exec $nodename -- journalctl -u puppet -p5..5 >> $GITHUB_STEP_SUMMARY
