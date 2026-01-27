@@ -19,11 +19,9 @@ jobs:
         run: |
           sudo incus admin init --auto
           sudo chgrp runner /var/lib/incus/unix.socket
-      - name: Reset the firewall #and disable apparmor
+      - name: Reset the firewall
         run: |
           sudo nft flush ruleset
-          # sudo aa-teardown &> /dev/null || true
-          # sudo systemctl disable --now apparmor.service
       - name: Download Magic Castle Incus
         run: |
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
@@ -32,20 +30,37 @@ jobs:
         run: |
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
           terraform init
+          # enable security nesting to allow NFS related mount
+          cd .terraform/modules/incus/
+          cat << EOF > git apply - 
+          diff --git a/incus/infrastructure.tf b/incus/infrastructure.tf
+          index 5ad78c8..a3f916a 100644
+          --- a/incus/infrastructure.tf
+          +++ b/incus/infrastructure.tf
+          @@ -91,6 +91,7 @@ resource "incus_instance" "instances" {
+             config = {
+               "cloud-init.user-data" = module.configuration.user_data[each.key]
+               "security.privileged"  = var.privileged
+          +     "security.nesting"  = true
+             }
+
+             device {
+          EOF
+          cd ../../../
           terraform apply -auto-approve
-      - name: Wait for puppet catalog to be applied
-        continue-on-error: true
-        timeout-minutes: 15
-        run: |
-          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
-          for nodename in $(incus list -c n -f csv); do
-            echo -n $nodename
-            until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
-              echo -n .
-              sleep 10
-            done
-            echo
-          done
+      # - name: Wait for puppet catalog to be applied
+      #   continue-on-error: true
+      #   timeout-minutes: 15
+      #   run: |
+      #     incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
+      #     for nodename in $(incus list -c n -f csv); do
+      #       echo -n $nodename
+      #       until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
+      #         echo -n .
+      #         sleep 10
+      #       done
+      #       echo
+      #     done
       - name: Setup upterm session
         uses: owenthereal/action-upterm@v1
         with:
