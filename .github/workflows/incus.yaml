@@ -24,6 +24,7 @@ jobs:
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
           curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
       - name: Init and apply
+        id: create_cluster
         run: |
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
           terraform init
@@ -45,15 +46,15 @@ jobs:
           EOF
           cd ../../../
           terraform apply -auto-approve
+          echo "incus_project=$(terraform output | grep -Po 'project = "\K[^"]+')">> "$GITHUB_OUTPUT"
       - name: Wait for puppet catalog to be applied
         continue-on-error: true
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
-          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}"
           for nodename in $(incus list -c n -f csv); do
-            echo -n $nodename
+            echo -n "${nodename}: "
             until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
-              echo -n .
               sleep 10
             done
             echo
@@ -61,7 +62,7 @@ jobs:
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
-          incus project switch $(incus project list -c n --format csv | grep -v 'default' | cut -f1 -d' ')
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}"
           for nodename in $(incus list -c n -f csv); do
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
             if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
