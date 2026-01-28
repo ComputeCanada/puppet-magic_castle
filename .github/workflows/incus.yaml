@@ -51,7 +51,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 20
         run: |
-          incus project switch ${{ steps.create_cluster.outputs.incus_project }}"
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}
           for nodename in $(incus list -c n -f csv); do
             echo -n "${nodename}: "
             until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
@@ -62,7 +62,7 @@ jobs:
       - name: Verify Puppet catalog for errors
         run: |
           SUCCESSFUL=0
-          incus project switch ${{ steps.create_cluster.outputs.incus_project }}"
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}
           for nodename in $(incus list -c n -f csv); do
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
             if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
