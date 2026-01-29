@@ -59,28 +59,37 @@ jobs:
             done
             echo
           done
-      - name: Verify Puppet catalog for errors
+      - name: Verify Puppet Prometheus report for errors
         run: |
           SUCCESSFUL=0
           incus project switch ${{ steps.create_cluster.outputs.incus_project }}
           for nodename in $(incus list -c n -f csv); do
             echo -n "### ${nodename}" >> $GITHUB_STEP_SUMMARY
-            if incus exec $nodename -- journalctl -u puppet | grep "failed dependencies" &> /dev/null; then
+            failures=$(incus exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep 'name="Failure"' | cut -d' ' -f2)
+            if (( $failures > 0 )); then
               echo " FAILED" >> $GITHUB_STEP_SUMMARY
               echo "#### failures" >> $GITHUB_STEP_SUMMARY
               echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
-              incus exec $nodename -- journalctl -u puppet -p3..4 >> $GITHUB_STEP_SUMMARY
+              incus exec $nodename -- journalctl -u puppet -p3..4 | grep -i -v -P '(connection|routes|wrapped)' >> $GITHUB_STEP_SUMMARY
               echo '```' >> $GITHUB_STEP_SUMMARY
               echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
               SUCCESSFUL=1
             else
               echo >> $GITHUB_STEP_SUMMARY
             fi
+
             echo "#### successes" >> $GITHUB_STEP_SUMMARY
             echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             incus exec $nodename -- journalctl -u puppet -p5..5 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
+
+            echo "#### Puppet report" >> $GITHUB_STEP_SUMMARY
+            echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
           done
