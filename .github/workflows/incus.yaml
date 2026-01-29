@@ -89,7 +89,7 @@ jobs:
             echo "#### Puppet report" >> $GITHUB_STEP_SUMMARY
             echo -e '\n<details>\n' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-            exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom >> $GITHUB_STEP_SUMMARY
+            incus exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo -e '\n</details>\n' >> $GITHUB_STEP_SUMMARY
           done
