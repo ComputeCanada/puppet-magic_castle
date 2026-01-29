@@ -11,7 +11,8 @@ jobs:
           terraform_version: "1.5.7"
       - name: Install incus
         run: |
-          curl https://pkgs.zabbly.com/get/incus-stable | sudo sh -x
+          sudo apt update
+          sudo apt install incus
       - name: Init incus
         run: |
           sudo incus admin init --auto
