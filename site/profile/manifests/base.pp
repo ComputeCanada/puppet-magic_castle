@@ -124,9 +124,11 @@ class profile::base (
     ensure => absent,
   }
 
-  sysctl { 'kernel.dmesg_restrict':
-    ensure => 'present',
-    value  => 1,
+  if !($facts['virtual'] =~ /^(container|lxc).*$/) {
+    sysctl { 'kernel.dmesg_restrict':
+      ensure => 'present',
+      value  => 1,
+    }
   }
 }
 
