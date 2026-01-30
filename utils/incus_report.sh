@@ -8,7 +8,7 @@
 # work with tabs.
 SUCCESSFUL=0
 puppet_server=$(incus list --columns "nd" -f csv | grep \"puppet\" | cut -d',' -f1)
-incus list --columns "nd" -f csv
+incus list --columns "nd" -f markdown
 echo
 for nodename in $(incus list -c n -f csv); do
 	echo -n "### ${nodename}" 
