@@ -29,23 +29,6 @@ jobs:
         run: |
           sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
           terraform init
-          # enable security nesting to allow NFS related mount
-          cd .terraform/modules/incus/
-          cat << EOF | git apply -
-          diff --git a/incus/infrastructure.tf b/incus/infrastructure.tf
-          index 5ad78c8..a3f916a 100644
-          --- a/incus/infrastructure.tf
-          +++ b/incus/infrastructure.tf
-          @@ -91,6 +91,7 @@ resource "incus_instance" "instances" {
-             config = {
-               "cloud-init.user-data" = module.configuration.user_data[each.key]
-               "security.privileged"  = var.privileged
-          +     "security.nesting"  = true
-             }
-
-             device {
-          EOF
-          cd ../../../
           terraform apply -auto-approve
           echo "incus_project=$(terraform output | grep -Po 'project = "\K[^"]+')">> "$GITHUB_OUTPUT"
       - name: Wait for puppet catalog to be applied
