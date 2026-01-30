@@ -7,9 +7,12 @@
 # The file is indented with tabs instead of spaces because heredoc <<- syntax only
 # work with tabs.
 SUCCESSFUL=0
+puppet_server=$(incus list --columns "nd" -f csv | grep \"puppet\" | cut -d',' -f1)
+incus list --columns "nd" -f csv
+echo
 for nodename in $(incus list -c n -f csv); do
 	echo -n "### ${nodename}" 
-	failures=$(incus exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep 'name="Failure"' | cut -d' ' -f2)
+	failures=$(incus exec ${puppet_server} -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep 'name="Failure"' | cut -d' ' -f2)
 	if (( $failures > 0 )); then
 		echo " FAILED"
 		cat <<- EOF
@@ -28,12 +31,12 @@ for nodename in $(incus list -c n -f csv); do
 		<details><pre><code>$(incus exec $nodename -- journalctl -u puppet -p5..5)
 		</code></pre></details>
 	EOF
-
 	echo
 	cat <<- EOF
 		#### Puppet report
-		<details><pre><code>$(incus exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep '^puppet_report')
+		<details><pre><code>$(incus exec ${puppet_server} -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep '^puppet_report')
 		</code></pre></details>
 	EOF
+	echo
 done
 exit $SUCCESSFUL
