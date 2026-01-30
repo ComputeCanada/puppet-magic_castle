@@ -15,9 +15,9 @@ for nodename in $(incus list -c n -f csv); do
 		cat <<- EOF
 			#### failures
 			<details>
-			```
+			~~~
 			$(incus exec $nodename -- journalctl -u puppet -p3..4 | grep -i -v -P '(connection|routes|wrapped)')
-			```
+			~~~
 			</details>
 		EOF
 		SUCCESSFUL=1
@@ -28,18 +28,18 @@ for nodename in $(incus list -c n -f csv); do
 	cat <<- EOF
 		#### successes
 		<details>
-		```
+		~~~
 		$(incus exec $nodename -- journalctl -u puppet -p5..5)
-		```
+		~~~
 		</details>
 	EOF
 
 	cat <<- EOF
 		#### Puppet report"
 		<details>
-		```
+		~~~
 		$(incus exec mgmt1 -- cat /var/lib/node_exporter/puppet_report_${nodename}.prom | grep '^puppet_report')
-		```
+		~~~
 		</details>
 	EOF
 done
