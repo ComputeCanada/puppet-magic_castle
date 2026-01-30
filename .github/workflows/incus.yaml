@@ -63,6 +63,7 @@ jobs:
       - name: Verify Puppet Prometheus report for errors
         run: |
           incus project switch ${{ steps.create_cluster.outputs.incus_project }}
+          incus file pull mgmt1/etc/puppetlabs/code/environment/production/utils/incus_report.sh .
           exec >> $GITHUB_STEP_SUMMARY
-          utils/incus_report.sh
+          bash incus_report.sh
 
