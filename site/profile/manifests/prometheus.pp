@@ -9,11 +9,15 @@ class profile::prometheus::node_exporter {
     tags => ['exporter'],
   }
 
-  file { '/var/lib/node_exporter':
-    ensure => directory,
-    owner  => 'node-exporter',
-    group  => 'node-exporter',
-    mode   => '0775',
+  # Adding 'mc_bootstrap' to User/Group['node-exporter'] makes sure the
+  # puppet user is added to the 'node-exporter' group during the bootstrap
+  # phase of the puppetserver, therefore preventing the puppetserver to
+  # restart while it serves catalog to other instances.
+  User <| title == 'node-exporter' |> {
+    tag +> 'mc_bootstrap'
+  }
+  Group <| title == 'node-exporter' |> {
+    tag +> 'mc_bootstrap'
   }
 
   # In cases where the puppet user exists, we add it to
@@ -23,8 +27,22 @@ class profile::prometheus::node_exporter {
   # the group of /var/lib/node_exporter is changed from puppet to
   # node-exporter. Otherwise, we risk not being able to write reports
   User <| title == 'puppet' |> {
-    groups +> 'node-exporter',
-    before => File['/var/lib/node_exporter']
+    groups  +> 'node-exporter',
+    before  => File['/var/lib/node_exporter'],
+    tag     +> 'mc_bootstrap',
+    require +> Group['node-exporter'],
+  }
+
+  file { '/var/lib/node_exporter':
+    ensure  => directory,
+    owner   => 'node-exporter',
+    group   => 'node-exporter',
+    mode    => '0775',
+    require => [
+      User['node-exporter'],
+      Group['node-exporter'],
+    ],
+    tag     => ['mc_bootstrap'],
   }
 }
 
