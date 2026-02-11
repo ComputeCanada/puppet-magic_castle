@@ -51,7 +51,7 @@ class profile::gpu::install (
   File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
   Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
 
-  if ! profile::is_grid_vgpu() {
+  if ! profile::gpu::has_vgpu() {
     include profile::gpu::install::passthrough
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
   } else {
@@ -60,7 +60,7 @@ class profile::gpu::install (
 
   # Binary installer do not build drivers with DKMS
   $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
-  if ! profile::is_grid_vgpu() or $installer != 'bin' {
+  if ! profile::gpu::has_vgpu() or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
@@ -316,7 +316,7 @@ class profile::gpu::install::vgpu::bin (
 }
 
 class profile::gpu::services {
-  if ! profile::is_grid_vgpu() {
+  if ! profile::gpu::has_vgpu() {
     $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
   } else {
     $gpu_services = ['nvidia-persistenced', 'nvidia-gridd']

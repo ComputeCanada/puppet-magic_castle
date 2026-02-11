@@ -1,4 +1,4 @@
-function profile::is_grid_vgpu() >> Boolean {
+function profile::gpu::has_vgpu() >> Boolean {
   if $facts['nvidia_grid_vgpu'] {
     true
   } else {

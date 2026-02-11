@@ -19,7 +19,7 @@ class profile::squid::server (
   }
   squid::acl { 'CLUSTER_NETWORK':
     type    => 'src',
-    entries => [profile::getcidr()],
+    entries => [profile::utils::getcidr()],
   }
   # How can we have multiple regex entries under the same ACL name?
   # From Squid documentation:
