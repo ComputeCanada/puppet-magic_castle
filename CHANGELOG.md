@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.2.0] UNRELEASED
+
+### Added
+- Enabled dirsrv access log compression (PR #489)
+- Added log rotation log received by rsyslog (PR #489)
+- Added log rotation rules (PR #487)
+- Added notification to service ip6tables when recreating tmpfiles (PR #494)
+- Added a github action to test the PR in a complete MC cluster with incus (PR #475)
+
+### Changed
+- Restricted access to dmesg to admin (PR #486)
+- Update ruby version and puppet version in GitHub action (PR #490)
+- Bump puppetserver allocated ram to 1024Mo (PR #492)
+- Improved swap config (PR #485)
+- Fixed Mokey email link (PR #491)
+- Fixed issue #347 "slurmctld does not start when node count is 0 " (PR #493)
+- Increased polling_frequency of wait_for ipa_https (PR #495)
+- Pioritized freeipa server installation in puppet by tuning site.yaml (PR #502)
+- Fixed issue #498 "New MC deployment crashes if only shared volumes are used" (PR #500)
+- Bumped puppet-jupyterhub to v7.2.1 (PR #504)
+- Changed cvmfs-repo source and bumped version to 7.2 (PR #505)
+- Fixed issue #507 "sysctl: permission denied on key "kernel.dmesg_restrict" when using incus" (PR #508)
+- Fixed issue #509 "puppetserver becomes unreachable for a short period during first configuration round" (PR #510)
+
+### Removed
+- Removed automatic upgrade of systemd (PR #484)
+- Removed swap from compute nodes (PR #485)
+
 ## [15.1.0] 2025-11-28
 
 ### Added
