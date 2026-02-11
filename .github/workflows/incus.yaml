@@ -1,0 +1,68 @@
+name: Test complete puppet environment
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+      - name: Install incus
+        run: |
+          sudo apt update
+          sudo apt install incus
+      - name: Init incus
+        run: |
+          sudo incus admin init --auto
+          sudo chgrp runner /var/lib/incus/unix.socket
+      - name: Reset the firewall
+        run: |
+          sudo nft flush ruleset
+      - name: Download Magic Castle Incus
+        run: |
+          curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/main.tf
+          curl -L -O https://raw.githubusercontent.com/ComputeCanada/magic_castle/refs/heads/main/examples/incus/data.yaml
+      - name: Init and apply
+        id: create_cluster
+        run: |
+          sed -i "s;\"main\";\"${GITHUB_REF}\";" main.tf
+          terraform init
+          terraform apply -auto-approve
+          echo "incus_project=$(terraform output | grep -Po 'project = "\K[^"]+')">> "$GITHUB_OUTPUT"
+      - name: Wait for puppet catalog to be applied
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}
+          for nodename in $(incus list -c n -f csv); do
+            echo -n "${nodename}: "
+            until incus exec $nodename -- journalctl -u puppet | grep "Applied catalog"; do
+              sleep 10
+            done
+            echo
+          done
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            utils/incus_report.sh
+            utils/incus_artifacts.sh
+          sparse-checkout-cone-mode: false
+      - name: Verify Puppet Prometheus report for errors
+        run: |
+          incus project switch ${{ steps.create_cluster.outputs.incus_project }}
+          bash utils/incus_report.sh >> $GITHUB_STEP_SUMMARY
+      - name: Recover artifacts from containers
+        run: |
+          bash utils/incus_artifacts.sh
+      - name: 'Upload puppet reports'
+        uses: actions/upload-artifact@v6
+        with:
+          name: puppet-reports
+          path: '*.prom'
+      - name: 'Upload puppet journals'
+        uses: actions/upload-artifact@v6
+        with:
+          name: puppet-journals
+          path: '*.json'
