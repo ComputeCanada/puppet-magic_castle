@@ -911,7 +911,7 @@ profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
 ## `profile::nfs::client`
 
 This class installs NFS and configures the client to mount shares exported
-by a single NFS server identified via its IP address. The shares to mount are
+by a single NFS server identified via its IP address or FQDN. The shares to mount are
 infered from the list of volumes with an `nfs` tag in the the `terraform.instances`
 datastructure. Additional shares can be mounted by providing a list of
 names with `share_names` variable.
@@ -919,6 +919,9 @@ names with `share_names` variable.
 `share_names` is can also be used to specify
 which shares to mount when there `terraform.instances` datastructure does not
 include any volume with the `nfs` tag.
+
+This class is compatible with [Amazon Elastic Filesystem](https://docs.aws.amazon.com/efs/).
+The variable `server` can be set to an EFS filesystem DNS name or IP address.
 
 ### parameters
 
