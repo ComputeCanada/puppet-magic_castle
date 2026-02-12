@@ -15,3 +15,6 @@ jobs:
         run: |
           bundle exec rake test
           local-tests/puppet-missing-files ./site
+      - name: Scan for missing variables in documentation
+        run: |
+          python3 utils/missing_docs.py
