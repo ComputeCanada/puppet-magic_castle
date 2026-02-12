@@ -955,7 +955,7 @@ It can also export addditional paths specified by the variable `export_paths`.
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
 | `enable_client_quotas` | Enable query of quotas on NFS clients | Boolean |
-| `export_paths` | | Array[String] |
+| `export_paths` | List of paths to export in addition to volumes with `nfs` tag | Array[String] |
 
 <details>
 <summary>default values</summary>
