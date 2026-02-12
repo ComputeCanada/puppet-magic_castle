@@ -22,7 +22,6 @@ class profile::nfs::client (
 
   $instances = lookup('terraform.instances')
   $nfs_server = $instances.filter| $key, $values | { $values['local_ip'] == $server_ip }.map | $key, $values | { $values }
-  $shares_to_mount = keys($nfs_volumes) + $share_names
 
   if $nfs_server {
     $nfs_volumes = $nfs_server.get('0.volumes.nfs', {})
