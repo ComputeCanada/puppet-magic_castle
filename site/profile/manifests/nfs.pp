@@ -1,16 +1,16 @@
 class profile::nfs (String $domain) {
-  $server_ip = lookup('profile::nfs::client::server_ip', undef, undef, '')
+  $server = lookup('profile::nfs::client::server', undef, undef, '')
   $ipaddress = lookup('terraform.self.local_ip')
 
-  if $ipaddress == $server_ip {
+  if $ipaddress == $server {
     include profile::nfs::server
-  } elsif $server_ip =~ Stdlib::IP::Address::V4::Nosubnet {
+  } elsif $server =~ Stdlib::Host {
     include profile::nfs::client
   }
 }
 
 class profile::nfs::client (
-  Stdlib::IP::Address::V4::Nosubnet $server_ip,
+  Stdlib::Host $server,
   Array[String] $share_names = [],
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
@@ -21,16 +21,28 @@ class profile::nfs::client (
   }
 
   $instances = lookup('terraform.instances')
-  $nfs_server = $instances.filter| $key, $values | { $values['local_ip'] == $server_ip }.map | $key, $values | { $values }
+  if $server =~ Stdlib::IP::Address {
+    $server_values = $instances.filter| $key, $values | { $values['local_ip'] == $server }.map | $key, $values | { $values }
+  } elsif $server =~ Stdlib::Fqdn {
+    $server_values = $instances.filter| $key, $values | { "${key}.${nfs_domain}" == $server }.map | $key, $values | { $values }
+  }
 
-  if $nfs_server {
-    $nfs_volumes = $nfs_server.get('0.volumes.nfs', {})
+  if $server_values {
+    $nfs_volumes = $server_values.get('0.volumes.nfs', {})
     $shares_to_mount = keys($nfs_volumes) + $share_names
     $nfs_options     = 'proto=tcp,nosuid,nolock,noatime,actimeo=3,nfsvers=4.2,seclabel'
   } else {
-    # The NFS server is not an instance created by Magic Castle and managed by Terraform.
+    # The NFS server is not an instance created and managed by Magic Castle(Terraform).
     $shares_to_mount = $share_names
-    $nfs_options     = 'nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport'
+    case $facts['cloud']['provider'] {
+      'aws': {
+        # https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-nfs-mount-settings.html
+        $nfs_options = 'nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport'
+      }
+      default: {
+        $nfs_options = ''
+      }
+    }
   }
 
   $self_volumes = lookup('terraform.self.volumes')
@@ -52,7 +64,7 @@ class profile::nfs::client (
     path        => ['/bin', '/usr/bin'],
   }
 
-  $options_nfsv4 = "${nfs_options},${mount_options}"
+  $options_nfsv4 = join([$nfs_options, $mount_options], ',')
   $shares_to_mount.each | String $share_name | {
     # If the instance has a volume mounted under the same name as the nfs share,
     # we mount the nfs share under /nfs/${share_name}.
@@ -63,7 +75,7 @@ class profile::nfs::client (
     }
     nfs::client::mount { $mount_point:
       ensure        => present,
-      server        => $server_ip,
+      server        => $server,
       share         => $share_name,
       options_nfsv4 => $options_nfsv4,
       notify        => Systemd::Daemon_reload['nfs-client'],

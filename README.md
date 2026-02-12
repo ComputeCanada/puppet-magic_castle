@@ -890,7 +890,7 @@ network much like local storage is accessed.
 [reference](https://en.wikipedia.org/wiki/Network_File_System)
 
 This class instantiates either an NFS client or an NFS server.
-If `profile::nfs::client::server_ip`matches the instance's local IP address, the
+If `profile::nfs::client::server`matches the instance's local IP address, the
 server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
 client class is included - [`profile::nfs::client`](#profilenfsclient).
 
@@ -915,15 +915,15 @@ by a single NFS server identified via its IP address.
 
 ### parameters
 
-| Variable      | Description                  | Type    |
-| ------------- | :--------------------------- | :------ |
-| `server_ip`   | IP address of the NFS server | String  |
+| Variable      | Description                          | Type    |
+| ------------- | :----------------------------------- | :------ |
+| `server`      | IP address or FQDN of the NFS server | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::client::server: "%{alias('terraform.tag_ip.nfs.0')}"
 ```
 </details>
 
@@ -934,7 +934,7 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class installs NFS and configures an NFS server that will export all volumes tagged as `nfs`.
+This class installs NFS and configure an NFS server that will export all volumes tagged as `nfs`.
 
 ### parameters
 
