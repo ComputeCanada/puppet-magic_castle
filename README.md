@@ -395,21 +395,25 @@ This class installs CVMFS client and configure repositories.
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
+| `disable_autofs`          | If true, mount repositories directly instead of using autofs | Variant[Boolean, String] |
 | `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
 | `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
 | `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
+| `cvmfs_root`              | Mount root for CVMFS repositories | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::disable_autofs: false
 profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
   - software.eessi.io
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
 profile::cvmfs::client::alien_cache_repositories: [ ]
+profile::cvmfs::client::cvmfs_root: "/cvmfs"
 ```
 </details>
 
@@ -439,19 +443,25 @@ the cluster when using CVMFS Alien Cache.
 
 ### parameters
 
-| Variable      | Description      | Type    |
-| :------------ | :--------------- | :------ |
-| `cvmfs_uid`   | cvmfs user id  	 | Integer |
-| `cvmfs_gid`   | cvmfs group id   | Integer |
-| `cvmfs_group` | cvmfs group name | String  |
+| Variable       | Description                        | Type    |
+| :------------- | :--------------------------------- | :------ |
+| `uname`        | cvmfs user name                    | String  |
+| `group`        | cvmfs group name                   | String  |
+| `uid`          | cvmfs user id                      | Integer |
+| `gid`          | cvmfs group id                     | Integer |
+| `selinux_user` | SELinux user for cvmfs files       | String  |
+| `mls_range`    | SELinux MLS range for cvmfs files  | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::cvmfs::local_user::cvmfs_uid: 13000004
-profile::cvmfs::local_user::cvmfs_gid: 8000131
-profile::cvmfs::local_user::cvmfs_group: "cvmfs-reserved"
+profile::cvmfs::local_user::uname: "cvmfs"
+profile::cvmfs::local_user::group: "cvmfs-reserved"
+profile::cvmfs::local_user::uid: 13000004
+profile::cvmfs::local_user::gid: 8000131
+profile::cvmfs::local_user::selinux_user: "unconfined_u"
+profile::cvmfs::local_user::mls_range: "s0-s0:c0.c1023"
 ```
 </details>
 
@@ -461,17 +471,17 @@ This class determines the location of the CVMFS alien cache.
 
 ### parameters
 
-| Variable           | Description      | Type    |
-| :----------------- | :--------------- | :------ |
-| `alien_fs_root`    | Shared file system where the alien cache will be create | String |
-| `alien_folder_name`| Alien cache folder name                                 | String |
+| Variable                | Description      | Type    |
+| :---------------------- | :--------------- | :------ |
+| `alien_fs_root_raw`     | Shared file system where the alien cache will be create (raw path) | String |
+| `alien_folder_name_raw` | Alien cache folder name (raw value)                                  | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::cvmfs::alien_cache::alien_fs_root: "/scratch"
-profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
+profile::cvmfs::alien_cache::alien_fs_root_raw: "scratch"
+profile::cvmfs::alien_cache::alien_folder_name_raw: "cvmfs_alien_cache"
 ```
 </details>
 
@@ -566,13 +576,13 @@ This class configures files and services that are common to FreeIPA client and F
 
 | Variable      | Description            | Type    |
 | :------------ | :--------------------- | :------ |
-| `domain_name` | FreeIPA primary domain | String  |
+| `ipa_domain`  | FreeIPA primary domain | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::freeipa::base::ipa_domain: "int.%{lookup('terraform.data.domain_name')}"
 ```
 </details>
 
@@ -825,15 +835,17 @@ This exporter needs to run on compute nodes.
 
 ### parameter
 
-| Variable  | Description                                      | Type    |
-| --------- | :----------------------------------------------- | :------ |
-| `version` | The version of the slurm job exporter to install | String  |
+| Variable             | Description                                      | Type    |
+| -------------------- | :----------------------------------------------- | :------ |
+| `version`            | The version of the slurm job exporter to install | String  |
+| `nvidia_ml_py_version` | Version of `nvidia-ml-py` for GPU metrics       | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::prometheus::slurm_job_exporter::version: '0.4.9'
+profile::prometheus::slurm_job_exporter::nvidia_ml_py_version: '11.515.75'
 ```
 </details>
 
@@ -854,6 +866,22 @@ This class configures a Prometheus exporter that exports the Slurm scheduling me
 This exporter typically runs on the Slurm controller server, but it can run on any server
 with a functional Slurm command-line installation.
 
+### parameters
+
+| Variable    | Description                               | Type         |
+| :---------- | :---------------------------------------- | :----------- |
+| `port`      | Port used by the exporter                 | Integer      |
+| `collectors`| List of collectors to enable              | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::prometheus::slurm_exporter::port: 8081
+profile::prometheus::slurm_exporter::collectors: ['partition']
+```
+</details>
+
 ## `profile::nfs`
 
 > Network File System (NFS) is a distributed file system protocol [...]
@@ -865,6 +893,20 @@ This class instantiates either an NFS client or an NFS server.
 If `profile::nfs::client::server_ip`matches the instance's local ip address, the
 server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
 client class is included - [`profile::nfs::client`](#profilenfsclient).
+
+### parameters
+
+| Variable  | Description                     | Type    |
+| :-------- | :------------------------------ | :------ |
+| `domain`  | NFSv4 ID mapping domain         | String  |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
+```
+</details>
 
 ## `profile::nfs::client`
 
@@ -1200,12 +1242,14 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 | Variable                | Description                                                                                   | Type    |
 | :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
+| `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::slurm::node::enable_tmpfs_mounts: true
+profile::slurm::node::pam_access_groups: ['wheel']
 ```
 </details>
 
@@ -1372,6 +1416,20 @@ for more informations.
 
 This class optimizer ssh server daemon (sshd) configuration to achieve an A+ audit score on
 [https://www.sshaudit.com/](https://www.sshaudit.com/).
+
+### parameters
+
+| Variable               | Description                                      | Type    |
+| :--------------------- | :----------------------------------------------- | :------ |
+| `disable_passwd_auth`  | If true, disable password authentication         | Boolean |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::ssh::base::disable_passwd_auth: false
+```
+</details>
 
 ## `profile::ssh::known_hosts`
 
