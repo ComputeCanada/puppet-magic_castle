@@ -2,7 +2,7 @@ class profile::nfs (String $domain) {
   $server = lookup('profile::nfs::client::server', undef, undef, '')
   $ipaddress = lookup('terraform.self.local_ip')
 
-  if $ipaddress == $server {
+  if ($ipaddress == $server) or ($facts['networking']['fqdn'] == $server) {
     include profile::nfs::server
   } elsif $server =~ Stdlib::Host {
     include profile::nfs::client
@@ -86,7 +86,7 @@ class profile::nfs::client (
 class profile::nfs::server (
   Array[String] $no_root_squash_tags = ['mgmt'],
   Boolean $enable_client_quotas = false,
-  Optional[Array[String]] $export_paths = [],
+  Array[String] $export_paths = [],
 ) {
   include profile::volumes
 
