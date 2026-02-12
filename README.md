@@ -890,7 +890,7 @@ network much like local storage is accessed.
 [reference](https://en.wikipedia.org/wiki/Network_File_System)
 
 This class instantiates either an NFS client or an NFS server.
-If `profile::nfs::client::server_ip`matches the instance's local ip address, the
+If `profile::nfs::client::server_ip`matches the instance's local IP address, the
 server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
 client class is included - [`profile::nfs::client`](#profilenfsclient).
 
@@ -910,8 +910,8 @@ profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
 
 ## `profile::nfs::client`
 
-This class install NFS and configure the client to mount all shares exported
-by a single NFS server identified via its ip address.
+This class installs NFS and configures the client to mount all shares exported
+by a single NFS server identified via its IP address.
 
 ### parameters
 
@@ -934,7 +934,7 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class install NFS and configure an NFS server that will export all volumes tagged as `nfs`.
+This class installs NFS and configures an NFS server that will export all volumes tagged as `nfs`.
 
 ### parameters
 
