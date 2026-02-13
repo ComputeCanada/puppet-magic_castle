@@ -48,4 +48,7 @@ class profile::puppetserver (
     ensure => running,
     enable => true,
   }
+
+  include profile::firewall
+  include nftables::rules::puppet
 }

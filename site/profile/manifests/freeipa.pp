@@ -223,6 +223,28 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
+  include nftables::rules::dns
+  include nftables::rules::http
+  include nftables::rules::https
+  include nftables::rules::ldap
+  include nftables::rules::ssdp
+
+  nftables::rule { 'default_in-kerberos_tcp':
+    content => 'tcp dport 88 accept comment "Accept kerberos"',
+  }
+  nftables::rule { 'default_in-kerberos_udp':
+    content => 'udp dport 88 accept comment "Accept kerberos"',
+  }
+  nftables::rule { 'default_in-kpasswd_tcp':
+    content => 'tcp dport 464 accept comment "Accept kpasswd"',
+  }
+  nftables::rule { 'default_in-kpasswd_udp':
+    content => 'udp dport 464 accept comment "Accept kpasswd"',
+  }
+  nftables::rule { 'default_in-kadmind':
+    content => 'tcp dport 749 accept comment "Accept kadmind"',
+  }
+
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
     source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
@@ -246,7 +268,7 @@ class profile::freeipa::server (
     # https://pagure.io/freeipa/issue/9358
     # TODO: remove this patch once FreeIPA >= 4.10 is made available
     # in RHEL 8.
-    ensure_packages(['patch'], { ensure => 'present' })
+    stdlib::ensure_packages(['patch'], { ensure => 'present' })
     $python_version = lookup('os::redhat::python3::version')
     file { 'freeipa_27e9181bdc.patch':
       path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
@@ -302,7 +324,11 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
-      File['/etc/ipa/dse-init.ldif']
+      File['/etc/ipa/dse-init.ldif'],
+      Class['nftables::rules::dns'],
+      Class['nftables::rules::https'],
+      Class['nftables::rules::ldap'],
+      Class['nftables::rules::ssdp'],
     ],
     notify  => [
       Service['systemd-logind'],
@@ -544,6 +570,10 @@ class profile::freeipa::mokey (
 ) {
   include mysql::server
 
+  nftables::rule { 'default_in-mokey_tcp':
+    content => 'tcp dport 12345 accept comment "Accept mokey"',
+  }
+
   yumrepo { 'mokey-copr-repo':
     enabled             => true,
     descr               => 'Copr repo for mokey owned by cmdntrf',
@@ -570,6 +600,8 @@ class profile::freeipa::mokey (
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+    charset  => 'utf8mb4',
+    collate  => 'utf8mb4_unicode_ci',
   }
 
   exec { 'mysql_mokey_schema':
@@ -657,8 +689,8 @@ class profile::freeipa::mokey (
         'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => stdlib::seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => stdlib::seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",
