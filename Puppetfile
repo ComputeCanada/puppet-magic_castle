@@ -49,4 +49,4 @@ mod 'computecanada-metrix',
 
 mod 'computecanada-uv',
     :git => 'https://github.com/ComputeCanada/puppet-uv.git',
-    :ref => 'v0.1.0'
+    :ref => 'v0.1.1'
