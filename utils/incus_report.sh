@@ -11,7 +11,7 @@ puppet_server=$(incus list --columns "nd" -f csv | grep \"puppet\" | cut -d',' -
 echo
 for nodename in $(incus list -c n -f csv); do
 	echo -n "### ${nodename}"
-	total=$(incus exec ${puppet_server} -- grep 'name="Total"' /var/lib/node_exporter/puppet_report_${nodename}.prom | cut -d' ' -f2)
+	total=$(incus exec ${puppet_server} -- grep 'puppet_report_resources{name="Total"' /var/lib/node_exporter/puppet_report_${nodename}.prom | cut -d' ' -f2)
 	failures=$(incus exec ${puppet_server} -- grep 'name="Failure"' /var/lib/node_exporter/puppet_report_${nodename}.prom | cut -d' ' -f2)
 	timeout=$(incus exec $nodename -- journalctl -u puppet -p3..3 | grep -i 'command exceeded timeout' | grep -o "([^)]*)" | sort | uniq | wc -l)
 	if [ -z "${total}" ] || (( $total == 0 )) || (( $failures - $timeout > 0 )); then
