@@ -553,6 +553,7 @@ class profile::slurm::controller (
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node (
+  Enum['running', 'stopped'] $ensure = 'running',
   Boolean $enable_tmpfs_mounts = true,
   Array[String] $pam_access_groups = ['wheel'],
 ) {
@@ -756,7 +757,7 @@ class profile::slurm::node (
   }
 
   service { 'slurmd':
-    ensure    => 'running',
+    ensure    => $ensure,
     enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
