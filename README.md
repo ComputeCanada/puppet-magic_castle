@@ -58,7 +58,6 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::server`](#profilersyslogserver)
 - [`profile::vector`](#profilevector)
 - [`profile::slurm::base`](#profileslurmbase)
-- [`profile::slurm::node`](#profileslurmnode)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
 - [`profile::slurm::node`](#profileslurmnode)
@@ -1569,6 +1568,8 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 | `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
 | `prefer_powered_up`     | Enable preference for powered up nodes when scheduling oversubscribed CPU jobs | Boolean |
+| `ensure_munge`          | Desired state of the `munge` service (`running` or `stopped`) | Enum['running', 'stopped'] |
+
 <details>
 <summary>default values</summary>
 
@@ -1594,23 +1595,6 @@ When `profile::slurm::base` is included, these classes are included too:
 - [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
 - [`profile::consul`](#profileconsul)
 - [`profile::base::powertools`](#profilebasepowertools)
-
-## `profile::slurm::node`
-This class allows some configuration for the Slurm compute nodes.
-
-### parameters
-| Variable                | Description                                             | Type   |
-| :---------------------- | :------------------------------------------------------ | :----- |
-| `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs | Array[String] |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::slurm::node::pam_access_groups: ['wheel']
-```
-</details>
-
 
 ## `profile::slurm::accounting`
 
@@ -1755,6 +1739,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 
 | Variable                | Description                                                                                   | Type    |
 | :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
+| `ensure_slurmd`         | Desired state of the `slurmd` service (`running` or `stopped`)                               | Enum['running', 'stopped'] |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
 
@@ -1762,6 +1747,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::node::ensure_slurmd: 'running'
 profile::slurm::node::enable_tmpfs_mounts: true
 profile::slurm::node::pam_access_groups: ['wheel']
 ```
@@ -1885,6 +1871,7 @@ This class configures external authentication domains
 | :------------ | :---------------------------------------------------------------- | :---- |
 | `domains`     | Config dictionary of domains that can authenticate                | Hash[String, Any]  |
 | `access_tags` | List of host tags that domain user can connect to                 | Array[String] |
+| `ensure`      | Desired state of the `sssd` service (`running` or `stopped`)      | Enum['running', 'stopped'] |
 | `deny_access` | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | Optional[Boolean] |
 | `ldapclient_domain` | Identify which domain (i.e.: a key from `domains`) will be used by ldap clients. if FreeIPA is installed and this parameter is left undefined, ldap client defaults to FreeIPA domain. | Optional[String] |
 
@@ -1894,6 +1881,7 @@ This class configures external authentication domains
 ```yaml
 profile::sssd::client::domains: { }
 profile::sssd::client::access_tags: ['login', 'node']
+profile::sssd::client::ensure: 'running'
 profile::sssd::client::deny_access: ~
 ```
 </details>

@@ -1,0 +1,7 @@
+---
+profile::freeipa::client::skip_ipa_install: true
+profile::sssd::client::ensure: 'stopped'
+profile::slurm::node::ensure_slurmd: 'stopped'
+profile::slurm::base::ensure_munge: 'stopped'
+consul::service_ensure: 'stopped'
+profile::gpu::install::load_modules: false
