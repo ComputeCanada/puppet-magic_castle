@@ -700,6 +700,7 @@ This class install packages, and configures files and services of a FreeIPA clie
 | Variable     | Description               | Type    |
 | :----------- | :------------------------ | :------ |
 | `server_ip`  | FreeIPA server ip address | String  |
+| `skip_ipa_install` | Skip FreeIPA client installation command execution | Boolean |
 
 <details>
 <summary>default values</summary>
@@ -709,6 +710,7 @@ first instance with the tag `mgmt`.
 
 ```yaml
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::freeipa::client::skip_ipa_install: false
 ```
 </details>
 
