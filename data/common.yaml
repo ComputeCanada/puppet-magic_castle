@@ -21,7 +21,7 @@ profile::base::packages: []
 motd::content: ""
 
 consul_template::version: 0.25.2
-consul::version: 1.15.2
+consul::version: 1.22.5
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
