@@ -185,10 +185,10 @@ prometheus::extra_alerts:
         - record: slurm_job:power_gpu:sum_user_account
           expr: sum(slurm_job_power_gpu) by (user,account)
 
-prometheus::node_exporter::version: 1.5.0
+prometheus::node_exporter::version: 1.10.2
 prometheus::node_exporter::collectors_enable:
   - "textfile.directory=/var/lib/node_exporter"
-prometheus::server::version: 2.39.0
+prometheus::server::version: 3.9.1
 prometheus::server::scrape_configs:
   - job_name: exporter
     scrape_interval: 10s
@@ -231,7 +231,7 @@ prometheus::server::scrape_configs:
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
-prometheus::alertmanager::version: '0.26.0'
+prometheus::alertmanager::version: '0.31.1'
 # The default value has a syntax issue in the original puppet-prometheus
 # https://github.com/voxpupuli/puppet-prometheus/pull/540
 prometheus::alertmanager::receivers:
@@ -340,7 +340,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-persistenced
   - nvidia-driver-cuda
 
-profile::prometheus::slurm_job_exporter::version: 0.4.9
+profile::prometheus::slurm_job_exporter::version: 0.4.10
 
 metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
