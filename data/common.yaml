@@ -83,6 +83,10 @@ jupyterhub::jupyterhub_config_hash:
       choices: ['notebook', 'lab', 'terminal', 'code-server', 'desktop']
       def: 'lab'
 
+jupyterhub::jupyter_notebook_config_hash:
+  ServerApp:
+    allow_origin: "https://jupyter.%{lookup('terraform.data.domain_name')}"
+
 selinux::mode: 'permissive'
 # selinux::type: 'targeted'
 
