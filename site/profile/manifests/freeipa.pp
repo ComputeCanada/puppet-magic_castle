@@ -526,6 +526,19 @@ class profile::freeipa::server (
     postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
   }
 
+  logrotate::rule { 'httpd':
+    path          => '/var/log/httpd/*log',
+    rotate        => 14,
+    rotate_every  => 'daily',
+    dateext       => true,
+    missingok     => true,
+    ifempty       => false,
+    sharedscripts => true,
+    compress      => true,
+    copytruncate  => true,
+    require       => Exec['ipa-install'],
+  }
+
   include profile::base::etc_hosts
   include profile::freeipa::base
   include profile::sssd::client
