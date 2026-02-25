@@ -9,6 +9,7 @@
       close
     }
     reverse_proxy <%= $server %> <% if $server =~ /^https/ { -%> {
+      header_up Host {host}
       transport http {
         tls_insecure_skip_verify
       }
