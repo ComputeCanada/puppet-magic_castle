@@ -3,7 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [15.2.0] UNRELEASED
+## [15.3.0] UNRELEASED
+
+## [15.2.1] UNRELEASED
+
+### Added
+- Added workflow that scans for missing variable in readme (PR #512)
+- Added missing variables to readme (PR #512)
+
+### Changed
+- Bumped autoscaler version to 0.8.1 (PR #513)
+- Configure caddy to fix issue #524 (PR #522)
+- Improved incus_report.sh error handling to report failure when puppet report could not be fetched (PR #516)
+- Improved incus_report.sh total grep (PR #516)
+
+### Removed
+- Removed UsePSS in slurm.conf (PR #514)
+
+## [15.2.0] 2026-02-11
 
 ### Added
 - Enabled dirsrv access log compression (PR #489)
