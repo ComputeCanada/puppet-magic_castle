@@ -4,7 +4,7 @@ class profile::nfs (String $domain) {
 
   if ($ipaddress == $server) or ($facts['networking']['fqdn'] == $server) {
     include profile::nfs::server
-  } elsif $server =~ Stdlib::Host {
+  } elsif $server != '' {
     include profile::nfs::client
   }
 }
