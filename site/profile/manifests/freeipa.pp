@@ -526,6 +526,26 @@ class profile::freeipa::server (
     postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
   }
 
+  # httpd-core rpm installs /etc/logrotate.d/httpd with postrotate = /bin/systemctl reload httpd
+  # From our experience during winter 2026, the postrotate script would leave processes httpd
+  # every week, to the point where after multiple weeks, httpd could no longer be reloaded and the
+  # error_log would be filled with "AH03490: scoreboard is full, not at MaxRequestWorkers.Increase ServerLimit."
+  # With the objective of avoiding this issue, we define our own logrotate config file for httpd
+  # that instead of having httpd reload after rotating the log, we copy the log file and truncate the file
+  # currently used by httpd e.g: copytruncate in logrotate.
+  logrotate::rule { 'httpd':
+    path          => '/var/log/httpd/*log',
+    rotate        => 14,
+    rotate_every  => 'daily',
+    dateext       => true,
+    missingok     => true,
+    ifempty       => false,
+    sharedscripts => true,
+    compress      => true,
+    copytruncate  => true,
+    require       => Exec['ipa-install'],
+  }
+
   include profile::base::etc_hosts
   include profile::freeipa::base
   include profile::sssd::client
