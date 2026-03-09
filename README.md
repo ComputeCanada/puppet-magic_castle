@@ -595,6 +595,7 @@ This class install packages, and configures files and services of a FreeIPA clie
 | Variable     | Description               | Type    |
 | :----------- | :------------------------ | :------ |
 | `server_ip`  | FreeIPA server ip address | String  |
+| `skip_ipa_install` | Skip FreeIPA client installation command execution | Boolean |
 
 <details>
 <summary>default values</summary>
@@ -604,6 +605,7 @@ first instance with the tag `mgmt`.
 
 ```yaml
 profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+profile::freeipa::client::skip_ipa_install: false
 ```
 </details>
 
@@ -1109,12 +1111,14 @@ This class allows some configuration for the Slurm compute nodes.
 ### parameters
 | Variable                | Description                                             | Type   |
 | :---------------------- | :------------------------------------------------------ | :----- |
+| `ensure`                | Desired state of the `slurmd` service (`running` or `stopped`) | Enum['running', 'stopped'] |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::node::ensure: 'running'
 profile::slurm::node::pam_access_groups: ['wheel']
 ```
 </details>
@@ -1241,6 +1245,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 
 | Variable                | Description                                                                                   | Type    |
 | :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
+| `ensure`                | Desired state of the `slurmd` service (`running` or `stopped`)                               | Enum['running', 'stopped'] |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
 
@@ -1248,6 +1253,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 <summary>default values</summary>
 
 ```yaml
+profile::slurm::node::ensure: 'running'
 profile::slurm::node::enable_tmpfs_mounts: true
 profile::slurm::node::pam_access_groups: ['wheel']
 ```
@@ -1371,6 +1377,7 @@ This class configures external authentication domains
 | :------------ | :---------------------------------------------------------------- | :---- |
 | `domains`     | Config dictionary of domains that can authenticate                | Hash[String, Any]  |
 | `access_tags` | List of host tags that domain user can connect to                 | Array[String] |
+| `ensure`      | Desired state of the `sssd` service (`running` or `stopped`)      | Enum['running', 'stopped'] |
 | `deny_access` | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | Optional[Boolean] |
 | `ldapclient_domain` | Identify which domain (i.e.: a key from `domains`) will be used by ldap clients. if FreeIPA is installed and this parameter is left undefined, ldap client defaults to FreeIPA domain. | Optional[String] |
 
@@ -1380,6 +1387,7 @@ This class configures external authentication domains
 ```yaml
 profile::sssd::client::domains: { }
 profile::sssd::client::access_tags: ['login', 'node']
+profile::sssd::client::ensure: 'running'
 profile::sssd::client::deny_access: ~
 ```
 </details>

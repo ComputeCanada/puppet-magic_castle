@@ -43,7 +43,10 @@ class profile::freeipa::base (String $ipa_domain) {
   }
 }
 
-class profile::freeipa::client (String $server_ip) {
+class profile::freeipa::client (
+  String $server_ip,
+  Boolean $skip_ipa_install = false,
+) {
   include profile::freeipa::base
   include profile::sssd::client
 
@@ -79,6 +82,35 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
+  if length($fqdn) > 63 {
+    fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
+  }
+
+  exec { 'set_hostname':
+    command => "/bin/hostnamectl set-hostname ${fqdn}",
+    unless  => "/usr/bin/test `hostname` = ${fqdn}",
+  }
+
+  file { '/sbin/mc-ipa-client-install':
+    mode   => '0755',
+    source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
+  }
+  if ! $skip_ipa_install {
+    include profile::freeipa::client::install
+  } else {
+    exec { 'ipa-install':
+      command => '/bin/true',
+    }
+  }
+}
+
+class profile::freeipa::client::install {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $realm = upcase($ipa_domain)
+  $ipaddress = lookup('terraform.self.local_ip')
+
   # We want to wait for the FreeIPA server to be fully configured
   # before launching the FreeIPA client install. The mechanism we
   # found thus far to validate the server is operational is to
@@ -107,20 +139,6 @@ class profile::freeipa::client (String $server_ip) {
   Selinux::Boolean <| |> -> Wait_for['ipa_https']
   Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
   Uv::Venv <| |> -> Wait_for['ipa_https']
-
-  if length($fqdn) > 63 {
-    fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
-  }
-
-  exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname ${fqdn}",
-    unless  => "/usr/bin/test `hostname` = ${fqdn}",
-  }
-
-  file { '/sbin/mc-ipa-client-install':
-    mode   => '0755',
-    source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
-  }
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
     /sbin/mc-ipa-client-install \
@@ -215,7 +233,6 @@ class profile::freeipa::server (
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
-
   file { '/etc/ipa':
     ensure => directory,
     owner  => 'root',
