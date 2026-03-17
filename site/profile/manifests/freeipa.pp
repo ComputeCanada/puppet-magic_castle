@@ -236,6 +236,10 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    Exec['enable_idm:DL1'] -> Package['ipa-server-dns']
+  }
+
   file { '/etc/ipa/dse-init.ldif':
     source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
     require => File['/etc/ipa'],
