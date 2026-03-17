@@ -139,6 +139,7 @@ class profile::freeipa::client (String $server_ip) {
     tries     => 2,
     try_sleep => 60,
     require   => [
+      File['/etc/ssh/sshd_config.d'],
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
@@ -306,7 +307,8 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
-      File['/etc/ipa/dse-init.ldif']
+      File['/etc/ipa/dse-init.ldif'],
+      File['/etc/ssh/sshd_config.d'],
     ],
     notify  => [
       Service['systemd-logind'],
