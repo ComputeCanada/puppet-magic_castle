@@ -94,6 +94,7 @@ class profile::nfs::server (
   Array[String] $export_paths = [],
 ) {
   include profile::volumes
+  include nftables::rules::nfs
 
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
