@@ -427,11 +427,17 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    $named_service = 'named-pkcs11'
+  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+    $named_service = 'named'
+  }
+
   $ipa_services = [
     "dirsrv@${ds_domain}",
     'krb5kdc',
     'kadmin',
-    'named',
+    $named_service,
     'ipa-custodia',
     'pki-tomcatd@pki-tomcat',
     'ipa-dnskeysyncd',
