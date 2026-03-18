@@ -26,6 +26,8 @@ class profile::freeipa::base (String $ipa_domain) {
     ensure => present,
   }
 
+  package { 'sssd-dbus': }
+
   service { 'NetworkManager':
     ensure  => running,
     enable  => true,
