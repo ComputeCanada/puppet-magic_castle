@@ -6,22 +6,66 @@ class profile::ssh::base (
     enable => true,
   }
 
+  file { '/etc/ssh/sshd_config.d':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0700',
+  }
+
+  file { '/etc/ssh/sshd_config.d/01-puppet.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  file { '/etc/ssh/sshd_config.d/50-authenticationmethods.conf':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  file { '/etc/ssh/sshd_config.d/50-cloud-init.conf':
+    ensure => absent,
+    notify => Service['sshd'],
+  }
+
   sshd_config { 'Include':
     ensure => present,
     value  => '/etc/ssh/sshd_config.d/*',
     notify => Service['sshd'],
   }
 
-  sshd_config { 'PermitRootLogin':
-    ensure => present,
-    value  => 'no',
+  sshd_config { 'PermitRootLogin-01-puppet':
+    ensure  => present,
+    key     => 'PermitRootLogin',
+    value   => 'no',
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  sshd_config { 'PermitRootLogin-sshd_config':
+    ensure => absent,
+    key    => 'PermitRootLogin',
     notify => Service['sshd'],
   }
 
   $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
-  sshd_config { 'PasswordAuthentication':
-    ensure => present,
-    value  => $password_auth,
+  sshd_config { 'PasswordAuthentication-01-puppet':
+    ensure  => present,
+    key     => 'PasswordAuthentication',
+    value   => $password_auth,
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  sshd_config { 'PasswordAuthentication-sshd_config':
+    ensure => absent,
+    key    => 'PasswordAuthentication',
     notify => Service['sshd'],
   }
 
@@ -67,11 +111,12 @@ class profile::ssh::base (
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
     file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
-      mode   => '0700',
-      owner  => 'root',
-      group  => 'root',
-      source => 'puppet:///modules/profile/base/opensshserver-9.config',
-      notify => Service['sshd'],
+      mode    => '0600',
+      owner   => 'root',
+      group   => 'root',
+      source  => 'puppet:///modules/profile/base/opensshserver-9.config',
+      notify  => Service['sshd'],
+      require => File['/etc/ssh/sshd_config.d'],
     }
   }
 
@@ -82,6 +127,7 @@ class profile::ssh::base (
     value     => 'publickey',
     target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
     notify    => Service['sshd'],
+    require   => File['/etc/ssh/sshd_config.d'],
   }
 
   sshd_config { 'tf_sshd_AuthorizedKeysFile':
@@ -91,6 +137,7 @@ class profile::ssh::base (
     value     => '/etc/ssh/authorized_keys.%u',
     target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
     notify    => Service['sshd'],
+    require   => File['/etc/ssh/sshd_config.d'],
   }
 
   $tf_public_key = lookup('terraform.data.tf_public_key')
