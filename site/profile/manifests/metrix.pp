@@ -1,4 +1,13 @@
 class profile::metrix {
+  include mysql::server
+
+  package { 'mariadb:10.11':
+    ensure      => present,
+    provider    => 'dnfmodule',
+    enable_only => true,
+    before      => Package['mysql-server'],
+  }
+
   $instances = lookup('terraform.instances')
   $logins = keys($instances.filter |$keys, $values| { 'login' in $values['tags'] })
 

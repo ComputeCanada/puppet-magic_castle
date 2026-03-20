@@ -26,6 +26,8 @@ class profile::freeipa::base (String $ipa_domain) {
     ensure => present,
   }
 
+  package { 'sssd-dbus': }
+
   service { 'NetworkManager':
     ensure  => running,
     enable  => true,
@@ -139,6 +141,7 @@ class profile::freeipa::client (String $server_ip) {
     tries     => 2,
     try_sleep => 60,
     require   => [
+      File['/etc/ssh/sshd_config.d'],
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
@@ -236,6 +239,10 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    Exec['enable_idm:DL1'] -> Package['ipa-server-dns']
+  }
+
   file { '/etc/ipa/dse-init.ldif':
     source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
     require => File['/etc/ipa'],
@@ -302,7 +309,8 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
-      File['/etc/ipa/dse-init.ldif']
+      File['/etc/ipa/dse-init.ldif'],
+      File['/etc/ssh/sshd_config.d'],
     ],
     notify  => [
       Service['systemd-logind'],
@@ -427,11 +435,17 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    $named_service = 'named-pkcs11'
+  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+    $named_service = 'named'
+  }
+
   $ipa_services = [
     "dirsrv@${ds_domain}",
     'krb5kdc',
     'kadmin',
-    'named',
+    $named_service,
     'ipa-custodia',
     'pki-tomcatd@pki-tomcat',
     'ipa-dnskeysyncd',

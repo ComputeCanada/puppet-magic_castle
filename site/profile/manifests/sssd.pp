@@ -4,8 +4,6 @@ class profile::sssd::client(
   Optional[Boolean] $deny_access = undef,
   Optional[String] $ldapclient_domain = undef,
 ){
-  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
-
   package { 'sssd-ldap': }
 
   if ! defined('$deny_access') {
@@ -88,4 +86,6 @@ EOT
     require => File['/etc/sssd/sssd.conf'],
     notify  => Service['sssd'],
   }
+
+  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
 }
