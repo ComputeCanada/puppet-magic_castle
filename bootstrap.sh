@@ -7,7 +7,7 @@ ENC_CMD="eyaml encrypt -o block --pkcs7-public-key=${PKCS7_KEY}"
 (
     $ENC_CMD -l 'jupyterhub::prometheus_token' -s $(uuidgen)
     $ENC_CMD -l 'profile::consul::acl_api_token' -s $(uuidgen)
-    $ENC_CMD -l 'profile::slurm::base::munge_key' -s $(openssl rand 1024 | openssl enc -A -base64)
+    $ENC_CMD -l 'profile::slurm::base::auth_key' -s $(openssl rand 1024 | openssl enc -A -base64)
     $ENC_CMD -l 'profile::slurm::accounting::password' -s $(openssl rand -base64 9)
     $ENC_CMD -l 'profile::freeipa::mokey::password' -s $(openssl rand -base64 9)
     $ENC_CMD -l 'profile::freeipa::server::ds_password' -s $(openssl rand -base64 9)

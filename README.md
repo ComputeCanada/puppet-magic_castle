@@ -1067,20 +1067,15 @@ is a free and open-source job scheduler for Linux and Unix-like kernels,
 used by many of the world's supercomputers and computer clusters.
 [reference](https://en.wikipedia.org/wiki/Slurm_Workload_Manager)
 
-> [MUNGE](https://github.com/dun/munge) (MUNGE Uid 'N' Gid Emporium) is
-an authentication service for creating and validating credentials. It is
-designed to be highly scalable for use in an HPC cluster environment.
-[reference](https://dun.github.io/munge/)
-
 This class installs base packages and config files that are essential
-to all Slurm's roles. It also installs and configure Munge service.
+to all Slurm's roles.
 
 ### parameters
 
 | Variable                | Description              | Type    |
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
-| `munge_key`             | Base64 encoded Munge key | String  |
+| `auth_key`              | Base64 encoded Slurm auth key | String  |
 | `slurm_version`         | Slurm version to install | Enum['24.05', '24.11', '25.05', '25.11'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
@@ -1098,7 +1093,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 
 ```yaml
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
-profile::slurm::base::munge_key: ENC[PKCS7, ...]
+profile::slurm::base::auth_key: ENC[PKCS7, ...]
 profile::slurm::base::slurm_version: '23.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600

@@ -1,4 +1,4 @@
-AuthType=auth/munge
+AuthType=auth/slurm
 LogFile=/var/log/slurm/slurmdbd.log
 PidFile=/var/run/slurmdbd/slurmdbd.pid
 DbdHost=<%= $dbd_host %>
