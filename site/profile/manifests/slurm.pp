@@ -722,16 +722,20 @@ class profile::slurm::node (
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
+
   package { 'slurm-sackd':
-    require => Yumrepo['slurm-copr-repo']
+    require => [
+      Package['slurm'],
+    ]
   }
+
   service { 'sackd':
-    ensure  => running,
-    enable  => true,
+    ensure    => running,
+    enable    => true,
     subscribe => [
       File['/etc/slurm/slurm.key'],
     ],
-    require => [
+    require   => [
       Package['slurm-sackd'],
     ],
   }
