@@ -44,7 +44,7 @@ class profile::ssh::base (
     value   => 'no',
     notify  => Service['sshd'],
     target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
-    require => File['/etc/ssh/sshd_config.d'],
+    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
   }
 
   sshd_config { 'PermitRootLogin-sshd_config':
@@ -60,7 +60,7 @@ class profile::ssh::base (
     value   => $password_auth,
     notify  => Service['sshd'],
     target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
-    require => File['/etc/ssh/sshd_config.d'],
+    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
   }
 
   sshd_config { 'PasswordAuthentication-sshd_config':
@@ -127,7 +127,7 @@ class profile::ssh::base (
     value     => 'publickey',
     target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
     notify    => Service['sshd'],
-    require   => File['/etc/ssh/sshd_config.d'],
+    require   => File['/etc/ssh/sshd_config.d/50-authenticationmethods.conf'],
   }
 
   sshd_config { 'tf_sshd_AuthorizedKeysFile':
@@ -137,7 +137,7 @@ class profile::ssh::base (
     value     => '/etc/ssh/authorized_keys.%u',
     target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
     notify    => Service['sshd'],
-    require   => File['/etc/ssh/sshd_config.d'],
+    require   => File['/etc/ssh/sshd_config.d/50-authenticationmethods.conf'],
   }
 
   $tf_public_key = lookup('terraform.data.tf_public_key')
