@@ -323,13 +323,14 @@ profile::ceph::client::shares:
 
 Defines a CephFS share configuration used by `profile::ceph::client::shares`.
 
-| Field                         | Description                                                     | Type                         | Required |
-| :---------------------------- | :-------------------------------------------------------------- | :--------------------------- | :------- |
-| `share_name`                  | Ceph share name                                                 | String                       | Yes      |
-| `access_key`                  | Ceph key for the user                                           | String                       | Yes      |
-| `export_path`                 | CephFS export path to mount                                     | Stdlib::Unixpath             | Yes      |
-| `bind_mounts`                 | Optional list of bind mounts created from the mounted share     | Array[BindMount]             | No       |
-| `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts    | Stdlib::Unixpath             | No       |
+| Field                         | Description                                                       | Type                         | Required |
+| :---------------------------- | :---------------------------------------------------------------- | :--------------------------- | :------- |
+| `share_name`                  | Ceph share name                                                   | String                       | Yes      |
+| `access_key`                  | Ceph key for the user                                             | String                       | Yes      |
+| `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
+| `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
+| `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
+| `mon_host`                    | Optional list of monitor hosts for this mount (override default)  | Array[String]                | No       |
 
 ```yaml
 profile::ceph::client::shares:
