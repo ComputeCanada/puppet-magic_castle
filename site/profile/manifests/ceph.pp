@@ -6,17 +6,18 @@ type BindMount = Struct[{
 
 type CephFS = Struct[
   {
-    'share_name' => String,
-    'access_key' => String,
-    'export_path' => Stdlib::Unixpath,
-    'bind_mounts' => Optional[Array[BindMount]],
+    'share_name'                 => String,
+    'access_key'                 => String,
+    'export_path'                => Stdlib::Unixpath,
+    'bind_mounts'                => Optional[Array[BindMount]],
     'binds_fcontext_equivalence' => Optional[Stdlib::Unixpath],
+    'mon_host'                   => Optional[Array[String]],
   }
 ]
 
 class profile::ceph::client (
-  Array[String] $mon_host,
   Hash[String, CephFS] $shares,
+  Array[String] $mon_host = [],
 ) {
   require profile::ceph::client::install
 
