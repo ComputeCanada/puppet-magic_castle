@@ -15,7 +15,7 @@ lookup_options:
   profile::volumes::devices:
     merge: 'deep'
 
-profile::base::version: 15.2.1
+profile::base::version: 15.3.0
 profile::base::packages: []
 
 motd::content: ""
