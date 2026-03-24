@@ -319,6 +319,40 @@ profile::ceph::client::shares:
 ```
 </details>
 
+#### Type `CephFS`
+
+Defines a CephFS share configuration used by `profile::ceph::client::shares`.
+
+| Field                         | Description                                                     | Type                         | Required |
+| :---------------------------- | :-------------------------------------------------------------- | :--------------------------- | :------- |
+| `share_name`                  | Ceph share name                                                 | String                       | Yes      |
+| `access_key`                  | Ceph key for the user                                           | String                       | Yes      |
+| `export_path`                 | CephFS export path to mount                                     | Stdlib::Unixpath             | Yes      |
+| `bind_mounts`                 | Optional list of bind mounts created from the mounted share     | Array[BindMount]             | No       |
+| `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts    | Stdlib::Unixpath             | No       |
+
+```yaml
+profile::ceph::client::shares:
+  home:
+    share_name: "home"
+    access_key: "AQB...=="
+    export_path: "/volumes/home"
+    bind_mounts:
+      - src: "/projects"
+        dst: "/srv/projects"
+        type: "directory"
+```
+
+#### Type `BindMount`
+
+Defines a bind mount created from a subpath of the mounted CephFS share.
+
+| Field | Description                                         | Type                       | Required |
+| :---- | :-------------------------------------------------- | :------------------------- | :------- |
+| `src` | Source path within the mounted share                | Stdlib::Unixpath           | Yes      |
+| `dst` | Destination path on the host                        | Stdlib::Unixpath           | Yes      |
+| `type`| Optional target type (`file` or `directory`)        | Enum['file','directory']   | No       |
+
 ## profile::ceph::client::install
 
 This class only installs the Ceph packages.
