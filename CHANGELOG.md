@@ -3,9 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [15.3.0] UNRELEASED
+## [15.3.0] 2026-03-24
 
-## [15.2.1] UNRELEASED
+### Added
+- Added a logrotate definition for httpd (PR #523)
+- Added support for external NFS servers (PR #326)
+- Added support for Slurm 25.11 (PR #529)
+- Added documentation on CephFS and BindMount types (PR #531)
+- Added support to override `mon_host` for each CephFS share and made it optional at the client level (PR #530)
+- Added documentation for the CephFS `mon_host` type (PR #530)
+
+### Changed
+- Fixed issue #433 (PR #525)
+- Fixed the name of the `named` service for RHEL8 (PR #527)
+- Ensured `idm:DL1` is enabled before installing ipa rpm (PR #527)
+- Ensured `/etc/ssh/sshd_config.d` is created before installing the ipa client (PR #527)
+- Bumped the mariadb module version for metrix (PR #527)
+- Added missing package `sssd-dbus` to `freeipa::base` (PR #527)
+
+### Removed
+- Dropped support for Slurm 23.11 (PR #529)
+
+
+## [15.2.1] 2026-02-26
 
 ### Added
 - Added workflow that scans for missing variable in readme (PR #512)
@@ -528,4 +548,3 @@ definition.
 - [slurm] Removed support for Slurm 19.08 (PR #208)
 - [slurm] Dropped NVML usage in gres.conf (incompatible with cloud state node) (PR #208)
 - [slurm] Removed NVML enabled Slurm yum repo
-
