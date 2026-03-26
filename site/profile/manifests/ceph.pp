@@ -104,7 +104,7 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name}",
+    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name},_netdev",
     require => File['/etc/ceph/ceph.conf'],
   }
 
@@ -115,7 +115,7 @@ define profile::ceph::client::share (
     mount { $mount['dst']:
       ensure  => 'mounted',
       fstype  => 'none',
-      options => 'rw,bind',
+      options => 'rw,bind,_netdev',
       device  => "/mnt/${name}${mount['src']}",
       require => [
         File[$mount['dst']],
