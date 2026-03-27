@@ -1,6 +1,7 @@
 class profile::sssd::client(
   Hash[String, Any] $domains = {},
   Array[String] $access_tags = ['login', 'node'],
+  Enum['running', 'stopped'] $ensure = 'running',
   Optional[Boolean] $deny_access = undef,
   Optional[String] $ldapclient_domain = undef,
 ){
@@ -87,5 +88,5 @@ EOT
     notify  => Service['sssd'],
   }
 
-  ensure_resource('service', 'sssd', { 'ensure' => running, 'enable' => true })
+  ensure_resource('service', 'sssd', { 'ensure' => $ensure, 'enable' => true })
 }
