@@ -1,14 +1,14 @@
 # Slurm base class that is included in each different profile.
-# The class configures the slurm and munge users, install the
+# The class configures the slurm user, install the
 # base slurm packages and configures everything that is required
 # on all types of nodes.
 # @param cluster_name Specifies the name of the cluster as it appears in slurm.conf
-# @param munge_key Specifies the munge secret key that allows slurm nodes to communicate
+# @param auth_key Specifies the auth secret key that allows slurm nodes to communicate
 # @param slurm_version Specifies which version of Slurm to install
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
   String $cluster_name,
-  String $munge_key,
+  String $auth_key,
   Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
@@ -39,62 +39,8 @@ class profile::slurm::base (
     before  => Package['slurm']
   }
 
-  group { 'munge':
-    ensure => 'present',
-    gid    =>  '2002'
-  }
-
-  user { 'munge':
-    ensure  => 'present',
-    groups  => 'munge',
-    uid     => '2002',
-    home    => '/var/lib/munge',
-    comment => 'MUNGE Uid N Gid Emporium',
-    shell   => '/sbin/nologin',
-    before  => Package['munge']
-  }
-
   package { 'xauth':
     ensure => 'installed',
-  }
-
-  package { 'munge':
-    ensure => 'installed',
-  }
-
-  # Sometime /var/run/munge is not created.
-  # Munge RPM provides /usr/lib/tmpfiles.d/munge.conf
-  # tmpfiles.d config was replaced with RuntimeDirectory as of munge 0.5.14
-  # but we are stuck with 0.5.13 as upstream has not updated munge
-  # since 2021. The next 2 file_lines make sure munge does not rely on
-  # systemd-tmpfiles-setup.service.
-  # Ref: https://github.com/dun/munge/commit/3eed37e3ca73c14b679394df7be151d27566b0fe
-  # Ref: https://github.com/dun/munge/issues/75
-  file_line { 'munge_runtimedirectory':
-    path    => '/usr/lib/systemd/system/munge.service',
-    match   => '^RuntimeDirectory=',
-    line    => 'RuntimeDirectory=munge',
-    after   => 'Group=munge',
-    require => Package['munge'],
-    notify  => Service['munge'],
-  }
-
-  file_line { 'munge_runtimedirectorymode':
-    path    => '/usr/lib/systemd/system/munge.service',
-    match   => '^RuntimeDirectoryMode=',
-    line    => 'RuntimeDirectoryMode=0755',
-    after   => 'Group=munge',
-    require => Package['munge'],
-    notify  => Service['munge'],
-  }
-
-  # Fix a warning in systemctl status munge about the location of the PID file.
-  file_line { 'munge_pidfile':
-    path    => '/usr/lib/systemd/system/munge.service',
-    match   => '^PIDFile=',
-    line    => 'PIDFile=/run/munge/munged.pid',
-    require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file { '/var/log/slurm':
@@ -114,12 +60,6 @@ class profile::slurm::base (
     owner   => 'slurm',
     group   => 'slurm',
     seltype => 'usr_t'
-  }
-
-  file { '/etc/munge':
-    ensure => 'directory',
-    owner  => 'munge',
-    group  => 'munge'
   }
 
   file { '/etc/slurm/cgroup.conf':
@@ -155,20 +95,15 @@ class profile::slurm::base (
     content => $slurm_path,
   }
 
-  file { '/etc/munge/munge.key':
+  file { '/etc/slurm/slurm.key':
     ensure  => 'present',
-    owner   => 'munge',
-    group   => 'munge',
-    mode    => '0400',
-    content => $munge_key,
-    before  => Service['munge']
-  }
-
-  service { 'munge':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => File['/etc/munge/munge.key'],
-    require   => Package['munge']
+    owner   => 'slurm',
+    group   => 'slurm',
+    mode    => '0600',
+    content => $auth_key,
+    require => [
+      File['/etc/slurm'],
+    ]
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
@@ -187,7 +122,6 @@ class profile::slurm::base (
     name    => "slurm-${slurm_version}*",
     require => [
       Exec['enable_powertools'],
-      Package['munge'],
       Yumrepo['slurm-copr-repo'],
       Yumrepo['epel'],
     ],
@@ -197,7 +131,6 @@ class profile::slurm::base (
     ensure  => 'installed',
     require => [
       Package['slurm'],
-      Package['munge'],
       Yumrepo['slurm-copr-repo']],
   }
 
@@ -211,7 +144,6 @@ class profile::slurm::base (
     ensure  => 'installed',
     require => [
       Package['slurm'],
-      Package['munge'],
       Yumrepo['slurm-copr-repo']
     ],
   }
@@ -259,16 +191,6 @@ class profile::slurm::base (
     owner   => 'slurm',
     mode    => '0644',
     require => File['/etc/slurm'],
-  }
-
-  # SELinux policy required to allow confined users to submit job with Slurm 19, 20, 21.
-  # Slurm commands tries to write to a socket in /var/run/munge.
-  # Confined users cannot stat this file, neither write to it. The policy
-  # allows user_t to getattr and write var_run_t sock file.
-  # To get the policy, we had to disable dontaudit rules with : sudo semanage -DB
-  selinux::module { 'munge_socket':
-    ensure    => 'present',
-    source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
   }
 
   file {'/etc/slurm/nodes.conf':
@@ -325,7 +247,6 @@ class profile::slurm::accounting(
     name    => "slurm-slurmdbd-${slurm_version}*",
     require => [
       Package['slurm'],
-      Package['munge'],
       Yumrepo['slurm-copr-repo']
     ],
   }
@@ -338,6 +259,7 @@ class profile::slurm::accounting(
       File['/etc/slurm/slurmdbd.conf'],
     ],
     subscribe => [
+      File['/etc/slurm/slurm.key'],
       Mysql::Db['slurm_acct_db'],
     ],
     before    => Service['slurmctld']
@@ -515,7 +437,6 @@ export TFE_VAR_POOL=${tfe_var_pool}
   package { 'slurm-slurmctld':
     ensure  => 'installed',
     require => [
-      Package['munge'],
       Package['slurm'],
     ],
   }
@@ -531,6 +452,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/gres.conf'],
       File['/etc/slurm/nodes.conf'],
+      File['/etc/slurm/slurm.key'],
     ]
   }
 
@@ -757,6 +679,7 @@ class profile::slurm::node (
       File['/etc/slurm/slurm.conf'],
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/nodes.conf'],
+      File['/etc/slurm/slurm.key'],
     ],
     require   => [
       Package['slurm-slurmd'],
@@ -799,4 +722,21 @@ class profile::slurm::node (
 # controller through Slurm command-line tools.
 class profile::slurm::submitter {
   contain profile::slurm::base
+
+  package { 'slurm-sackd':
+    require => [
+      Package['slurm'],
+    ]
+  }
+
+  service { 'sackd':
+    ensure    => running,
+    enable    => true,
+    subscribe => [
+      File['/etc/slurm/slurm.key'],
+    ],
+    require   => [
+      Package['slurm-sackd'],
+    ],
+  }
 }
