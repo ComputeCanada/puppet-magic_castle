@@ -230,7 +230,7 @@ define profile::users::local_user (
     $key_value = $split[$key_type_index+1]
 
     if $key_type_index != 0 {
-      $key_options = ssh_split_options($split[0, $key_type_index].join(' '))
+      $key_options = profile::utils::split_options($split[0, $key_type_index].join(' '))
     } else {
       $key_options = undef
     }
