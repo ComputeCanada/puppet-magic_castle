@@ -408,6 +408,7 @@ class profile::slurm::controller (
   String $tfe_token = '',
   String $tfe_workspace = '',
   String $tfe_var_pool = 'pool',
+  Optional[String] $tfe_proxy_url = undef,
 ) {
   contain profile::slurm::base
 
@@ -441,15 +442,22 @@ class profile::slurm::controller (
     ],
   }
 
+  $tfe_proxy_url_export = $tfe_proxy_url ? {
+    undef   => '',
+    default => "export TFE_PROXY_URL=${tfe_proxy_url}\n",
+  }
+
+  $env_secrets_base = @("EOT")
+export TFE_TOKEN=${tfe_token}
+export TFE_WORKSPACE=${tfe_workspace}
+export TFE_VAR_POOL=${tfe_var_pool}
+EOT
+
   file { '/etc/slurm/env.secrets':
     ensure  => 'present',
     owner   => 'slurm',
     mode    => '0600',
-    content => @("EOT")
-export TFE_TOKEN=${tfe_token}
-export TFE_WORKSPACE=${tfe_workspace}
-export TFE_VAR_POOL=${tfe_var_pool}
-|EOT
+    content => "${env_secrets_base}${tfe_proxy_url_export}",
   }
 
   file { '/usr/bin/slurm_resume':
