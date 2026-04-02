@@ -291,6 +291,11 @@ profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.10.0'
 profile::slurm::node::enable_tmpfs_mounts: true
+profile::slurm::accounting::db_users:
+  - username: "%{alias('metrix::slurm_user')}"
+    password: "%{alias('metrix::slurm_password')}"
+    privileges: ['SELECT']
+    host: '127.0.0.1'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
 profile::users::ldap::users:
@@ -352,12 +357,14 @@ profile::prometheus::slurm_job_exporter::version: 0.4.12
 
 metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
-metrix::slurm_password: "%{alias('profile::slurm::accounting::password')}"
+metrix::slurm_user: "metrix_slurm"
 metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
 metrix::prometheus_port: 9090
 metrix::db_ip: 127.0.0.1
 metrix::db_port: 3306
 metrix::install::version: 1.7.0
+metrix::slurm_db_ip: 127.0.0.1
+metrix::slurm_db_port: 3306
 metrix::subdomain: 'metrix'
 
 metrix::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"

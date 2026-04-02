@@ -289,23 +289,51 @@ class profile::slurm::base (
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
-class profile::slurm::accounting(
+type SlurmDBUser = Struct[
+  {
+    'username'   => String,
+    'password'   => String,
+    'privileges' => Array[String],
+    'host'       => String,
+  },
+]
+class profile::slurm::accounting (
   String $password,
   Hash[String, Any] $options = {},
   Array[String] $admins = [],
   Hash[String, Hash] $accounts = {},
   Hash[String, Array[String]] $users = {},
-  Integer $dbd_port = 6819
+  Integer $dbd_port = 6819,
+  Array[SlurmDBUser] $db_users = [],
 ) {
   include mysql::server
   include profile::slurm::base
 
-  mysql::db { 'slurm_acct_db':
+  $db_name = 'slurm_acct_db'
+  mysql::db { $db_name:
     ensure   => present,
     user     => 'slurm',
     password => $password,
-    host     => 'localhost',
+    host     => '127.0.0.1',
     grant    => ['ALL'],
+  }
+
+  $db_users.each|$db_user| {
+    $mysql_user = "${db_user['username']}@${db_user['host']}"
+    mysql_user { $mysql_user:
+      ensure        => present,
+      password_hash => mysql::password($db_user['password']),
+    }
+    mysql_grant { "${mysql_user}/${db_name}.*":
+      privileges => $db_user['privileges'],
+      provider   => 'mysql',
+      user       => $mysql_user,
+      table      => "${db_name}.*",
+      require    => [
+        Mysql_database[$db_name],
+        Mysql_user[$mysql_user],
+      ],
+    }
   }
 
   file { '/etc/slurm/slurmdbd.conf':
