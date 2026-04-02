@@ -344,11 +344,12 @@ profile::prometheus::slurm_job_exporter::version: 0.4.9
 
 metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
-metrix::slurm_password: "%{alias('profile::slurm::accounting::password')}"
+metrix::slurm_user: 'metrix'
 metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
 metrix::prometheus_port: 9090
 metrix::db_ip: 127.0.0.1
 metrix::db_port: 3306
+metrix::slurm_db_port: 3306
 metrix::install::version: 1.6.0
 metrix::subdomain: 'metrix'
 
