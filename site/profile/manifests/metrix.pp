@@ -1,4 +1,6 @@
-class profile::metrix {
+class profile::metrix (
+  Array[String] $login_tags = ['login']
+){
   include mysql::server
 
   package { 'mariadb':
@@ -9,7 +11,7 @@ class profile::metrix {
   }
 
   $instances = lookup('terraform.instances')
-  $logins = keys($instances.filter |$keys, $values| { 'login' in $values['tags'] })
+  $logins = keys($instances.filter |$keys, $values| { !intersection($login_tags, $values['tags']).empty })
 
   $domain_name = lookup('terraform.data.domain_name')
   $int_domain_name = lookup('profile::freeipa::base::ipa_domain')
