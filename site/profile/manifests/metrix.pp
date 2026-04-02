@@ -1,8 +1,8 @@
 class profile::metrix {
   include mysql::server
 
-  package { 'mariadb:10.11':
-    ensure      => present,
+  package { 'mariadb':
+    ensure      => '10.11',
     provider    => 'dnfmodule',
     enable_only => true,
     before      => Package['mysql-server'],
