@@ -297,6 +297,7 @@ class profile::slurm::accounting(
   Hash[String, Array[String]] $users = {},
   Integer $dbd_port = 6819
 ) {
+
   include mysql::server
   include profile::slurm::base
 
@@ -306,6 +307,16 @@ class profile::slurm::accounting(
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+  }
+
+  mysql::db { 'slurm_acct_db_metrix':
+    ensure   => present,
+    dbname   => 'slurm_acct_db',
+    user     => lookup('metrix::slurm_user'),
+    password => lookup('metrix::slurm_password'),
+    host     => 'localhost',
+    grant    => ['SELECT'],
+    require  => Mysql::Db['slurm_acct_db'],
   }
 
   file { '/etc/slurm/slurmdbd.conf':
