@@ -3,7 +3,6 @@
 forge "https://forgeapi.puppetlabs.com"
 
 mod 'cmdntrf-consul_template', '2.3.8'
-mod 'derdanne-nfs', '2.1.11'
 mod 'heini-wait_for', '2.2.0'
 mod 'puppet-alternatives', '6.0.0'
 mod 'puppet-augeasproviders_core', '4.0.1'
@@ -19,6 +18,7 @@ mod 'puppet-fail2ban', '4.2.0'
 mod 'puppet-healthcheck', '1.0.1'
 mod 'puppet-kmod', '4.0.0'
 mod 'puppet-logrotate', '5.0.0'
+mod 'puppet-nfs', '4.0.1'
 mod 'puppet-postfix', '5.1.0'
 mod 'puppet-prometheus', '12.5.0'
 mod 'puppet-prometheus_reporter', '2.0.0'
