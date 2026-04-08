@@ -1,6 +1,4 @@
-profile::gpu::install::vgpu::installer: rpm
-profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/alma%{facts.os.release.major}/Packages/a/arbutus-cloud-vgpu-repo-1.0-1.el%{facts.os.release.major}.noarch.rpm
-profile::gpu::install::vgpu::rpm::packages:
-  - nvidia-vgpu-kmod
-  - nvidia-vgpu-gridd
-  - nvidia-vgpu-tools
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::bin::source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/NVIDIA-Linux-x86_64-580.105.08-grid.run
+profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
+profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/kalpa-prod.tok

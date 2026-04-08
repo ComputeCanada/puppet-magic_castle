@@ -237,12 +237,61 @@ class profile::gpu::config::mig (
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
   Array[String] $grid_vgpu_types = [],
+  Optional[String] $gridd_content = undef,
+  Optional[String] $gridd_source = undef,
+  Optional[String] $token_content = undef,
+  Optional[String] $token_source = undef,
 ) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
   } elsif $installer == 'bin' {
     # install from binary installer
     include profile::gpu::install::vgpu::bin
+  }
+
+  if $gridd_content {
+    $gridd_definition = { 'content' => $gridd_content }
+  } elsif $gridd_source {
+    $gridd_definition = { 'source' => $gridd_source }
+  } else {
+    $gridd_definition = {}
+  }
+
+  if $gridd_definition != {} {
+    file { '/etc/nvidia/gridd.conf':
+      ensure  => file,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+      require => File['/etc/nvidia'],
+      notify  => Service['nvidia-gridd'],
+      *       => $gridd_definition,
+    }
+  }
+
+  if $token_content {
+    $token_definition = { 'content' => $token_content }
+  } elsif $token_source {
+    $token_definition = { 'source' => $token_source }
+  } else {
+    $token_definition = {}
+  }
+
+  if $token_definition != {} {
+    # https://docs.nvidia.com/vgpu/13.0/grid-licensing-user-guide/index.html#custom-configuring-nls-licensed-network-client-on-linux
+    file { '/etc/nvidia/ClientConfigToken':
+      ensure  => directory,
+      require => File['/etc/nvidia'],
+    }
+    file { '/etc/nvidia/ClientConfigToken/client_config.tok':
+      ensure  => file,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+      require => File['/etc/nvidia/ClientConfigToken'],
+      notify  => Service['nvidia-gridd'],
+      *       => $token_definition,
+    }
   }
 }
 
@@ -281,8 +330,6 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
-  Optional[String] $gridd_content = undef,
-  Optional[String] $gridd_source = undef,
 ) {
   exec { 'vgpu-driver-install-bin':
     command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
@@ -296,22 +343,6 @@ class profile::gpu::install::vgpu::bin (
       Package['kernel-devel'],
       Package['dkms'],
     ],
-  }
-
-  if $gridd_content {
-    $gridd_definition = { 'content' => $gridd_content }
-  } elsif $gridd_source {
-    $gridd_definition = { 'source' => $gridd_source }
-  } else {
-    $gridd_definition = {}
-  }
-
-  file { '/etc/nvidia/gridd.conf':
-    ensure => file,
-    mode   => '0644',
-    owner  => 'root',
-    group  => 'root',
-    *      => $gridd_definition,
   }
 }
 
