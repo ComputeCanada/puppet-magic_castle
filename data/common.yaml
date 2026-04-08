@@ -349,7 +349,7 @@ metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
 metrix::prometheus_port: 9090
 metrix::db_ip: 127.0.0.1
 metrix::db_port: 3306
-metrix::install::version: 1.6.0
+metrix::install::version: 1.7.0
 metrix::subdomain: 'metrix'
 
 metrix::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
