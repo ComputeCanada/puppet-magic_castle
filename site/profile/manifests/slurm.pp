@@ -297,7 +297,16 @@ class profile::slurm::accounting(
   Hash[String, Array[String]] $users = {},
   Integer $dbd_port = 6819
 ) {
-  include mysql::server
+
+  if lookup('terraform.tag_ip.metrix.0') != lookup('terraform.self.local_ip') {
+    class { 'mysql::server':
+      override_options => { 'mysqld' => { 'bind-address' => lookup('terraform.self.local_ip') } }
+    }
+  }
+  else {
+    include mysql::server
+  }
+
   include profile::slurm::base
 
   mysql::db { 'slurm_acct_db':
@@ -306,6 +315,15 @@ class profile::slurm::accounting(
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+  }
+
+  mysql::db { 'slurm_acct_db_metrix':
+    ensure   => present,
+    dbname   => 'slurm_acct_db',
+    user     => lookup('metrix::slurm_user'),
+    password => lookup('metrix::slurm_password'),
+    host     => lookup('terraform.tag_ip.metrix.0'),
+    grant    => ['SELECT'],
   }
 
   file { '/etc/slurm/slurmdbd.conf':
