@@ -1,0 +1,4 @@
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::bin::source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/NVIDIA-Linux-x86_64-580.105.08-grid.run
+profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
+profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/kalpa-prod.tok
