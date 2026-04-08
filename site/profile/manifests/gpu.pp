@@ -54,12 +54,13 @@ class profile::gpu::install (
   if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
+    $installer = 'rpm'
   } else {
     include profile::gpu::install::vgpu
+    $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   }
 
   # Binary installer do not build drivers with DKMS
-  $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   if ! profile::is_grid_vgpu() or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
@@ -76,7 +77,7 @@ class profile::gpu::install (
 
   kmod::load { $nvidia_kmod: }
 
-  if $lib_symlink_path {
+  if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash(
       $lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
@@ -91,9 +92,7 @@ class profile::gpu::install (
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
     }
-
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
-    Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
   Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
 }
@@ -330,16 +329,28 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
+  String $installer_flags = '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms',
 ) {
+  $lib_symlink_path = lookup('profile::gpu::install::lib_symlink_path', undef, undef, '')
+  file { '/usr/bin/mc-nvidia-installer':
+    content => epp('profile/gpu/mc-nvidia-installer', {
+        source           => $source,
+        lib_symlink_path => $lib_symlink_path,
+    }),
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+  }
   exec { 'vgpu-driver-install-bin':
-    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    command => "/usr/bin/mc-nvidia-installer ${installer_flags}",
+    path    => ['/usr/bin/'],
     creates => [
       '/usr/bin/nvidia-smi',
       '/usr/bin/nvidia-modprobe',
     ],
     timeout => 300,
     require => [
+      File['/usr/bin/mc-nvidia-installer'],
       Package['kernel-devel'],
       Package['dkms'],
     ],
