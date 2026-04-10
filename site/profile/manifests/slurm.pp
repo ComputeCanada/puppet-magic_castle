@@ -705,7 +705,7 @@ class profile::slurm::node (
     file { '/etc/slurm/gres.conf':
       ensure => present,
     }
-    if lookup('terraform.self.specs.mig', undef, undef, '') != '' {
+    if lookup('terraform.self.specs.mig', undef, undef, '') != '' or lookup('terraform.self.specs.gpu_type', undef, undef, '') != '' {
       $nvidia_gres_flag = '--with-type'
     } else {
       $nvidia_gres_flag = ''

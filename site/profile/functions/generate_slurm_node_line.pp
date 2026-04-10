@@ -5,7 +5,11 @@ function profile::generate_slurm_node_line($name, $attr, $comp_weight) >> String
         ['gpu', $key, $value * $attr['specs']['gpus']].join(':')
       }.join(',')
     } else {
-      $gpu = "gpu:${attr['specs']['gpus']}"
+      if $attr['specs']['gpu_type'] {
+        $gpu = "gpu:${attr['specs']['gpu_type']}:${attr['specs']['gpus']}"
+      } else {
+        $gpu = "gpu:${attr['specs']['gpus']}"
+      }
     }
     if $attr['specs']['shard'] and ! $attr['specs']['shard'].empty {
       $shard = ",shard:${attr['specs']['shard']}"
