@@ -366,6 +366,7 @@ class profile::gpu::services {
   service { $gpu_services:
     ensure => 'running',
     enable => true,
+    notify => Service['slurm-job-exporter']
   }
 
   exec { 'stop_nvidia_services':
