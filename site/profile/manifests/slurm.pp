@@ -705,14 +705,15 @@ class profile::slurm::node (
     file { '/etc/slurm/gres.conf':
       ensure => present,
     }
-    if lookup('terraform.self.specs.mig', undef, undef, '') != '' or lookup('terraform.self.specs.gpu_type', undef, undef, '') != '' {
-      $nvidia_gres_flag = '--with-type'
+    $self_specs = keys(lookup('terraform.self.specs'))
+    if 'mig' in $self_specs or 'gpu_type' in $self_specs {
+      $gres_cmd = '/opt/software/slurm/bin/nvidia_gres.sh --with-type'
     } else {
-      $nvidia_gres_flag = ''
+      $gres_cmd = '/opt/software/slurm/bin/nvidia_gres.sh'
     }
     exec { 'slurm-nvidia_gres':
-      command   => "/opt/software/slurm/bin/nvidia_gres.sh ${nvidia_gres_flag} > /etc/slurm/gres.conf",
-      unless    => "/opt/software/slurm/bin/nvidia_gres.sh ${nvidia_gres_flag} | cmp -s - /etc/slurm/gres.conf",
+      command   => "${gres_cmd} > /etc/slurm/gres.conf",
+      unless    => "${gres_cmd} | cmp -s - /etc/slurm/gres.conf",
       notify    => Service['slurmd'],
       subscribe => [
         File['/opt/software/slurm/bin/nvidia_gres.sh'],
