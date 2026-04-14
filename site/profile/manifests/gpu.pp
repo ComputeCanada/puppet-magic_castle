@@ -137,7 +137,7 @@ class profile::gpu::install::passthrough (
   }
 
   # Used by slurm-job-exporter to export GPU metrics
-  -> package { 'datacenter-gpu-manager': }
+  -> package { ['datacenter-gpu-manager-4-proprietary', 'datacenter-gpu-manager-4-core', 'datacenter-gpu-manager-4-cuda12']: }
 
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
@@ -366,6 +366,7 @@ class profile::gpu::services {
   service { $gpu_services:
     ensure => 'running',
     enable => true,
+    notify => Service['slurm-job-exporter']
   }
 
   exec { 'stop_nvidia_services':
