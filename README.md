@@ -705,15 +705,13 @@ profile::freeipa::mokey::require_verify_admin: true
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
-is detected. The class configures nvidia-persistenced and nvidia-dcgm daemons
-when the GPU is connected via PCI passthrough, or configures nvidia-gridd when
-dealing with an NVIDIA VGPU.
+is detected. It supports PCI passthrough and VGPU, and selects automatically
+the correct configuration scenario.
 
-For PCI passthrough, the class installs the latest CUDA drivers available
-on NVIDIA yum repos.
-For VGPU, the driver source is cloud provider specific and has to be specified
-via either `profile::gpu::install::vgpu::rpm::source` for rpms or
-`profile::gpu::install::vgpu::bin::source` for binary installer.
+For PCI passthrough, the class inlcudes `profile::gpu::install::passthrough`
+which installs the latest CUDA drivers available on NVIDIA yum repos.
+For VGPU, the class includes `profile::gpu::install::vgpu` which installs the driver
+from cloud provider specific source.
 
 ### parameters
 
@@ -726,6 +724,93 @@ via either `profile::gpu::install::vgpu::rpm::source` for rpms or
 
 ```yaml
 profile::gpu::restrict_profiling: false
+```
+</details>
+
+## `profile::gpu::config::mig`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `mig_profile`          | | Variant[Undef, Hash] |
+| `mig_manager_version`  | | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::passthrough::mig_profile: ~
+profile::gpu::install::passthrough::mig_manager_version = '0.5.5'
+```
+</details>
+
+## `profile::gpu::install`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| | | |
+
+<details>
+<summary>default values</summary>
+```yaml
+```
+</details>
+
+## `profile::gpu::install::passthrough`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| | | |
+
+<details>
+<summary>default values</summary>
+```yaml
+```
+</details>
+
+## `profile::gpu::install::vgpu`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| | | |
+
+<details>
+<summary>default values</summary>
+```yaml
+```
+</details>
+
+## `profile::gpu::install::vgpu::bin`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| | | |
+
+<details>
+<summary>default values</summary>
+```yaml
+```
+</details>
+
+## `profile::gpu::install::vgpu::rpm`
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| | | |
+
+<details>
+<summary>default values</summary>
+```yaml
 ```
 </details>
 
