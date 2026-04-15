@@ -51,12 +51,14 @@ def manifest_class_params(text: str) -> dict[str, set[str]]:
     return cls_params
 
 
-def main() -> int:
+def main(file_list = []) -> int:
     readme_text = README_PATH.read_text()
     readme_params = readme_class_params(readme_text)
 
     manifest_params: dict[str, set[str]] = {}
-    for path in MANIFESTS_DIR.rglob("*.pp"):
+    if not file_list:
+        file_list = MANIFESTS_DIR.rglob("*.pp")
+    for path in file_list:
         manifest_params.update(manifest_class_params(path.read_text()))
 
     missing: dict[str, list[str]] = {}
@@ -78,4 +80,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if sys.argv[1:]:
+        file_list = [Path(filename) for filename in sys.argv[1:]]
+    else:
+        file_list = []
+    sys.exit(main(file_list))
