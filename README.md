@@ -729,18 +729,20 @@ profile::gpu::restrict_profiling: false
 
 ## `profile::gpu::config::mig`
 
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+
 ### parameters
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
-| `mig_profile`          | | Variant[Undef, Hash] |
-| `mig_manager_version`  | | String |
+| `mig_profile`          | Hash of key-value pair where keys are [NVIDIA mig profile](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/supported-mig-profiles.html) and values are their numbers. | Variant[Undef, Hash] |
+| `mig_manager_version`  | Version of [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted) to install | String |
 
 <details>
 <summary>default values</summary>
 ```yaml
-profile::gpu::install::passthrough::mig_profile: ~
-profile::gpu::install::passthrough::mig_manager_version = '0.5.5'
+profile::gpu::config::mig::mig_profile: ~
+profile::gpu::config::mig::mig_manager_version = '0.5.5'
 ```
 </details>
 
