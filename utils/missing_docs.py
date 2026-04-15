@@ -66,6 +66,8 @@ def main() -> int:
             missing_params = sorted(p for p in params if p not in documented)
             if missing_params:
                 missing[cls] = missing_params
+        elif len(params) > 0:
+            missing[cls] = params
 
     for cls in sorted(missing):
         print(cls)
