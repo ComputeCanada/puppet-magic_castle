@@ -810,11 +810,23 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
-| | | |
+| `grid_vgpu_types`      | List of regexes matched against `terraform.self.specs.type` to identify instances that should use the GRID vGPU installation path. | Array[String] |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::vgpu::grid_vgpu_types: []
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::vgpu::grid_vgpu_types:
+  - "^Standard_NV(6|12|18|36|72)ad[m]*s_A10_v5$"
+  - "^Standard_NV(12|24|48)s_v3$"
+  - "^Standard_NC(4|8|16|64)as_T4_v3$"
 ```
 </details>
 
