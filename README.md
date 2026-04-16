@@ -28,6 +28,12 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::freeipa::server`](#profilefreeipaserver)
 - [`profile::freeipa::mokey`](#profilefreeipamokey)
 - [`profile::gpu`](#profilegpu)
+- [`profile::gpu::config::mig`](#profilegpuconfigmig)
+- [`profile::gpu::install`](#profilegpuinstall)
+- [`profile::gpu::install::passthrough`](#profilegpuinstallpassthrough)
+- [`profile::gpu::install::vgpu`](#profilegpuinstallvgpu)
+- [`profile::gpu::install::vgpu::bin`](#profilegpuinstallvgpubin)
+- [`profile::gpu::install::vgpu::rpm`](#profilegpuinstallvgpurpm)
 - [`profile::jupyterhub::hub`](#profilejupyterhubhub)
 - [`profile::jupyterhub::node`](#profilejupyterhubnode)
 - [`profile::mail`](#profilemail)
@@ -699,15 +705,13 @@ profile::freeipa::mokey::require_verify_admin: true
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
-is detected. The class configures nvidia-persistenced and nvidia-dcgm daemons
-when the GPU is connected via PCI passthrough, or configures nvidia-gridd when
-dealing with an NVIDIA VGPU.
+is detected. It supports PCI passthrough and VGPU, and selects automatically
+the correct configuration scenario.
 
-For PCI passthrough, the class installs the latest CUDA drivers available
-on NVIDIA yum repos.
-For VGPU, the driver source is cloud provider specific and has to be specified
-via either `profile::gpu::install::vgpu::rpm::source` for rpms or
-`profile::gpu::install::vgpu::bin::source` for binary installer.
+For PCI passthrough, the class inlcudes `profile::gpu::install::passthrough`
+which installs the latest CUDA drivers available on NVIDIA yum repos.
+For VGPU, the class includes `profile::gpu::install::vgpu` which installs the driver
+from cloud provider specific source.
 
 ### parameters
 
@@ -720,6 +724,181 @@ via either `profile::gpu::install::vgpu::rpm::source` for rpms or
 
 ```yaml
 profile::gpu::restrict_profiling: false
+```
+</details>
+
+## `profile::gpu::config::mig`
+
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `mig_profile`          | Hash of key-value pair where keys are [NVIDIA mig profile](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/supported-mig-profiles.html) and values are their numbers. | Variant[Undef, Hash] |
+| `mig_manager_version`  | Version of [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted) to install | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::config::mig::mig_profile: ~
+profile::gpu::config::mig::mig_manager_version = '0.5.5'
+```
+</details>
+
+## `profile::gpu::install`
+
+This class contains the common installation steps shared by the NVIDIA GPU
+driver installation profiles. It can also create symlinks to the installed
+driver libraries when applications expect them in a specific path.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `lib_symlink_path`     | Path where symlinks to installed NVIDIA shared libraries are created. Useful when applications expect the driver libraries in a non-standard location. | Optional[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::lib_symlink_path: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
+```
+</details>
+
+## `profile::gpu::install::passthrough`
+
+This class installs the NVIDIA driver stack for instances where the physical
+GPU is passed through directly to the virtual machine. It relies on the NVIDIA
+yum repositories and installs the packages required for CUDA workloads.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `packages`             | NVIDIA-related packages installed for passthrough nodes. | Array[String] |
+| `nvidia_driver_stream` | NVIDIA driver module stream enabled for passthrough installations. | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-driver-devel
+  - nvidia-driver-libs
+  - nvidia-driver-NVML
+  - nvidia-modprobe
+profile::gpu::install::passthrough::nvidia_driver_stream: '550-dkms'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-modprobe
+profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
+```
+</details>
+
+## `profile::gpu::install::vgpu`
+
+This class installs and configures the NVIDIA vGPU driver stack for instances
+that use mediated or vendor-provided virtual GPUs. It selects the appropriate
+installation backend and can also manage the licensing files required by NVIDIA
+vGPU deployments.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `installer`            | Installation method used for NVIDIA vGPU drivers. | Enum['rpm', 'bin', 'none'] |
+| `grid_vgpu_types`      | List of regexes matched against `terraform.self.specs.type` to identify instances that should use the GRID vGPU installation path. | Array[String] |
+| `gridd_content`        | Content written to `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
+| `gridd_source`         | Source used to populate `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
+| `token_content`        | Content written to `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
+| `token_source`         | Source used to populate `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::installer: none
+profile::gpu::install::vgpu::grid_vgpu_types: []
+profile::gpu::install::vgpu::gridd_content: ~
+profile::gpu::install::vgpu::gridd_source: ~
+profile::gpu::install::vgpu::token_content: ~
+profile::gpu::install::vgpu::token_source: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::grid_vgpu_types:
+  - "^Standard_NV(6|12|18|36|72)ad[m]*s_A10_v5$"
+  - "^Standard_NV(12|24|48)s_v3$"
+  - "^Standard_NC(4|8|16|64)as_T4_v3$"
+profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
+profile::gpu::install::vgpu::gridd_source: https://hpsrepo.fz-juelich.de/jusuf/nvidia/gridd.conf
+profile::gpu::install::vgpu::token_content: "LICENSE_SYSTEM_TOKEN_CONTENT"
+profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/kalpa-prod.tok
+```
+</details>
+
+## `profile::gpu::install::vgpu::bin`
+
+This class installs the NVIDIA vGPU driver from the vendor-provided `.run`
+installer. It is intended for environments where the vGPU driver is distributed
+as a standalone binary rather than as OS packages.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `source`               | Source URL for the NVIDIA vGPU `.run` installer downloaded and executed by `/usr/bin/mc-nvidia-installer`. | String |
+| `installer_flags`      | Additional flags passed to `/usr/bin/mc-nvidia-installer` when installing the NVIDIA vGPU driver from the `.run` installer. | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::bin::installer_flags: '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms'
+```
+</details>
+
+## `profile::gpu::install::vgpu::rpm`
+
+This class installs the NVIDIA vGPU driver from RPM packages provided by a
+repository package. It is intended for environments where the cloud provider or
+site distributes vGPU drivers through a dedicated RPM repository.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `source`               | Source URL for the RPM repository package that provides the NVIDIA vGPU RPM packages. | String |
+| `packages`             | List of NVIDIA vGPU RPM packages to install from the configured repository package. | Array[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/alma%{facts.os.release.major}/Packages/a/arbutus-cloud-vgpu-repo-1.0-1.el%{facts.os.release.major}.noarch.rpm
+profile::gpu::install::vgpu::rpm::packages:
+  - nvidia-vgpu-kmod
+  - nvidia-vgpu-gridd
+  - nvidia-vgpu-tools
 ```
 </details>
 
