@@ -46,7 +46,7 @@ mod 'computecanada-jupyterhub',
 
 mod 'computecanada-metrix',
     :git => 'https://github.com/ComputeCanada/puppet-metrix.git',
-    :ref => 'v1.0.3'
+    :ref => 'v1.1.0'
 
 mod 'computecanada-uv',
     :git => 'https://github.com/ComputeCanada/puppet-uv.git',
