@@ -748,6 +748,10 @@ profile::gpu::config::mig::mig_manager_version = '0.5.5'
 
 ## `profile::gpu::install`
 
+This class contains the common installation steps shared by the NVIDIA GPU
+driver installation profiles. It can also create symlinks to the installed
+driver libraries when applications expect them in a specific path.
+
 ### parameters
 
 | Variable               | Description                                                    | Type          |
@@ -770,6 +774,10 @@ profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 </details>
 
 ## `profile::gpu::install::passthrough`
+
+This class installs the NVIDIA driver stack for instances where the physical
+GPU is passed through directly to the virtual machine. It relies on the NVIDIA
+yum repositories and installs the packages required for CUDA workloads.
 
 ### parameters
 
@@ -805,6 +813,11 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 </details>
 
 ## `profile::gpu::install::vgpu`
+
+This class installs and configures the NVIDIA vGPU driver stack for instances
+that use mediated or vendor-provided virtual GPUs. It selects the appropriate
+installation backend and can also manage the licensing files required by NVIDIA
+vGPU deployments.
 
 ### parameters
 
@@ -847,6 +860,10 @@ profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca
 
 ## `profile::gpu::install::vgpu::bin`
 
+This class installs the NVIDIA vGPU driver from the vendor-provided `.run`
+installer. It is intended for environments where the vGPU driver is distributed
+as a standalone binary rather than as OS packages.
+
 ### parameters
 
 | Variable               | Description                                                    | Type          |
@@ -862,6 +879,10 @@ profile::gpu::install::vgpu::bin::installer_flags: '--kernel-module-type=proprie
 </details>
 
 ## `profile::gpu::install::vgpu::rpm`
+
+This class installs the NVIDIA vGPU driver from RPM packages provided by a
+repository package. It is intended for environments where the cloud provider or
+site distributes vGPU drivers through a dedicated RPM repository.
 
 ### parameters
 
