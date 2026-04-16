@@ -18,16 +18,15 @@ class profile::rsyslog::client {
     {{ end -}}
     {{ end -}}
     | EOT
-  file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
-    content => $remote_host_conf,
-    notify  => Service['consul-template'],
-  }
+  # file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
+  #   content => $remote_host_conf,
+  #   notify  => Service['consul-template'],
+  # }
 
   consul_template::watch { 'remote_host.conf.ctmpl':
-    require     => File['/etc/rsyslog.d/remote_host.conf.ctmpl'],
+    template    => $remote_host_conf,
     config_hash => {
       perms       => '0644',
-      source      => '/etc/rsyslog.d/remote_host.conf.ctmpl',
       destination => '/etc/rsyslog.d/99-remote_host.conf',
       command     => 'systemctl restart rsyslog || true',
     },
