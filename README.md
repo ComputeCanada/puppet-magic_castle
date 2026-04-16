@@ -815,6 +815,7 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 | `gridd_content`        | Content written to `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
 | `gridd_source`         | Source used to populate `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
 | `token_content`        | Content written to `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
+| `token_source`         | Source used to populate `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
 
 <details>
 <summary>default values</summary>
@@ -824,6 +825,7 @@ profile::gpu::install::vgpu::grid_vgpu_types: []
 profile::gpu::install::vgpu::gridd_content: ~
 profile::gpu::install::vgpu::gridd_source: ~
 profile::gpu::install::vgpu::token_content: ~
+profile::gpu::install::vgpu::token_source: ~
 ```
 </details>
 
@@ -839,6 +841,7 @@ profile::gpu::install::vgpu::grid_vgpu_types:
 profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
 profile::gpu::install::vgpu::gridd_source: https://hpsrepo.fz-juelich.de/jusuf/nvidia/gridd.conf
 profile::gpu::install::vgpu::token_content: "LICENSE_SYSTEM_TOKEN_CONTENT"
+profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/kalpa-prod.tok
 ```
 </details>
 
