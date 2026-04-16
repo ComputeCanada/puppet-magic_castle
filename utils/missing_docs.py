@@ -72,9 +72,8 @@ def main(file_list = []) -> int:
             missing[cls] = params
 
     for cls in sorted(missing):
-        print(cls)
         for param in missing[cls]:
-            print(f"  - {param}")
+            print(f"{cls}::{param}")
 
     return 1 if len(missing) > 0 else 0
 
