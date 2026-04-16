@@ -8,6 +8,11 @@ class profile::gpu (
 }
 
 class profile::gpu::install (
+  Array[String] $dcgm_packages = [
+    'datacenter-gpu-manager-4-proprietary',
+    'datacenter-gpu-manager-4-core',
+    'datacenter-gpu-manager-4-cuda12',
+  ],
   Optional[String] $lib_symlink_path = undef
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
@@ -20,6 +25,21 @@ class profile::gpu::install (
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
     source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
+  }
+
+  $os = "rhel${::facts['os']['release']['major']}"
+  $arch = $::facts['os']['architecture']
+
+  exec { 'cuda-repo':
+    command => "dnf config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
+    creates => "/etc/yum.repos.d/cuda-${os}.repo",
+    path    => ['/usr/bin'],
+  }
+  if length($dcgm_packages) > 0 {
+    # DGCM is used by slurm-job-exporter to export GPU metrics
+    package { $dcgm_packages :
+      require => Yumrepo['cuda-repo'],
+    }
   }
 
   file { '/etc/modprobe.d/nvidia.conf':
@@ -101,14 +121,6 @@ class profile::gpu::install::passthrough (
   Array[String] $packages,
   String $nvidia_driver_stream = '550-dkms'
 ) {
-  $os = "rhel${::facts['os']['release']['major']}"
-  $arch = $::facts['os']['architecture']
-
-  exec { 'cuda-repo':
-    command => "dnf config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
-    creates => "/etc/yum.repos.d/cuda-${os}.repo",
-    path    => ['/usr/bin'],
-  }
 
   package { 'nvidia-stream':
     ensure      => $nvidia_driver_stream,
@@ -135,9 +147,6 @@ class profile::gpu::install::passthrough (
       Yumrepo['epel'],
     ],
   }
-
-  # Used by slurm-job-exporter to export GPU metrics
-  -> package { ['datacenter-gpu-manager-4-proprietary', 'datacenter-gpu-manager-4-core', 'datacenter-gpu-manager-4-cuda12']: }
 
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
@@ -357,16 +366,19 @@ class profile::gpu::install::vgpu::bin (
   }
 }
 
-class profile::gpu::services {
-  if ! profile::is_grid_vgpu() {
-    $gpu_services = ['nvidia-persistenced', 'nvidia-dcgm']
+class profile::gpu::services (
+  Array[String] $names = ['nvidia-persistenced', 'nvidia-dcgm'],
+) {
+  if profile::is_grid_vgpu() {
+    $gpu_services = unique($names + ['nvidia-gridd'])
   } else {
-    $gpu_services = ['nvidia-persistenced', 'nvidia-gridd']
+    $gpu_services = $names
   }
+
   service { $gpu_services:
     ensure => 'running',
     enable => true,
-    notify => Service['slurm-job-exporter']
+    notify => Service['slurm-job-exporter'],
   }
 
   exec { 'stop_nvidia_services':

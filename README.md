@@ -34,6 +34,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::gpu::install::vgpu`](#profilegpuinstallvgpu)
 - [`profile::gpu::install::vgpu::bin`](#profilegpuinstallvgpubin)
 - [`profile::gpu::install::vgpu::rpm`](#profilegpuinstallvgpurpm)
+- [`profile::gpu::services`](#profilegpuservices)
 - [`profile::jupyterhub::hub`](#profilejupyterhubhub)
 - [`profile::jupyterhub::node`](#profilejupyterhubnode)
 - [`profile::mail`](#profilemail)
@@ -756,11 +757,16 @@ driver libraries when applications expect them in a specific path.
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
+| `dcgm_packages`        | DCGM packages installed from the NVIDIA CUDA repository. These packages provide the NVIDIA Data Center GPU Manager service used for GPU metrics collection, for example by `slurm-job-exporter`. Set to an empty list to skip DCGM package installation. | Array[String] |
 | `lib_symlink_path`     | Path where symlinks to installed NVIDIA shared libraries are created. Useful when applications expect the driver libraries in a non-standard location. | Optional[String] |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::dcgm_packages:
+  - datacenter-gpu-manager-4-proprietary
+  - datacenter-gpu-manager-4-core
+  - datacenter-gpu-manager-4-cuda12
 profile::gpu::install::lib_symlink_path: ~
 ```
 </details>
@@ -769,6 +775,9 @@ profile::gpu::install::lib_symlink_path: ~
 <summary>example</summary>
 
 ```yaml
+profile::gpu::install::dcgm_packages:
+  - datacenter-gpu-manager-4-proprietary
+  - datacenter-gpu-manager-4-core
 profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 ```
 </details>
@@ -899,6 +908,36 @@ profile::gpu::install::vgpu::rpm::packages:
   - nvidia-vgpu-kmod
   - nvidia-vgpu-gridd
   - nvidia-vgpu-tools
+```
+</details>
+
+## `profile::gpu::services`
+
+This class manages the NVIDIA GPU services required by the installed driver
+stack. For VGPU instances, `nvidia-gridd` is added automatically.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `names`                | NVIDIA GPU services to ensure running and enabled. For VGPU instances, `nvidia-gridd` is added automatically. | Array[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::services::names:
+  - nvidia-persistenced
+  - nvidia-dcgm
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::services::names:
+  - nvidia-persistenced
+  - nvidia-gridd
 ```
 </details>
 
