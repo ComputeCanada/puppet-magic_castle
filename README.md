@@ -867,11 +867,17 @@ profile::gpu::install::vgpu::bin::installer_flags: '--kernel-module-type=proprie
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
-| | | |
+| `source`               | Source URL for the RPM repository package that provides the NVIDIA vGPU RPM packages. | String |
+| `packages`             | List of NVIDIA vGPU RPM packages to install from the configured repository package. | Array[String] |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/alma%{facts.os.release.major}/Packages/a/arbutus-cloud-vgpu-repo-1.0-1.el%{facts.os.release.major}.noarch.rpm
+profile::gpu::install::vgpu::rpm::packages:
+  - nvidia-vgpu-kmod
+  - nvidia-vgpu-gridd
+  - nvidia-vgpu-tools
 ```
 </details>
 
