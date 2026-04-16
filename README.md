@@ -752,11 +752,20 @@ profile::gpu::config::mig::mig_manager_version = '0.5.5'
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
-| | | |
+| `lib_symlink_path`     | Path where symlinks to installed NVIDIA shared libraries are created. Useful when applications expect the driver libraries in a non-standard location. | Optional[String] |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::lib_symlink_path: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 ```
 </details>
 
