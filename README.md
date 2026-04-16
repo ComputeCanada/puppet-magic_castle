@@ -851,6 +851,7 @@ profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
+| `source`               | Source URL for the NVIDIA vGPU `.run` installer downloaded and executed by `/usr/bin/mc-nvidia-installer`. | String |
 | `installer_flags`      | Additional flags passed to `/usr/bin/mc-nvidia-installer` when installing the NVIDIA vGPU driver from the `.run` installer. | String |
 
 <details>
