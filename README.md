@@ -814,6 +814,7 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 | `grid_vgpu_types`      | List of regexes matched against `terraform.self.specs.type` to identify instances that should use the GRID vGPU installation path. | Array[String] |
 | `gridd_content`        | Content written to `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
 | `gridd_source`         | Source used to populate `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
+| `token_content`        | Content written to `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
 
 <details>
 <summary>default values</summary>
@@ -822,6 +823,7 @@ profile::gpu::install::vgpu::installer: none
 profile::gpu::install::vgpu::grid_vgpu_types: []
 profile::gpu::install::vgpu::gridd_content: ~
 profile::gpu::install::vgpu::gridd_source: ~
+profile::gpu::install::vgpu::token_content: ~
 ```
 </details>
 
@@ -836,6 +838,7 @@ profile::gpu::install::vgpu::grid_vgpu_types:
   - "^Standard_NC(4|8|16|64)as_T4_v3$"
 profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
 profile::gpu::install::vgpu::gridd_source: https://hpsrepo.fz-juelich.de/jusuf/nvidia/gridd.conf
+profile::gpu::install::vgpu::token_content: "LICENSE_SYSTEM_TOKEN_CONTENT"
 ```
 </details>
 
