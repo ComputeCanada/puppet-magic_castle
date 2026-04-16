@@ -775,11 +775,19 @@ profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
+| `packages`             | NVIDIA-related packages installed for passthrough nodes. | Array[String] |
 | `nvidia_driver_stream` | NVIDIA driver module stream enabled for passthrough installations. | String |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-driver-devel
+  - nvidia-driver-libs
+  - nvidia-driver-NVML
+  - nvidia-modprobe
 profile::gpu::install::passthrough::nvidia_driver_stream: '550-dkms'
 ```
 </details>
@@ -788,6 +796,10 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '550-dkms'
 <summary>example</summary>
 
 ```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-modprobe
 profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 ```
 </details>
