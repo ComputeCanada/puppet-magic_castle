@@ -851,11 +851,12 @@ profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
-| | | |
+| `installer_flags`      | Additional flags passed to `/usr/bin/mc-nvidia-installer` when installing the NVIDIA vGPU driver from the `.run` installer. | String |
 
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::vgpu::bin::installer_flags: '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms'
 ```
 </details>
 
