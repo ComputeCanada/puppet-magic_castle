@@ -810,6 +810,7 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
+| `installer`            | Installation method used for NVIDIA vGPU drivers. | Enum['rpm', 'bin', 'none'] |
 | `grid_vgpu_types`      | List of regexes matched against `terraform.self.specs.type` to identify instances that should use the GRID vGPU installation path. | Array[String] |
 | `gridd_content`        | Content written to `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
 | `gridd_source`         | Source used to populate `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
@@ -817,6 +818,7 @@ profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
 <details>
 <summary>default values</summary>
 ```yaml
+profile::gpu::install::vgpu::installer: none
 profile::gpu::install::vgpu::grid_vgpu_types: []
 profile::gpu::install::vgpu::gridd_content: ~
 profile::gpu::install::vgpu::gridd_source: ~
@@ -827,6 +829,7 @@ profile::gpu::install::vgpu::gridd_source: ~
 <summary>example</summary>
 
 ```yaml
+profile::gpu::install::vgpu::installer: bin
 profile::gpu::install::vgpu::grid_vgpu_types:
   - "^Standard_NV(6|12|18|36|72)ad[m]*s_A10_v5$"
   - "^Standard_NV(12|24|48)s_v3$"
