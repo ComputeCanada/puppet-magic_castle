@@ -38,7 +38,7 @@ class profile::gpu::install (
   if length($dcgm_packages) > 0 {
     # DGCM is used by slurm-job-exporter to export GPU metrics
     package { $dcgm_packages :
-      require => Yumrepo['cuda-repo'],
+      require => Exec['cuda-repo'],
     }
   }
 
