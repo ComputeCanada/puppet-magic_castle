@@ -15,6 +15,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
 - [`profile::ceph::client`](#profilecephclient)
+- [`profile::ceph::client::install`](#profilecephclientinstall)
 - [`profile::consul`](#profileconsul)
 - [`profile::consul::puppet_watch`](#profileconsulpuppet_watch)
 - [`profile::cvmfs::client`](#profilecvmfsclient)
@@ -41,9 +42,12 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::mail::dkim`](#profilemaildkim)
 - [`profile::mail::relayhost`](#profilemailrelayhost)
 - [`profile::mail::sender`](#profilemailsender)
-- [`profile::prometheus::node_exporter`](#profilemetricsnode_exporter)
-- [`profile::prometheus::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
-- [`profile::prometheus::slurm_exporter`](#profilemetricsslurm_exporter)
+- [`profile::metrix`](#profilemetrix)
+- [`profile::prometheus::caddy_exporter`](#profileprometheuscaddy_exporter)
+- [`profile::prometheus::node_exporter`](#profileprometheusnode_exporter)
+- [`profile::prometheus::slurm_job_exporter`](#profileprometheusslurm_job_exporter)
+- [`profile::prometheus::slurm_exporter`](#profileprometheusslurm_exporter)
+- [`profile::puppetserver`](#profilepuppetserver)
 - [`profile::nfs`](#profilenfs)
 - [`profile::nfs::client`](#profilenfsclient)
 - [`profile::nfs::server`](#profilenfsserver)
@@ -51,7 +55,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::base`](#profilersyslogbase)
 - [`profile::rsyslog::client`](#profilersyslogclient)
 - [`profile::rsyslog::server`](#profilersyslogserver)
-- [`profile::vector`](#profilervector)
+- [`profile::vector`](#profilevector)
 - [`profile::slurm::base`](#profileslurmbase)
 - [`profile::slurm::node`](#profileslurmnode)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
@@ -60,6 +64,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
+- [`profile::swap`](#profileswap)
 - [`profile::ssh::base`](#profilesshbase)
 - [`profile::ssh::known_hosts`](#profilesshknown_hosts)
 - [`profile::ssh::hostbased_auth::client`](#profilesshhostbased_authclient)
@@ -361,9 +366,35 @@ Defines a bind mount created from a subpath of the mounted CephFS share.
 | `dst` | Destination path on the host                        | Stdlib::Unixpath           | Yes      |
 | `type`| Optional target type (`file` or `directory`)        | Enum['file','directory']   | No       |
 
-## profile::ceph::client::install
+## `profile::ceph::client::install`
 
-This class only installs the Ceph packages.
+This class configures the upstream Ceph package repository and installs the
+Ceph client packages.
+
+### parameters
+
+| Variable      | Description                                                 | Type             |
+| :------------ | :---------------------------------------------------------- | :--------------- |
+| `release`     | Ceph release used to configure the upstream package repository when `version` is not set | String |
+| `version`     | Optional Ceph version used to configure the upstream package repository instead of `release` | Optional[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::ceph::client::install::release: reef
+profile::ceph::client::install::version: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::ceph::client::install::release: squid
+profile::ceph::client::install::version: ~
+```
+</details>
 
 ## `profile::consul`
 
@@ -1056,6 +1087,59 @@ profile::mail::sender::relayhosts: "%{alias('terraform.tag_ip.public')}"
 ```
 </details>
 
+## `profile::metrix`
+
+This class installs and configures the metrix portal.
+
+### parameters
+
+| Variable      | Description                                                 | Type          |
+| :------------ | :---------------------------------------------------------- | :------------ |
+| `login_tags`  | List of tags used to identify metrix login nodes | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::metrix::login_tags:
+  - login
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::metrix::login_tags:
+  - login
+  - public
+```
+</details>
+
+## `profile::prometheus::caddy_exporter`
+
+This class configures a local Caddy metrics endpoint and registers it in
+Consul for Prometheus scraping.
+
+### parameters
+
+| Variable    | Description                               | Type    |
+| :---------- | :---------------------------------------- | :------ |
+| `port`      | Port used by the Caddy metrics endpoint   | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::prometheus::caddy_exporter::port: 2020
+```
+</details>
+
+### dependency
+
+When `profile::prometheus::caddy_exporter` is included, this class is included too:
+- [`profile::consul`](#profileconsul)
+
 ## `profile::prometheus::node_exporter`
 
 > [Prometheus](https://prometheus.io/) is a free software application used for
@@ -1132,6 +1216,37 @@ with a functional Slurm command-line installation.
 ```yaml
 profile::prometheus::slurm_exporter::port: 8081
 profile::prometheus::slurm_exporter::collectors: ['partition']
+```
+</details>
+
+## `profile::puppetserver`
+
+This class configures Puppet Server runtime settings, creates the Puppet
+Prometheus textfile exporter configuration, and ensures the Puppet Server
+service is running.
+
+### parameters
+
+| Variable                     | Description                                                    | Type    |
+| :--------------------------- | :------------------------------------------------------------- | :------ |
+| `jruby_max_active_instances` | Maximum number of active JRuby instances used by Puppet Server | Integer |
+| `java_heap_size`             | Puppet Server JVM heap size in MiB                             | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::puppetserver::jruby_max_active_instances: 1
+profile::puppetserver::java_heap_size: 1024
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::puppetserver::jruby_max_active_instances: 2
+profile::puppetserver::java_heap_size: 2048
 ```
 </details>
 
@@ -1678,6 +1793,37 @@ The domain's keys in this example are on an indicative basis and may not be mand
 Some SSSD domain keys might also be missing. Refer to
 [domain sections in sssd.conf manual](https://man.archlinux.org/man/sssd.conf.5.en#DOMAIN_SECTIONS)
 for more informations.
+</details>
+
+## `profile::swap`
+
+This class creates a swap file on non-container instances and configures the
+kernel swappiness setting. The swap file is created on `/mnt/ephemeral0` when
+that mountpoint exists, otherwise it is created on `/mnt`.
+
+### parameters
+
+| Variable      | Description                               | Type    |
+| :------------ | :---------------------------------------- | :------ |
+| `size`        | Size of the swap file                     | String  |
+| `swappiness`  | Value assigned to the `vm.swappiness` sysctl | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::swap::size: '1 GB'
+profile::swap::swappiness: 10
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::swap::size: '4 GB'
+profile::swap::swappiness: 20
+```
 </details>
 
 ## `profile::ssh::base`
