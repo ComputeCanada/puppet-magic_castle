@@ -3,7 +3,7 @@
 forge "https://forgeapi.puppetlabs.com"
 
 mod 'cmdntrf-consul_template', '2.3.9'
-mod 'heini-wait_for', '2.2.0'
+mod 'heini-wait_for', '3.0.1'
 mod 'puppet-alternatives', '6.0.0'
 mod 'puppet-augeasproviders_core', '4.0.1'
 mod 'puppet-augeasproviders_pam', '4.0.0'
