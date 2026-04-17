@@ -36,7 +36,7 @@ mod 'puppetlabs-motd', '7.1.0'
 mod 'puppetlabs-mount_core', '1.0.4'
 mod 'puppetlabs-mysql', '16.3.0'
 mod 'puppetlabs-stdlib', '9.7.0'
-mod 'puppetlabs-transition', '0.1.3'
+mod 'puppetlabs-transition', '2.0.0'
 mod 'treydock-globus', '9.0.0'
 mod 'saz-limits', '3.0.4'
 
