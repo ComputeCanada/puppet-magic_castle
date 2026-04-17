@@ -9,22 +9,8 @@ class profile::rsyslog::client {
   include profile::rsyslog::base
   include rsyslog::config
 
-  $remote_host_conf = @(EOT)
-    {{ with $local := node -}}
-    {{ range service "rsyslog" -}}
-    {{ if ne $local.Node.Address .Address -}}
-    *.* @@{{.Address}}:{{.Port}}
-    {{ end -}}
-    {{ end -}}
-    {{ end -}}
-    | EOT
-  # file { '/etc/rsyslog.d/remote_host.conf.ctmpl':
-  #   content => $remote_host_conf,
-  #   notify  => Service['consul-template'],
-  # }
-
-  consul_template::watch { 'remote_host.conf.ctmpl':
-    template    => $remote_host_conf,
+  consul_template::watch { 'remote_host.conf':
+    template    => 'profile/rsyslog/remote_host.conf.ctmpl',
     config_hash => {
       perms       => '0644',
       destination => '/etc/rsyslog.d/99-remote_host.conf',

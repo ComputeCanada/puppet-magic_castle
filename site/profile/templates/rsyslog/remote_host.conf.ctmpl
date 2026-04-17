@@ -1,0 +1,7 @@
+{{ with $local := node -}}
+{{ range service "rsyslog" -}}
+{{ if ne $local.Node.Address .Address -}}
+*.* @@{{.Address}}:{{.Port}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
