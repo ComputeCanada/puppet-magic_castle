@@ -11,7 +11,7 @@ class profile::accounts (
   Boolean $manage_project = true,
   Array[Struct[{ filename => String[1], source => String[1] }]] $skel_archives = [],
 ) {
-  ensure_packages(['rsync'], { ensure => 'installed' })
+  stdlib::ensure_packages(['rsync'], { ensure => 'installed' })
 
   file { 'account_functions.sh':
     path   => '/sbin/account_functions.sh',
