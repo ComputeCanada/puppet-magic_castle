@@ -442,22 +442,15 @@ class profile::slurm::controller (
     ],
   }
 
-  $tfe_proxy_url_export = $tfe_proxy_url ? {
-    undef   => '',
-    default => "export TFE_PROXY_URL=${tfe_proxy_url}\n",
-  }
-
-  $env_secrets_base = @("EOT")
-export TFE_TOKEN=${tfe_token}
-export TFE_WORKSPACE=${tfe_workspace}
-export TFE_VAR_POOL=${tfe_var_pool}
-EOT
-
   file { '/etc/slurm/env.secrets':
-    ensure  => 'present',
     owner   => 'slurm',
     mode    => '0600',
-    content => "${env_secrets_base}${tfe_proxy_url_export}",
+    content => epp('profile/slurm/env.secrets', {
+        'tfe_token'     => $tfe_token,
+        'tfe_workspace' => $tfe_workspace,
+        'tfe_var_pool'  => $tfe_var_pool,
+        'tfe_proxy_url' => $tfe_proxy_url,
+    }),
   }
 
   file { '/usr/bin/slurm_resume':
