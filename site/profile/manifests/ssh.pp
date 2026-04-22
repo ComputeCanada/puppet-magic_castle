@@ -140,7 +140,7 @@ class profile::ssh::base (
     require   => File['/etc/ssh/sshd_config.d/50-authenticationmethods.conf'],
   }
 
-  $tf_public_key = lookup('terraform.data.tf_public_key')
+  $tf_public_key = lookup('terraform.data.tf_public_key', undef, undef, undef)
   $tags          = lookup('terraform.self.tags')
   $puppetserver_ips = lookup('terraform.tag_ip.puppet')
 
