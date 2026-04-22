@@ -1,6 +1,6 @@
 class profile::consul (
   Array[String] $servers,
-  String $acl_api_token,
+  Optional[String] $acl_api_token = undef,
 ) {
   tag 'mc_bootstrap'
 
