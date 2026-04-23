@@ -9,7 +9,7 @@ class profile::consul (
   $ipaddress = lookup('terraform.self.local_ip')
   if $ipaddress in $servers or length($servers) == 0 {
     $is_server = true
-    $bootstrap_expect = length($servers)
+    $bootstrap_expect = min(length($servers), 1)
     $retry_join = $servers.filter | $ip | { $ip != $ipaddress }
   } else {
     $is_server = false
