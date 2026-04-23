@@ -1,10 +1,12 @@
 #!/bin/bash -e
 systemctl stop puppet
 systemctl stop slurmd &> /dev/null || true
+systemctl stop munged &> /dev/null || true
 systemctl stop consul &> /dev/null || true
 systemctl stop consul-template &> /dev/null || true
 systemctl disable puppet
 systemctl disable slurmd &> /dev/null || true
+systemctl disable munged &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 
@@ -30,7 +32,7 @@ systemctl daemon-reload
 
 systemctl stop rsyslog
 : > /var/log/messages
-test -d /var/log/munge && : > /var/log/munge/munged.log
+test -d /var/log/munge && test -f /var/log/munge/munged && : > /var/log/munge/munged.log
 : > /var/log/secure
 : > /var/log/cron
 test -d /var/log/audit && : > /var/log/audit/audit.log
