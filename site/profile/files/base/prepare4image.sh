@@ -10,7 +10,7 @@ systemctl disable munged &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 
-/sbin/ipa-client-install -U --uninstall
+test -f /var/log/ipaclient-install.log && /sbin/ipa-client-install -U --uninstall
 rm -f /var/log/ipaclient-uninstall.log
 rm -f /var/log/ipaclient-install.log
 rm -rf /etc/sssd/sssd.conf.deleted
