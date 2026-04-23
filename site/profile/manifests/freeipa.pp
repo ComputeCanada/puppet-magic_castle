@@ -108,7 +108,7 @@ class profile::freeipa::client (
 
 class profile::freeipa::client::install {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $admin_password = lookup('profile::freeipa::server::admin_password', undef, undef, undef)
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
