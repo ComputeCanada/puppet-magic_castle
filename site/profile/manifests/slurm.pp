@@ -175,6 +175,14 @@ class profile::slurm::base (
     require   => Package['munge'],
   }
 
+  file { '/var/log/munge/munged.log':
+    ensure  => file,
+    owner   => 'munge',
+    group   => 'munge',
+    mode    => '0640',
+    require => Package['munge'],
+  }
+
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
   yumrepo { 'slurm-copr-repo':
     enabled             => true,
