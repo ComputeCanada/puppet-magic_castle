@@ -8,7 +8,6 @@
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
   String $cluster_name,
-  String $munge_key,
   Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
@@ -19,6 +18,7 @@ class profile::slurm::base (
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
+  Optional[String] $munge_key = undef,
 )
 {
   include epel
@@ -155,20 +155,22 @@ class profile::slurm::base (
     content => $slurm_path,
   }
 
-  file { '/etc/munge/munge.key':
-    ensure  => 'present',
-    owner   => 'munge',
-    group   => 'munge',
-    mode    => '0400',
-    content => $munge_key,
-    before  => Service['munge']
-  }
+  if $munge_key {
+    file { '/etc/munge/munge.key':
+      ensure  => 'present',
+      owner   => 'munge',
+      group   => 'munge',
+      mode    => '0400',
+      content => $munge_key,
+      before  => Service['munge']
+    }
 
-  service { 'munge':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => File['/etc/munge/munge.key'],
-    require   => Package['munge']
+    service { 'munge':
+      ensure    => 'running',
+      enable    => true,
+      subscribe => File['/etc/munge/munge.key'],
+      require   => Package['munge']
+    }
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
