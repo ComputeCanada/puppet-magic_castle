@@ -76,7 +76,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectory=munge',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file_line { 'munge_runtimedirectorymode':
@@ -85,7 +84,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectoryMode=0755',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   # Fix a warning in systemctl status munge about the location of the PID file.
@@ -94,7 +92,6 @@ class profile::slurm::base (
     match   => '^PIDFile=',
     line    => 'PIDFile=/run/munge/munged.pid',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file { '/var/log/slurm':
@@ -156,19 +153,24 @@ class profile::slurm::base (
   }
 
   file { '/etc/munge/munge.key':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'munge',
     group   => 'munge',
     mode    => '0400',
     content => $munge_key,
-    before  => Service['munge']
+    require => File['/etc/munge'],
   }
 
   service { 'munge':
     ensure    => 'running',
     enable    => true,
-    subscribe => File['/etc/munge/munge.key'],
-    require   => Package['munge']
+    subscribe => [
+      File['/etc/munge/munge.key'],
+      File_line['munge_runtimedirectory'],
+      File_line['munge_runtimedirectorymode'],
+      File_line['munge_pidfile'],
+    ],
+    require   => Package['munge'],
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
