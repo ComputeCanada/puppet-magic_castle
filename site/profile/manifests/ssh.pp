@@ -142,21 +142,23 @@ class profile::ssh::base (
 
   $tf_public_key = lookup('terraform.data.tf_public_key', undef, undef, undef)
   $tags          = lookup('terraform.self.tags')
-  $puppetserver_ips = lookup('terraform.tag_ip.puppet')
+  $puppetserver_ips = lookup('terraform.tag_ip.puppet', undef, undef, undef)
 
-  if 'puppet' in $tags {
-    $tf_authorized_keys_options = 'pty'
-  } else {
-    $permitopen = $puppetserver_ips.map |$ip| { "permitopen=\"${ip}:22\"" }.join(',')
-    $tf_authorized_keys_options = "${permitopen},port-forwarding,command=\"/sbin/nologin\""
-  }
+  if $puppetserver_ips {
+    if 'puppet' in $tags {
+      $tf_authorized_keys_options = 'pty'
+    } else {
+      $permitopen = $puppetserver_ips.map |$ip| { "permitopen=\"${ip}:22\"" }.join(',')
+      $tf_authorized_keys_options = "${permitopen},port-forwarding,command=\"/sbin/nologin\""
+    }
 
-  $tf_authorized_keys = "restrict,${tf_authorized_keys_options} ${tf_public_key}"
-  file { '/etc/ssh/authorized_keys.tf':
-    content => $tf_authorized_keys,
-    mode    => '0644',
-    owner   => 'root',
-    group   => 'root',
+    $tf_authorized_keys = "restrict,${tf_authorized_keys_options} ${tf_public_key}"
+    file { '/etc/ssh/authorized_keys.tf':
+      content => $tf_authorized_keys,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+    }
   }
 }
 
