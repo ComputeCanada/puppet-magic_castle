@@ -152,6 +152,12 @@ class profile::slurm::base (
     content => $slurm_path,
   }
 
+  file { '/var/log/munge/munged.log':
+    owner => 'munge',
+    group => 'munge',
+    mode  => '0644',
+  }
+
   if $munge_key {
     file { '/etc/munge/munge.key':
       ensure  => 'present',
@@ -166,6 +172,7 @@ class profile::slurm::base (
       enable    => true,
       subscribe => [
         File['/etc/munge/munge.key'],
+        File['/var/log/munge/munged.log'],
         File_line['munge_runtimedirectory'],
         File_line['munge_runtimedirectorymode'],
         File_line['munge_pidfile'],
