@@ -17,7 +17,9 @@ rm -rf /etc/sssd/sssd.conf.deleted
 
 rm -rf /etc/puppetlabs
 rm -rf /opt/puppetlabs/puppet/cache/{clientbucket,client_data,client_yaml,state}
-rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
+test -f /opt/consul/node-id && rm /opt/consul/node-id
+test -f /opt/consul/checkpoint-signature && rm /opt/consul/checkpoint-signature
+test -f /opt/consul/serf/local.snapshot && rm /opt/consul/serf/local.snapshot
 
 # Turn off swap
 swapoff -a
