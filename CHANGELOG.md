@@ -3,6 +3,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.4.0] 2026-04-25
+
+### Added
+- Added support for `TFE_PROXY_URL` in Slurm autoscaling secrets (PR #549)
+- Added Slurm GRES support for GPU types defined in instance specs (PR #542)
+- Added configuration support for NVIDIA vGPU gridd and client token files (PR #540)
+- Added GPU installation and configuration documentation (PR #546)
+- Added missing documentation for Puppet parameters (PR #547)
+
+### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.9.0 (PR #548)
+- Bumped puppet-jupyterhub to v7.3.0
+- Bumped metrix to 1.7.0 (PR #539)
+- Bumped slurm-job-exporter to 0.4.12 (PR #545)
+- Upgraded puppetlabs-mysql, puppetlabs-stdlib, puppet-squid, and puppet-uv modules (PR #534)
+- Installed NVIDIA Data Center GPU Manager for vGPU nodes (PR #545)
+- Improved NVIDIA vGPU binary installer handling and library symlink creation (PR #540)
+- Refreshed slurm-job-exporter when GPU services restart (PR #543)
+- Fixed Slurm GRES warnings and improved `nvidia_gres.sh` type handling (PR #541)
+- Fixed CUDA repository URL generation for GPU installation
+- Configured Ceph mounts and bind mounts with `_netdev` to avoid systemd cycles (PR #533)
+- Allowed metrix login nodes to be selected from configurable login tags (PR #536)
+- Fixed MariaDB module enablement for metrix (PR #534)
+- Improved missing documentation validation and limited pull request scans to modified Puppet files
+- Bumped GitHub Actions dependencies for checkout and Terraform setup
+
 ## [15.3.1] 2026-03-24
 
 No changes to Puppet code.
