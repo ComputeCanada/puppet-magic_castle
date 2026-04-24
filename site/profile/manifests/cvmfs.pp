@@ -117,16 +117,19 @@ class profile::cvmfs::client (
       $consul_template_env = undef
     }
     # Make sure CVMFS repos are mounted when requiring this class
-    exec { 'init_default.local':
-      command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
-      environment => $consul_template_env,
-      path        => ['/bin', '/usr/bin', $consul_template::bin_dir],
-      unless      => 'test -f /etc/cvmfs/default.local',
-      require     => [
-        File['/etc/cvmfs/default.local.ctmpl'],
-        Service['consul'],
-        Service['autofs'],
-      ],
+    $consul_ensure = lookup('consul::service_ensure', undef, undef, 'running')
+    if $consul_ensure == 'running' {
+      exec { 'init_default.local':
+        command     => 'consul-template -template="/etc/cvmfs/default.local.ctmpl:/etc/cvmfs/default.local" -once',
+        environment => $consul_template_env,
+        path        => ['/bin', '/usr/bin', $consul_template::bin_dir],
+        unless      => 'test -f /etc/cvmfs/default.local',
+        require     => [
+          File['/etc/cvmfs/default.local.ctmpl'],
+          Service['consul'],
+          Service['autofs'],
+        ],
+      }
     }
     Package<| tag == profile::software_stack |> ~> Service['autofs']
   }

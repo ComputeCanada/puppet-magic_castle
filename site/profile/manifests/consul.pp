@@ -7,7 +7,7 @@ class profile::consul (
   include consul_template
 
   $ipaddress = lookup('terraform.self.local_ip')
-  if $ipaddress in $servers or length($servers) == 0 {
+  if $ipaddress in $servers {
     $is_server = true
     $bootstrap_expect = min(length($servers), 1)
     $retry_join = $servers.filter | $ip | { $ip != $ipaddress }
@@ -53,15 +53,22 @@ class profile::consul (
     $consul_validators = []
   }
 
-  tcp_conn_validator { '127.0.0.1:8500':
-    try_sleep => 5,
-    timeout   => 60,
-    require   => [Service['consul']] + $consul_validators,
+  $service_ensure = lookup('consul::service_ensure', undef, undef, 'running')
+
+  if $service_ensure == 'running' {
+    tcp_conn_validator { '127.0.0.1:8500':
+      try_sleep => 5,
+      timeout   => 60,
+      require   => [Service['consul']] + $consul_validators,
+    }
+    $service_validator = [Tcp_conn_validator['127.0.0.1:8500']]
+  } else {
+    $service_validator = undef
   }
 
   include profile::consul::puppet_watch
-  Consul::Service <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
-  Consul::Watch <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
+  Consul::Service <| |> { token => $acl_api_token, require => $service_validator }
+  Consul::Watch <| |> { token => $acl_api_token, require => $service_validator }
 }
 
 class profile::consul::puppet_watch {
