@@ -63,29 +63,31 @@ class profile::jupyterhub::hub::keytab {
     require => Uv::Venv['hub'],
   }
 
-  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
+  $ipa_passwd = lookup('profile::freeipa::server::admin_password', undef, undef, undef)
   $keytab_command = @("EOT")
     kinit_wrapper ipa console ${jupyterhub_prefix}/bin/ipa_register_service.py && \
     kinit_wrapper ipa-getkeytab -p jupyterhub/jupyterhub -k /etc/jupyterhub/jupyterhub.keytab
     |EOT
-  exec { 'jupyterhub_keytab':
-    command     => $keytab_command,
-    creates     => '/etc/jupyterhub/jupyterhub.keytab',
-    require     => [
-      File['/etc/jupyterhub'],
-      File["${jupyterhub_prefix}/bin/kinit_wrapper"],
-      Exec['ipa-install'],
-    ],
-    subscribe   => File["${jupyterhub_prefix}/bin/ipa_register_service.py"],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub_prefix}/bin"],
-  }
+  if $ipa_passwd {
+    exec { 'jupyterhub_keytab':
+      command     => $keytab_command,
+      creates     => '/etc/jupyterhub/jupyterhub.keytab',
+      require     => [
+        File['/etc/jupyterhub'],
+        File["${jupyterhub_prefix}/bin/kinit_wrapper"],
+        Exec['ipa-install'],
+      ],
+      subscribe   => File["${jupyterhub_prefix}/bin/ipa_register_service.py"],
+      environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin', "${jupyterhub_prefix}/bin"],
+    }
 
-  file { '/etc/jupyterhub/jupyterhub.keytab':
-    owner     => 'root',
-    group     => 'jupyterhub',
-    mode      => '0640',
-    subscribe => Exec['jupyterhub_keytab'],
-    require   => Group['jupyterhub'],
+    file { '/etc/jupyterhub/jupyterhub.keytab':
+      owner     => 'root',
+      group     => 'jupyterhub',
+      mode      => '0640',
+      subscribe => Exec['jupyterhub_keytab'],
+      require   => Group['jupyterhub'],
+    }
   }
 }
