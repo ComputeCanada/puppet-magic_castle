@@ -9,7 +9,7 @@ class profile::freeipa {
   }
 }
 
-class profile::freeipa::base (String $ipa_domain) {
+class profile::freeipa::base (Stdlib::Fqdn $ipa_domain) {
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',

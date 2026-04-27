@@ -1,5 +1,5 @@
 class profile::reverse_proxy (
-  String $domain_name,
+  Stdlib::Fqdn $domain_name,
   Hash[String, String] $subdomains,
   Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
