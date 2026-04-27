@@ -121,6 +121,12 @@ class profile::freeipa::client::install {
   # at most 120 times (max_retries). We chose 20 minutes as it
   # the most time require to fully configure a node with the mgmt
   # tag as of Magic Castle 15.
+  exec { 'is_ipa-client_installed':
+    command  => ':',
+    provider => shell,
+    unless   => ['/usr/bin/test -f /etc/ipa/default.conf'],
+    notify   => Wait_for['ipa_https'],
+  }
   wait_for { 'ipa_https':
     query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
