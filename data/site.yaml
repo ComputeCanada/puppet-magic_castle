@@ -16,7 +16,7 @@ magic_castle::site::all:
   - profile::prometheus::node_exporter
   - profile::rsyslog::client
   - profile::volumes
-  # - profile::mail
+  - profile::mail
 
 magic_castle::site::tags:
   dtn:
