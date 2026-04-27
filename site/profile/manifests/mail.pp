@@ -29,14 +29,26 @@ class profile::mail {
 }
 
 class profile::mail::sender (
-  Array[String] $relayhosts,
+  Variant[Array[String], String[0,0]] $relayhosts,
 ) {
+  # In common.yaml, $relayhosts is an alias for instances with the tag "public".
+  # If there are no instance with the "public" tag, the alias returns an empty
+  # string. Therefore this class support either receiving an array or an empty
+  # string. We consolidate the case where the array is empty or the class is
+  # provided an empty string in a single case by checking the length of relayhosts.
+  if length($relayhosts) > 0 {
+    $relayhost = join($relayhosts, ',')
+    $satellite = true
+  } else {
+    $relayhost = undef
+    $satellite = false
+  }
   $origin = lookup('profile::mail::base::origin')
   class { 'postfix':
     inet_protocols   => 'ipv4',
-    relayhost        => join($relayhosts, ','),
+    relayhost        => $relayhost,
     myorigin         => $origin,
-    satellite        => true,
+    satellite        => $satellite,
     manage_mailx     => false,
     manage_conffiles => false,
     manage_mailname  => false,
