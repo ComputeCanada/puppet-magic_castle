@@ -155,7 +155,7 @@ class profile::slurm::base (
   file { '/var/log/munge/munged.log':
     owner => 'munge',
     group => 'munge',
-    mode  => '0644',
+    mode  => '0640',
   }
 
   if $munge_key {
