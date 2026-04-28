@@ -176,7 +176,7 @@ class profile::slurm::base (
   file { '/var/log/munge/munged.log':
     owner => 'munge',
     group => 'munge',
-    mode  => '0644',
+    mode  => '0640',
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
