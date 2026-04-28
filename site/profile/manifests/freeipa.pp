@@ -104,6 +104,13 @@ class profile::freeipa::client (
   # installing the ipa-client alone.
   selinux::boolean { 'sssd_use_usb': }
 
+  # Configure default login selinux mapping
+  exec { 'selinux_login_default':
+    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
+    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
   if ! $skip_ipa_install {
     include profile::freeipa::client::install
   } else {
@@ -192,14 +199,6 @@ class profile::freeipa::client::install {
     match     => '^GlobalKnownHostsFile',
     line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
     subscribe => Exec['ipa-install'],
-  }
-
-  # Configure default login selinux mapping
-  exec { 'selinux_login_default':
-    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
-    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Exec['ipa-install'],
   }
 
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
