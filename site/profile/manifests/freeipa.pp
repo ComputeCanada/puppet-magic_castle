@@ -97,6 +97,13 @@ class profile::freeipa::client (
     mode   => '0755',
     source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
   }
+
+  # ipa-client-install enable this by default.
+  # See : https://pagure.io/freeipa/issue/9434
+  # We enable it in Puppet for extra visibility and to shave time when
+  # installing the ipa-client alone.
+  selinux::boolean { 'sssd_use_usb': }
+
   if ! $skip_ipa_install {
     include profile::freeipa::client::install
   } else {
