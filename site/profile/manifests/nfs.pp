@@ -6,6 +6,10 @@ class profile::nfs (String $domain) {
     include profile::nfs::server
   } elsif $server != '' {
     include profile::nfs::client
+  } else {
+    class { 'nfs':
+      client_enabled => true,
+    }
   }
 }
 
@@ -15,9 +19,7 @@ class profile::nfs::client (
 ) {
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
-    client_enabled      => true,
-    nfs_v4_client       => true,
-    nfs_v4_idmap_domain => $nfs_domain,
+    client_enabled => true,
   }
 
   $instances = lookup('terraform.instances')
@@ -97,12 +99,7 @@ class profile::nfs::server (
 
   $nfs_domain = lookup('profile::nfs::domain')
   class { 'nfs':
-    server_enabled             => true,
-    nfs_v4                     => true,
-    storeconfigs_enabled       => false,
-    nfs_v4_export_root         => '/export',
-    nfs_v4_export_root_clients => "*.${nfs_domain}(ro,fsid=root,insecure,no_subtree_check,async,root_squash)",
-    nfs_v4_idmap_domain        => $nfs_domain,
+    server_enabled => true,
   }
 
   file { '/etc/nfs.conf':

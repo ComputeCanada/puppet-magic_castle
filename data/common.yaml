@@ -83,6 +83,12 @@ jupyterhub::jupyterhub_config_hash:
       choices: ['notebook', 'lab', 'terminal', 'code-server', 'desktop']
       def: 'lab'
 
+nfs::nfs_v4: true
+nfs::nfs_v4_client: true
+nfs::nfs_v4_idmap_domain: "%{alias('profile::nfs::domain')}"
+nfs::nfs_v4_export_root_clients: "*.%{lookup('profile::nfs::domain')}(ro,fsid=root,insecure,no_subtree_check,async,root_squash)"
+nfs::storeconfigs_enabled: false
+
 selinux::mode: 'permissive'
 # selinux::type: 'targeted'
 
