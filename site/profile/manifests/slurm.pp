@@ -606,23 +606,23 @@ class profile::slurm::node (
     content => $plugstack,
   }
 
-  pam { 'Add pam_slurm_adopt':
-    ensure   => present,
-    service  => 'sshd',
-    type     => 'account',
-    control  => 'sufficient',
-    module   => 'pam_slurm_adopt.so',
-    position => 'after module password-auth',
-  }
-
   pam { 'Add pam_access':
     ensure   => present,
     service  => 'sshd',
     type     => 'account',
-    control  => 'required',
+    control  => 'sufficient',
     module   => 'pam_access.so',
-    position => 'after module pam_slurm_adopt.so',
-    require  => Pam['Add pam_slurm_adopt']
+    position => 'after module password-auth',
+  }
+
+  pam { 'Add pam_slurm_adopt':
+    ensure   => present,
+    service  => 'sshd',
+    type     => 'account',
+    control  => 'required',
+    module   => 'pam_slurm_adopt.so',
+    position => 'after module pam_access.so',
+    require  => Pam['Add pam_access'],
   }
 
   $access_conf = @(END)
