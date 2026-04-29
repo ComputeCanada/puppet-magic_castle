@@ -7,7 +7,7 @@
 # @param slurm_version Specifies which version of Slurm to install
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
-  String $cluster_name,
+  String[1, 40] $cluster_name,
   Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
