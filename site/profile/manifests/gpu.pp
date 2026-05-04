@@ -57,7 +57,6 @@ class profile::gpu::install (
     require => File['/etc/modprobe.d/nvidia.conf'],
     notify  => [
       Exec['stop_nvidia_services'],
-      Exec['unload_nvidia_drivers'],
     ],
   }
   File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
@@ -117,6 +116,7 @@ class profile::gpu::install (
       refreshonly => true,
       require     => Exec['stop_nvidia_services'],
       notify      => Kmod::Load[$nvidia_kmod],
+      subscribe   => File_line['nvidia_restrict_profiling'],
       path        => ['/bin', '/sbin'],
     }
     Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
