@@ -1,7 +1,8 @@
 class profile::gpu (
   Boolean $restrict_profiling,
+  Optional[Enum['gpu', 'vgpu']] $type = undef,
 ) {
-  if $facts['nvidia_gpu_count'] > 0 {
+  if $facts['nvidia_gpu_count'] > 0 or $type != undef {
     include profile::gpu::install
     include profile::gpu::services
   }
@@ -95,8 +96,6 @@ class profile::gpu::install (
     }
   }
 
-  kmod::load { $nvidia_kmod: }
-
   if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash(
@@ -114,7 +113,11 @@ class profile::gpu::install (
     }
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
   }
-  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+  if $facts['nvidia_gpu_count'] > 0 {
+    kmod::load { $nvidia_kmod: }
+    Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+  }
 }
 
 class profile::gpu::install::passthrough (
@@ -375,9 +378,17 @@ class profile::gpu::services (
     $gpu_services = $names
   }
 
+  if $facts['nvidia_gpu_count'] > 0 {
+    $ensure = 'running'
+    $enable = true
+  } else {
+    $ensure = 'stopped'
+    $enable = false
+  }
+
   service { $gpu_services:
-    ensure => 'running',
-    enable => true,
+    ensure => $ensure,
+    enable => $enable,
     notify => Service['slurm-job-exporter'],
   }
 
