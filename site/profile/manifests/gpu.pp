@@ -60,17 +60,7 @@ class profile::gpu::install (
       Exec['unload_nvidia_drivers'],
     ],
   }
-
-  exec { 'unload_nvidia_drivers':
-    command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
-    onlyif      => 'grep -qE "^nvidia " /proc/modules',
-    refreshonly => true,
-    require     => Exec['stop_nvidia_services'],
-    notify      => Kmod::Load[$nvidia_kmod],
-    path        => ['/bin', '/sbin'],
-  }
   File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
-  Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
 
   if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
@@ -83,12 +73,15 @@ class profile::gpu::install (
 
   # Binary installer do not build drivers with DKMS
   if ! profile::is_grid_vgpu() or $installer != 'bin' {
+    if $facts['nvidia_gpu_count'] > 0 {
+      $dkms_before = [Kmod::Load[$nvidia_kmod]]
+    }
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => "dkms status -m nvidia -k ${facts['kernelrelease']} | grep -v -q installed",
       timeout => 0,
-      before  => Kmod::Load[$nvidia_kmod],
+      before  => $dkms_before,
       require => [
         Package['kernel-devel'],
         Package['dkms'],
@@ -117,6 +110,17 @@ class profile::gpu::install (
   if $facts['nvidia_gpu_count'] > 0 {
     kmod::load { $nvidia_kmod: }
     Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+    exec { 'unload_nvidia_drivers':
+      command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
+      onlyif      => 'grep -qE "^nvidia " /proc/modules',
+      refreshonly => true,
+      require     => Exec['stop_nvidia_services'],
+      notify      => Kmod::Load[$nvidia_kmod],
+      path        => ['/bin', '/sbin'],
+    }
+    Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
+
   }
 }
 
