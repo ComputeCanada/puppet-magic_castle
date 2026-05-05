@@ -74,6 +74,8 @@ class profile::gpu::install (
   if ! profile::is_grid_vgpu() or $installer != 'bin' {
     if $facts['nvidia_gpu_count'] > 0 {
       $dkms_before = [Kmod::Load[$nvidia_kmod]]
+    } else {
+      $dkms_before = []
     }
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
