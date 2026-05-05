@@ -9,7 +9,7 @@ class profile::freeipa {
   }
 }
 
-class profile::freeipa::base (String $ipa_domain) {
+class profile::freeipa::base (Stdlib::Fqdn $ipa_domain) {
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     exec { 'enable_idm:DL1':
       command => 'yum module enable -y idm:DL1',
@@ -45,12 +45,15 @@ class profile::freeipa::base (String $ipa_domain) {
   }
 }
 
-class profile::freeipa::client (String $server_ip) {
+class profile::freeipa::client (
+  String $server_ip,
+  Boolean $skip_ipa_install = false,
+) {
   include profile::freeipa::base
   include profile::sssd::client
 
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $admin_password = lookup('profile::freeipa::server::admin_password', undef, undef, undef)
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
@@ -81,6 +84,49 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
+  if length($fqdn) > 63 {
+    fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
+  }
+
+  exec { 'set_hostname':
+    command => "/bin/hostnamectl set-hostname ${fqdn}",
+    unless  => "/usr/bin/test `hostname` = ${fqdn}",
+  }
+
+  file { '/sbin/mc-ipa-client-install':
+    mode   => '0755',
+    source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
+  }
+
+  # ipa-client-install enable this by default.
+  # See : https://pagure.io/freeipa/issue/9434
+  # We enable it in Puppet for extra visibility and to shave time when
+  # installing the ipa-client alone.
+  selinux::boolean { 'sssd_use_usb': }
+
+  # Configure default login selinux mapping
+  exec { 'selinux_login_default':
+    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
+    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
+    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
+  if ! $skip_ipa_install {
+    include profile::freeipa::client::install
+  } else {
+    exec { 'ipa-install':
+      command => '/bin/true',
+    }
+  }
+}
+
+class profile::freeipa::client::install {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $admin_password = lookup('profile::freeipa::server::admin_password', undef, undef, undef)
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $realm = upcase($ipa_domain)
+  $ipaddress = lookup('terraform.self.local_ip')
+
   # We want to wait for the FreeIPA server to be fully configured
   # before launching the FreeIPA client install. The mechanism we
   # found thus far to validate the server is operational is to
@@ -89,6 +135,12 @@ class profile::freeipa::client (String $server_ip) {
   # at most 120 times (max_retries). We chose 20 minutes as it
   # the most time require to fully configure a node with the mgmt
   # tag as of Magic Castle 15.
+  exec { 'is_ipa-client_installed':
+    command  => ':',
+    provider => shell,
+    unless   => ['/usr/bin/test -f /etc/ipa/default.conf'],
+    notify   => Wait_for['ipa_https'],
+  }
   wait_for { 'ipa_https':
     query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
@@ -109,20 +161,6 @@ class profile::freeipa::client (String $server_ip) {
   Selinux::Boolean <| |> -> Wait_for['ipa_https']
   Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
   Uv::Venv <| |> -> Wait_for['ipa_https']
-
-  if length($fqdn) > 63 {
-    fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
-  }
-
-  exec { 'set_hostname':
-    command => "/bin/hostnamectl set-hostname ${fqdn}",
-    unless  => "/usr/bin/test `hostname` = ${fqdn}",
-  }
-
-  file { '/sbin/mc-ipa-client-install':
-    mode   => '0755',
-    source => 'puppet:///modules/profile/freeipa/mc-ipa-client-install',
-  }
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
     /sbin/mc-ipa-client-install \
@@ -161,14 +199,6 @@ class profile::freeipa::client (String $server_ip) {
     match     => '^GlobalKnownHostsFile',
     line      => 'GlobalKnownHostsFile /var/lib/sss/pubconf/known_hosts /etc/ssh/ssh_known_hosts',
     subscribe => Exec['ipa-install'],
-  }
-
-  # Configure default login selinux mapping
-  exec { 'selinux_login_default':
-    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
-    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    require => Exec['ipa-install'],
   }
 
   # If the ipa-server is reinstalled, the ipa-client needs to be reinstalled too.
@@ -218,7 +248,6 @@ class profile::freeipa::server (
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
-
   file { '/etc/ipa':
     ensure => directory,
     owner  => 'root',
@@ -253,7 +282,7 @@ class profile::freeipa::server (
     # https://pagure.io/freeipa/issue/9358
     # TODO: remove this patch once FreeIPA >= 4.10 is made available
     # in RHEL 8.
-    ensure_packages(['patch'], { ensure => 'present' })
+    stdlib::ensure_packages(['patch'], { ensure => 'present' })
     $python_version = lookup('os::redhat::python3::version')
     file { 'freeipa_27e9181bdc.patch':
       path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
@@ -691,8 +720,8 @@ class profile::freeipa::mokey (
         'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => stdlib::seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => stdlib::seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
         'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",

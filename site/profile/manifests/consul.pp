@@ -1,6 +1,6 @@
 class profile::consul (
   Array[String] $servers,
-  String $acl_api_token,
+  Optional[String] $acl_api_token = undef,
 ) {
   tag 'mc_bootstrap'
 
@@ -9,7 +9,7 @@ class profile::consul (
   $ipaddress = lookup('terraform.self.local_ip')
   if $ipaddress in $servers {
     $is_server = true
-    $bootstrap_expect = length($servers)
+    $bootstrap_expect = min(length($servers), 1)
     $retry_join = $servers.filter | $ip | { $ip != $ipaddress }
   } else {
     $is_server = false
@@ -53,15 +53,22 @@ class profile::consul (
     $consul_validators = []
   }
 
-  tcp_conn_validator { '127.0.0.1:8500':
-    try_sleep => 5,
-    timeout   => 60,
-    require   => [Service['consul']] + $consul_validators,
+  $service_ensure = lookup('consul::service_ensure', undef, undef, 'running')
+
+  if $service_ensure == 'running' {
+    tcp_conn_validator { '127.0.0.1:8500':
+      try_sleep => 5,
+      timeout   => 60,
+      require   => [Service['consul']] + $consul_validators,
+    }
+    $service_validator = [Tcp_conn_validator['127.0.0.1:8500']]
+  } else {
+    $service_validator = undef
   }
 
   include profile::consul::puppet_watch
-  Consul::Service <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
-  Consul::Watch <| |> { token => $acl_api_token, require => Tcp_conn_validator['127.0.0.1:8500'] }
+  Consul::Service <| |> { token => $acl_api_token, require => $service_validator }
+  Consul::Watch <| |> { token => $acl_api_token, require => $service_validator }
 }
 
 class profile::consul::puppet_watch {
@@ -69,7 +76,7 @@ class profile::consul::puppet_watch {
   # consul config file like this:
   # jq -r .acl_agent_token /etc/consul/config.json
   include epel
-  ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
+  stdlib::ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
   # Ensure consul can read the state of agent_catalog_run.lock
   file { '/opt/puppetlabs/puppet/cache':

@@ -7,8 +7,7 @@
 # @param slurm_version Specifies which version of Slurm to install
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
-  String $cluster_name,
-  String $munge_key,
+  String[1, 40] $cluster_name,
   Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
@@ -19,6 +18,7 @@ class profile::slurm::base (
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
+  Optional[String] $munge_key = undef,
 )
 {
   include epel
@@ -76,7 +76,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectory=munge',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file_line { 'munge_runtimedirectorymode':
@@ -85,7 +84,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectoryMode=0755',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   # Fix a warning in systemctl status munge about the location of the PID file.
@@ -94,7 +92,6 @@ class profile::slurm::base (
     match   => '^PIDFile=',
     line    => 'PIDFile=/run/munge/munged.pid',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file { '/var/log/slurm':
@@ -155,20 +152,33 @@ class profile::slurm::base (
     content => $slurm_path,
   }
 
-  file { '/etc/munge/munge.key':
-    ensure  => 'present',
-    owner   => 'munge',
-    group   => 'munge',
-    mode    => '0400',
-    content => $munge_key,
-    before  => Service['munge']
+  file { '/var/log/munge/munged.log':
+    owner => 'munge',
+    group => 'munge',
+    mode  => '0640',
   }
 
-  service { 'munge':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => File['/etc/munge/munge.key'],
-    require   => Package['munge']
+  if $munge_key {
+    file { '/etc/munge/munge.key':
+      ensure  => 'present',
+      owner   => 'munge',
+      group   => 'munge',
+      mode    => '0400',
+      content => $munge_key,
+    }
+
+    service { 'munge':
+      ensure    => 'running',
+      enable    => true,
+      subscribe => [
+        File['/etc/munge/munge.key'],
+        File['/var/log/munge/munged.log'],
+        File_line['munge_runtimedirectory'],
+        File_line['munge_runtimedirectorymode'],
+        File_line['munge_pidfile'],
+      ],
+      require   => Package['munge']
+    }
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
@@ -204,7 +214,7 @@ class profile::slurm::base (
   # slurm-contribs command "seff" requires Sys/hostname.pm
   # which is not packaged by default with perl in RHEL >= 9.
   if versioncmp($facts['os']['release']['major'], '9') >= 0 {
-    ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
+    stdlib::ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
   }
 
   package { 'slurm-libpmi':
@@ -281,15 +291,15 @@ class profile::slurm::base (
         'nodes'    => $nodes,
         'memlimit' => $os_reserved_memory,
         'weights'  => slurm_compute_weights($nodes),
-      }),
+      }
+    ),
   }
-
 }
 
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
-class profile::slurm::accounting(
+class profile::slurm::accounting (
   String $password,
   Hash[String, Any] $options = {},
   Array[String] $admins = [],
@@ -553,6 +563,7 @@ class profile::slurm::controller (
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node (
+  Enum['running', 'stopped'] $ensure = 'running',
   Boolean $enable_tmpfs_mounts = true,
   Array[String] $pam_access_groups = ['wheel'],
 ) {
@@ -595,23 +606,23 @@ class profile::slurm::node (
     content => $plugstack,
   }
 
-  pam { 'Add pam_slurm_adopt':
-    ensure   => present,
-    service  => 'sshd',
-    type     => 'account',
-    control  => 'sufficient',
-    module   => 'pam_slurm_adopt.so',
-    position => 'after module password-auth',
-  }
-
   pam { 'Add pam_access':
     ensure   => present,
     service  => 'sshd',
     type     => 'account',
-    control  => 'required',
+    control  => 'sufficient',
     module   => 'pam_access.so',
-    position => 'after module pam_slurm_adopt.so',
-    require  => Pam['Add pam_slurm_adopt']
+    position => 'after module password-auth',
+  }
+
+  pam { 'Add pam_slurm_adopt':
+    ensure   => present,
+    service  => 'sshd',
+    type     => 'account',
+    control  => 'required',
+    module   => 'pam_slurm_adopt.so',
+    position => 'after module pam_access.so',
+    require  => Pam['Add pam_access'],
   }
 
   $access_conf = @(END)
@@ -756,7 +767,7 @@ class profile::slurm::node (
   }
 
   service { 'slurmd':
-    ensure    => 'running',
+    ensure    => $ensure,
     enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],

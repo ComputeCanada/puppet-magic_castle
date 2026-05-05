@@ -1,7 +1,8 @@
 class profile::gpu (
   Boolean $restrict_profiling,
+  Optional[Enum['gpu', 'vgpu']] $type = undef,
 ) {
-  if $facts['nvidia_gpu_count'] > 0 {
+  if $facts['nvidia_gpu_count'] > 0 or $type != undef {
     include profile::gpu::install
     include profile::gpu::services
   }
@@ -17,9 +18,9 @@ class profile::gpu::install (
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
-  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
-  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
   $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
@@ -56,20 +57,9 @@ class profile::gpu::install (
     require => File['/etc/modprobe.d/nvidia.conf'],
     notify  => [
       Exec['stop_nvidia_services'],
-      Exec['unload_nvidia_drivers'],
     ],
   }
-
-  exec { 'unload_nvidia_drivers':
-    command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
-    onlyif      => 'grep -qE "^nvidia " /proc/modules',
-    refreshonly => true,
-    require     => Exec['stop_nvidia_services'],
-    notify      => Kmod::Load[$nvidia_kmod],
-    path        => ['/bin', '/sbin'],
-  }
   File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
-  Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
 
   if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
@@ -82,20 +72,23 @@ class profile::gpu::install (
 
   # Binary installer do not build drivers with DKMS
   if ! profile::is_grid_vgpu() or $installer != 'bin' {
+    if $facts['nvidia_gpu_count'] > 0 {
+      $dkms_before = [Kmod::Load[$nvidia_kmod]]
+    } else {
+      $dkms_before = []
+    }
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => "dkms status -m nvidia -k ${facts['kernelrelease']} | grep -v -q installed",
       timeout => 0,
-      before  => Kmod::Load[$nvidia_kmod],
+      before  => $dkms_before,
       require => [
         Package['kernel-devel'],
         Package['dkms'],
       ],
     }
   }
-
-  kmod::load { $nvidia_kmod: }
 
   if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
@@ -114,7 +107,23 @@ class profile::gpu::install (
     }
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
   }
-  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+  if $facts['nvidia_gpu_count'] > 0 {
+    kmod::load { $nvidia_kmod: }
+    Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+    exec { 'unload_nvidia_drivers':
+      command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
+      onlyif      => 'grep -qE "^nvidia " /proc/modules',
+      refreshonly => true,
+      require     => Exec['stop_nvidia_services'],
+      notify      => Kmod::Load[$nvidia_kmod],
+      subscribe   => File_line['nvidia_restrict_profiling'],
+      path        => ['/bin', '/sbin'],
+    }
+    Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
+
+  }
 }
 
 class profile::gpu::install::passthrough (
@@ -375,9 +384,17 @@ class profile::gpu::services (
     $gpu_services = $names
   }
 
+  if $facts['nvidia_gpu_count'] > 0 {
+    $ensure = 'running'
+    $enable = true
+  } else {
+    $ensure = 'stopped'
+    $enable = false
+  }
+
   service { $gpu_services:
-    ensure => 'running',
-    enable => true,
+    ensure => $ensure,
+    enable => $enable,
     notify => Service['slurm-job-exporter'],
   }
 

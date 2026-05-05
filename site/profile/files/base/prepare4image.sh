@@ -1,21 +1,25 @@
 #!/bin/bash -e
 systemctl stop puppet
 systemctl stop slurmd &> /dev/null || true
+systemctl stop munged &> /dev/null || true
 systemctl stop consul &> /dev/null || true
 systemctl stop consul-template &> /dev/null || true
 systemctl disable puppet
 systemctl disable slurmd &> /dev/null || true
+systemctl disable munged &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 
-/sbin/ipa-client-install -U --uninstall
+test -f /var/log/ipaclient-install.log && /sbin/ipa-client-install -U --uninstall
 rm -f /var/log/ipaclient-uninstall.log
 rm -f /var/log/ipaclient-install.log
 rm -rf /etc/sssd/sssd.conf.deleted
 
 rm -rf /etc/puppetlabs
 rm -rf /opt/puppetlabs/puppet/cache/{clientbucket,client_data,client_yaml,state}
-rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.snapshot
+test -f /opt/consul/node-id && rm /opt/consul/node-id
+test -f /opt/consul/checkpoint-signature && rm /opt/consul/checkpoint-signature
+test -f /opt/consul/serf/local.snapshot && rm /opt/consul/serf/local.snapshot
 
 # Turn off swap
 swapoff -a
@@ -30,7 +34,7 @@ systemctl daemon-reload
 
 systemctl stop rsyslog
 : > /var/log/messages
-test -d /var/log/munge && : > /var/log/munge/munged.log
+test -d /var/log/munge && test -f /var/log/munge/munged && : > /var/log/munge/munged.log
 : > /var/log/secure
 : > /var/log/cron
 test -d /var/log/audit && : > /var/log/audit/audit.log
