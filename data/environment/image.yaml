@@ -1,0 +1,5 @@
+---
+profile::freeipa::client::skip_ipa_install: true
+profile::sssd::client::ensure: 'stopped'
+profile::slurm::node::ensure: 'stopped'
+consul::service_ensure: 'stopped'
