@@ -692,7 +692,7 @@ This class configures files and services of a FreeIPA server.
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
-| `enable_mokey`   | Enable the [mokey service](#profilefreeipamokey) | Booelan   |
+| `enable_mokey`   | Enable the [mokey service](#profilefreeipamokey) | Boolean   |
 
 <details>
 <summary>default values</summary>
