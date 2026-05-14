@@ -57,7 +57,6 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::server`](#profilersyslogserver)
 - [`profile::vector`](#profilevector)
 - [`profile::slurm::base`](#profileslurmbase)
-- [`profile::slurm::node`](#profileslurmnode)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
 - [`profile::slurm::node`](#profileslurmnode)
@@ -1450,7 +1449,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | Variable                | Description              | Type    |
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
-| `munge_key`             | Base64 encoded Munge key | String  |
+| `munge_key`             | Base64 encoded Munge key | Optional[String]  |
 | `slurm_version`         | Slurm version to install | Enum['24.05', '24.11', '25.05', '25.11'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
@@ -1462,14 +1461,14 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 | `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
+| `ensure_munge`          | Desired state of the `munge` service (`running` or `stopped`) | Enum['running', 'stopped'] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
-profile::slurm::base::munge_key: ENC[PKCS7, ...]
-profile::slurm::base::slurm_version: '23.11'
+profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600
 profile::slurm::base::suspend_rate: 20
@@ -1487,25 +1486,6 @@ When `profile::slurm::base` is included, these classes are included too:
 - [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
 - [`profile::consul`](#profileconsul)
 - [`profile::base::powertools`](#profilebasepowertools)
-
-## `profile::slurm::node`
-This class allows some configuration for the Slurm compute nodes.
-
-### parameters
-| Variable                | Description                                             | Type   |
-| :---------------------- | :------------------------------------------------------ | :----- |
-| `ensure_slurmd`         | Desired state of the `slurmd` service (`running` or `stopped`) | Enum['running', 'stopped'] |
-| `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs | Array[String] |
-
-<details>
-<summary>default values</summary>
-
-```yaml
-profile::slurm::node::ensure_slurmd: 'running'
-profile::slurm::node::pam_access_groups: ['wheel']
-```
-</details>
-
 
 ## `profile::slurm::accounting`
 
@@ -1629,7 +1609,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 
 | Variable                | Description                                                                                   | Type    |
 | :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
-| `ensure`                | Desired state of the `slurmd` service (`running` or `stopped`)                               | Enum['running', 'stopped'] |
+| `ensure_slurmd`         | Desired state of the `slurmd` service (`running` or `stopped`)                               | Enum['running', 'stopped'] |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
 
@@ -1637,7 +1617,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 <summary>default values</summary>
 
 ```yaml
-profile::slurm::node::ensure: 'running'
+profile::slurm::node::ensure_slurmd: 'running'
 profile::slurm::node::enable_tmpfs_mounts: true
 profile::slurm::node::pam_access_groups: ['wheel']
 ```
