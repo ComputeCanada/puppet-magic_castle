@@ -17,9 +17,9 @@ class profile::gpu::install (
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
-  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
-  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
   $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
