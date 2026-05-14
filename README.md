@@ -1494,14 +1494,14 @@ This class allows some configuration for the Slurm compute nodes.
 ### parameters
 | Variable                | Description                                             | Type   |
 | :---------------------- | :------------------------------------------------------ | :----- |
-| `ensure`                | Desired state of the `slurmd` service (`running` or `stopped`) | Enum['running', 'stopped'] |
+| `ensure_slurmd`         | Desired state of the `slurmd` service (`running` or `stopped`) | Enum['running', 'stopped'] |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::slurm::node::ensure: 'running'
+profile::slurm::node::ensure_slurmd: 'running'
 profile::slurm::node::pam_access_groups: ['wheel']
 ```
 </details>

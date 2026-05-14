@@ -18,6 +18,7 @@ class profile::slurm::base (
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
+  Enum['running', 'stopped'] $ensure_munge = 'running',
   Optional[String] $munge_key = undef,
 )
 {
@@ -168,8 +169,8 @@ class profile::slurm::base (
     }
 
     service { 'munge':
-      ensure    => 'running',
-      enable    => true,
+      ensure    => $ensure_munge,
+      enable    => $ensure_munge == 'running',
       subscribe => [
         File['/etc/munge/munge.key'],
         File['/var/log/munge/munged.log'],
@@ -177,7 +178,7 @@ class profile::slurm::base (
         File_line['munge_runtimedirectorymode'],
         File_line['munge_pidfile'],
       ],
-      require   => Package['munge']
+      require   => Package['munge'],
     }
   }
 
@@ -563,7 +564,7 @@ class profile::slurm::controller (
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node (
-  Enum['running', 'stopped'] $ensure = 'running',
+  Enum['running', 'stopped'] $ensure_slurmd = 'running',
   Boolean $enable_tmpfs_mounts = true,
   Array[String] $pam_access_groups = ['wheel'],
 ) {
@@ -767,7 +768,7 @@ class profile::slurm::node (
   }
 
   service { 'slurmd':
-    ensure    => $ensure,
+    ensure    => $ensure_slurmd,
     enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
