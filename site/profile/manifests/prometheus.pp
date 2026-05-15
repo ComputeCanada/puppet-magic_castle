@@ -66,7 +66,7 @@ class profile::prometheus::slurm_job_exporter (
   }
 
   $el = $facts['os']['release']['major']
-  ensure_packages(['python3'], { ensure => 'present' })
+  stdlib::ensure_packages(['python3'], { ensure => 'present' })
   package { 'python3-prometheus_client':
     require => Yumrepo['epel'],
   }
@@ -78,7 +78,7 @@ class profile::prometheus::slurm_job_exporter (
   if $facts['nvidia_gpu_count'] > 0 and profile::is_grid_vgpu() {
     # Used by slurm-job-exporter to export GPU metrics
     # DCGM does not work with GRID VGPU, most of the stats are missing
-    ensure_packages(['python3-pip'], { ensure => 'present' })
+    stdlib::ensure_packages(['python3-pip'], { ensure => 'present' })
     $py3_version = lookup('os::redhat::python3::version')
 
     exec { 'pip install nvidia-ml-py':

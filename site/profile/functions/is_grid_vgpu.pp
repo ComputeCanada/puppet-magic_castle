@@ -1,5 +1,5 @@
 function profile::is_grid_vgpu() >> Boolean {
-  if $facts['nvidia_grid_vgpu'] {
+  if $facts['nvidia_grid_vgpu'] or lookup('terraform.self.specs.gpu_type', undef, undef, undef) == 'vgpu' {
     true
   } else {
     $grid_vgpu_types = lookup('profile::gpu::install::vgpu::grid_vgpu_types', undef, undef, [])

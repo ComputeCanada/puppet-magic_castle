@@ -1,7 +1,8 @@
 class profile::gpu (
   Boolean $restrict_profiling,
 ) {
-  if $facts['nvidia_gpu_count'] > 0 {
+  $spec_gpu_type = lookup('terraform.self.specs.gpu_type', undef, undef, undef)
+  if $facts['nvidia_gpu_count'] > 0 or $spec_gpu_type != undef {
     include profile::gpu::install
     include profile::gpu::services
   }
@@ -13,13 +14,14 @@ class profile::gpu::install (
     'datacenter-gpu-manager-4-core',
     'datacenter-gpu-manager-4-cuda12',
   ],
+  Boolean $load_modules = Boolean($facts['nvidia_gpu_count']),
   Optional[String] $lib_symlink_path = undef
 ) {
   $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
-  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
-  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
   $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
@@ -56,20 +58,9 @@ class profile::gpu::install (
     require => File['/etc/modprobe.d/nvidia.conf'],
     notify  => [
       Exec['stop_nvidia_services'],
-      Exec['unload_nvidia_drivers'],
     ],
   }
-
-  exec { 'unload_nvidia_drivers':
-    command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
-    onlyif      => 'grep -qE "^nvidia " /proc/modules',
-    refreshonly => true,
-    require     => Exec['stop_nvidia_services'],
-    notify      => Kmod::Load[$nvidia_kmod],
-    path        => ['/bin', '/sbin'],
-  }
   File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
-  Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
 
   if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
@@ -82,20 +73,23 @@ class profile::gpu::install (
 
   # Binary installer do not build drivers with DKMS
   if ! profile::is_grid_vgpu() or $installer != 'bin' {
+    if $load_modules {
+      $dkms_before = [Kmod::Load[$nvidia_kmod]]
+    } else {
+      $dkms_before = []
+    }
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
       onlyif  => "dkms status -m nvidia -k ${facts['kernelrelease']} | grep -v -q installed",
       timeout => 0,
-      before  => Kmod::Load[$nvidia_kmod],
+      before  => $dkms_before,
       require => [
         Package['kernel-devel'],
         Package['dkms'],
       ],
     }
   }
-
-  kmod::load { $nvidia_kmod: }
 
   if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
@@ -114,7 +108,23 @@ class profile::gpu::install (
     }
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
   }
-  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+  if $load_modules {
+    kmod::load { $nvidia_kmod: }
+    Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
+
+    exec { 'unload_nvidia_drivers':
+      command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
+      onlyif      => 'grep -qE "^nvidia " /proc/modules',
+      refreshonly => true,
+      require     => Exec['stop_nvidia_services'],
+      notify      => Kmod::Load[$nvidia_kmod],
+      subscribe   => File_line['nvidia_restrict_profiling'],
+      path        => ['/bin', '/sbin'],
+    }
+    Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
+
+  }
 }
 
 class profile::gpu::install::passthrough (
@@ -220,26 +230,29 @@ class profile::gpu::config::mig (
     $mig_parted_config_file = '/etc/nvidia-mig-manager/config.yaml'
   }
 
-  exec { 'nvidia-mig-parted apply':
-    unless      => 'nvidia-mig-parted assert',
-    require     => [
-      Package['nvidia-mig-manager'],
-      File['/etc/nvidia-mig-manager/puppet-config.yaml'],
-      File['/etc/nvidia-mig-manager/puppet-hooks.yaml'],
-    ],
-    environment => [
-      "MIG_PARTED_CONFIG_FILE=${mig_parted_config_file}",
-      'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
-      "MIG_PARTED_SELECTED_CONFIG=${mig_parted_config_name}",
-      'MIG_PARTED_SKIP_RESET=false',
-    ],
-    path        => ['/usr/bin'],
-    notify      => [
-      Service['nvidia-persistenced'],
-      Service['nvidia-dcgm'],
-    ],
+  $load_modules = lookup('profile::gpu::install::load_modules', undef, undef, Boolean($facts['nvidia_gpu_count']))
+  if $load_modules {
+    exec { 'nvidia-mig-parted apply':
+      unless      => 'nvidia-mig-parted assert',
+      require     => [
+        Package['nvidia-mig-manager'],
+        File['/etc/nvidia-mig-manager/puppet-config.yaml'],
+        File['/etc/nvidia-mig-manager/puppet-hooks.yaml'],
+      ],
+      environment => [
+        "MIG_PARTED_CONFIG_FILE=${mig_parted_config_file}",
+        'MIG_PARTED_HOOKS_FILE=/etc/nvidia-mig-manager/puppet-hooks.yaml',
+        "MIG_PARTED_SELECTED_CONFIG=${mig_parted_config_name}",
+        'MIG_PARTED_SKIP_RESET=false',
+      ],
+      path        => ['/usr/bin'],
+      notify      => [
+        Service['nvidia-persistenced'],
+        Service['nvidia-dcgm'],
+      ],
+    }
+    Kmod::Load <| tag == profile::gpu::install |> -> Exec['nvidia-mig-parted apply']
   }
-  Kmod::Load <| tag == profile::gpu::install |> -> Exec['nvidia-mig-parted apply']
 }
 
 class profile::gpu::install::vgpu (
@@ -375,9 +388,18 @@ class profile::gpu::services (
     $gpu_services = $names
   }
 
+  $load_modules = lookup('profile::gpu::install::load_modules', undef, undef, Boolean($facts['nvidia_gpu_count']))
+  if $load_modules {
+    $ensure = 'running'
+    $enable = true
+  } else {
+    $ensure = 'stopped'
+    $enable = false
+  }
+
   service { $gpu_services:
-    ensure => 'running',
-    enable => true,
+    ensure => $ensure,
+    enable => $enable,
     notify => Service['slurm-job-exporter'],
   }
 
