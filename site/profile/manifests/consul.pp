@@ -39,23 +39,21 @@ class profile::consul (
     },
   }
 
-  if ! $is_server {
-    $consul_validators = $servers.map | $index, $server_ip | {
-      tcp_conn_validator { "${server_ip}:8300":
-        host      => $server_ip,
-        port      => 8300,
-        try_sleep => 5,
-        timeout   => 120,
-        require   => Service['consul'],
-      }
-    }
-  } else {
-    $consul_validators = []
-  }
-
   $service_ensure = lookup('consul::service_ensure', undef, undef, 'running')
-
   if $service_ensure == 'running' {
+    if ! $is_server {
+      $consul_validators = $servers.map | $index, $server_ip | {
+        tcp_conn_validator { "${server_ip}:8300":
+          host      => $server_ip,
+          port      => 8300,
+          try_sleep => 5,
+          timeout   => 120,
+          require   => Service['consul'],
+        }
+      }
+    } else {
+      $consul_validators = []
+    }
     tcp_conn_validator { '127.0.0.1:8500':
       try_sleep => 5,
       timeout   => 60,
