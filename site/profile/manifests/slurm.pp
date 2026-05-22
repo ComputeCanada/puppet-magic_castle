@@ -813,11 +813,13 @@ class profile::slurm::node (
   # and if it is the case, it restarts slurmd so the state in
   # in slurmctld can be properly refreshed.
   $hostname = $facts['networking']['hostname']
-  exec { 'slurmd_state_invalid_restart':
-    command => 'systemctl restart slurmd',
-    onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
-    path    => ['/usr/bin', '/opt/software/slurm/bin'],
-    require => Service['slurmd'],
+  if $ensure_slurmd == 'running' {
+    exec { 'slurmd_state_invalid_restart':
+      command => 'systemctl restart slurmd',
+      onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
+      path    => ['/usr/bin', '/opt/software/slurm/bin'],
+      require => Service['slurmd'],
+    }
   }
 
   logrotate::rule { 'slurmd':
