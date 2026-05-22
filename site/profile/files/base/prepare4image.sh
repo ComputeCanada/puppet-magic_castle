@@ -1,4 +1,15 @@
-#!/bin/bash -e
+#!/bin/bash
+set -e
+
+err_report() {
+  echo "Image preparation halted, fail to execute: ${BASH_COMMAND}"
+}
+trap 'err_report' ERR
+
+# verify puppet last run completed successfully
+test -f /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
+grep --quiet -P "^status: (changed|unchanged)" /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
+
 systemctl stop puppet
 systemctl stop slurmd &> /dev/null || true
 systemctl stop munge &> /dev/null || true
