@@ -1,0 +1,6 @@
+#!/bin/bash
+{
+  source /etc/slurm/env.secrets
+  export PATH=$PATH:/opt/software/slurm/bin
+  <%= $prefix %>/bin/<%= $cmd %> $@
+} &>> /var/log/slurm/slurm_autoscale.log

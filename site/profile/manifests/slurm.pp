@@ -471,42 +471,33 @@ class profile::slurm::controller (
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @("EOT"/$)
-#!/bin/bash
-{
-  source /etc/slurm/env.secrets
-  export PATH=\$PATH:/opt/software/slurm/bin
-  ${autoscale_env_prefix}/bin/slurm_resume \$@
-} &>> /var/log/slurm/slurm_autoscale.log
-|EOT
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_resume',
+      }
+    ),
   }
 
   file { '/usr/bin/slurm_resume_fail':
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @("EOT"/$)
-#!/bin/bash
-{
-  source /etc/slurm/env.secrets
-  export PATH=\$PATH:/opt/software/slurm/bin
-  ${autoscale_env_prefix}/bin/slurm_resume_fail \$@
-} &>> /var/log/slurm/slurm_autoscale.log
-|EOT
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_resume_fail',
+      }
+    ),
   }
 
   file { '/usr/bin/slurm_suspend':
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => @("EOT"/$)
-#!/bin/bash
-{
-  source /etc/slurm/env.secrets
-  export PATH=\$PATH:/opt/software/slurm/bin
-  ${autoscale_env_prefix}/bin/slurm_suspend \$@
-} &>> /var/log/slurm/slurm_autoscale.log
-|EOT
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_suspend',
+      }
+    ),
   }
 
   file { '/etc/slurm/job_submit.lua':
