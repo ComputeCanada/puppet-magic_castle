@@ -8,7 +8,7 @@
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
   String[1, 40] $cluster_name,
-  String $munge_key,  
+  String $munge_key,
   Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
@@ -20,14 +20,13 @@ class profile::slurm::base (
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
   Enum['running', 'stopped'] $ensure_munge = 'running',
-)
-{
+) {
   include epel
   include profile::base::powertools
 
   group { 'slurm':
     ensure => 'present',
-    gid    =>  '2001'
+    gid    => '2001',
   }
 
   user { 'slurm':
@@ -37,12 +36,12 @@ class profile::slurm::base (
     home    => '/var/lib/slurm',
     comment => 'Slurm workload manager',
     shell   => '/bin/bash',
-    before  => Package['slurm']
+    before  => Package['slurm'],
   }
 
   group { 'munge':
     ensure => 'present',
-    gid    =>  '2002'
+    gid    => '2002',
   }
 
   user { 'munge':
@@ -52,7 +51,7 @@ class profile::slurm::base (
     home    => '/var/lib/munge',
     comment => 'MUNGE Uid N Gid Emporium',
     shell   => '/sbin/nologin',
-    before  => Package['munge']
+    before  => Package['munge'],
   }
 
   package { 'xauth':
@@ -98,30 +97,30 @@ class profile::slurm::base (
   file { '/var/log/slurm':
     ensure => 'directory',
     owner  => 'slurm',
-    group  => 'slurm'
+    group  => 'slurm',
   }
 
   file { '/var/spool/slurm':
     ensure => 'directory',
     owner  => 'slurm',
-    group  => 'slurm'
+    group  => 'slurm',
   }
 
   file { '/etc/slurm':
     ensure  => 'directory',
     owner   => 'slurm',
     group   => 'slurm',
-    seltype => 'usr_t'
+    seltype => 'usr_t',
   }
 
   file { '/etc/munge':
     ensure => 'directory',
     owner  => 'munge',
-    group  => 'munge'
+    group  => 'munge',
   }
 
   file { '/etc/slurm/cgroup.conf':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/cgroup.conf',
@@ -132,24 +131,24 @@ class profile::slurm::base (
   }
 
   file { '/etc/slurm/epilog':
-    ensure => 'present',
+    ensure => 'file',
     owner  => 'slurm',
     group  => 'slurm',
     source => 'puppet:///modules/profile/slurm/epilog',
-    mode   => '0755'
+    mode   => '0755',
   }
 
   $slurm_path = @(END)
-  if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
-    export SLURM_HOME=/opt/software/slurm
-    export PATH=$SLURM_HOME/bin:$PATH
-    export MANPATH=$SLURM_HOME/share/man:$MANPATH
-    export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-  fi
-  |END
+    if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
+      export SLURM_HOME=/opt/software/slurm
+      export PATH=$SLURM_HOME/bin:$PATH
+      export MANPATH=$SLURM_HOME/share/man:$MANPATH
+      export LD_LIBRARY_PATH=$SLURM_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+    fi
+    |END
 
   file { '/etc/profile.d/z-02-slurm.sh':
-    ensure  => 'present',
+    ensure  => 'file',
     content => $slurm_path,
   }
 
@@ -204,12 +203,13 @@ class profile::slurm::base (
     ],
   }
 
-  package { ['slurm-contribs', 'slurm-perlapi' ]:
+  package { ['slurm-contribs', 'slurm-perlapi']:
     ensure  => 'installed',
     require => [
       Package['slurm'],
       Package['munge'],
-      Yumrepo['slurm-copr-repo']],
+      Yumrepo['slurm-copr-repo'],
+    ],
   }
 
   # slurm-contribs command "seff" requires Sys/hostname.pm
@@ -231,9 +231,9 @@ class profile::slurm::base (
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] and !('image' in $attr['tags']) }
   $suspend_exc_nodes = keys($nodes.filter|$key, $attr| { !('pool' in $attr['tags']) })
   $partition_names = unique($nodes.map |$key, $attr| { $attr['prefix'] })
-  $partitions = Hash($partition_names.map | $name | { [$name, { 'nodes' => keys($nodes.filter|$key, $attr | { $name == $attr['prefix'] }) } ] })
+  $partitions = Hash($partition_names.map | $name | { [$name, { 'nodes' => keys($nodes.filter|$key, $attr | { $name == $attr['prefix'] }) }] })
   file { '/etc/slurm/slurm.conf':
-    ensure  => 'present',
+    ensure  => 'file',
     content => epp('profile/slurm/slurm.conf',
       {
         'cluster_name'          => $cluster_name,
@@ -251,7 +251,8 @@ class profile::slurm::base (
         'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
         'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
         'log_level'             => $log_level,
-      }),
+      }
+    ),
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',
@@ -259,7 +260,7 @@ class profile::slurm::base (
   }
 
   file { '/etc/slurm/slurm-addendum.conf':
-    ensure  => present,
+    ensure  => file,
     content => @("EOF"),
       # FILE MANAGED BY PUPPET, DO NOT EDIT DIRECTLY.
       # Content of this file has been specified via profile::slurm::base::config_addendum.
@@ -282,8 +283,8 @@ class profile::slurm::base (
     source_pp => 'puppet:///modules/profile/slurm/munge_socket.pp',
   }
 
-  file {'/etc/slurm/nodes.conf':
-    ensure  => 'present',
+  file { '/etc/slurm/nodes.conf':
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     seltype => 'etc_t',
@@ -320,12 +321,13 @@ class profile::slurm::accounting (
   }
 
   file { '/etc/slurm/slurmdbd.conf':
-    ensure  => present,
+    ensure  => file,
     content => epp('profile/slurm/slurmdbd.conf',
       { 'dbd_host'     => $facts['networking']['hostname'],
         'dbd_port'     => $dbd_port,
         'storage_pass' => $password
-      }),
+      }
+    ),
     owner   => 'slurm',
     mode    => '0600',
   }
@@ -351,7 +353,7 @@ class profile::slurm::accounting (
     subscribe => [
       Mysql::Db['slurm_acct_db'],
     ],
-    before    => Service['slurmctld']
+    before    => Service['slurmctld'],
   }
 
   @consul::service { 'slurmdbd':
@@ -364,20 +366,21 @@ class profile::slurm::accounting (
     polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
     max_retries       => 24,
     refreshonly       => true,
-    subscribe         => Service['slurmdbd']
+    subscribe         => Service['slurmdbd'],
   }
 
   $cluster_name = lookup('profile::slurm::base::cluster_name')
   file { '/etc/slurm/sacct.cfg':
-    ensure  => present,
+    ensure  => file,
     content => epp('profile/slurm/sacct.cfg', {
-      cluster         => $cluster_name,
-      cluster_options => $options,
-      admins          => $admins,
-      accounts        => $accounts,
-      users           => $users
-    }),
-    notify  => Exec['sacctmgr_load_cfg']
+        cluster         => $cluster_name,
+        cluster_options => $options,
+        admins          => $admins,
+        accounts        => $accounts,
+        users           => $users
+      }
+    ),
+    notify  => Exec['sacctmgr_load_cfg'],
   }
 
   exec { 'sacctmgr_load_cfg':
@@ -426,7 +429,7 @@ class profile::slurm::controller (
   $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
   file { '/etc/slurm/gres.conf':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/gres.conf',
@@ -434,11 +437,11 @@ class profile::slurm::controller (
         'nodes' => $nodes,
       }
     ),
-    seltype => 'etc_t'
+    seltype => 'etc_t',
   }
 
   file { '/usr/sbin/slurm_mail':
-    ensure => 'present',
+    ensure => 'file',
     source => 'puppet:///modules/profile/slurm/slurm_mail',
     mode   => '0755',
   }
@@ -465,7 +468,7 @@ class profile::slurm::controller (
   }
 
   file { '/usr/bin/slurm_resume':
-    ensure  => 'present',
+    ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
     content => @("EOT"/$)
@@ -479,7 +482,7 @@ class profile::slurm::controller (
   }
 
   file { '/usr/bin/slurm_resume_fail':
-    ensure  => 'present',
+    ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
     content => @("EOT"/$)
@@ -492,9 +495,8 @@ class profile::slurm::controller (
 |EOT
   }
 
-
   file { '/usr/bin/slurm_suspend':
-    ensure  => 'present',
+    ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
     content => @("EOT"/$)
@@ -507,9 +509,8 @@ class profile::slurm::controller (
 |EOT
   }
 
-
   file { '/etc/slurm/job_submit.lua':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/job_submit.lua',
@@ -543,7 +544,7 @@ class profile::slurm::controller (
       File['/etc/slurm/slurm-addendum.conf'],
       File['/etc/slurm/gres.conf'],
       File['/etc/slurm/nodes.conf'],
-    ]
+    ],
   }
 
   logrotate::rule { 'slurmctld':
@@ -593,7 +594,7 @@ class profile::slurm::node (
       require => [
         Package['slurm-slurmd'],
         Yumrepo['spank-cc-tmpfs_mounts-copr-repo'],
-      ]
+      ],
     }
     $plugstack = 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
   } else {
@@ -601,7 +602,7 @@ class profile::slurm::node (
   }
 
   file { '/etc/slurm/plugstack.conf':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     content => $plugstack,
@@ -627,17 +628,17 @@ class profile::slurm::node (
   }
 
   $access_conf = @(END)
-# Allow root cronjob
-+ : root : cron crond :0 tty1 tty2 tty3 tty4 tty5 tty6
-# Allow other groups if any
-<% $pam_access_groups.each | $group | { %>
-+:<%= $group %>:ALL
-<% } %>
--:ALL:ALL
-|END
+    # Allow root cronjob
+    + : root : cron crond :0 tty1 tty2 tty3 tty4 tty5 tty6
+    # Allow other groups if any
+    <% $pam_access_groups.each | $group | { %>
+    +:<%= $group %>:ALL
+    <% } %>
+    -:ALL:ALL
+    |END
 
   file { '/etc/security/access.conf':
-    ensure  => present,
+    ensure  => file,
     content => inline_epp($access_conf, { 'pam_access_groups' => $pam_access_groups }),
   }
 
@@ -655,36 +656,36 @@ class profile::slurm::node (
     # Implementation of user limits as recommended in
     # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
     # + some common values found on Compute Canada clusters
-    limits::limits{'*/core':
+    limits::limits { '*/core':
       soft => '0',
-      hard => 'unlimited'
+      hard => 'unlimited',
     }
 
-    limits::limits{'*/nproc':
+    limits::limits { '*/nproc':
       soft => '4096',
     }
 
-    limits::limits{'root/nproc':
+    limits::limits { 'root/nproc':
       soft => 'unlimited',
     }
 
-    limits::limits{'*/memlock':
+    limits::limits { '*/memlock':
       both => 'unlimited',
     }
 
-    limits::limits{'*/stack':
+    limits::limits { '*/stack':
       both => 'unlimited',
     }
 
-    limits::limits{'*/nofile':
+    limits::limits { '*/nofile':
       both => '1048576',
     }
 
-    limits::limits{'*/cpu':
+    limits::limits { '*/cpu':
       both => 'unlimited',
     }
 
-    limits::limits{'*/rtprio':
+    limits::limits { '*/rtprio':
       both => 'unlimited',
     }
   }
@@ -705,7 +706,7 @@ class profile::slurm::node (
   file { '/var/spool/slurmd':
     ensure => 'directory',
     owner  => 'slurm',
-    group  => 'slurm'
+    group  => 'slurm',
   }
 
   file { '/opt/software/slurm/bin/nvidia_gres.sh':
@@ -716,7 +717,7 @@ class profile::slurm::node (
 
   if $facts['nvidia_gpu_count'] > 0 {
     file { '/etc/slurm/gres.conf':
-      ensure => present,
+      ensure => file,
     }
     $self_specs = keys(lookup('terraform.self.specs'))
     if 'mig' in $self_specs or 'gpu_type' in $self_specs {
@@ -731,7 +732,7 @@ class profile::slurm::node (
       subscribe => [
         File['/opt/software/slurm/bin/nvidia_gres.sh'],
         File['/etc/slurm/gres.conf'],
-      ]
+      ],
     }
     Kmod::Load <| tag == profile::gpu  |> -> Exec['slurm-nvidia_gres']
     Exec <| tag == profile::gpu |> ~> Exec['slurm-nvidia_gres']
