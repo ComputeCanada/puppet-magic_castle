@@ -76,7 +76,7 @@ jupyterhub::jupyterhub_config_hash:
         url: '/code-server'
       desktop:
         name: Desktop
-        url: '/Desktop'
+        url: '/desktop'
 
   SbatchForm:
     ui:
