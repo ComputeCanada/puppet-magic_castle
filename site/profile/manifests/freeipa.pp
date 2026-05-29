@@ -525,19 +525,26 @@ class profile::freeipa::server (
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 
-  logrotate::rule { 'pki-tomcat':
-    path         => '/var/log/pki/pki-tomcat/ca/*.log',
-    rotate       => 5,
-    ifempty      => false,
-    copytruncate => false,
-    olddir       => false,
-    size         => '5M',
-    compress     => true,
-    create       => true,
-    create_mode  => '0640',
-    create_owner => 'pkiuser',
-    create_group => 'pkiuser',
-    postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  # pki-tomcat does not use this file, but we create a dummy one so logrotate can clean all files
+  # older than 7 days.
+  file { '/var/log/pki/pki-tomcat/ca/debug.log':
+    ensure => file,
+    owner  => 'pkiuser',
+    group  => 'pkiuser',
+    requie => Exec['ipa-install'],
+  }
+
+  logrotate::rule { 'pki-tomcat-debug':
+    path       => '/var/log/pki/pki-tomcat/ca/debug.log',
+    rotate     => 7,
+    maxage     => 7,
+    missingok  => true,
+    dateext    => true,
+    dateformat => '.%Y-%m-%d',
+    extension  => '.log',
+    su         => true,
+    su_user    => 'pkiuser',
+    su_group   => 'pkiuser',
   }
 
   # httpd-core rpm installs /etc/logrotate.d/httpd with postrotate = /bin/systemctl reload httpd
