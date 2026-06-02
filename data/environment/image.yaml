@@ -1,0 +1,10 @@
+---
+profile::freeipa::client::skip_ipa_install: true
+profile::sssd::client::ensure: 'stopped'
+profile::slurm::node::ensure_slurmd: 'stopped'
+profile::slurm::base::ensure_munge: 'stopped'
+consul::service_ensure: 'stopped'
+profile::gpu::install::load_modules: false
+profile::consul::acl_api_token: 'IMAGE-ENV-PLACEHOLDER'
+profile::slurm::base::munge_key: 'IMAGE-ENV-PLACEHOLDER'
+profile::freeipa::server::admin_password: 'IMAGE-ENV-PLACEHOLDER'
