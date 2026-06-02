@@ -218,6 +218,7 @@ class profile::freeipa::server (
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
+  include cron
 
   file { '/etc/ipa':
     ensure => directory,
@@ -525,19 +526,16 @@ class profile::freeipa::server (
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
   Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
 
-  logrotate::rule { 'pki-tomcat':
-    path         => '/var/log/pki/pki-tomcat/ca/*.log',
-    rotate       => 5,
-    ifempty      => false,
-    copytruncate => false,
-    olddir       => false,
-    size         => '5M',
-    compress     => true,
-    create       => true,
-    create_mode  => '0640',
-    create_owner => 'pkiuser',
-    create_group => 'pkiuser',
-    postrotate   => '/bin/systemctl restart pki-tomcatd@pki-tomcat.service > /dev/null 2>/dev/null || true',
+  # pki-tomcat has its own log rotation mechanism, but it does not properly clean file older than 7 days.
+  cron::job { 'clean_pki-tomcat_ca_debuglog':
+    minute      => '49',
+    hour        => '3',
+    date        => '*',
+    month       => '*',
+    weekday     => '*',
+    user        => 'root',
+    command     => 'find /var/log/pki/pki-tomcat/ca -maxdepth 1 -name debug.*.log -mtime +7 -delete',
+    description => 'clean pki-tomcat debug logs',
   }
 
   # httpd-core rpm installs /etc/logrotate.d/httpd with postrotate = /bin/systemctl reload httpd
