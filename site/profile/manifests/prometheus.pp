@@ -4,7 +4,7 @@
 # It should run on every server of the cluster.
 class profile::prometheus::node_exporter {
   include prometheus::node_exporter
-  @consul::service { 'node_exporter':
+  @consul::service { 'node-exporter':
     port => 9100,
     tags => ['exporter'],
   }
