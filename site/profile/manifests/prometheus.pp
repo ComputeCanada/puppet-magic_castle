@@ -160,7 +160,7 @@ class profile::prometheus::slurm_exporter (
 
 class profile::prometheus::apache_exporter {
   include prometheus::apache_exporter
-  @consul::service { 'apache_exporter':
+  @consul::service { 'apache-exporter':
     port => 9117,
     tags => ['exporter'],
   }
@@ -169,7 +169,7 @@ class profile::prometheus::apache_exporter {
 
 class profile::prometheus::caddy_exporter (Integer $port = 2020) {
   include profile::consul
-  @consul::service { 'caddy_exporter':
+  @consul::service { 'caddy-exporter':
     port => $port,
     tags => ['exporter'],
   }
