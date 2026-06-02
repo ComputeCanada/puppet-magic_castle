@@ -16,6 +16,7 @@ class profile::rsyslog::client {
       destination => '/etc/rsyslog.d/99-remote_host.conf',
       command     => 'systemctl restart rsyslog || true',
     },
+    tag         => ['mc_bootstrap'],
   }
 }
 
