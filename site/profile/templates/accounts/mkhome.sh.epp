@@ -55,7 +55,9 @@ while read TIMESTAMP USERNAME; do
     fi
     <% } -%>
 
-    for PROJECT in $(kexec ldapsearch -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null | grep -P -o ${PROJECT_REGEX}); do
+    PROJECTS=$(kexec ldapsearch -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null |
+               grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
+    for PROJECT in $PROJECTS; do
         if [[ ! -z "${PROJECT}" ]]; then
             echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
         fi
