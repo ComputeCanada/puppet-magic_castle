@@ -238,6 +238,11 @@ modproject() {
         return 1
     fi
 
+    if [[ -z "${GROUP_INFO}" ]]; then
+        echo "ERROR::${FUNCNAME} ${GROUP}: group not found in LDAP"
+        return 3
+    fi
+
     # If group is not posix, we disable folder creation.
     if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
         WITH_FOLDER="false"
