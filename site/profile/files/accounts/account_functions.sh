@@ -251,7 +251,7 @@ modproject() {
         fi
     else
         if [[ $(/opt/software/slurm/bin/sacctmgr -n list account Name=${GROUP} | wc -l) -eq 0 ]]; then
-            echo "ERROR::${FUNCNAME}: Slurm account does not exist"
+            echo "ERROR::${FUNCNAME}: Slurm account "${GROUP}" does not exist"
             return 1
         fi
     fi
