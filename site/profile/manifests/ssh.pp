@@ -14,6 +14,7 @@ class profile::ssh::base (
   }
 
   file { '/etc/ssh/sshd_config.d/01-puppet.conf':
+    ensure  => file,
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
@@ -21,6 +22,7 @@ class profile::ssh::base (
   }
 
   file { '/etc/ssh/sshd_config.d/50-authenticationmethods.conf':
+    ensure  => file,
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
