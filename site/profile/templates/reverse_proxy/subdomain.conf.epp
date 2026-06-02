@@ -3,6 +3,17 @@
 <% if $remote_ip != '' { -%>
   @allowed_ips remote_ip <%= join($remote_ip, ' ') %>
 <% } -%>
+
+  @scanner {
+    path /.env /.env.* /.git/* /.gitconfig /.git-credentials
+    path /phpinfo.php /info.php /test.php
+    path /wp-config* /config.php /configuration.php /settings.php
+    path /application*.yml /application*.yaml /application*.properties
+    path /web.config* /appsettings*.json
+    path /service-account.json /credentials.json /key.json
+  }
+  respond @scanner "Access Denied" 403
+
   route <% if $remote_ip != '' { %>@allowed_ips <% } %>{
     respond /robots.txt 200 {
       body "<%= $robots_txt %>"
