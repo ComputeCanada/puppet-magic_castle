@@ -69,7 +69,7 @@ class profile::consul::puppet_watch {
   # consul config file like this:
   # jq -r .acl_agent_token /etc/consul/config.json
   include epel
-  ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
+  stdlib::ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
   # Ensure consul can read the state of agent_catalog_run.lock
   file { '/opt/puppetlabs/puppet/cache':
