@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.5.0] 2026-06-08
+
+### Added
+- Added a Caddy filter to remove scanner noise (PR #562)
+- Added the `mc_bootstrap` tag to the remote host consul-template watch (PR #565)
+
+### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.10.0 (PR #566)
+- Bumped puppet-jupyterhub to 7.4.0 (PR #552)
+- Bumped puppet-uv to 0.2.0 (PR #553)
+- Bumped puppet-metrix to 0.1.2
+- Bumped computecanada-metrix to v1.1.1
+- Bumped Puppet modules in Puppetfile, including consul, prometheus, selinux, firewall, logrotate, archive, healthcheck, transition, lvm, concat, limits, rsyslog, mount_core, and consul_template (PR #538)
+- Replaced derdanne-nfs with puppet-nfs (PR #538)
+- Fixed the JupyterHub desktop URL (PR #551)
+- Fixed issue #555 in account home creation and LDAP lookup handling (PR #556, PR #557)
+- Added group names to Slurm account errors in `modproject`
+- Ensured SSH config files are created before applying Augeas changes (PR #560)
+- Fixed issue #559 in Prometheus configuration (PR #561, PR #564)
+- Fixed the node-exporter service name (PR #564)
+- Replaced pki-tomcat logrotate handling with a cron job so daily rotated debug logs are deleted (PR #563)
+- Added missing `stdlib::` prefixes to function calls (PR #538)
+- Updated rsyslog remote host consul-template handling (PR #538)
+
 ## [15.4.1] 2026-05-01
 
 No changes to Puppet code.
