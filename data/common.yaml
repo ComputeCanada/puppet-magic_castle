@@ -238,6 +238,7 @@ prometheus::alertmanager::receivers:
   - name: 'Admin'
     email_configs:
       - to: 'root@localhost'
+        require_tls: false
 
 prometheus::alertmanagers_config:
   - static_configs:
