@@ -596,15 +596,45 @@ This class installs and configures fail2ban.
 
 | Variable          | Description      | Type    |
 | :---------------- | :--------------- | :------ |
-| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
+| `ignoreip`        | List of IP addresses, CIDR ranges, or hostnames that can never be banned | Array[Fail2ban::IP] |
+| `jails`           | Custom jail definitions rendered as `/etc/fail2ban/jail.d/<name>.local` | Hash |
+| `filters`         | Custom filter definitions rendered as `/etc/fail2ban/filter.d/<name>.local` | Hash |
+| `actions`         | Custom action definitions rendered as `/etc/fail2ban/action.d/<name>.local` | Hash |
 
-Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more parameters to configure.
+Each `jails`, `filters`, and `actions` entry is passed to the matching
+`fail2ban::jail`, `fail2ban::filter`, or `fail2ban::action` resource. The value is the content hash
+used by puppet-fail2ban v7, where the first level is the section name and the second level contains
+the options written in that section.
+
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more fail2ban
+parameters to configure.
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::fail2ban::ignoreip: []
+profile::fail2ban::jails:
+  ssh-ban-root:
+    enabled: true
+    findtime: 3600
+    bantime: 86400
+    maxretry: 0
+    action: route
+    filter: ssh-ban-root
+    logpath: '%(sshd_log)s'
+
+profile::fail2ban::filters:
+  ssh-ban-root:
+    Init:
+      journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+      maxlines: 10
+    INCLUDES:
+      before: common.conf
+    Definition:
+      failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
+
+profile::fail2ban::actions: {}
 ```
 </details>
 
