@@ -1,11 +1,18 @@
 class profile::fail2ban (
   Array[String] $ignoreip = [],
+  Hash $actions = {},
+  Hash $filters = {},
+  Hash $jails = {},
 ) {
   include epel
 
   class { 'fail2ban' :
-    whitelist => ['127.0.0.1/8', profile::getcidr()] + $ignoreip,
+    ignoreip => ['127.0.0.1/8', profile::getcidr()] + $ignoreip,
   }
+
+  create_resources('fail2ban::filter', $filters.reduce({})|$memo, $filter| { $memo + { $filter[0] => { 'filter_name' => $filter[0], 'filter_content' => $filter[1] } } })
+  create_resources('fail2ban::jail',   $jails.reduce({})|$memo, $jail| { $memo + { $jail[0] => { 'jail_name' => $jail[0], 'jail_content' => { $jail[0] => $jail[1] } } } })
+  create_resources('fail2ban::action', $actions.reduce({})|$memo, $action| { $memo + { $action[0] => { 'action_name' => $action[0], 'action_content' => $action[1] } } })
 
   file_line { 'fail2ban_sshd_recv_disconnect':
     ensure  => present,
