@@ -289,13 +289,15 @@ class profile::slurm::base (
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
-class profile::slurm::accounting(
+class profile::slurm::accounting (
   String $password,
   Hash[String, Any] $options = {},
   Array[String] $admins = [],
   Hash[String, Hash] $accounts = {},
   Hash[String, Array[String]] $users = {},
-  Integer $dbd_port = 6819
+  Integer $dbd_port = 6819,
+  Optional[String] $ro_username = undef,
+  Optional[String] $ro_password = undef,
 ) {
   include mysql::server
   include profile::slurm::base
@@ -306,6 +308,23 @@ class profile::slurm::accounting(
     password => $password,
     host     => 'localhost',
     grant    => ['ALL'],
+  }
+
+  if $ro_username != undef and $ro_password != undef {
+    mysql_user { "${ro_username}@localhost":
+      ensure        => present,
+      password_hash => mysql::password($ro_password),
+    }
+    mysql_grant { "${ro_username}@localhost/slurm_acct_db.*":
+      privileges => ['SELECT'],
+      provider   => 'mysql',
+      user       => "${ro_username}@localhost",
+      table      => 'slurm_acct_db.*',
+      require    => [
+        Mysql_database['slurm_acct_db'],
+        Mysql_user["${ro_username}@localhost"],
+      ],
+    }
   }
 
   file { '/etc/slurm/slurmdbd.conf':
