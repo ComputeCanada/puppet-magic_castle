@@ -291,7 +291,7 @@ profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::controller::autoscale_version: '0.10.0'
 profile::slurm::node::enable_tmpfs_mounts: true
-profle::slurm::accounting::ro_username: 'slurm_ro'
+profile::slurm::accounting::ro_username: 'slurm_ro'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
 profile::users::ldap::users:
