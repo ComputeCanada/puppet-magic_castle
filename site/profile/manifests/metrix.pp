@@ -1,7 +1,8 @@
 class profile::metrix (
   Array[String] $login_tags = ['login']
-){
+) {
   include mysql::server
+  stdlib::ensure_packages(['httpd'], { ensure => 'installed' })
 
   package { 'mariadb':
     ensure      => '10.11',
@@ -35,5 +36,7 @@ class profile::metrix (
     base_dn         => $base_dn,
     domain_name     => $domain_name,
   }
+
+  ensure_resource('service', 'httpd', { 'ensure' => running, 'enable' => true, 'restart' => '/usr/bin/systemctl reload httpd' })
   Class['metrix'] ~> Service['httpd']
 }
