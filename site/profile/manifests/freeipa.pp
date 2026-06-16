@@ -316,6 +316,7 @@ class profile::freeipa::server (
     notify  => [
       Service['systemd-logind'],
       Service['sssd'],
+      Service['httpd'],
     ],
   }
 
@@ -423,12 +424,7 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  service { 'httpd':
-    ensure  => running,
-    enable  => true,
-    restart => '/usr/bin/systemctl reload httpd',
-    require => Exec['ipa-install'],
-  }
+  ensure_resource('service', 'httpd', { 'ensure' => running, 'enable' => true, 'restart' => '/usr/bin/systemctl reload httpd' })
 
   service { 'certmonger':
     ensure  => running,

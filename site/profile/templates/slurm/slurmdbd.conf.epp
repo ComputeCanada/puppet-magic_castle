@@ -4,7 +4,7 @@ PidFile=/var/run/slurmdbd/slurmdbd.pid
 DbdHost=<%= $dbd_host %>
 DbdPort=<%= $dbd_port %>
 SlurmUser=slurm
-StorageHost=localhost
+StorageHost=127.0.0.1
 StorageUser=slurm
 StoragePass=<%= $storage_pass %>
 StorageLoc=slurm_acct_db

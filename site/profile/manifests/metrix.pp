@@ -1,7 +1,8 @@
 class profile::metrix (
   Array[String] $login_tags = ['login']
-){
+) {
   include mysql::server
+  stdlib::ensure_packages(['httpd'], { ensure => 'installed' })
 
   package { 'mariadb':
     ensure      => '10.11',
@@ -25,12 +26,17 @@ class profile::metrix (
     db_ip           => lookup('metrix::db_ip'),
     db_port         => lookup('metrix::db_port'),
     ldap_password   => lookup('metrix::ldap_password'),
+    slurm_user      => lookup('metrix::slurm_user'),
     slurm_password  => lookup('metrix::slurm_password'),
+    slurm_db_ip     => lookup('metrix::slurm_db_ip'),
+    slurm_db_port   => lookup('metrix::slurm_db_port'),
     cluster_name    => lookup('metrix::cluster_name'),
     subdomain       => lookup('metrix::subdomain'),
     logins          => $logins,
     base_dn         => $base_dn,
     domain_name     => $domain_name,
   }
+
+  ensure_resource('service', 'httpd', { 'ensure' => running, 'enable' => true, 'restart' => '/usr/bin/systemctl reload httpd' })
   Class['metrix'] ~> Service['httpd']
 }

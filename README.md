@@ -1549,6 +1549,7 @@ tables.
 | `users`    | Define association between usernames and accounts    | Hash[String, Array[String]] |
 | `options`  | Define additional cluster's global [Slurm accounting options](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | Hash[String, Any] |
 | `dbd_port` | SlurmDBD service listening port | Integer |
+| `db_users` | Additional MariaDB users to create on the Slurm accounting database | Array[SlurmDBUser] |
 
 <details>
 <summary>default values</summary>
@@ -1560,6 +1561,7 @@ profile::slurm::accounting::accounts: {}
 profile::slurm::accounting::users: {}
 profile::slurm::accounting::options: {}
 profile::slurm::accounting::dbd_port: 6869
+profile::slurm::accounting::db_users: []
 ```
 </details>
 
@@ -1590,6 +1592,25 @@ profile::slurm::accounting::users:
 Each username in `profile::slurm::accounting::users` and `profile::slurm::accounting::admins` have to correspond
 to an LDAP or a local users. Refer to [`profile::users::ldap::users`](#profileusersldapusers) and
 [`profile::users::local::users`](#profileuserslocalusers) for more information.
+
+</details>
+
+<details>
+<summary>additional database users example</summary>
+
+`profile::slurm::accounting::db_users` creates extra MariaDB users with explicit grants on the
+`slurm_acct_db` database. This is useful for services that need direct read-only access to Slurm
+accounting data without reusing the SlurmDBD database credentials.
+
+```yaml
+profile::slurm::accounting::db_users:
+  - username: metrix_slurm
+    password: ENC[PKCS7, ...]
+    privileges: ['SELECT']
+    host: '127.0.0.1'
+```
+
+Each entry requires `username`, `password`, `privileges`, and `host`.
 
 </details>
 
