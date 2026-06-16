@@ -28,6 +28,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::freeipa::client`](#profilefreeipaclient)
 - [`profile::freeipa::server`](#profilefreeipaserver)
 - [`profile::freeipa::mokey`](#profilefreeipamokey)
+- [`profile::globus`](#profileglobus)
 - [`profile::gpu`](#profilegpu)
 - [`profile::gpu::config::mig`](#profilegpuconfigmig)
 - [`profile::gpu::install`](#profilegpuinstall)
@@ -764,6 +765,80 @@ profile::freeipa::mokey::require_verify_admin: true
 ```
 </details>
 
+## `profile::globus`
+
+This class extends [treydock-globus](https://forge.puppet.com/modules/treydock/globus)
+with a POSIX storage gateway, a collection, and optional local OpenID Connect
+authentication for cluster users.
+
+For Puppet to configure the Globus endpoint and node automatically through
+treydock-globus, the following Globus module parameters must be defined:
+- `globus::contact_email`
+- `globus::organization`
+- `globus::client_id`
+- `globus::client_secret`.
+
+To generate `globus::client_id` and `globus::client_secret`, follow
+[**2. Register for Service Credentials**](https://docs.globus.org/globus-connect-server/v5/automated-deployment/#register_for_service_credentials)
+and
+[**3. Create a Project Administrator Role for the Service Identity**](https://docs.globus.org/globus-connect-server/v5/automated-deployment/#create_a_project_administrator_role_for_the_service_identity)
+from the Globus Connect Server automated deployment documentation.
+
+Gateway, collection, and OIDC setup are one-time operations guarded by JSON
+state files in `/var/lib/globus-connect-server`. Changing parameters such as
+`domains`, `collection_path`, `enable_oidc`, or `identity_mapping` after setup
+requires removing the affected Globus service and its corresponding JSON state
+file before the next Puppet run.
+
+By default, this class creates a local OIDC server and uses it as the gateway
+authentication domain. If `enable_oidc` is set to `false`, at least one external
+authentication domain must be listed in `domains`.
+
+### parameters
+
+| Variable           | Description                                                   | Type                  |
+| :----------------- | :------------------------------------------------------------ | :-------------------- |
+| `collection_path`  | Local path exported by the Globus collection                  | String[1]             |
+| `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
+| `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
+| `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::globus::collection_path: /nfs
+profile::globus::domains: []
+profile::globus::enable_oidc: true
+profile::globus::identity_mapping: ~
+```
+</details>
+
+<details>
+<summary>example: map Globus usernames to local POSIX usernames</summary>
+
+The `identity_mapping` parameter is written to `/etc/globus/identity_mapping.json`
+and passed to the POSIX storage gateway. Each entry is a Globus
+[expression-based identity mapping](https://docs.globus.org/globus-connect-server/v5/identity-mapping-guide/#recipe_map_identity_username).
+
+This example allows identities from `example.org` and maps each Globus username
+to the matching local POSIX username by removing the domain part.
+
+```yaml
+profile::globus::domains:
+  - example.org
+profile::globus::identity_mapping:
+  - source: "{username}"
+    match: "(.*)@example\\.org"
+    output: "{0}"
+```
+</details>
+
+### dependencies
+
+When `profile::globus` is included, these classes are included too:
+- [`globus`](https://forge.puppet.com/modules/treydock/globus)
+
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
@@ -791,7 +866,7 @@ profile::gpu::restrict_profiling: false
 
 ## `profile::gpu::config::mig`
 
-This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted).
 
 ### parameters
 

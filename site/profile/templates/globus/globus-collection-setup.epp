@@ -1,0 +1,4 @@
+#!/bin/sh
+export GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)
+GATEWAY_ID=$(jq -r .id /var/lib/globus-connect-server/gateway.json)
+globus-connect-server -F json --use-explicit-host <%= $public_ip %> collection create ${GATEWAY_ID} <%= $collection_path %> --default-directory '/home/$USER' "<%= $display_name %> collection" > /var/lib/globus-connect-server/collection.json
