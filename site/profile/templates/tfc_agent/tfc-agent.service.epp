@@ -1,0 +1,47 @@
+[Unit]
+Description=Service to automatically start TFC/E Agent
+After=network.target
+
+[Service]
+EnvironmentFile=<%= $env_file %>
+Type=simple
+ExecStart=<%= $install_dir %>/tfc-agent
+KillSignal=SIGINT
+Restart=always
+RestartSec=5
+DynamicUser=yes
+RuntimeDirectory=tfc-agent
+Environment=HOME=/run/tfc-agent
+PrivateTmp=true
+
+ProtectSystem=yes
+ProtectHome=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+PrivateDevices=yes
+PrivateNetwork=no
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+DevicePolicy=closed
+KeyringMode=private
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+PrivateUsers=yes
+RemoveIPC=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallFilter=
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+
+[Install]
+WantedBy=multi-user.target
