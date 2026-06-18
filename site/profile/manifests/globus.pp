@@ -15,7 +15,7 @@ class profile::globus {
 
   firewall { '201 gridftp':
     chain  => 'INPUT',
-    dport  => '50000:51000',
+    dport  => '50000-51000',
     proto  => 'tcp',
     source => '0.0.0.0/0',
     action => 'accept',
