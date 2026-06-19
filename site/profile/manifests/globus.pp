@@ -32,7 +32,7 @@ class profile::globus (
     show_diff => false,
     content   => "GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json) \
     globus-connect-server -F json storage-gateway create posix \"${lookup('terraform.data.cluster_name')} \
-    gateway\" ${domain_string} > /var/lib/globus-connect-server/gateway.json",
+    gateway\" ${domain_string} > /var/lib/globus-connect-server/gateway.json\n",
   }
 
   file { '/root/globus-collection-setup':
@@ -43,7 +43,7 @@ class profile::globus (
     show_diff => false,
     content   => "GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)\
     globus-connect-server -F json collection create $(jq -r .id /var/lib/globus-connect-server/gateway.json) / \
-    \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json",
+    \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json\n",
   }
 
   # exec { 'globus-setup-gateway':
