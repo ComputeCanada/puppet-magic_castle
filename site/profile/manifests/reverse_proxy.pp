@@ -17,7 +17,7 @@ class profile::reverse_proxy (
     dport  => [80, 443],
     proto  => 'tcp',
     source => '0.0.0.0/0',
-    action => 'accept',
+    jump   => 'accept',
   }
 
   yumrepo { 'caddy-copr-repo':

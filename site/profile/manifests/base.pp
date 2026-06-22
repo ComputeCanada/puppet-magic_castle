@@ -80,7 +80,7 @@ class profile::base (
     chain  => 'INPUT',
     proto  => 'all',
     source => profile::getcidr(),
-    action => 'accept',
+    jump   => 'accept',
     tag    => 'mc_bootstrap',
   }
 
@@ -88,7 +88,7 @@ class profile::base (
     chain       => 'OUTPUT',
     proto       => 'tcp',
     destination => '169.254.169.254',
-    action      => 'drop',
+    jump        => 'drop',
     uid         => '! root',
     tag         => 'mc_bootstrap',
   }
