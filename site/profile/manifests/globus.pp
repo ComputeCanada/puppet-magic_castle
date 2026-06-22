@@ -38,7 +38,7 @@ class profile::globus (
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
         "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ]),
-    creates     => '/var/lib/globus-connect-server/gateway.json',
+    unless      => 'test -s /var/lib/globus-connect-server/gateway.json',
     require     => Exec['globus-endpoint-setup'],
   }
 
@@ -48,7 +48,7 @@ class profile::globus (
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
         "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ]),
-    creates     => '/var/lib/globus-connect-server/collection.json',
+    unless      => 'test -s /var/lib/globus-connect-server/collection.json',
     require     => Exec['globus-gateway-setup'],
   }
 }
