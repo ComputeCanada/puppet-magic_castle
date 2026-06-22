@@ -34,20 +34,20 @@ class profile::globus (
 
   exec { 'globus-gateway-setup':
     command     => '/bin/sh /root/globus-gateway-setup',
-    environment => Sensitive([
-        "GCS_CLI_CLIENT_ID=${globus::client_id}",
-        "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
-    ]),
+    environment => [
+      "GCS_CLI_CLIENT_ID=${globus::client_id}",
+      "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
+    ],
     unless      => 'test -s /var/lib/globus-connect-server/gateway.json',
     require     => Exec['globus-endpoint-setup'],
   }
 
   exec { 'globus-collection-setup':
     command     => '/bin/sh /root/globus-collection-setup',
-    environment => Sensitive([
-        "GCS_CLI_CLIENT_ID=${globus::client_id}",
-        "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
-    ]),
+    environment => [
+      "GCS_CLI_CLIENT_ID=${globus::client_id}",
+      "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
+    ],
     unless      => 'test -s /var/lib/globus-connect-server/collection.json',
     require     => Exec['globus-gateway-setup'],
   }
