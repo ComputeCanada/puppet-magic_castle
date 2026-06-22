@@ -53,4 +53,5 @@ class profile::globus (
     unless      => '/bin/test -s /var/lib/globus-connect-server/collection.json',
     require     => Exec['globus-gateway-setup'],
   }
+  Firewall <| |> -> Exec['globus-endpoint-setup']
 }
