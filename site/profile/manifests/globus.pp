@@ -1,4 +1,5 @@
 class profile::globus (
+  String[1] $collection_path = '/nfs',
   Array[String] $domains = ['globus.org']
 ) {
   package { 'wget':
@@ -29,7 +30,7 @@ class profile::globus (
     show_diff => false,
     content   => "GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)\
     globus-connect-server -F json --use-explicit-host ${lookup('terraform.self.public_ip')} \
-    collection create $(jq -r .id /var/lib/globus-connect-server/gateway.json) /nfs \
+    collection create $(jq -r .id /var/lib/globus-connect-server/gateway.json) ${collection_path} \
     \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json\n",
   }
 

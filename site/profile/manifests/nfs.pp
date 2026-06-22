@@ -87,7 +87,7 @@ class profile::nfs::client (
         ensure  => mounted,
         device  => $mount_point,
         fstype  => none,
-        options => 'rw,bind',
+        options => 'bind,x-systemd.automount',
       }
     }
   }
