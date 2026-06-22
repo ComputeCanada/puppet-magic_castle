@@ -46,22 +46,23 @@ class profile::globus (
     \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json\n",
   }
 
-  # exec { 'globus-setup-gateway':
-  #   command     => 'sh /root/globus-gateway-setup',
-  #   environment => [
-  #     "GCS_CLI_CLIENT_ID=${globus::client_id}",
-  #     "GCS_CLI_CLIENT_SECRET=${globus::client_secret}",
-  #   ],
-  #   creates     => '/var/lib/globus-connect-server/gateway.json',
-  #   require     => Exec['globus-endpoint-setup'],
-  # }
-  # exec { 'globus-setup-collection':
-  #   command     => 'sh /root/globus-collection-setup',
-  #   environment => [
-  #     "GCS_CLI_CLIENT_ID=${globus::client_id}",
-  #     "GCS_CLI_CLIENT_SECRET=${globus::client_secret}",
-  #   ],
-  #   creates     => '/var/lib/globus-connect-server/collection.json',
-  #   require     => Exec['globus-gateway-setup'],
-  # }
+  exec { 'globus-setup-gateway':
+    command     => '/bin/sh /root/globus-gateway-setup',
+    environment => [
+      "GCS_CLI_CLIENT_ID=${globus::client_id}",
+      "GCS_CLI_CLIENT_SECRET=${globus::client_secret}",
+    ],
+    creates     => '/var/lib/globus-connect-server/gateway.json',
+    require     => Exec['globus-endpoint-setup'],
+  }
+
+  exec { 'globus-setup-collection':
+    command     => '/bin/sh /root/globus-collection-setup',
+    environment => [
+      "GCS_CLI_CLIENT_ID=${globus::client_id}",
+      "GCS_CLI_CLIENT_SECRET=${globus::client_secret}",
+    ],
+    creates     => '/var/lib/globus-connect-server/collection.json',
+    require     => Exec['globus-gateway-setup'],
+  }
 }
