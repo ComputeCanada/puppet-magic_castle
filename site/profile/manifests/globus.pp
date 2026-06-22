@@ -31,6 +31,7 @@ class profile::globus (
     content   => "GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)\
     globus-connect-server -F json --use-explicit-host ${lookup('terraform.self.public_ip')} \
     collection create $(jq -r .id /var/lib/globus-connect-server/gateway.json) ${collection_path} \
+    --default-directory '\$USER' \
     \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json\n",
   }
 
