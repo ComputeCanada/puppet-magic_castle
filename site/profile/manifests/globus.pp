@@ -30,7 +30,7 @@ class profile::globus (
     \"${lookup('terraform.data.cluster_name')} collection\" > /var/lib/globus-connect-server/collection.json\n",
   }
 
-  exec { 'globus-setup-gateway':
+  exec { 'globus-gateway-setup':
     command     => '/bin/sh /root/globus-gateway-setup',
     environment => Sensitive([
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
@@ -40,7 +40,7 @@ class profile::globus (
     require     => Exec['globus-endpoint-setup'],
   }
 
-  exec { 'globus-setup-collection':
+  exec { 'globus-collection-setup':
     command     => '/bin/sh /root/globus-collection-setup',
     environment => Sensitive([
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
