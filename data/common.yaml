@@ -373,3 +373,6 @@ metrix::slurm_jobscripts::token: "%{alias('metrix::root_api_token')}"
 globus::advertised_owner: false
 globus::managed_firewall: true
 
+lookup_options:
+  globus::client_secret:
+    convert_to: "Sensitive"
