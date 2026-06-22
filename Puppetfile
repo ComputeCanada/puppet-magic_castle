@@ -38,12 +38,8 @@ mod 'puppetlabs-mount_core', '2.0.1'
 mod 'puppetlabs-mysql', '16.3.0'
 mod 'puppetlabs-stdlib', '9.7.0'
 mod 'puppetlabs-transition', '2.0.0'
-#mod 'treydock-globus', '12.0.0'
+mod 'treydock-globus', '12.1.0'
 mod 'saz-limits', '6.0.0'
-
-mod 'treydock-globus',
-    :git => 'https://github.com/cmd-ntrf/puppet-module-globus.git',
-    :ref => 'client_id-secret'
 
 mod 'computecanada-jupyterhub',
     :git => 'https://github.com/ComputeCanada/puppet-jupyterhub.git',
