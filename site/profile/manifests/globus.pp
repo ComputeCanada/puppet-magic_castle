@@ -55,4 +55,5 @@ class profile::globus (
     require     => Exec['globus-gateway-setup'],
   }
   Firewall <| |> -> Exec['globus-endpoint-setup']
+  Mount <| |> -> Exec['globus-collection-setup']
 }
