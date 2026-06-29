@@ -101,6 +101,14 @@ class profile::globus (
       ],
       before      => Exec['globus-gateway-setup'],
     }
+    file { '/var/lib/globusoidc/globus-oidc/site/login.mako':
+      ensure  => file,
+      content => epp('globus/login.mako', {}),
+      mode    => '0544',
+      owner   => 'globusoidc',
+      group   => 'globusoidc',
+      require => Exec['globus-oidc-setup'],
+    }
   }
 
   # globus-connect-server storage-gateway update posix 7fd7da12-414a-41f8-8d07-5942c88d9cf8 --domain identity.1f30f9.eb38.gaccess.io
