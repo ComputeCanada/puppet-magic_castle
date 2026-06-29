@@ -14,6 +14,8 @@ lookup_options:
     merge: 'hash'
   profile::volumes::devices:
     merge: 'deep'
+  globus::client_secret:
+    convert_to: "Sensitive"
 
 profile::base::version: 15.5.0
 profile::base::packages: []
@@ -376,6 +378,3 @@ globus::managed_firewall: true
 globus::ip_address: "%{lookup('terraform.self.public_ip')}"
 globus::owner: "%{lookup('globus::client_id')}@clients.auth.globus.org"
 
-lookup_options:
-  globus::client_secret:
-    convert_to: "Sensitive"
