@@ -17,7 +17,7 @@ class profile::globus (
     mode      => '0700',
     show_diff => false,
     content   => epp(
-      'globus/globus-gateway-setup',
+      'profile/globus/globus-gateway-setup',
       {
         'public_ip'     => lookup('terraform.self.public_ip'),
         'cluster_name'  => lookup('terraform.data.cluster_name'),
@@ -33,7 +33,7 @@ class profile::globus (
     mode      => '0700',
     show_diff => false,
     content   => epp(
-      'globus/globus-collection-setup',
+      'profile/globus/globus-collection-setup',
       {
         'public_ip'       => lookup('terraform.self.public_ip'),
         'cluster_name'    => lookup('terraform.data.cluster_name'),
@@ -50,7 +50,7 @@ class profile::globus (
     mode      => '0700',
     show_diff => false,
     content   => epp(
-      'globus/globus-oidc-setup',
+      'profile/globus/globus-oidc-setup',
       {
         'domain_name' => $domain_name,
       }
@@ -103,7 +103,7 @@ class profile::globus (
     }
     file { '/var/lib/globusoidc/globus-oidc/site/login.mako':
       ensure  => file,
-      content => epp('globus/login.mako', {}),
+      content => epp('profile/globus/login.mako', {}),
       mode    => '0544',
       owner   => 'globusoidc',
       group   => 'globusoidc',
