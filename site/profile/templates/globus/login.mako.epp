@@ -33,7 +33,9 @@
                 <script type="text/javascript">
                      const params = new URLSearchParams(window.location.search)
                      if (params.has('error_message')) {
-                         document.getElementById('error-message').innerHTML = "<p>"+params.get('error_message')+"</p>";
+                         const errorMessage = document.createElement("p");
+                         errorMessage.textContent = params.get('error_message');
+                         document.getElementById('error-message').appendChild(errorMessage);
                      }
                   </script>
 
