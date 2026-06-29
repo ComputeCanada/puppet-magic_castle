@@ -1,0 +1,4 @@
+#!/bin/sh
+GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)
+domain_name=<%= $domain_name %>
+globus-connect-server -F json oidc create --display-name "${domain_name}" --quickstart-server-name identity --support-contact "${domain_name} admin" --support-email "admin@${domain_name}" > /var/lib/globus-connect-server/oidc.json
