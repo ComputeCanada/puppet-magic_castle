@@ -107,9 +107,9 @@ class profile::globus (
   Firewall <| |> -> Exec['globus-endpoint-setup']
   Mount <| |> -> Exec['globus-collection-setup']
 
-  service { 'globus-oidc':
-    ensure  => $ensure_oidc,
-    enable  => $ensure_oidc == 'running',
-    require => Exec['globus-oidc-setup'],
-  }
+  # service { 'globus-oidc':
+  #   ensure  => $ensure_oidc,
+  #   enable  => $ensure_oidc == 'running',
+  #   require => Exec['globus-oidc-setup'],
+  # }
 }
