@@ -771,6 +771,16 @@ This class extends [treydock-globus](https://forge.puppet.com/modules/treydock/g
 with a POSIX storage gateway, a collection, and optional local OpenID Connect
 authentication for cluster users.
 
+For Puppet to autonomously configure a Globus endpoint and data-transfer node
+with treydock-globus, the following parameters have to be defined:
+- `globus::contact_email`
+- `globus::organization`
+- `globus::client_id`
+- `globus::client_secret`.
+
+The client ID and secret corresponds to service follow the steps on
+[Globus Connect documentation](https://docs.globus.org/guides/recipes/automate-with-service-account/#steps).
+
 Gateway, collection, and OIDC setup are one-time operations guarded by JSON
 state files in `/var/lib/globus-connect-server`. Changing parameters such as
 `domains`, `collection_path`, `enable_oidc`, or `identity_mapping` after setup
@@ -849,7 +859,7 @@ profile::gpu::restrict_profiling: false
 
 ## `profile::gpu::config::mig`
 
-This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted).
 
 ### parameters
 
