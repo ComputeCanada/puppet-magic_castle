@@ -28,6 +28,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::freeipa::client`](#profilefreeipaclient)
 - [`profile::freeipa::server`](#profilefreeipaserver)
 - [`profile::freeipa::mokey`](#profilefreeipamokey)
+- [`profile::globus`](#profileglobus)
 - [`profile::gpu`](#profilegpu)
 - [`profile::gpu::config::mig`](#profilegpuconfigmig)
 - [`profile::gpu::install`](#profilegpuinstall)
@@ -764,6 +765,73 @@ profile::freeipa::mokey::require_verify_admin: true
 ```
 </details>
 
+## `profile::globus`
+
+This class extends [treydock-globus](https://forge.puppet.com/modules/treydock/globus)
+with a POSIX storage gateway, a collection, and optional local OpenID Connect
+authentication for cluster users.
+
+For Puppet to autonomously configure a Globus endpoint and data-transfer node
+with treydock-globus, the following parameters have to be defined:
+- `globus::contact_email`
+- `globus::organization`
+- `globus::client_id`
+- `globus::client_secret`.
+
+The client ID and secret corresponds to service follow the steps on
+[Globus Connect documentation](https://docs.globus.org/guides/recipes/automate-with-service-account/#steps).
+
+Gateway, collection, and OIDC setup are one-time operations guarded by JSON
+state files in `/var/lib/globus-connect-server`. Changing parameters such as
+`domains`, `collection_path`, `enable_oidc`, or `identity_mapping` after setup
+requires removing the affected Globus service and its corresponding JSON state
+file before the next Puppet run.
+
+### parameters
+
+| Variable           | Description                                                   | Type                  |
+| :----------------- | :------------------------------------------------------------ | :-------------------- |
+| `collection_path`  | Path exported by the Globus collection                        | String[1]             |
+| `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
+| `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
+| `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::globus::collection_path: /nfs
+profile::globus::domains: []
+profile::globus::enable_oidc: true
+profile::globus::identity_mapping: ~
+```
+</details>
+
+<details>
+<summary>example: map Globus usernames to local POSIX usernames</summary>
+
+The `identity_mapping` parameter is written to `/etc/globus/identity_mapping.json`
+and passed to the POSIX storage gateway. Each entry is a Globus
+[expression-based identity mapping](https://docs.globus.org/globus-connect-server/v5/identity-mapping-guide/#recipe_map_identity_username).
+
+This example maps identities from `example.org` to matching local usernames by
+removing the domain part of the Globus username.
+
+```yaml
+profile::globus::domains:
+  - example.org
+profile::globus::identity_mapping:
+  - source: "{username}"
+    match: "(.*)@example\\.org"
+    output: "{0}"
+```
+</details>
+
+### dependencies
+
+When `profile::globus` is included, these classes are included too:
+- [`treydock-globus`](https://forge.puppet.com/modules/treydock/globus)
+
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
@@ -791,7 +859,7 @@ profile::gpu::restrict_profiling: false
 
 ## `profile::gpu::config::mig`
 
-This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted).
 
 ### parameters
 
