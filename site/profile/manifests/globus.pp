@@ -1,7 +1,15 @@
+# Extends treydock-globus with a POSIX storage gateway, a collection,
+# and optional local OpenID Connect authentication for cluster users.
+#
+# Gateway, collection, and OIDC setup are intentionally one-time
+# operations guarded by JSON state files in /var/lib/globus-connect-server.
+# Changing parameters such as domains, collection_path, or OIDC settings
+# after setup requires removing the affected Globus service and its
+# corresponding JSON state file before the next Puppet run.
 class profile::globus (
   String[1] $collection_path = '/nfs',
   Array[String] $domains = ['globus.org'],
-  Enum['running', 'stopped'] $ensure_oidc = 'stopped',
+  Boolean $enable_oidc = false,
 ) {
   package { 'wget':
     ensure => installed,
@@ -87,7 +95,7 @@ class profile::globus (
     ],
   }
 
-  if $ensure_oidc == 'running' {
+  if $enable_oidc {
     exec { 'globus-oidc-setup':
       command     => '/bin/sh /root/globus-oidc-setup',
       environment => [
