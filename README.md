@@ -28,6 +28,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::freeipa::client`](#profilefreeipaclient)
 - [`profile::freeipa::server`](#profilefreeipaserver)
 - [`profile::freeipa::mokey`](#profilefreeipamokey)
+- [`profile::globus`](#profileglobus)
 - [`profile::gpu`](#profilegpu)
 - [`profile::gpu::config::mig`](#profilegpuconfigmig)
 - [`profile::gpu::install`](#profilegpuinstall)
@@ -763,6 +764,41 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 ```
 </details>
+
+## `profile::globus`
+
+This class extends [treydock-globus](https://forge.puppet.com/modules/treydock/globus)
+with a POSIX storage gateway, a collection, and optional local OpenID Connect
+authentication for cluster users.
+
+Gateway, collection, and OIDC setup are one-time operations guarded by JSON
+state files in `/var/lib/globus-connect-server`. Changing parameters such as
+`domains`, `collection_path`, or `enable_oidc` after setup requires removing the
+affected Globus service and its corresponding JSON state file before the next
+Puppet run.
+
+### parameters
+
+| Variable          | Description                                                   | Type          |
+| :---------------- | :------------------------------------------------------------ | :------------ |
+| `collection_path` | Path exported by the Globus collection                        | String[1]     |
+| `domains`         | Authentication domains allowed for the POSIX storage gateway  | Array[String] |
+| `enable_oidc`     | Enable local OpenID Connect authentication for cluster users  | Boolean       |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::globus::collection_path: /nfs
+profile::globus::domains: []
+profile::globus::enable_oidc: true
+```
+</details>
+
+### dependencies
+
+When `profile::globus` is included, these classes are included too:
+- [`treydock-globus`](https://forge.puppet.com/modules/treydock/globus)
 
 ## `profile::gpu`
 
