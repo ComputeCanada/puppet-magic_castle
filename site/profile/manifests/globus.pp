@@ -80,7 +80,7 @@ class profile::globus (
   }
 
   if $enable_oidc == false and length($domains) == 0 {
-    fail('Globus requires at least one authentication domain or ensure OIDC server is running  (profile::globus::ensure_oidc: running)')
+    fail('Globus requires at least one authentication domain or ensure OIDC server is running  (profile::globus::enable_oidc: running)')
   }
 
   exec { 'globus-gateway-setup':
