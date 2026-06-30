@@ -377,4 +377,3 @@ globus::advertised_owner: false
 globus::managed_firewall: true
 globus::ip_address: "%{lookup('terraform.self.public_ip')}"
 globus::owner: "%{lookup('globus::client_id')}@clients.auth.globus.org"
-
