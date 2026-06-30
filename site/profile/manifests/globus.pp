@@ -73,11 +73,11 @@ class profile::globus (
       owner   => 'root',
       group   => 'root',
       mode    => '0700',
-      content => to_json({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
+      content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
     }
   }
 
-  if $ensure_oidc == 'stopped' and length($domains) == 0 {
+  if $enable_oidc == false and length($domains) == 0 {
     fail('Globus requires at least one authentication domain or ensure OIDC server is running  (profile::globus::ensure_oidc: running)')
   }
 
