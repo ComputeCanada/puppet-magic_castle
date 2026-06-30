@@ -74,6 +74,7 @@ class profile::globus (
       group   => 'root',
       mode    => '0700',
       content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
+      require => Exec['globus-endpoint-setup'],
       before  => Exec['globus-gateway-setup'],
     }
   }
