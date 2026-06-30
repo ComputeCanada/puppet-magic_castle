@@ -2,4 +2,4 @@
 export GCS_CLI_ENDPOINT_ID=$(jq .endpoint_id -r /var/lib/globus-connect-server/info.json)
 OIDC_DOMAIN=$(test -f /var/lib/globus-connect-server/oidc.json && jq -r '.auth_client.domain // ""' /var/lib/globus-connect-server/oidc.json)
 OIDC_DOMAIN=${OIDC_DOMAIN:+--domain ${OIDC_DOMAIN}}
-globus-connect-server -F json storage-gateway create --use-explicit-host <%= $public_ip %> posix "<%= $cluster_name %> gateway" <%= $domain_string %> ${OIDC_DOMAIN} > /var/lib/globus-connect-server/gateway.json
+globus-connect-server -F json storage-gateway create --use-explicit-host <%= $public_ip %> posix "<%= $cluster_name %> gateway" <%= $domain_string %> ${OIDC_DOMAIN} <% if $identity_mapping { %>--identity-mapping file:/etc/globus/identity_mapping.json<% } %> > /var/lib/globus-connect-server/gateway.json

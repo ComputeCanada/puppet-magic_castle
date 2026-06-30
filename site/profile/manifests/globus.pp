@@ -10,6 +10,7 @@ class profile::globus (
   String[1] $collection_path = '/nfs',
   Array[String] $domains = [],
   Boolean $enable_oidc = true,
+  Optional[Array[Hash]] $identity_mapping = undef,
 ) {
   package { 'wget':
     ensure => installed,
@@ -27,9 +28,10 @@ class profile::globus (
     content   => epp(
       'profile/globus/globus-gateway-setup',
       {
-        'public_ip'     => lookup('terraform.self.public_ip'),
-        'cluster_name'  => lookup('terraform.data.cluster_name'),
-        'domain_string' => $domain_string,
+        'public_ip'        => lookup('terraform.self.public_ip'),
+        'cluster_name'     => lookup('terraform.data.cluster_name'),
+        'domain_string'    => $domain_string,
+        'identity_mapping' => $identity_mapping != undef,
       }
     ),
   }
@@ -63,6 +65,16 @@ class profile::globus (
         'domain_name' => $domain_name,
       }
     ),
+  }
+
+  if $identity_mapping {
+    file { '/etc/globus/identity_mapping.json':
+      ensure  => 'file',
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
+      content => to_json({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
+    }
   }
 
   if $ensure_oidc == 'stopped' and length($domains) == 0 {
