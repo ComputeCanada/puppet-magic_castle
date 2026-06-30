@@ -773,17 +773,18 @@ authentication for cluster users.
 
 Gateway, collection, and OIDC setup are one-time operations guarded by JSON
 state files in `/var/lib/globus-connect-server`. Changing parameters such as
-`domains`, `collection_path`, or `enable_oidc` after setup requires removing the
-affected Globus service and its corresponding JSON state file before the next
-Puppet run.
+`domains`, `collection_path`, `enable_oidc`, or `identity_mapping` after setup
+requires removing the affected Globus service and its corresponding JSON state
+file before the next Puppet run.
 
 ### parameters
 
-| Variable          | Description                                                   | Type          |
-| :---------------- | :------------------------------------------------------------ | :------------ |
-| `collection_path` | Path exported by the Globus collection                        | String[1]     |
-| `domains`         | Authentication domains allowed for the POSIX storage gateway  | Array[String] |
-| `enable_oidc`     | Enable local OpenID Connect authentication for cluster users  | Boolean       |
+| Variable           | Description                                                   | Type                  |
+| :----------------- | :------------------------------------------------------------ | :-------------------- |
+| `collection_path`  | Path exported by the Globus collection                        | String[1]             |
+| `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
+| `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
+| `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
 
 <details>
 <summary>default values</summary>
@@ -792,6 +793,27 @@ Puppet run.
 profile::globus::collection_path: /nfs
 profile::globus::domains: []
 profile::globus::enable_oidc: true
+profile::globus::identity_mapping: ~
+```
+</details>
+
+<details>
+<summary>example: map Globus usernames to local POSIX usernames</summary>
+
+The `identity_mapping` parameter is written to `/etc/globus/identity_mapping.json`
+and passed to the POSIX storage gateway. Each entry is a Globus
+[expression-based identity mapping](https://docs.globus.org/globus-connect-server/v5/identity-mapping-guide/#recipe_map_identity_username).
+
+This example maps identities from `example.org` to matching local usernames by
+removing the domain part of the Globus username.
+
+```yaml
+profile::globus::domains:
+  - example.org
+profile::globus::identity_mapping:
+  - source: "{username}"
+    match: "(.*)@example\\.org"
+    output: "{0}"
 ```
 </details>
 
