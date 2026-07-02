@@ -70,20 +70,25 @@ class profile::nfs::client (
 
   $options_nfsv4 = join([$nfs_options, $mount_options], ',')
   $shares_to_mount.each | String $share_name_raw | {
-    # If the instance has a volume mounted under the same name as the nfs share,
-    # we mount the nfs share under /nfs/${share_name}.
     $share_name = regsubst($share_name_raw, '^/|/$', '', 'G')
-    if $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
-      $mount_point = "/nfs/${share_name}"
-    } else {
-      $mount_point = "/${share_name}"
-    }
+    $mount_point = "/nfs/${share_name}"
     nfs::client::mount { $mount_point:
       ensure        => present,
       server        => $server,
       share         => $share_name,
       options_nfsv4 => $options_nfsv4,
       notify        => Systemd::Daemon_reload['nfs-client'],
+    }
+    # If the instance has a volume mounted under the same name as the nfs share,
+    # we only mount the nfs share under /nfs/${share_name}. Otherwise, we create
+    # a mount bind to /${share_name}.
+    if ! $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
+      mount { "/${share_name}":
+        ensure  => mounted,
+        device  => $mount_point,
+        fstype  => none,
+        options => 'rw,bind',
+      }
     }
   }
 }
