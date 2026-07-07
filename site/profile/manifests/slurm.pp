@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
+  Enum['25.05', '25.11', '26.05'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $suspend_rate = 20,
@@ -19,6 +19,7 @@ class profile::slurm::base (
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
+  Boolean $prefer_powered_up = true,
 )
 {
   include epel
@@ -222,7 +223,7 @@ class profile::slurm::base (
   $partition_names = unique($nodes.map |$key, $attr| { $attr['prefix'] })
   $partitions = Hash($partition_names.map | $name | { [$name, { 'nodes' => keys($nodes.filter|$key, $attr | { $name == $attr['prefix'] }) } ] })
   file { '/etc/slurm/slurm.conf':
-    ensure  => 'present',
+    ensure  => 'file',
     content => epp('profile/slurm/slurm.conf',
       {
         'cluster_name'          => $cluster_name,
@@ -240,7 +241,9 @@ class profile::slurm::base (
         'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
         'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
         'log_level'             => $log_level,
-      }),
+        'prefer_powered_up'     => $prefer_powered_up,
+      }
+    ),
     group   => 'slurm',
     owner   => 'slurm',
     mode    => '0644',

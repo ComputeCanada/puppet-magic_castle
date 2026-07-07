@@ -1479,7 +1479,7 @@ to all Slurm's roles. It also installs and configure Munge service.
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
 | `munge_key`             | Base64 encoded Munge key | String  |
-| `slurm_version`         | Slurm version to install | Enum['24.05', '24.11', '25.05', '25.11'] |
+| `slurm_version`         | Slurm version to install | Enum['25.05', '25.11', '26.05'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
 | `suspend_rate`          | The rate (nodes per minute) at which nodes are placed into power save mode.| Integer |
@@ -1490,14 +1490,14 @@ to all Slurm's roles. It also installs and configure Munge service.
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 | `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
-
+| `prefer_powered_up`     | Enable preference for powered up nodes when scheduling oversubscribed CPU jobs | Boolean |
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::slurm::base::cluster_name: "%{alias('terraform.data.cluster_name')}"
 profile::slurm::base::munge_key: ENC[PKCS7, ...]
-profile::slurm::base::slurm_version: '23.11'
+profile::slurm::base::slurm_version: '26.05'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600
 profile::slurm::base::suspend_rate: 20
@@ -1506,6 +1506,7 @@ profile::slurm::base::resume_rate: 20
 profile::slurm::base::force_slurm_in_path: false
 profile::slurm::base::enable_x11_forwarding: true
 profile::slurm::base::config_addendum: ''
+profile::slurm::base::prefer_powered_up: true
 ```
 </details>
 

@@ -28,7 +28,7 @@ SlurmUser=slurm
 # SCHEDULER CONFIGURATIONS
 SchedulerType=sched/backfill
 SelectType=select/cons_tres
-SelectTypeParameters=CR_Core_Memory
+SelectTypeParameters=CR_Core_Memory<% if $prefer_powered_up { %>,PreferPoweredUpNodes<% } %>
 
 # NODE CONFIGURATIONS
 GresTypes=gpu,shard
