@@ -1807,6 +1807,7 @@ This class configures external authentication domains
 | `domains`     | Config dictionary of domains that can authenticate                | Hash[String, Any]  |
 | `access_tags` | List of host tags that domain user can connect to                 | Array[String] |
 | `deny_access` | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | Optional[Boolean] |
+| `mkhomedir`   | Installs and enable oddjob-mkhomedir.                             | Optional[Boolean] |
 | `ldapclient_domain` | Identify which domain (i.e.: a key from `domains`) will be used by ldap clients. if FreeIPA is installed and this parameter is left undefined, ldap client defaults to FreeIPA domain. | Optional[String] |
 
 <details>
