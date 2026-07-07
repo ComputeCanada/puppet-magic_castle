@@ -15,6 +15,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
 - [`profile::ceph::client`](#profilecephclient)
+- [`profile::ceph::client::install`](#profilecephclientinstall)
 - [`profile::consul`](#profileconsul)
 - [`profile::consul::puppet_watch`](#profileconsulpuppet_watch)
 - [`profile::cvmfs::client`](#profilecvmfsclient)
@@ -28,11 +29,25 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::freeipa::server`](#profilefreeipaserver)
 - [`profile::freeipa::mokey`](#profilefreeipamokey)
 - [`profile::gpu`](#profilegpu)
+- [`profile::gpu::config::mig`](#profilegpuconfigmig)
+- [`profile::gpu::install`](#profilegpuinstall)
+- [`profile::gpu::install::passthrough`](#profilegpuinstallpassthrough)
+- [`profile::gpu::install::vgpu`](#profilegpuinstallvgpu)
+- [`profile::gpu::install::vgpu::bin`](#profilegpuinstallvgpubin)
+- [`profile::gpu::install::vgpu::rpm`](#profilegpuinstallvgpurpm)
+- [`profile::gpu::services`](#profilegpuservices)
 - [`profile::jupyterhub::hub`](#profilejupyterhubhub)
 - [`profile::jupyterhub::node`](#profilejupyterhubnode)
-- [`profile::metrics::node_exporter`](#profilemetricsnode_exporter)
-- [`profile::metrics::slurm_job_exporter`](#profilemetricsslurm_job_exporter)
-- [`profile::metrics::slurm_exporter`](#profilemetricsslurm_exporter)
+- [`profile::mail`](#profilemail)
+- [`profile::mail::dkim`](#profilemaildkim)
+- [`profile::mail::relayhost`](#profilemailrelayhost)
+- [`profile::mail::sender`](#profilemailsender)
+- [`profile::metrix`](#profilemetrix)
+- [`profile::prometheus::caddy_exporter`](#profileprometheuscaddy_exporter)
+- [`profile::prometheus::node_exporter`](#profileprometheusnode_exporter)
+- [`profile::prometheus::slurm_job_exporter`](#profileprometheusslurm_job_exporter)
+- [`profile::prometheus::slurm_exporter`](#profileprometheusslurm_exporter)
+- [`profile::puppetserver`](#profilepuppetserver)
 - [`profile::nfs`](#profilenfs)
 - [`profile::nfs::client`](#profilenfsclient)
 - [`profile::nfs::server`](#profilenfsserver)
@@ -40,14 +55,16 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::rsyslog::base`](#profilersyslogbase)
 - [`profile::rsyslog::client`](#profilersyslogclient)
 - [`profile::rsyslog::server`](#profilersyslogserver)
-- [`profile::vector`](#profilervector)
+- [`profile::vector`](#profilevector)
 - [`profile::slurm::base`](#profileslurmbase)
+- [`profile::slurm::node`](#profileslurmnode)
 - [`profile::slurm::accounting`](#profileslurmaccounting)
 - [`profile::slurm::controller`](#profileslurmcontroller)
 - [`profile::slurm::node`](#profileslurmnode)
 - [`profile::software_stack`](#profilesoftware_stack)
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
+- [`profile::swap`](#profileswap)
 - [`profile::ssh::base`](#profilesshbase)
 - [`profile::ssh::known_hosts`](#profilesshknown_hosts)
 - [`profile::ssh::hostbased_auth::client`](#profilesshhostbased_authclient)
@@ -83,7 +100,8 @@ magic_castle::site::all:
   - profile::consul
   - profile::users::local
   - profile::sssd::client
-  - profile::metrics::node_exporter
+  - profile::mail
+  - profile::prometheus::node_exporter
   - swap_file
 magic_castle::site::tags:
   dtn:
@@ -102,15 +120,14 @@ magic_castle::site::tags:
   mgmt:
     - mysql::server
     - profile::freeipa::server
-    - profile::metrics::server
-    - profile::metrics::slurm_exporter
+    - profile::prometheus::server
+    - profile::prometheus::slurm_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
     - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
-    - profile::users::ldap
   node:
     - profile::cvmfs::client
     - profile::gpu
@@ -118,7 +135,7 @@ magic_castle::site::tags:
     - profile::slurm::node
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
-    - profile::metrics::slurm_job_exporter
+    - profile::prometheus::slurm_job_exporter
     - profile::nfs::client
     - profile::freeipa::client
     - profile::rsyslog::client
@@ -264,7 +281,6 @@ When `profile::base` is included, these classes are included too:
 - [`profile::base::etc_hosts`](#profilebaseetc_hosts)
 - [`profile::base::powertools`](#profilebasepowertools)
 - [`profile::ssh::base`](#profilesshbase)
-- [`profile::mail::server`](#profilemailserver) (when parameter `admin_email` is defined)
 
 ## `profile::base::azure`
 
@@ -308,16 +324,77 @@ profile::ceph::client::mon_host:
   - 192.168.2.3:6789
   - 192.168.3.3:6789
 profile::ceph::client::shares:
-  home: 
-    
+  home:
+
   project:
-    
+
 ```
 </details>
 
-## profile::ceph::client::install
+#### Type `CephFS`
 
-This class only installs the Ceph packages. 
+Defines a CephFS share configuration used by `profile::ceph::client::shares`.
+
+| Field                         | Description                                                       | Type                         | Required |
+| :---------------------------- | :---------------------------------------------------------------- | :--------------------------- | :------- |
+| `share_name`                  | Ceph share name                                                   | String                       | Yes      |
+| `access_key`                  | Ceph key for the user                                             | String                       | Yes      |
+| `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
+| `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
+| `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
+| `mon_host`                    | Optional list of monitor hosts for this mount (override default)  | Array[String]                | No       |
+
+```yaml
+profile::ceph::client::shares:
+  home:
+    share_name: "home"
+    access_key: "AQB...=="
+    export_path: "/volumes/home"
+    bind_mounts:
+      - src: "/projects"
+        dst: "/srv/projects"
+        type: "directory"
+```
+
+#### Type `BindMount`
+
+Defines a bind mount created from a subpath of the mounted CephFS share.
+
+| Field | Description                                         | Type                       | Required |
+| :---- | :-------------------------------------------------- | :------------------------- | :------- |
+| `src` | Source path within the mounted share                | Stdlib::Unixpath           | Yes      |
+| `dst` | Destination path on the host                        | Stdlib::Unixpath           | Yes      |
+| `type`| Optional target type (`file` or `directory`)        | Enum['file','directory']   | No       |
+
+## `profile::ceph::client::install`
+
+This class configures the upstream Ceph package repository and installs the
+Ceph client packages.
+
+### parameters
+
+| Variable      | Description                                                 | Type             |
+| :------------ | :---------------------------------------------------------- | :--------------- |
+| `release`     | Ceph release used to configure the upstream package repository when `version` is not set | String |
+| `version`     | Optional Ceph version used to configure the upstream package repository instead of `release` | Optional[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::ceph::client::install::release: reef
+profile::ceph::client::install::version: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::ceph::client::install::release: squid
+profile::ceph::client::install::version: ~
+```
+</details>
 
 ## `profile::consul`
 
@@ -334,12 +411,14 @@ if its local ip address is declared in `profile::consul::servers`. Otherwise, it
 | Variable  | Description                         | Type          |
 | :-------- | :---------------------------------- | ------------- |
 | `servers` | IP addresses of the consul servers  | Array[String] |
+| `acl_api_token` | Secret in the UUID form allowing agents to interact with consul API | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
+profile::consul::acl_api_token: ENC[PKCS7,...]
 ```
 </details>
 
@@ -389,22 +468,25 @@ This class installs CVMFS client and configure repositories.
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
+| `disable_autofs`          | If true, mount repositories directly instead of using autofs | Variant[Boolean, String] |
 | `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
 | `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
 | `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
+| `cvmfs_root`              | Mount root for CVMFS repositories | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::cvmfs::client::quota_limit: 4096
+profile::cvmfs::client::disable_autofs: false
 profile::cvmfs::client::strict_mount: false
 profile::cvmfs::client::repositories:
-  - pilot.eessi-hpc.org
   - software.eessi.io
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
 profile::cvmfs::client::alien_cache_repositories: [ ]
+profile::cvmfs::client::cvmfs_root: "/cvmfs"
 ```
 </details>
 
@@ -434,19 +516,25 @@ the cluster when using CVMFS Alien Cache.
 
 ### parameters
 
-| Variable      | Description      | Type    |
-| :------------ | :--------------- | :------ |
-| `cvmfs_uid`   | cvmfs user id  	 | Integer |
-| `cvmfs_gid`   | cvmfs group id   | Integer |
-| `cvmfs_group` | cvmfs group name | String  |
+| Variable       | Description                        | Type    |
+| :------------- | :--------------------------------- | :------ |
+| `uname`        | cvmfs user name                    | String  |
+| `group`        | cvmfs group name                   | String  |
+| `uid`          | cvmfs user id                      | Integer |
+| `gid`          | cvmfs group id                     | Integer |
+| `selinux_user` | SELinux user for cvmfs files       | String  |
+| `mls_range`    | SELinux MLS range for cvmfs files  | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::cvmfs::local_user::cvmfs_uid: 13000004
-profile::cvmfs::local_user::cvmfs_gid: 8000131
-profile::cvmfs::local_user::cvmfs_group: "cvmfs-reserved"
+profile::cvmfs::local_user::uname: "cvmfs"
+profile::cvmfs::local_user::group: "cvmfs-reserved"
+profile::cvmfs::local_user::uid: 13000004
+profile::cvmfs::local_user::gid: 8000131
+profile::cvmfs::local_user::selinux_user: "unconfined_u"
+profile::cvmfs::local_user::mls_range: "s0-s0:c0.c1023"
 ```
 </details>
 
@@ -456,17 +544,17 @@ This class determines the location of the CVMFS alien cache.
 
 ### parameters
 
-| Variable           | Description      | Type    |
-| :----------------- | :--------------- | :------ |
-| `alien_fs_root`    | Shared file system where the alien cache will be create | String |
-| `alien_folder_name`| Alien cache folder name                                 | String |
+| Variable                | Description      | Type    |
+| :---------------------- | :--------------- | :------ |
+| `alien_fs_root_raw`     | Shared file system where the alien cache will be create (raw path) | String |
+| `alien_folder_name_raw` | Alien cache folder name (raw value)                                  | String |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::cvmfs::alien_cache::alien_fs_root: "/scratch"
-profile::cvmfs::alien_cache::alien_folder_name: "cvmfs_alien_cache"
+profile::cvmfs::alien_cache::alien_fs_root_raw: "scratch"
+profile::cvmfs::alien_cache::alien_folder_name_raw: "cvmfs_alien_cache"
 ```
 </details>
 
@@ -508,15 +596,45 @@ This class installs and configures fail2ban.
 
 | Variable          | Description      | Type    |
 | :---------------- | :--------------- | :------ |
-| `ignoreip`        | List of IP addresses that can never be banned (compatible with CIDR notation)  | Array[String]              |
+| `ignoreip`        | List of IP addresses, CIDR ranges, or hostnames that can never be banned | Array[Fail2ban::IP] |
+| `jails`           | Custom jail definitions rendered as `/etc/fail2ban/jail.d/<name>.local` | Hash |
+| `filters`         | Custom filter definitions rendered as `/etc/fail2ban/filter.d/<name>.local` | Hash |
+| `actions`         | Custom action definitions rendered as `/etc/fail2ban/action.d/<name>.local` | Hash |
 
-Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more parameters to configure.
+Each `jails`, `filters`, and `actions` entry is passed to the matching
+`fail2ban::jail`, `fail2ban::filter`, or `fail2ban::action` resource. The value is the content hash
+used by puppet-fail2ban v7, where the first level is the section name and the second level contains
+the options written in that section.
+
+Refer to [puppet-fail2ban](https://github.com/voxpupuli/puppet-fail2ban) for more fail2ban
+parameters to configure.
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::fail2ban::ignoreip: []
+profile::fail2ban::jails:
+  ssh-ban-root:
+    enabled: true
+    findtime: 3600
+    bantime: 86400
+    maxretry: 0
+    action: route
+    filter: ssh-ban-root
+    logpath: '%(sshd_log)s'
+
+profile::fail2ban::filters:
+  ssh-ban-root:
+    Init:
+      journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+      maxlines: 10
+    INCLUDES:
+      before: common.conf
+    Definition:
+      failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
+
+profile::fail2ban::actions: {}
 ```
 </details>
 
@@ -561,13 +679,13 @@ This class configures files and services that are common to FreeIPA client and F
 
 | Variable      | Description            | Type    |
 | :------------ | :--------------------- | :------ |
-| `domain_name` | FreeIPA primary domain | String  |
+| `ipa_domain`  | FreeIPA primary domain | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::freeipa::base::domain_name: "%{alias('terraform.data.domain_name')}"
+profile::freeipa::base::ipa_domain: "int.%{lookup('terraform.data.domain_name')}"
 ```
 </details>
 
@@ -604,6 +722,7 @@ This class configures files and services of a FreeIPA server.
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
+| `enable_mokey`   | Enable the [mokey service](#profilefreeipamokey) | Boolean   |
 
 <details>
 <summary>default values</summary>
@@ -613,6 +732,7 @@ profile::freeipa::server::id_start: 60001
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
+profile::freeipa::server::enable_mokey: true
 ```
 
 </details>
@@ -632,7 +752,6 @@ This class installs mokey, configures its files and manage its service.
 | `port`                 | Mokey internal web server port                                 | Integer       |
 | `enable_user_signup`   | Allow users to create an account on the cluster                | Boolean       |
 | `require_verify_admin` | Require a FreeIPA to enable Mokey created account before usage | Boolean       |
-| `access_tags`          | HBAC rule access tags for users created via mokey self-signup  | Array[String] |
 
 <details>
 <summary>default values</summary>
@@ -642,22 +761,246 @@ profile::freeipa::mokey::password: ENC[PKCS7,...]
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
-profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 ```
 </details>
 
 ## `profile::gpu`
 
 This class installs and configures the NVIDIA GPU drivers if an NVIDIA GPU
-is detected. The class configures nvidia-persistenced and nvidia-dcgm daemons
-when the GPU is connected via PCI passthrough, or configures nvidia-gridd when
-dealing with an NVIDIA VGPU.
+is detected. It supports PCI passthrough and VGPU, and selects automatically
+the correct configuration scenario.
 
-For PCI passthrough, the class installs the latest CUDA drivers available
-on NVIDIA yum repos.
-For VGPU, the driver source is cloud provider specific and has to be specified
-via either `profile::gpu::install::vgpu::rpm::source` for rpms or
-`profile::gpu::install::vgpu::bin::source` for binary installer.
+For PCI passthrough, the class inlcudes `profile::gpu::install::passthrough`
+which installs the latest CUDA drivers available on NVIDIA yum repos.
+For VGPU, the class includes `profile::gpu::install::vgpu` which installs the driver
+from cloud provider specific source.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `restrict_profiling`   | Restrict access to NVIDIA GPU Performance Counters to root     | Boolean       |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::gpu::restrict_profiling: false
+```
+</details>
+
+## `profile::gpu::config::mig`
+
+This class configures MIG profiles using [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted). 
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `mig_profile`          | Hash of key-value pair where keys are [NVIDIA mig profile](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/supported-mig-profiles.html) and values are their numbers. | Variant[Undef, Hash] |
+| `mig_manager_version`  | Version of [NVIDIA MIG Manager](https://github.com/NVIDIA/mig-parted) to install | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::config::mig::mig_profile: ~
+profile::gpu::config::mig::mig_manager_version = '0.5.5'
+```
+</details>
+
+## `profile::gpu::install`
+
+This class contains the common installation steps shared by the NVIDIA GPU
+driver installation profiles. It can also create symlinks to the installed
+driver libraries when applications expect them in a specific path.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `dcgm_packages`        | DCGM packages installed from the NVIDIA CUDA repository. These packages provide the NVIDIA Data Center GPU Manager service used for GPU metrics collection, for example by `slurm-job-exporter`. Set to an empty list to skip DCGM package installation. | Array[String] |
+| `lib_symlink_path`     | Path where symlinks to installed NVIDIA shared libraries are created. Useful when applications expect the driver libraries in a non-standard location. | Optional[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::dcgm_packages:
+  - datacenter-gpu-manager-4-proprietary
+  - datacenter-gpu-manager-4-core
+  - datacenter-gpu-manager-4-cuda12
+profile::gpu::install::lib_symlink_path: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::dcgm_packages:
+  - datacenter-gpu-manager-4-proprietary
+  - datacenter-gpu-manager-4-core
+profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
+```
+</details>
+
+## `profile::gpu::install::passthrough`
+
+This class installs the NVIDIA driver stack for instances where the physical
+GPU is passed through directly to the virtual machine. It relies on the NVIDIA
+yum repositories and installs the packages required for CUDA workloads.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `packages`             | NVIDIA-related packages installed for passthrough nodes. | Array[String] |
+| `nvidia_driver_stream` | NVIDIA driver module stream enabled for passthrough installations. | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-driver-devel
+  - nvidia-driver-libs
+  - nvidia-driver-NVML
+  - nvidia-modprobe
+profile::gpu::install::passthrough::nvidia_driver_stream: '550-dkms'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-modprobe
+profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
+```
+</details>
+
+## `profile::gpu::install::vgpu`
+
+This class installs and configures the NVIDIA vGPU driver stack for instances
+that use mediated or vendor-provided virtual GPUs. It selects the appropriate
+installation backend and can also manage the licensing files required by NVIDIA
+vGPU deployments.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `installer`            | Installation method used for NVIDIA vGPU drivers. | Enum['rpm', 'bin', 'none'] |
+| `grid_vgpu_types`      | List of regexes matched against `terraform.self.specs.type` to identify instances that should use the GRID vGPU installation path. | Array[String] |
+| `gridd_content`        | Content written to `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
+| `gridd_source`         | Source used to populate `/etc/nvidia/gridd.conf` for NVIDIA vGPU licensing configuration. | Optional[String] |
+| `token_content`        | Content written to `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
+| `token_source`         | Source used to populate `/etc/nvidia/ClientConfigToken/client_config.tok` for NVIDIA License System client configuration. | Optional[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::installer: none
+profile::gpu::install::vgpu::grid_vgpu_types: []
+profile::gpu::install::vgpu::gridd_content: ~
+profile::gpu::install::vgpu::gridd_source: ~
+profile::gpu::install::vgpu::token_content: ~
+profile::gpu::install::vgpu::token_source: ~
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::install::vgpu::installer: bin
+profile::gpu::install::vgpu::grid_vgpu_types:
+  - "^Standard_NV(6|12|18|36|72)ad[m]*s_A10_v5$"
+  - "^Standard_NV(12|24|48)s_v3$"
+  - "^Standard_NC(4|8|16|64)as_T4_v3$"
+profile::gpu::install::vgpu::gridd_content: "FeatureType=4"
+profile::gpu::install::vgpu::gridd_source: https://hpsrepo.fz-juelich.de/jusuf/nvidia/gridd.conf
+profile::gpu::install::vgpu::token_content: "LICENSE_SYSTEM_TOKEN_CONTENT"
+profile::gpu::install::vgpu::token_source: https://object-arbutus.alliancecan.ca/swift/v1/6c87c15eb7d2468daf3d2bd0c58bbfce/vgpu/kalpa-prod.tok
+```
+</details>
+
+## `profile::gpu::install::vgpu::bin`
+
+This class installs the NVIDIA vGPU driver from the vendor-provided `.run`
+installer. It is intended for environments where the vGPU driver is distributed
+as a standalone binary rather than as OS packages.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `source`               | Source URL for the NVIDIA vGPU `.run` installer downloaded and executed by `/usr/bin/mc-nvidia-installer`. | String |
+| `installer_flags`      | Additional flags passed to `/usr/bin/mc-nvidia-installer` when installing the NVIDIA vGPU driver from the `.run` installer. | String |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::bin::installer_flags: '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms'
+```
+</details>
+
+## `profile::gpu::install::vgpu::rpm`
+
+This class installs the NVIDIA vGPU driver from RPM packages provided by a
+repository package. It is intended for environments where the cloud provider or
+site distributes vGPU drivers through a dedicated RPM repository.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `source`               | Source URL for the RPM repository package that provides the NVIDIA vGPU RPM packages. | String |
+| `packages`             | List of NVIDIA vGPU RPM packages to install from the configured repository package. | Array[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::install::vgpu::rpm::source: http://repo.arbutus.cloud.computecanada.ca/pulp/repos/alma%{facts.os.release.major}/Packages/a/arbutus-cloud-vgpu-repo-1.0-1.el%{facts.os.release.major}.noarch.rpm
+profile::gpu::install::vgpu::rpm::packages:
+  - nvidia-vgpu-kmod
+  - nvidia-vgpu-gridd
+  - nvidia-vgpu-tools
+```
+</details>
+
+## `profile::gpu::services`
+
+This class manages the NVIDIA GPU services required by the installed driver
+stack. For VGPU instances, `nvidia-gridd` is added automatically.
+
+### parameters
+
+| Variable               | Description                                                    | Type          |
+| :--------------------- | :------------------------------------------------------------- | :------------ |
+| `names`                | NVIDIA GPU services to ensure running and enabled. For VGPU instances, `nvidia-gridd` is added automatically. | Array[String] |
+
+<details>
+<summary>default values</summary>
+```yaml
+profile::gpu::services::names:
+  - nvidia-persistenced
+  - nvidia-dcgm
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::gpu::services::names:
+  - nvidia-persistenced
+  - nvidia-gridd
+```
+</details>
 
 ## `profile::jupyterhub::hub`
 
@@ -698,7 +1041,136 @@ When `profile::jupyterhub::node` is included, these classes are included too:
 - [jupyterhub::node](https://github.com/computecanada/puppet-jupyterhub)
 - [jupyterhub::kernel::venv](https://github.com/computecanada/puppet-jupyterhub)
 
-## `profile::metrics::node_exporter`
+## `profile::mail`
+
+> Postfix is a free and open-source mail transfer agent that routes and delivers
+electronic mail.
+
+This class instantiates postfix either as mail client or a relayhost.
+If the instance's local ip address is included in `profile::mail::sender::relayhosts`,
+the relayhost class is included - [`profile::mail::relayhost`](#profilemailrelayhost), otherwise the
+sender class is included - [`profile::mail::sender`](#profilemailsender).
+
+## `profile::mail::base`
+
+This class gathers configurations that are common between [sender](#profilemailsender) and
+[relayhosts](#profilemailrelayhost).
+
+### parameters
+
+| Variable                  | Description                                                                | Type          |
+| :------------------------ | :------------------------------------------------------------------------- | :------------ |
+| `origin`                  | Define the origin domain of outgoing emails                                | String        |
+| `authorized_submit_users` | List of user authorized to send emails                                     | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::mail::base::origin: "%{alias('terraform.data.domain_name')}"
+profile::mail::base::authorized_submit_users: ["root", "slurm"]
+```
+</details>
+
+## `profile::mail::dkim`
+
+> DomainKeys Identified Mail (DKIM) is an email authentication method that
+permits a person, role, or organization that owns the signing domain to
+claim some responsibility for a message by associating the domain
+with the message.
+
+This class installs and configures OpenDKIM daemon.
+
+### parameters
+
+| Variable       | Description                                                                | Type   |
+| :------------- | :------------------------------------------------------------------------- | :----- |
+| `private_key`  | RSA private key in PEM format that will be used to sign outgoing emails    | String |
+
+## `profile::mail::relayhost`
+
+This class configures Postfix as a relayhost for other instances inside the cluster
+to send emails outside of the internal domain. If an RSA private key is provided via
+`profile::mail::dkim::private_key`, the class also includes `profile::mail::dkim`.
+
+### dependency
+
+When `profile::mail::relayhost` is included, this class may also be included too:
+- [profile::mail::dkim](#profilemaildkim)
+
+## `profile::mail::sender`
+
+This class configures Postfix as a client that will send outgoing to one of
+the relayhosts.
+
+### parameters
+
+| Variable       | Description                                                                | Type          |
+| :------------- | :------------------------------------------------------------------------- | :------------ |
+| `relayhosts`   | List of internal instances that will forward outgoing emails               | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::mail::sender::relayhosts: "%{alias('terraform.tag_ip.public')}"
+```
+</details>
+
+## `profile::metrix`
+
+This class installs and configures the metrix portal.
+
+### parameters
+
+| Variable      | Description                                                 | Type          |
+| :------------ | :---------------------------------------------------------- | :------------ |
+| `login_tags`  | List of tags used to identify metrix login nodes | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::metrix::login_tags:
+  - login
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::metrix::login_tags:
+  - login
+  - public
+```
+</details>
+
+## `profile::prometheus::caddy_exporter`
+
+This class configures a local Caddy metrics endpoint and registers it in
+Consul for Prometheus scraping.
+
+### parameters
+
+| Variable    | Description                               | Type    |
+| :---------- | :---------------------------------------- | :------ |
+| `port`      | Port used by the Caddy metrics endpoint   | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::prometheus::caddy_exporter::port: 2020
+```
+</details>
+
+### dependency
+
+When `profile::prometheus::caddy_exporter` is included, this class is included too:
+- [`profile::consul`](#profileconsul)
+
+## `profile::prometheus::node_exporter`
 
 > [Prometheus](https://prometheus.io/) is a free software application used for
 event monitoring and alerting. It records metrics in a time series database built
@@ -710,11 +1182,11 @@ CPU and memory usage. It should be included on every instances of the cluster.
 
 ### dependencies
 
-When `profile::metrics::node_exporter` is included, these classes are included too:
+When `profile::prometheus::node_exporter` is included, these classes are included too:
 - [`prometheus::node_exporter`](https://forge.puppet.com/modules/puppet/prometheus)
 - [`profile::consul`](#profileconsul)
 
-## `profile::metrics::slurm_job_exporter`
+## `profile::prometheus::slurm_job_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm
 compute node metrics, for example:
@@ -730,25 +1202,27 @@ This exporter needs to run on compute nodes.
 
 ### parameter
 
-| Variable  | Description                                      | Type    |
-| --------- | :----------------------------------------------- | :------ |
-| `version` | The version of the slurm job exporter to install | String  |
+| Variable             | Description                                      | Type    |
+| -------------------- | :----------------------------------------------- | :------ |
+| `version`            | The version of the slurm job exporter to install | String  |
+| `nvidia_ml_py_version` | Version of `nvidia-ml-py` for GPU metrics       | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::metrics::slurm_job_exporter::version: '0.0.10'
+profile::prometheus::slurm_job_exporter::version: '0.4.9'
+profile::prometheus::slurm_job_exporter::nvidia_ml_py_version: '11.515.75'
 ```
 </details>
 
 
 ### dependency
 
-When `profile::metrics::slurm_job_exporter` is included, this class is included too:
+When `profile::prometheus::slurm_job_exporter` is included, this class is included too:
 - `[profile::consul`](#profileconsul)
 
-## `profile::metrics::slurm_exporter`
+## `profile::prometheus::slurm_exporter`
 
 This class configures a Prometheus exporter that exports the Slurm scheduling metrics, for example:
 - allocated nodes
@@ -759,6 +1233,53 @@ This class configures a Prometheus exporter that exports the Slurm scheduling me
 This exporter typically runs on the Slurm controller server, but it can run on any server
 with a functional Slurm command-line installation.
 
+### parameters
+
+| Variable    | Description                               | Type         |
+| :---------- | :---------------------------------------- | :----------- |
+| `port`      | Port used by the exporter                 | Integer      |
+| `collectors`| List of collectors to enable              | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::prometheus::slurm_exporter::port: 8081
+profile::prometheus::slurm_exporter::collectors: ['partition']
+```
+</details>
+
+## `profile::puppetserver`
+
+This class configures Puppet Server runtime settings, creates the Puppet
+Prometheus textfile exporter configuration, and ensures the Puppet Server
+service is running.
+
+### parameters
+
+| Variable                     | Description                                                    | Type    |
+| :--------------------------- | :------------------------------------------------------------- | :------ |
+| `jruby_max_active_instances` | Maximum number of active JRuby instances used by Puppet Server | Integer |
+| `java_heap_size`             | Puppet Server JVM heap size in MiB                             | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::puppetserver::jruby_max_active_instances: 1
+profile::puppetserver::java_heap_size: 1024
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::puppetserver::jruby_max_active_instances: 2
+profile::puppetserver::java_heap_size: 2048
+```
+</details>
+
 ## `profile::nfs`
 
 > Network File System (NFS) is a distributed file system protocol [...]
@@ -767,26 +1288,52 @@ network much like local storage is accessed.
 [reference](https://en.wikipedia.org/wiki/Network_File_System)
 
 This class instantiates either an NFS client or an NFS server.
-If `profile::nfs::client::server_ip`matches the instance's local ip address, the
+If `profile::nfs::client::server` matches the instance's local IP address, FQDN or hostname, the
 server class is included - [`profile::nfs::server`](#profilenfsserver), otherwise the
 client class is included - [`profile::nfs::client`](#profilenfsclient).
 
-## `profile::nfs::client`
-
-This class install NFS and configure the client to mount all shares exported
-by a single NFS server identified via its ip address.
-
 ### parameters
 
-| Variable      | Description                  | Type    |
-| ------------- | :--------------------------- | :------ |
-| `server_ip`   | IP address of the NFS server | String  |
+| Variable  | Description                     | Type    |
+| :-------- | :------------------------------ | :------ |
+| `domain`  | NFSv4 ID mapping domain         | String  |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
+```
+</details>
+
+## `profile::nfs::client`
+
+This class installs NFS and configures the client to mount shares exported
+by a single NFS server identified via its IP address or FQDN. The shares to mount are
+inferred from the list of volumes with an `nfs` tag in the `terraform.instances`
+datastructure. Additional shares can be mounted by providing a list of
+names with `share_names` variable.
+
+`share_names` is can also be used to specify
+which shares to mount when there `terraform.instances` datastructure does not
+include any volume with the `nfs` tag.
+
+This class is compatible with [Amazon Elastic Filesystem](https://docs.aws.amazon.com/efs/).
+The variable `server` can be set to an EFS filesystem DNS name or IP address.
+
+### parameters
+
+| Variable      | Description                            | Type           |
+| ------------- | :------------------------------------- | :------------- |
+| `server`      | IP address or FQDN of the NFS server   | String         |
+| `share_names` | Names of the exported shares to mount  | Array[String]  |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::nfs::client::server: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::client::share_names: []
 ```
 </details>
 
@@ -797,19 +1344,24 @@ When `profile::nfs::client` is included, these classes are included too:
 
 ## `profile::nfs::server`
 
-This class install NFS and configure an NFS server that will export all volumes tagged as `nfs`.
+This class installs NFS and configure an NFS server that will export all volumes tagged as `nfs`.
+It can also export addditional paths specified by the variable `export_paths`.
 
 ### parameters
 
 | Variable  | Description                                      | Type                          |
 | :-------- | :----------------------------------------------- | :---------------------------- |
 | `no_root_squash_tags` | Array of tags identifying instances that can mount NFS exports without root squash | Array[String] |
+| `enable_client_quotas` | Enable query of quotas on NFS clients | Boolean |
+| `export_paths` | List of paths to export in addition to volumes with `nfs` tag | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::nfs::server::no_root_squash_tags: ['mgmt']
+profile::nfs::server::enable_client_quotas: false
+profile::nfs::server::export_paths: []
 ```
 </details>
 
@@ -835,6 +1387,7 @@ internal services to the Internet.
 | `main2sub_redir` | Subdomain to redirect to when hitting domain name directly. Empty means no redirect. | String                      |
 | `subdomains`     | Subdomain names used to create vhosts to internal http endpoints                     | Hash[String, String]        |
 | `remote_ips`     | List of allowed ip addresses per subdomain. Undef mean no restrictions.              | Hash[String, Array[String]] |
+| `robots_txt`     | Content of a robots.txt file which will be served for all hosts.                     | String                      |
 
 <details>
 <summary>default values</summary>
@@ -847,6 +1400,7 @@ profile::reverse_proxy::subdomains:
   jupyter: "https://127.0.0.1:8000"
 profile::reverse_proxy::main2sub_redir: "jupyter"
 profile::reverse_proxy::remote_ips: {}
+profile::reverse_proxy::robots_txt: "User-agent: *\nDisallow: /"
 ```
 </details>
 
@@ -925,14 +1479,17 @@ to all Slurm's roles. It also installs and configure Munge service.
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
 | `munge_key`             | Base64 encoded Munge key | String  |
-| `slurm_version`         | Slurm version to install | Enum['23.02', '23.11', '24.05'] |
+| `slurm_version`         | Slurm version to install | Enum['24.05', '24.11', '25.05', '25.11'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
+| `suspend_rate`          | The rate (nodes per minute) at which nodes are placed into power save mode.| Integer |
 | `resume_timeout`        | Maximum time permitted (seconds) between a node resume request and its availability. | Integer |
+| `resume_rate`           | The rate (nodes per minute) at which nodes in power save mode are returned to normal operation. | Integer |
 | `force_slurm_in_path`   | Enable Slurm's bin path in all users (local and LDAP) PATH environment variable | Boolean |
 | `enable_scrontab`       | Enable user's Slurm-managed crontab | Boolean |
 | `enable_x11_forwarding` | Enable Slurm's built-in X11 forwarding capabilities | Boolean |
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
+| `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
 
 <details>
 <summary>default values</summary>
@@ -943,7 +1500,9 @@ profile::slurm::base::munge_key: ENC[PKCS7, ...]
 profile::slurm::base::slurm_version: '23.11'
 profile::slurm::base::os_reserved_memory: 512
 profile::slurm::base::suspend_time: 3600
+profile::slurm::base::suspend_rate: 20
 profile::slurm::base::resume_timeout: 3600
+profile::slurm::base::resume_rate: 20
 profile::slurm::base::force_slurm_in_path: false
 profile::slurm::base::enable_x11_forwarding: true
 profile::slurm::base::config_addendum: ''
@@ -956,6 +1515,22 @@ When `profile::slurm::base` is included, these classes are included too:
 - [`epel`](https://forge.puppet.com/modules/puppet/epel/readme)
 - [`profile::consul`](#profileconsul)
 - [`profile::base::powertools`](#profilebasepowertools)
+
+## `profile::slurm::node`
+This class allows some configuration for the Slurm compute nodes.
+
+### parameters
+| Variable                | Description                                             | Type   |
+| :---------------------- | :------------------------------------------------------ | :----- |
+| `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs | Array[String] |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::slurm::node::pam_access_groups: ['wheel']
+```
+</details>
 
 
 ## `profile::slurm::accounting`
@@ -974,6 +1549,7 @@ tables.
 | `users`    | Define association between usernames and accounts    | Hash[String, Array[String]] |
 | `options`  | Define additional cluster's global [Slurm accounting options](https://slurm.schedmd.com/sacctmgr.html#SECTION_GENERAL-SPECIFICATIONS-FOR-ASSOCIATION-BASED-ENTITIES) | Hash[String, Any] |
 | `dbd_port` | SlurmDBD service listening port | Integer |
+| `db_users` | Additional MariaDB users to create on the Slurm accounting database | Array[SlurmDBUser] |
 
 <details>
 <summary>default values</summary>
@@ -985,6 +1561,7 @@ profile::slurm::accounting::accounts: {}
 profile::slurm::accounting::users: {}
 profile::slurm::accounting::options: {}
 profile::slurm::accounting::dbd_port: 6869
+profile::slurm::accounting::db_users: []
 ```
 </details>
 
@@ -1018,6 +1595,25 @@ to an LDAP or a local users. Refer to [`profile::users::ldap::users`](#profileus
 
 </details>
 
+<details>
+<summary>additional database users example</summary>
+
+`profile::slurm::accounting::db_users` creates extra MariaDB users with explicit grants on the
+`slurm_acct_db` database. This is useful for services that need direct read-only access to Slurm
+accounting data without reusing the SlurmDBD database credentials.
+
+```yaml
+profile::slurm::accounting::db_users:
+  - username: metrix_slurm
+    password: ENC[PKCS7, ...]
+    privileges: ['SELECT']
+    host: '127.0.0.1'
+```
+
+Each entry requires `username`, `password`, `privileges`, and `host`.
+
+</details>
+
 ### dependencies
 
 When `profile::slurm::accounting` is included, these classes are included too:
@@ -1037,6 +1633,7 @@ This class installs and configure the Slurm controller daemon - **slurmctld**.
 | `tfe_token`         | Terraform Cloud API Token. Required to enable autoscaling.     | String |
 | `tfe_workspace`     | Terraform Cloud workspace id. Required to enable autoscaling.  | String |
 | `tfe_var_pool`      | Variable name in Terraform Cloud workspace to control autoscaling pool | String |
+| `tfe_proxy_url`     | Terraform Cloud proxy URL. Normally used with MCHub as proxy. | Optional[String] |
 | `selinux_context`   | SELinux context for jobs (Slurm > 20.11) | String |
 
 <details>
@@ -1069,7 +1666,6 @@ refer to the [Terraform Cloud](https://github.com/ComputeCanada/magic_castle/blo
 When `profile::slurm::accounting` is included, these classes are included too:
 - [`logrotate::rule`](https://forge.puppet.com/modules/puppet/logrotate/readme)
 - [`profile::slurm::base`](#profileslurmbase)
-- [`profile::mail::server`](#profilemailserver)
 
 
 ## `profile::slurm::node`
@@ -1081,12 +1677,14 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 | Variable                | Description                                                                                   | Type    |
 | :---------------------- | :-------------------------------------------------------------------------------------------- | :------ |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
+| `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
 profile::slurm::node::enable_tmpfs_mounts: true
+profile::slurm::node::pam_access_groups: ['wheel']
 ```
 </details>
 
@@ -1210,6 +1808,7 @@ This class configures external authentication domains
 | `access_tags` | List of host tags that domain user can connect to                 | Array[String] |
 | `deny_access` | Deny access to the domains on the host including this class, if undef, the access is defined by tags. | Optional[Boolean] |
 | `mkhomedir`   | Installs and enable oddjob-mkhomedir.                             | Optional[Boolean] |
+| `ldapclient_domain` | Identify which domain (i.e.: a key from `domains`) will be used by ldap clients. if FreeIPA is installed and this parameter is left undefined, ldap client defaults to FreeIPA domain. | Optional[String] |
 
 <details>
 <summary>default values</summary>
@@ -1249,10 +1848,55 @@ Some SSSD domain keys might also be missing. Refer to
 for more informations.
 </details>
 
+## `profile::swap`
+
+This class creates a swap file on non-container instances and configures the
+kernel swappiness setting. The swap file is created on `/mnt/ephemeral0` when
+that mountpoint exists, otherwise it is created on `/mnt`.
+
+### parameters
+
+| Variable      | Description                               | Type    |
+| :------------ | :---------------------------------------- | :------ |
+| `size`        | Size of the swap file                     | String  |
+| `swappiness`  | Value assigned to the `vm.swappiness` sysctl | Integer |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::swap::size: '1 GB'
+profile::swap::swappiness: 10
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::swap::size: '4 GB'
+profile::swap::swappiness: 20
+```
+</details>
+
 ## `profile::ssh::base`
 
 This class optimizer ssh server daemon (sshd) configuration to achieve an A+ audit score on
 [https://www.sshaudit.com/](https://www.sshaudit.com/).
+
+### parameters
+
+| Variable               | Description                                      | Type    |
+| :--------------------- | :----------------------------------------------- | :------ |
+| `disable_passwd_auth`  | If true, disable password authentication         | Boolean |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::ssh::base::disable_passwd_auth: false
+```
+</details>
 
 ## `profile::ssh::known_hosts`
 
@@ -1301,15 +1945,22 @@ or to use [Mokey](#profilefreeipamokey).
 | Variable      | Description                                               | Type                            |
 | ------------- | :-------------------------------------------------------- | :------------------------------ |
 | `users`       | Dictionary of users to be created in LDAP                 | Hash[profile::users::ldap_user] |
-| `access_tags` | List of `'tag:service'` that LDAP user can connect to     | Array[String]                   |
+| `groups`      | Dictionary of groups to be created in LDAP                | Hash[profile::users::ldap_group] |
 
 A `profile::users::ldap_user` is defined as a dictionary with the following keys:
 | Variable          | Description                                               | Type                            | Optional ? |
 | ----------------- | :-------------------------------------------------------- | :------------------------------ | ---------  |
-| `groups`          | List of groups the user has to be part of                 | Array[String]                   | No         |
+| `groups`          | List of groups the user has to be part of                 | Array[String]                   | Yes        |
 | `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
+
+A `profile::users::ldap_group` is defined as a dictionary with the following keys:
+| Variable          | Description                                                        | Type                            | Optional ? |
+| ----------------- | :----------------------------------------------------------------- | :------------------------------ | ---------  |
+| `posix`           | Whether this is a posix group or not                               | Boolean                         | Yes        |
+| `automember`      | Whether users are automatically member of that group               | Boolean                         | Yes        |
+| `hbac_rules`      | List of HBAC rule names (`"tag:service"`) that apply to this group | Array[String]                   | Yes        |
 
 
 By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
@@ -1324,10 +1975,12 @@ profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
     passwd: "%{alias('terraform.data.guest_passwd')}"
-    groups: ['def-sponsor00']
     manage_password: true
 
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
+profile::users::ldap::groups:
+  'def-sponsor00':
+    automember: true
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 ```
 
 If `profile::users::ldap::users` is present in more than one YAML file in the hierarchy,
@@ -1357,7 +2010,9 @@ profile::users::ldap::users:
 
 Allowing LDAP users to connect to the cluster only via JupyterHub:
 ```yaml
-profile::users::ldap::access_tags: ['proxy:jupyterhub-login']
+profile::users::ldap::groups:
+  'def-sponsor00':
+    hbac_rules: ['proxy:jupyterhub-login']
 ```
 
 </details>
@@ -1377,14 +2032,22 @@ only type of users in Magic Castle allowed to be sudoers.
 | `users`  | Dictionary of users to be created locally | Hash[profile::users::local_user] |
 
 A `profile::users::local_user` is defined as a dictionary with the following keys:
-| Variable          | Description                                     | Type            | Optional ? |
-| ----------------- | :-----------------------------------------------| :-------------- | ---------  |
-| `groups`          | List of groups the user has to be part of       | Array[String]   | No         |
-| `public_keys`     | List of ssh authorized keys for the user        | Array[String]   | No         |
-| `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes        |
-| `selinux_user`    | SELinux context for the user                    | String          | Yes        |
-| `mls_range`       | MLS Range for the user                          | String          | Yes        |
+| Variable          | Description                                     | Type            | Optional ? (default) |
+| ----------------- | :-----------------------------------------------| :-------------- | -------------------  |
+| `groups`          | List of groups the user has to be part of       | Array[String]   | No                   |
+| `public_keys`     | List of ssh authorized keys for the user        | Array[String]   | No                   |
+| `sudoer`          | If enable, the user can sudo without password   | Boolean         | Yes (false)          |
+| `selinux_user`    | SELinux context for the user                    | String          | Yes (unconfined_u)   |
+| `mls_range`       | MLS Range for the user                          | String          | Yes (s0-s0:c0.c1023) |
 | `authenticationmethods` | Specifies AuthenticationMethods value for this user in sshd_config | String          | Yes        |
+| `manage_home`     | Whether we manage the home folder               | Boolean         | Yes (true)           |
+| `purge_ssh_keys`  | Whether we purge ssh keys                       | Boolean         | Yes (true)           |
+| `shell`           | Default shell of the user                       | String          | Yes (/bin/bash)      |
+| `uid`             | UID of the user                                 | Integer         | Yes (undef)          |
+| `gid`             | GID of the user                                 | Integer         | Yes (undef)          |
+| `group`           | Primary group name of the user                  | String          | No (username)        |
+| `home`            | Home directory of the user                      | String          | Yes (/username)      |
+
 
 <details>
 <summary>default values</summary>
@@ -1461,4 +2124,17 @@ profile::volumes::devices:
       #"filesystem": "xfs",
       #"quota": nil
 ```
+
+Default quotas on a filesystem can be defined as such:
+```yaml
+profile::volumes::devices:
+  "nfs":
+    "home":
+      "quota":
+        #"bsoft": "1g"
+        "bhard": "1g"
+        #"isoft": "500000"
+        "ihard": "500000"
+```
+
 </details>

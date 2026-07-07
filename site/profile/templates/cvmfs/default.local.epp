@@ -4,7 +4,5 @@ CVMFS_REPOSITORIES="<%= $repositories.join(',') %>"
 CVMFS_STRICT_MOUNT="<%= $strict_mount %>"
 CVMFS_QUOTA_LIMIT=<%= $quota_limit %>
 {{ if service "squid" -}}
-CVMFS_HTTP_PROXY='{{ range $i, $s := service "squid" }}{{if $i}}|{{end}}http://{{.Address}}:{{.Port}}{{end}};DIRECT'
-{{ else -}}
-CVMFS_HTTP_PROXY=DIRECT
+CVMFS_HTTP_PROXY='{{ range $i, $s := service "squid" }}{{if $i}}|{{end}}http://{{.Address}}:{{.Port}}{{end}}'
 {{ end -}}

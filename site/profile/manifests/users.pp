@@ -1,18 +1,29 @@
 class profile::users::ldap (
   Hash $users,
-  Array[String] $access_tags,
+  Hash $groups,
 ) {
-  Exec <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
-  Exec <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
-  Service <| tag == profile::freeipa |> -> Profile::Users::Ldap_user <| |>
-  Service <| tag == profile::accounts |> -> Profile::Users::Ldap_user <| |>
+  Exec <| title == 'ipa-install' |> -> Profile::Users::Ldap_group <| |>
+  Service <| |> ->  Profile::Users::Ldap_group <| |>
+  Profile::Users::Ldap_group <| |> -> Profile::Users::Ldap_user <| |>
 
   file { '/sbin/ipa_create_user.py':
     source => 'puppet:///modules/profile/users/ipa_create_user.py',
     mode   => '0755',
   }
 
-  ensure_resources(profile::users::ldap_user, $users, { 'access_tags' => $access_tags })
+  # After adding a user or a group, we need to invalidate the SSS cache
+  # that could otherwise return that the user or the group does not exist
+  # when probing the Unix user account and password database or
+  # the Unix group database. The command is only executed when a user or
+  # a group has been created during a Puppet run.
+  exec { 'sss_cache -E':
+    refreshonly => true,
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
+  $users_groups = Hash(unique(flatten($users.map |$key, $values| { pick($values['groups'], []) })).map|$group_name| { [$group_name, {}] })
+  ensure_resources(profile::users::ldap_group, $users_groups + $groups)
+  ensure_resources(profile::users::ldap_user, $users)
 }
 
 class profile::users::local (
@@ -33,66 +44,106 @@ class profile::users::local (
   ensure_resources(profile::users::local_user, $users)
 }
 
+define profile::users::ldap_group (
+  Boolean $posix = true,
+  Boolean $automember = false,
+  Optional[Array[String]] $hbac_rules = undef,
+) {
+  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
+  if $posix {
+    $arg = ''
+  }
+  else {
+    $arg = '--nonposix'
+  }
+  exec { "ldap_group_${name}":
+    command     => "kinit_wrapper ipa group-add ${name} ${arg}",
+    environment => $environment,
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    unless      => "getent group ${name}",
+    notify      => Exec['sss_cache -E'],
+    require     => [
+      Exec['ipa-install'],
+      File['kinit_wrapper'],
+    ],
+  }
+
+  if $hbac_rules != undef or $automember {
+    file { "/etc/ipa/group_rules_${name}.py":
+      mode    => '0700',
+      content => epp(
+        'profile/freeipa/group_rules.py',
+        {
+          'group'      => $name,
+          'automember' => $automember,
+          'hbac_rules' => $hbac_rules,
+        }
+      ),
+    }
+    exec { "group_rules_${name}":
+      command     => "kinit_wrapper ipa console /etc/ipa/group_rules_${name}.py",
+      refreshonly => true,
+      require     => [
+        File['kinit_wrapper'],
+      ],
+      environment => $environment,
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      subscribe   => [
+        File["/etc/ipa/group_rules_${name}.py"],
+        Exec['hbac_rules'],
+        Exec["ldap_group_${name}"],
+      ],
+    }
+  }
+}
+
 define profile::users::ldap_user (
-  Array[String] $groups,
-  Array[String] $access_tags,
+  Array[String] $groups = [],
   Array[String] $public_keys = [],
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
-  $unique_group = "hbac-${name}"
-  $posix_group = join($groups.map |$group| { "--posix_group ${group}" }, ' ')
-  $nonposix_group = "--nonposix_group ${unique_group}"
+  $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
-  $cmd_args = "${posix_group} ${nonposix_group} ${$sshpubkey_string}"
+  $cmd_args = "${group_args} ${$sshpubkey_string}"
   if $count > 1 {
+    $page_size = 50
     $prefix = $name
-    $command = "kinit_wrapper ipa_create_user.py $(seq -w ${count} | sed 's/^/${prefix}/') ${cmd_args}"
-    $unless = "getent passwd $(seq -w ${count} | sed 's/^/${prefix}/')"
-    $timeout = $count * 10
+    $exec_name = range(1, $count, $page_size).map |$i| {
+      "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
+    }
+    $command = range(1, $count, $page_size).map |$i| {
+      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+    }
+    $timeout = $page_size * 10
   } elsif $count == 1 {
-    $command = "kinit_wrapper ipa_create_user.py ${name} ${cmd_args}"
-    $unless = "getent passwd ${name}"
+    $exec_name = ["ldap_user_${name}"]
+    $command = ["ipa_create_user.py ${name} ${cmd_args}"]
     $timeout = 10
   }
 
-  if $passwd {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_password}", "IPA_USER_PASSWD=${passwd}"]
-  } else {
-    $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
-  }
+  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
 
   if $count > 0 {
-    exec { "ldap_user_${name}" :
-      command     => $command,
-      unless      => $unless,
-      environment => $environment,
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-      timeout     => $timeout,
-      require     => [
-        File['kinit_wrapper'],
-        File['/sbin/ipa_create_user.py'],
-      ],
-    }
-
-    $access_tags.each |$tag| {
-      exec { "ipa_hbacrule_${name}_${tag}":
-        command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=${unique_group}",
-        refreshonly => true,
-        environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-        require     => [File['kinit_wrapper'],],
+    $exec_name.each |Integer $i, String $exec_name_i| {
+      exec { $exec_name_i:
+        command     => "kinit_wrapper ${command[$i]}",
+        unless      => "${command[$i]} --dry",
+        environment => $environment,
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-        returns     => [0, 1, 2],
-        subscribe   => [
-          Exec["ldap_user_${name}"],
-          Exec['hbac_rules'],
+        timeout     => $timeout,
+        require     => [
+          File['kinit_wrapper'],
+          File['/sbin/ipa_create_user.py'],
         ],
+        notify      => Exec['sss_cache -E'],
       }
     }
 
-    if $manage_password and $passwd {
+    if $passwd {
       $ds_password = lookup('profile::freeipa::server::ds_password')
       $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
       $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
@@ -104,18 +155,27 @@ define profile::users::ldap_user (
         -S "uid={},cn=users,cn=accounts,${ldap_dc_string}" \
         -s "${passwd}"
         |EOT
+
       if $count > 1 {
-        $reset_password_cmd = "seq -w ${count} | sed 's/^/${prefix}/' | xargs -I '{}' ${ldad_passwd_cmd}"
-        $check_password_cmd = "echo ${passwd} | kinit $(seq -w ${count} | sed 's/^/${prefix}/' | head -n1) && kdestroy"
+        $set_password_cmd = range(1, $count, $page_size).map |$i| {
+          "seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | xargs -I '{}' ${ldad_passwd_cmd}"
+        }
+        $check_password_cmd = range(1, $count, $page_size).map |$i| {
+          "echo ${passwd} | kinit $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | shuf | head -n1) && kdestroy"
+        }
       } else {
-        $reset_password_cmd = regsubst($ldad_passwd_cmd, '{}', $name)
-        $check_password_cmd = "echo ${passwd} | kinit ${name} && kdestroy"
+        $set_password_cmd = [regsubst($ldad_passwd_cmd, '{}', $name)]
+        $check_password_cmd = ["echo ${passwd} | kinit ${name} && kdestroy"]
       }
 
-      exec { "ldap_reset_password_${name}":
-        command => Sensitive($reset_password_cmd),
-        unless  => Sensitive($check_password_cmd),
-        path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      $exec_name.each |Integer $i, String $exec_name_i| {
+        exec { "ldap_set_password_${$exec_name_i}":
+          command     => Sensitive($set_password_cmd[$i]),
+          unless      => Sensitive($check_password_cmd[$i]),
+          path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+          refreshonly => ! $manage_password,
+          subscribe   => Exec[$exec_name_i],
+        }
       }
     }
   }
@@ -128,19 +188,39 @@ define profile::users::local_user (
   String $selinux_user = 'unconfined_u',
   String $mls_range = 's0-s0:c0.c1023',
   String $authenticationmethods = '',
+  Boolean $manage_home = true,
+  Boolean $purge_ssh_keys = true,
+  Optional[String] $shell = undef,
+  Optional[Integer] $uid = undef,
+  Optional[Integer] $gid = undef,
+  String $group = $name,
+  String $home = "/${name}",
 ) {
+  ensure_resource('group', $group, {
+      ensure     => present,
+      gid        => $gid,
+      forcelocal => true,
+    }
+  )
   # Configure local account and ssh keys
   user { $name:
     ensure         => present,
     forcelocal     => true,
+    uid            => $uid,
+    gid            => $group,
     groups         => $groups,
-    home           => "/${name}",
-    purge_ssh_keys => true,
-    managehome     => true,
-    notify         => Selinux::Exec_restorecon["/${name}"],
+    home           => $home,
+    purge_ssh_keys => $purge_ssh_keys,
+    managehome     => $manage_home,
+    shell          => $shell,
+    require        => Group[$group],
   }
 
-  selinux::exec_restorecon { "/${name}": }
+  if $manage_home {
+    selinux::exec_restorecon { $home:
+      subscribe => User[$name]
+    }
+  }
 
   $public_keys.each | Integer $index, String $sshkey | {
     $split = split($sshkey, ' ')
@@ -191,7 +271,10 @@ define profile::users::local_user (
       ensure    => present,
       condition => "User ${name}",
       key       => 'AuthenticationMethods',
-      value     => $authenticationmethods
+      value     => $authenticationmethods,
+      target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+      notify    => Service['sshd'],
+      require   => File['/etc/ssh/sshd_config.d'],
     }
   }
 }

@@ -32,6 +32,14 @@ class profile::volumes (
   }
 }
 
+type QuotaSpec = Struct[
+  {
+    'bsoft' => Optional[Variant[String[1],Integer]],
+    'bhard' => Optional[Variant[String[1],Integer]],
+    'isoft' => Optional[Variant[String[1],Integer]],
+    'ihard' => Optional[Variant[String[1],Integer]],
+  }
+]
 define profile::volumes::volume (
   String[1] $volume_name,
   String[1] $volume_tag,
@@ -46,8 +54,9 @@ define profile::volumes::volume (
   Enum['xfs', 'ext4'] $filesystem = 'xfs',
   Optional[String[1]] $bind_target = undef,
   Optional[String[1]] $type = undef,
-  Optional[String[1]] $quota = undef,
+  Optional[Variant[String[1],QuotaSpec]] $quota = undef,
   Optional[String[1]] $mkfs_options = undef,
+  Optional[Boolean] $managed = undef,
 ) {
   $regex = Regexp(regsubst($glob, /[?*]/, { '?' => '.', '*' => '.*' }))
   $bind_target_ = pick($bind_target, "/${volume_name}")
@@ -70,8 +79,17 @@ define profile::volumes::volume (
     path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
   }
 
-  physical_volume { $device:
-    ensure => present,
+  if $device != undef {
+    physical_volume { $device:
+      ensure => present,
+    }
+  } else {
+    notify { "error_${volume_name}":
+      message => @("EOT")
+        WARNING: Could not find device ${glob} associated with ${volume_tag}-${volume_name}.
+        This will cause errors with resources related to ${volume_tag}-${volume_name}.
+        | EOT
+    }
   }
 
   volume_group { "${name}_vg":
@@ -154,21 +172,29 @@ define profile::volumes::volume (
     $facts['mountpoints'][$bind_target_]['device'] == $dev_mapper_id
   ) {
     mount { $bind_target_:
-      ensure  => absent,
+      ensure => absent,
     }
   }
 
   if $quota and $filesystem == 'xfs' {
     ensure_resource('file', '/etc/xfs_quota', { 'ensure' => 'directory' })
     # Save the xfs quota setting to avoid applying at every iteration
+    if $quota.is_a(QuotaSpec) {
+      # ensure defaults of no quota is set
+      $quotas = {'bsoft' => '0', 'bhard' => '0', 'ihard' => '0', 'isoft' => '0'} + $quota
+      $quota_options = "bsoft=${quotas['bsoft']} bhard=${quotas['bhard']} isoft=${quotas['isoft']} ihard=${quotas['ihard']}"
+    }
+    else {
+      $quota_options = "bsoft=${quota} bhard=${quota}"
+    }
     file { "/etc/xfs_quota/${volume_tag}-${volume_name}":
       ensure  => 'file',
-      content => "#FILE TRACKED BY PUPPET DO NOT EDIT MANUALLY\n${quota}",
+      content => "#FILE TRACKED BY PUPPET DO NOT EDIT MANUALLY\n${quota_options}",
       require => File['/etc/xfs_quota'],
     }
 
     exec { "apply-quota-${name}":
-      command     => "xfs_quota -x -c 'limit bsoft=${quota} bhard=${quota} -d' /mnt/${volume_tag}/${volume_name}",
+      command     => "xfs_quota -x -c 'limit ${quota_options} -d' /mnt/${volume_tag}/${volume_name}",
       require     => Mount["/mnt/${volume_tag}/${volume_name}"],
       path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
       refreshonly => true,

@@ -3,6 +3,248 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.5.0] 2026-06-08
+
+### Added
+- Added a Caddy filter to remove scanner noise (PR #562)
+- Added the `mc_bootstrap` tag to the remote host consul-template watch (PR #565)
+
+### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.10.0 (PR #566)
+- Bumped puppet-jupyterhub to 7.4.0 (PR #552)
+- Bumped puppet-uv to 0.2.0 (PR #553)
+- Bumped puppet-metrix to 0.1.2
+- Bumped computecanada-metrix to v1.1.1
+- Bumped Puppet modules in Puppetfile, including consul, prometheus, selinux, firewall, logrotate, archive, healthcheck, transition, lvm, concat, limits, rsyslog, mount_core, and consul_template (PR #538)
+- Replaced derdanne-nfs with puppet-nfs (PR #538)
+- Fixed the JupyterHub desktop URL (PR #551)
+- Fixed issue #555 in account home creation and LDAP lookup handling (PR #556, PR #557)
+- Added group names to Slurm account errors in `modproject`
+- Ensured SSH config files are created before applying Augeas changes (PR #560)
+- Fixed issue #559 in Prometheus configuration (PR #561, PR #564)
+- Fixed the node-exporter service name (PR #564)
+- Replaced pki-tomcat logrotate handling with a cron job so daily rotated debug logs are deleted (PR #563)
+- Added missing `stdlib::` prefixes to function calls (PR #538)
+- Updated rsyslog remote host consul-template handling (PR #538)
+
+## [15.4.1] 2026-05-01
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [15.4.0] 2026-04-25
+
+### Added
+- Added support for `TFE_PROXY_URL` in Slurm autoscaling secrets (PR #549)
+- Added Slurm GRES support for GPU types defined in instance specs (PR #542)
+- Added configuration support for NVIDIA vGPU gridd and client token files (PR #540)
+- Added GPU installation and configuration documentation (PR #546)
+- Added missing documentation for Puppet parameters (PR #547)
+
+### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.9.0 (PR #548)
+- Bumped puppet-jupyterhub to v7.3.0
+- Bumped metrix to 1.7.0 (PR #539)
+- Bumped slurm-job-exporter to 0.4.12 (PR #545)
+- Upgraded puppetlabs-mysql, puppetlabs-stdlib, puppet-squid, and puppet-uv modules (PR #534)
+- Installed NVIDIA Data Center GPU Manager for vGPU nodes (PR #545)
+- Improved NVIDIA vGPU binary installer handling and library symlink creation (PR #540)
+- Refreshed slurm-job-exporter when GPU services restart (PR #543)
+- Fixed Slurm GRES warnings and improved `nvidia_gres.sh` type handling (PR #541)
+- Fixed CUDA repository URL generation for GPU installation
+- Configured Ceph mounts and bind mounts with `_netdev` to avoid systemd cycles (PR #533)
+- Allowed metrix login nodes to be selected from configurable login tags (PR #536)
+- Fixed MariaDB module enablement for metrix (PR #534)
+- Improved missing documentation validation and limited pull request scans to modified Puppet files
+- Bumped GitHub Actions dependencies for checkout and Terraform setup
+
+## [15.3.1] 2026-03-24
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
+## [15.3.0] 2026-03-24
+
+### Added
+- Added a logrotate definition for httpd (PR #523)
+- Added support for external NFS servers (PR #326)
+- Added support for Slurm 25.11 (PR #529)
+- Added documentation on CephFS and BindMount types (PR #531)
+- Added support to override `mon_host` for each CephFS share and made it optional at the client level (PR #530)
+- Added documentation for the CephFS `mon_host` type (PR #530)
+
+### Changed
+- Fixed issue #433 (PR #525)
+- Fixed the name of the `named` service for RHEL8 (PR #527)
+- Ensured `idm:DL1` is enabled before installing ipa rpm (PR #527)
+- Ensured `/etc/ssh/sshd_config.d` is created before installing the ipa client (PR #527)
+- Bumped the mariadb module version for metrix (PR #527)
+- Added missing package `sssd-dbus` to `freeipa::base` (PR #527)
+
+### Removed
+- Dropped support for Slurm 23.11 (PR #529)
+
+
+## [15.2.1] 2026-02-26
+
+### Added
+- Added workflow that scans for missing variable in readme (PR #512)
+- Added missing variables to readme (PR #512)
+
+### Changed
+- Bumped autoscaler version to 0.8.1 (PR #513)
+- Configure caddy to fix issue #524 (PR #522)
+- Improved incus_report.sh error handling to report failure when puppet report could not be fetched (PR #516)
+- Improved incus_report.sh total grep (PR #516)
+
+### Removed
+- Removed UsePSS in slurm.conf (PR #514)
+
+## [15.2.0] 2026-02-11
+
+### Added
+- Enabled dirsrv access log compression (PR #489)
+- Added log rotation log received by rsyslog (PR #489)
+- Added log rotation rules (PR #487)
+- Added notification to service ip6tables when recreating tmpfiles (PR #494)
+- Added a github action to test the PR in a complete MC cluster with incus (PR #475)
+
+### Changed
+- Restricted access to dmesg to admin (PR #486)
+- Update ruby version and puppet version in GitHub action (PR #490)
+- Bump puppetserver allocated ram to 1024Mo (PR #492)
+- Improved swap config (PR #485)
+- Fixed Mokey email link (PR #491)
+- Fixed issue #347 "slurmctld does not start when node count is 0 " (PR #493)
+- Increased polling_frequency of wait_for ipa_https (PR #495)
+- Pioritized freeipa server installation in puppet by tuning site.yaml (PR #502)
+- Fixed issue #498 "New MC deployment crashes if only shared volumes are used" (PR #500)
+- Bumped puppet-jupyterhub to v7.2.1 (PR #504)
+- Changed cvmfs-repo source and bumped version to 7.2 (PR #505)
+- Fixed issue #507 "sysctl: permission denied on key "kernel.dmesg_restrict" when using incus" (PR #508)
+- Fixed issue #509 "puppetserver becomes unreachable for a short period during first configuration round" (PR #510)
+
+### Removed
+- Removed automatic upgrade of systemd (PR #484)
+- Removed swap from compute nodes (PR #485)
+
+## [15.1.0] 2025-11-28
+
+### Added
+- Added parameter ldapclient_domain (PR #470)
+- Added support for Features in the node list. Comes from the instances list in terraform file (PR #479)
+- Added option to configure puppetserver params that have impact on RAM (PR #482)
+
+### Changed
+
+- Made export_paths and share_names *additive* lists instead of replacing resources configured from terraform (PR #478)
+- Fixed issue #480 - 389 LDAP service can crash and puppet won't restart it (PR #481)
+- Replaced facts['architecture'] by facts['os']['architecture'] (PR #477)
+
+### Removed
+- Removed puppet-yum from Puppetfile (PR #483)
+
+## [15.0.1] 2025-11-07
+
+### Changed
+- Fixed issue #471 - /etc/mailname was declared twice on relayhost.
+
+## [15.0.0] 2025-10-22
+
+### Added
+- Added support for incus provider (PR #446)
+- Added a test for the existence of log subfolder before wiping in prepare4image.sh (PR #456)
+- Added documentation on setting up duo, cron, sudo, and haproxy (PR #417)
+- Added support for specifying bsoft, bhard, isoft, ihard quotas (PR #455)
+- Added support for client side quotas (PR #447)
+- Added configuration of the cvmfs root directory (PR #465)
+- Added service metrix (Trailblazing Turtle) via Puppetfile (PR #349)
+
+### Changed
+- Improved error handling in mkhome and mkproject and add chunking of user/group creation. (PR #450)
+- Had haveged installed only on Rocky/Alma 8. (PR #445)
+- Adapted puppet code to better support unprivileged containers (PR #457)
+- Disabled user limit setting when running in containers (PR #459)
+- Fixed usernames format when piping in modproject pipe (PR #461)
+- Email are now routed through a single relay host (PR #145)
+- Bumped cuda drivers to version currently used by the Alliance (PR #462)
+- Bumped puppet-jupyterhub to v7.0.1
+- Improved logic of daemons creating users, groups and folders (PR #454)
+
+### Removed
+- Removed pilot.eessi-hpc.org from cvmfs repository list (PR #458)
+
+
+## [14.3.0] 2025-05-22
+
+### Added
+- Added parameters to define suspend and resume rates in Slurm (PR #421)
+- Added dependency on kmod::load for nvidia-mig-parted apply (PR #422)
+- Added annotations using `rake test` results (PR #423)
+- Added bootstrap tag to profile::vector
+- Added an alias for sudoer account to display eyaml bootstrap values (PR #426)
+- Added a default robots.txt that disallows indexing of reverse proxy subdomains (PR #427)
+- Added puppet metrics to Prometheus using puppet reporter (PR #434)
+- Added 25.05 to list of available slurm versions
+
+### Changed
+- Declaration of physical_volume is now ignored if device isn't found
+- Fixed munge systemd service file (PR #431)
+- Bumped puppet-jupyterhub to 6.8.1
+- Made prometheus related services virtual puppet resources (PR #432)
+- Moved require Tcp_conn_validator['consul'] to profile::consul (PR #435)
+- Improved integration Slurm prometheus exporter (PR #436)
+- Made sure all services using them are stopped before GPU drivers are unloaded (PR #438)
+- Fixed issues that prevents mgmt and nfs tags to be greater than 1 (PR #440)
+- Bumped slurm to 24.11 (#419)
+- Fixed iptables missing /run/lock/subsys (PR #444)
+
+## [14.2.1] 2025-02-21
+
+### Changed
+- Bumped Slurm Terraform Cloud autoscaler to 0.6.1
+- Bumped puppet-jupyterhub to 6.8.1
+
+## [14.2.0] 2025-02-20
+
+### Added
+
+- Added a check on hostname length before calling ipa-client-install (PR #403)
+- Added an epel dependency on package slurm
+- Defined restart for httpd in FreeIPA
+- Added include sssd::client in freeipa::server
+- Added option to define custom weight for nodes in slurm (PR #410)
+- Added option to define mkfs_options for volumes (PR #408)
+- Added option to restrict NVIDIA profiling (PR #413)
+- Added a parameter to grant groups ssh access to compute nodes (PR #350)
+- Add support for NVIDIA Grid VGPU in Azure (PR #411)
+
+### Changed
+
+- Replaced ipa commands by batch python script with ipa console (PR #404)
+- Replaced mokey user by mokey service
+- Replaced dns records wait_for by just ipa_https
+- Configured internal domain as ipa_domain in only in common.yaml
+- Replaced consul template for slurm.conf by Puppet function + Terraform data (PR #401)
+- Replaced "include consul" by "include profile::consul" in `software_stack`
+- Bumped puppet-jupyterhub to 6.8.0
+- Refactored volumes definition (PR #412)
+- Moved authentication methods to its own sshd config file (PR #416)
+- Generalized local_user to make more parameters parametrizable (PR #312)
+
+### Removed
+
+- Removed munge's epel yumrepo requirement (PR #402)
+- Droped support for ext3 (PR #412)
+
+## [14.1.3] 2025-01-29
+
+No changes to Puppet code.
+
+Refer to [magic_castle changelog](https://github.com/ComputeCanada/magic_castle/blob/main/CHANGELOG.md)
+
 ## [14.1.2] 2024-11-19
 
 No changes to Puppet code.
@@ -368,4 +610,3 @@ definition.
 - [slurm] Removed support for Slurm 19.08 (PR #208)
 - [slurm] Dropped NVML usage in gres.conf (incompatible with cloud state node) (PR #208)
 - [slurm] Removed NVML enabled Slurm yum repo
-

@@ -3,6 +3,7 @@ class profile::reverse_proxy (
   Hash[String, String] $subdomains,
   Hash[String, Array[String]] $remote_ips = {},
   String $main2sub_redir = 'jupyter',
+  String $robots_txt = "User-agent: *\nDisallow: /",
 ) {
   selinux::boolean { 'httpd_can_network_connect': }
 
@@ -16,7 +17,7 @@ class profile::reverse_proxy (
     dport  => [80, 443],
     proto  => 'tcp',
     source => '0.0.0.0/0',
-    action => 'accept',
+    jump   => 'accept',
   }
 
   yumrepo { 'caddy-copr-repo':
@@ -70,25 +71,36 @@ class profile::reverse_proxy (
     require => Package['caddy'],
   }
 
+  $caddyfile_content = @("EOT")
+    {
+      admin off
+      metrics {
+        per_host
+      }
+    }
+    (tls) {
+      ${tls_string}
+    }
+    import conf.d/*
+    | EOT
   file { '/etc/caddy/Caddyfile':
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
     seltype => 'httpd_config_t',
     require => Package['caddy'],
-    content => @("EOT"),
-(tls) {
-  ${tls_string}
-}
-import conf.d/*
-| EOT
+    content => $caddyfile_content,
   }
 
   $host_conf_template = @("END")
     ${domain_name} {
       import tls
+      respond /robots.txt 200 {
+        body "${robots_txt}"
+        close
+      }
     <% if '${main2sub_redir}' != '' { -%>
-      redir https://${main2sub_redir}.${domain_name}
+      redir / https://${main2sub_redir}.${domain_name}
     <% } -%>
     }
     |END
@@ -112,10 +124,11 @@ import conf.d/*
       content => epp(
         'profile/reverse_proxy/subdomain.conf',
         {
-          'domain'    => $domain_name,
-          'subdomain' => $key,
-          'server'    => $value,
-          'remote_ip' => $remote_ips.get($key, ''),
+          'domain'     => $domain_name,
+          'subdomain'  => $key,
+          'server'     => $value,
+          'remote_ip'  => $remote_ips.get($key, ''),
+          'robots_txt' => $robots_txt
         }
       ),
     }

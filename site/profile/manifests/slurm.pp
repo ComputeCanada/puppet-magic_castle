@@ -9,18 +9,20 @@
 class profile::slurm::base (
   String $cluster_name,
   String $munge_key,
-  Enum['23.02', '23.11', '24.05'] $slurm_version,
+  Enum['24.05', '24.11', '25.05', '25.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
+  Integer $suspend_rate = 20,
   Integer $resume_timeout = 3600,
+  Integer $resume_rate = 20,
   Boolean $enable_x11_forwarding = true,
   Boolean $enable_scrontab = false,
   String  $config_addendum = '',
+  Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
 )
 {
   include epel
   include profile::base::powertools
-  include profile::consul
 
   group { 'slurm':
     ensure => 'present',
@@ -57,7 +59,42 @@ class profile::slurm::base (
   }
 
   package { 'munge':
-    ensure  => 'installed',
+    ensure => 'installed',
+  }
+
+  # Sometime /var/run/munge is not created.
+  # Munge RPM provides /usr/lib/tmpfiles.d/munge.conf
+  # tmpfiles.d config was replaced with RuntimeDirectory as of munge 0.5.14
+  # but we are stuck with 0.5.13 as upstream has not updated munge
+  # since 2021. The next 2 file_lines make sure munge does not rely on
+  # systemd-tmpfiles-setup.service.
+  # Ref: https://github.com/dun/munge/commit/3eed37e3ca73c14b679394df7be151d27566b0fe
+  # Ref: https://github.com/dun/munge/issues/75
+  file_line { 'munge_runtimedirectory':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^RuntimeDirectory=',
+    line    => 'RuntimeDirectory=munge',
+    after   => 'Group=munge',
+    require => Package['munge'],
+    notify  => Service['munge'],
+  }
+
+  file_line { 'munge_runtimedirectorymode':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^RuntimeDirectoryMode=',
+    line    => 'RuntimeDirectoryMode=0755',
+    after   => 'Group=munge',
+    require => Package['munge'],
+    notify  => Service['munge'],
+  }
+
+  # Fix a warning in systemctl status munge about the location of the PID file.
+  file_line { 'munge_pidfile':
+    path    => '/usr/lib/systemd/system/munge.service',
+    match   => '^PIDFile=',
+    line    => 'PIDFile=/run/munge/munged.pid',
+    require => Package['munge'],
+    notify  => Service['munge'],
   }
 
   file { '/var/log/slurm':
@@ -167,7 +204,7 @@ class profile::slurm::base (
   # slurm-contribs command "seff" requires Sys/hostname.pm
   # which is not packaged by default with perl in RHEL >= 9.
   if versioncmp($facts['os']['release']['major'], '9') >= 0 {
-    ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
+    stdlib::ensure_packages(['perl-Sys-Hostname'], { 'ensure' => 'installed' })
   }
 
   package { 'slurm-libpmi':
@@ -195,11 +232,14 @@ class profile::slurm::base (
         'nb_nodes'              => length($nodes),
         'suspend_exc_nodes'     => join($suspend_exc_nodes, ','),
         'resume_timeout'        => $resume_timeout,
+        'resume_rate'           => $resume_rate,
         'suspend_time'          => $suspend_time,
+        'suspend_rate'          => $suspend_rate,
         'memlimit'              => $os_reserved_memory,
         'partitions'            => $partitions,
         'slurmctl'              => profile::gethostnames_with_class('profile::slurm::controller'),
         'slurmdb'               => profile::gethostnames_with_class('profile::slurm::accounting'),
+        'log_level'             => $log_level,
       }),
     group   => 'slurm',
     owner   => 'slurm',
@@ -249,23 +289,51 @@ class profile::slurm::base (
 # Slurm accouting. This where is slurm accounting database and daemon is ran.
 # @param password Specifies the password to access the MySQL database with user slurm.
 # @param dbd_port Specfies the port on which run the slurmdbd daemon.
-class profile::slurm::accounting(
+type SlurmDBUser = Struct[
+  {
+    'username'   => String,
+    'password'   => String,
+    'privileges' => Array[String],
+    'host'       => String,
+  },
+]
+class profile::slurm::accounting (
   String $password,
   Hash[String, Any] $options = {},
   Array[String] $admins = [],
   Hash[String, Hash] $accounts = {},
   Hash[String, Array[String]] $users = {},
-  Integer $dbd_port = 6819
+  Integer $dbd_port = 6819,
+  Array[SlurmDBUser] $db_users = [],
 ) {
   include mysql::server
   include profile::slurm::base
 
-  mysql::db { 'slurm_acct_db':
+  $db_name = 'slurm_acct_db'
+  mysql::db { $db_name:
     ensure   => present,
     user     => 'slurm',
     password => $password,
-    host     => 'localhost',
+    host     => '127.0.0.1',
     grant    => ['ALL'],
+  }
+
+  $db_users.each|$db_user| {
+    $mysql_user = "${db_user['username']}@${db_user['host']}"
+    mysql_user { $mysql_user:
+      ensure        => present,
+      password_hash => mysql::password($db_user['password']),
+    }
+    mysql_grant { "${mysql_user}/${db_name}.*":
+      privileges => $db_user['privileges'],
+      provider   => 'mysql',
+      user       => $mysql_user,
+      table      => "${db_name}.*",
+      require    => [
+        Mysql_database[$db_name],
+        Mysql_user[$mysql_user],
+      ],
+    }
   }
 
   file { '/etc/slurm/slurmdbd.conf':
@@ -303,15 +371,13 @@ class profile::slurm::accounting(
     before    => Service['slurmctld']
   }
 
-  consul::service { 'slurmdbd':
-    port    => $dbd_port,
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'slurmdbd':
+    port => $dbd_port,
   }
 
   wait_for { 'slurmdbd_started':
     query             => 'cat /var/log/slurm/slurmdbd.log',
-    regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+(-\d+){0,1} started$',
+    regex             => '^\[[.:0-9\-T]{23}\] slurmdbd version \d+.\d+.\d+(-\d+){0,1}(rc\d+){0,1} started$',
     polling_frequency => 10,  # Wait up to 4 minutes (24 * 10 seconds).
     max_retries       => 24,
     refreshonly       => true,
@@ -361,7 +427,6 @@ class profile::slurm::accounting(
     create_group => 'slurm',
     postrotate   => '/usr/bin/pkill -x --signal SIGUSR2 slurmdbd',
   }
-
 }
 
 # Slurm controller class. This where slurmctld is ran.
@@ -371,9 +436,9 @@ class profile::slurm::controller (
   String $tfe_token = '',
   String $tfe_workspace = '',
   String $tfe_var_pool = 'pool',
+  Optional[String] $tfe_proxy_url = undef,
 ) {
   contain profile::slurm::base
-  include profile::mail::server
 
   $instances = lookup('terraform.instances')
   $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
@@ -395,45 +460,25 @@ class profile::slurm::controller (
     mode   => '0755',
   }
 
-  ensure_packages(['python3'], { ensure => 'present' })
-
   $autoscale_env_prefix = '/opt/software/slurm/autoscale_env'
-  exec { 'autoscale_slurm_env':
-    command => "python3 -m venv ${autoscale_env_prefix}",
-    creates => "${autoscale_env_prefix}/bin/activate",
-    require => [
-      Package['python3'], Package['slurm']
+  uv::venv { 'autoscale_slurm_env':
+    prefix       => $autoscale_env_prefix,
+    python       => '3.13',
+    requirements => "https://github.com/MagicCastle/slurm-autoscale-tfe/releases/download/v${autoscale_version}/slurm_autoscale_tfe-${autoscale_version}-py3-none-any.whl",
+    require      => [
+      Package['slurm'],
     ],
-    path    => ['/usr/bin'],
-  }
-
-  exec { 'autoscale_slurm_env_upgrade_pip':
-    command     => 'pip install --upgrade pip',
-    subscribe   => Exec['autoscale_slurm_env'],
-    refreshonly => true,
-    path        => ["${autoscale_env_prefix}/bin"],
-  }
-
-
-  $py3_version = lookup('os::redhat::python3::version')
-  exec { 'autoscale_slurm_tf_cloud_install':
-    command => "pip install https://github.com/MagicCastle/slurm-autoscale-tfe/archive/refs/tags/v${autoscale_version}.tar.gz",
-    creates => "${autoscale_env_prefix}/lib/python${py3_version}/site-packages/slurm_autoscale_tfe-${autoscale_version}.dist-info",
-    require => [
-      Exec['autoscale_slurm_env'], Exec['autoscale_slurm_env_upgrade_pip']
-    ],
-    path    => ["${autoscale_env_prefix}/bin"]
   }
 
   file { '/etc/slurm/env.secrets':
-    ensure  => 'present',
     owner   => 'slurm',
     mode    => '0600',
-    content => @("EOT")
-export TFE_TOKEN=${tfe_token}
-export TFE_WORKSPACE=${tfe_workspace}
-export TFE_VAR_POOL=${tfe_var_pool}
-|EOT
+    content => epp('profile/slurm/env.secrets', {
+        'tfe_token'     => $tfe_token,
+        'tfe_workspace' => $tfe_workspace,
+        'tfe_var_pool'  => $tfe_var_pool,
+        'tfe_proxy_url' => $tfe_proxy_url,
+    }),
   }
 
   file { '/usr/bin/slurm_resume':
@@ -450,6 +495,21 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
+  file { '/usr/bin/slurm_resume_fail':
+    ensure  => 'present',
+    mode    => '0755',
+    seltype => 'bin_t',
+    content => @("EOT"/$)
+#!/bin/bash
+{
+  source /etc/slurm/env.secrets
+  export PATH=\$PATH:/opt/software/slurm/bin
+  ${autoscale_env_prefix}/bin/slurm_resume_fail \$@
+} &>> /var/log/slurm/slurm_autoscale.log
+|EOT
+  }
+
+
   file { '/usr/bin/slurm_suspend':
     ensure  => 'present',
     mode    => '0755',
@@ -464,21 +524,21 @@ export TFE_VAR_POOL=${tfe_var_pool}
 |EOT
   }
 
+
   file { '/etc/slurm/job_submit.lua':
     ensure  => 'present',
     owner   => 'slurm',
     group   => 'slurm',
     content => epp('profile/slurm/job_submit.lua',
       {
+        'selinux_enabled' => $facts['os']['selinux']['enabled'],
         'selinux_context' => $selinux_context,
       }
     ),
   }
 
-  consul::service { 'slurmctld':
-    port    => 6817,
-    require => Tcp_conn_validator['consul'],
-    token   => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'slurmctld':
+    port => 6817,
   }
 
   package { 'slurm-slurmctld':
@@ -522,6 +582,7 @@ export TFE_VAR_POOL=${tfe_var_pool}
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node (
   Boolean $enable_tmpfs_mounts = true,
+  Array[String] $pam_access_groups = ['wheel'],
 ) {
   contain profile::slurm::base
 
@@ -581,17 +642,19 @@ class profile::slurm::node (
     require  => Pam['Add pam_slurm_adopt']
   }
 
-  $access_conf = '
+  $access_conf = @(END)
 # Allow root cronjob
 + : root : cron crond :0 tty1 tty2 tty3 tty4 tty5 tty6
-# Allow admin to connect, deny all other
-+:wheel:ALL
+# Allow other groups if any
+<% $pam_access_groups.each | $group | { %>
++:<%= $group %>:ALL
+<% } %>
 -:ALL:ALL
-'
+|END
 
   file { '/etc/security/access.conf':
     ensure  => present,
-    content => $access_conf
+    content => inline_epp($access_conf, { 'pam_access_groups' => $pam_access_groups }),
   }
 
   selinux::module { 'sshd_pam_slurm_adopt':
@@ -604,41 +667,42 @@ class profile::slurm::node (
     source_pp => 'puppet:///modules/profile/slurm/slurmd.pp',
   }
 
+  if !($facts['virtual'] =~ /^(container|lxc).*$/) {
+    # Implementation of user limits as recommended in
+    # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
+    # + some common values found on Compute Canada clusters
+    limits::limits{'*/core':
+      soft => '0',
+      hard => 'unlimited'
+    }
 
-  # Implementation of user limits as recommended in
-  # https://cloud.google.com/architecture/best-practices-for-using-mpi-on-compute-engine
-  # + some common values found on Compute Canada clusters
-  limits::limits{'*/core':
-    soft => '0',
-    hard => 'unlimited'
-  }
+    limits::limits{'*/nproc':
+      soft => '4096',
+    }
 
-  limits::limits{'*/nproc':
-    soft => '4096',
-  }
+    limits::limits{'root/nproc':
+      soft => 'unlimited',
+    }
 
-  limits::limits{'root/nproc':
-    soft => 'unlimited',
-  }
+    limits::limits{'*/memlock':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/memlock':
-    both => 'unlimited',
-  }
+    limits::limits{'*/stack':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/stack':
-    both => 'unlimited',
-  }
+    limits::limits{'*/nofile':
+      both => '1048576',
+    }
 
-  limits::limits{'*/nofile':
-    both => '1048576',
-  }
+    limits::limits{'*/cpu':
+      both => 'unlimited',
+    }
 
-  limits::limits{'*/cpu':
-    both => 'unlimited',
-  }
-
-  limits::limits{'*/rtprio':
-    both => 'unlimited',
+    limits::limits{'*/rtprio':
+      both => 'unlimited',
+    }
   }
 
   ensure_resource('file', '/localscratch', { 'ensure' => 'directory', 'seltype' => 'tmp_t' })
@@ -670,11 +734,17 @@ class profile::slurm::node (
     file { '/etc/slurm/gres.conf':
       ensure => present,
     }
+    $self_specs = keys(lookup('terraform.self.specs'))
+    if 'mig' in $self_specs or 'gpu_type' in $self_specs {
+      $gres_cmd = '/opt/software/slurm/bin/nvidia_gres.sh --with-type'
+    } else {
+      $gres_cmd = '/opt/software/slurm/bin/nvidia_gres.sh'
+    }
     exec { 'slurm-nvidia_gres':
-      command     => '/opt/software/slurm/bin/nvidia_gres.sh > /etc/slurm/gres.conf',
-      refreshonly => true,
-      notify      => Service['slurmd'],
-      subscribe   => [
+      command   => "${gres_cmd} > /etc/slurm/gres.conf",
+      unless    => "${gres_cmd} | cmp -s - /etc/slurm/gres.conf",
+      notify    => Service['slurmd'],
+      subscribe => [
         File['/opt/software/slurm/bin/nvidia_gres.sh'],
         File['/etc/slurm/gres.conf'],
       ]
@@ -695,10 +765,23 @@ class profile::slurm::node (
   Selinux::Exec_restorecon <| |> -> Service['slurmd']
   Selinux::Boolean <| |> -> Service['slurmd']
   Service <| tag == prometheus |> -> Service['slurmd']
-  Service <| tag == profile::metrics |> -> Service['slurmd']
+  Service <| tag == profile::prometheus |> -> Service['slurmd']
   User <| |> -> Service['slurmd']
   Group <| |> -> Service['slurmd']
   Pam <| |> -> Service['slurmd']
+
+  if $facts['virtual'] =~ /^(container|lxc).*$/ {
+    # When running slurmd in containers, the reported boot time
+    # corresponds to the host boot time. This leads slurmctld to
+    # think the node has not properly booted when using
+    # slurm powersaving / autoscaling function. By adding `-b`
+    # option to slurmd, the reported boot time corresponds to the
+    # time when slurmd started instead.
+    # Ref: https://support.schedmd.com/show_bug.cgi?id=4039
+    file { '/etc/sysconfig/slurmd':
+      content => 'SLURMD_OPTIONS="-b"',
+    }
+  }
 
   service { 'slurmd':
     ensure    => 'running',
@@ -713,6 +796,21 @@ class profile::slurm::node (
     require   => [
       Package['slurm-slurmd'],
     ],
+  }
+
+  # If the Slurm SuspendProgram has failed for any reason
+  # during a node power off, it is possible that the node will
+  # still be online, with slurmd running, but the controller will
+  # ignore it until slurmd is restarted. This exec check if the
+  # controller thinks the node is powered off or non responsive
+  # and if it is the case, it restarts slurmd so the state in
+  # in slurmctld can be properly refreshed.
+  $hostname = $facts['networking']['hostname']
+  exec { 'slurmd_state_invalid_restart':
+    command => 'systemctl restart slurmd',
+    onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
+    path    => ['/usr/bin', '/opt/software/slurm/bin'],
+    require => Service['slurmd'],
   }
 
   logrotate::rule { 'slurmd':

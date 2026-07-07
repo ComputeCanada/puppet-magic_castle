@@ -1,49 +1,87 @@
-class profile::gpu {
+class profile::gpu (
+  Boolean $restrict_profiling,
+) {
   if $facts['nvidia_gpu_count'] > 0 {
-    require profile::gpu::install
-    if ! $facts['nvidia_grid_vgpu'] {
-      service { 'nvidia-persistenced':
-        ensure => 'running',
-        enable => true,
-      }
-      service { 'nvidia-dcgm':
-        ensure => 'running',
-        enable => true,
-      }
-    } else {
-      service { 'nvidia-gridd':
-        ensure => 'running',
-        enable => true,
-      }
-    }
+    include profile::gpu::install
+    include profile::gpu::services
   }
 }
 
 class profile::gpu::install (
-  String $lib_symlink_path = undef
+  Array[String] $dcgm_packages = [
+    'datacenter-gpu-manager-4-proprietary',
+    'datacenter-gpu-manager-4-core',
+    'datacenter-gpu-manager-4-cuda12',
+  ],
+  Optional[String] $lib_symlink_path = undef
 ) {
+  $restrict_profiling = lookup('profile::gpu::restrict_profiling')
   ensure_resource('file', '/etc/nvidia', { 'ensure' => 'directory' })
-  ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
-  ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
-  ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
+  stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
+  $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
     source_pp => 'puppet:///modules/profile/gpu/nvidia-gpu.pp',
   }
 
-  if ! $facts['nvidia_grid_vgpu'] {
+  $os = "rhel${::facts['os']['release']['major']}"
+  $arch = $::facts['os']['architecture']
+
+  exec { 'cuda-repo':
+    command => "dnf config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
+    creates => "/etc/yum.repos.d/cuda-${os}.repo",
+    path    => ['/usr/bin'],
+  }
+  if length($dcgm_packages) > 0 {
+    # DGCM is used by slurm-job-exporter to export GPU metrics
+    package { $dcgm_packages :
+      require => Exec['cuda-repo'],
+    }
+  }
+
+  file { '/etc/modprobe.d/nvidia.conf':
+    ensure => file,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
+
+  file_line { 'nvidia_restrict_profiling':
+    path    => '/etc/modprobe.d/nvidia.conf',
+    match   => '^options nvidia NVreg_RestrictProfilingToAdminUsers',
+    line    => "options nvidia NVreg_RestrictProfilingToAdminUsers=${Integer($restrict_profiling)}",
+    require => File['/etc/modprobe.d/nvidia.conf'],
+    notify  => [
+      Exec['stop_nvidia_services'],
+      Exec['unload_nvidia_drivers'],
+    ],
+  }
+
+  exec { 'unload_nvidia_drivers':
+    command     => sprintf('modprobe -r %s', $nvidia_kmod.reverse.join(' ')),
+    onlyif      => 'grep -qE "^nvidia " /proc/modules',
+    refreshonly => true,
+    require     => Exec['stop_nvidia_services'],
+    notify      => Kmod::Load[$nvidia_kmod],
+    path        => ['/bin', '/sbin'],
+  }
+  File_line['nvidia_restrict_profiling'] ~> Exec<| title == stop_slurm-job-exporter |>
+  Exec<| title == stop_slurm-job-exporter |> -> Exec['unload_nvidia_drivers']
+
+  if ! profile::is_grid_vgpu() {
     include profile::gpu::install::passthrough
     Class['profile::gpu::install::passthrough'] -> Exec['dkms_nvidia']
+    $installer = 'rpm'
   } else {
     include profile::gpu::install::vgpu
-    Class['profile::gpu::install::vgpu'] -> Exec['dkms_nvidia']
+    $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
   }
 
   # Binary installer do not build drivers with DKMS
-  $installer = lookup('profile::gpu::install::vgpu::installer', undef, undef, '')
-  $nvidia_kmod = ['nvidia', 'nvidia_drm', 'nvidia_modeset', 'nvidia_uvm']
-  if ! $facts['nvidia_grid_vgpu'] or $installer != 'bin' {
+  if ! profile::is_grid_vgpu() or $installer != 'bin' {
     exec { 'dkms_nvidia':
       command => "dkms autoinstall -m nvidia -k ${facts['kernelrelease']}",
       path    => ['/usr/bin', '/usr/sbin'],
@@ -59,7 +97,7 @@ class profile::gpu::install (
 
   kmod::load { $nvidia_kmod: }
 
-  if $lib_symlink_path {
+  if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash(
       $lib_symlink_path_split[1,-1].map |Integer $index, String $value| {
@@ -74,24 +112,15 @@ class profile::gpu::install (
       refreshonly => true,
       path        => ['/bin', '/usr/bin'],
     }
-
     Package<| tag == profile::gpu::install |> ~> Exec['nvidia-symlink']
-    Exec<| tag == profile::gpu::install::vgpu::bin |> ~> Exec['nvidia-symlink']
   }
+  Kmod::Load[$nvidia_kmod] ~> Service<| tag == profile::gpu::services |>
 }
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
   String $nvidia_driver_stream = '550-dkms'
 ) {
-  $os = "rhel${::facts['os']['release']['major']}"
-  $arch = $::facts['os']['architecture']
-
-  exec { 'cuda-repo':
-    command => "dnf config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/${os}/${arch}/cuda-${os}.repo",
-    creates => "/etc/yum.repos.d/cuda-${os}.repo",
-    path    => ['/usr/bin'],
-  }
 
   package { 'nvidia-stream':
     ensure      => $nvidia_driver_stream,
@@ -118,9 +147,6 @@ class profile::gpu::install::passthrough (
       Yumrepo['epel'],
     ],
   }
-
-  # Used by slurm-job-exporter to export GPU metrics
-  -> package { 'datacenter-gpu-manager': }
 
   -> augeas { 'nvidia-persistenced.service':
     context => '/files/lib/systemd/system/nvidia-persistenced.service/Service',
@@ -213,11 +239,16 @@ class profile::gpu::config::mig (
       Service['nvidia-dcgm'],
     ],
   }
+  Kmod::Load <| tag == profile::gpu::install |> -> Exec['nvidia-mig-parted apply']
 }
 
 class profile::gpu::install::vgpu (
   Enum['rpm', 'bin', 'none'] $installer = 'none',
-  String $nvidia_ml_py_version = '11.515.75',
+  Array[String] $grid_vgpu_types = [],
+  Optional[String] $gridd_content = undef,
+  Optional[String] $gridd_source = undef,
+  Optional[String] $token_content = undef,
+  Optional[String] $token_source = undef,
 ) {
   if $installer == 'rpm' {
     include profile::gpu::install::vgpu::rpm
@@ -226,16 +257,49 @@ class profile::gpu::install::vgpu (
     include profile::gpu::install::vgpu::bin
   }
 
-  # Used by slurm-job-exporter to export GPU metrics
-  # DCGM does not work with GRID VGPU, most of the stats are missing
-  ensure_packages(['python3', 'python3-pip'], { ensure => 'present' })
-  $py3_version = lookup('os::redhat::python3::version')
+  if $gridd_content {
+    $gridd_definition = { 'content' => $gridd_content }
+  } elsif $gridd_source {
+    $gridd_definition = { 'source' => $gridd_source }
+  } else {
+    $gridd_definition = {}
+  }
 
-  exec { 'pip install nvidia-ml-py':
-    command => "/usr/bin/pip${py3_version} install --force-reinstall nvidia-ml-py==${nvidia_ml_py_version}",
-    creates => "/usr/local/lib/python${py3_version}/site-packages/pynvml.py",
-    before  => Service['slurm-job-exporter'],
-    require => Package['python3'],
+  if $gridd_definition != {} {
+    file { '/etc/nvidia/gridd.conf':
+      ensure  => file,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+      require => File['/etc/nvidia'],
+      notify  => Service['nvidia-gridd'],
+      *       => $gridd_definition,
+    }
+  }
+
+  if $token_content {
+    $token_definition = { 'content' => $token_content }
+  } elsif $token_source {
+    $token_definition = { 'source' => $token_source }
+  } else {
+    $token_definition = {}
+  }
+
+  if $token_definition != {} {
+    # https://docs.nvidia.com/vgpu/13.0/grid-licensing-user-guide/index.html#custom-configuring-nls-licensed-network-client-on-linux
+    file { '/etc/nvidia/ClientConfigToken':
+      ensure  => directory,
+      require => File['/etc/nvidia'],
+    }
+    file { '/etc/nvidia/ClientConfigToken/client_config.tok':
+      ensure  => file,
+      mode    => '0644',
+      owner   => 'root',
+      group   => 'root',
+      require => File['/etc/nvidia/ClientConfigToken'],
+      notify  => Service['nvidia-gridd'],
+      *       => $token_definition,
+    }
   }
 }
 
@@ -274,27 +338,56 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
-  String $gridd_source,
+  String $installer_flags = '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms',
 ) {
+  $lib_symlink_path = lookup('profile::gpu::install::lib_symlink_path', undef, undef, '')
+  file { '/usr/bin/mc-nvidia-installer':
+    content => epp('profile/gpu/mc-nvidia-installer', {
+        source           => $source,
+        lib_symlink_path => $lib_symlink_path,
+    }),
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+  }
   exec { 'vgpu-driver-install-bin':
-    command => "curl -L ${source} -o /tmp/NVIDIA-driver.run && sh /tmp/NVIDIA-driver.run --ui=none --no-questions --disable-nouveau && rm /tmp/NVIDIA-driver.run", # lint:ignore:140chars
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    command => "/usr/bin/mc-nvidia-installer ${installer_flags}",
+    path    => ['/usr/bin/'],
     creates => [
       '/usr/bin/nvidia-smi',
       '/usr/bin/nvidia-modprobe',
     ],
     timeout => 300,
     require => [
+      File['/usr/bin/mc-nvidia-installer'],
       Package['kernel-devel'],
       Package['dkms'],
     ],
   }
+}
 
-  file { '/etc/nvidia/gridd.conf':
-    ensure => file,
-    mode   => '0644',
-    owner  => 'root',
-    group  => 'root',
-    source => $gridd_source,
+class profile::gpu::services (
+  Array[String] $names = ['nvidia-persistenced', 'nvidia-dcgm'],
+) {
+  if profile::is_grid_vgpu() {
+    $gpu_services = unique($names + ['nvidia-gridd'])
+  } else {
+    $gpu_services = $names
   }
+
+  service { $gpu_services:
+    ensure => 'running',
+    enable => true,
+    notify => Service['slurm-job-exporter'],
+  }
+
+  exec { 'stop_nvidia_services':
+    command     => sprintf('systemctl stop %s', $gpu_services.reverse.join(' ')),
+    onlyif      => sprintf('systemctl is-active %s', $gpu_services.reverse.join(' ')),
+    refreshonly => true,
+    path        => ['/usr/bin'],
+  }
+
+  Package<| tag == profile::gpu::install |> -> Service[$gpu_services]
+  Exec<| tag == profile::gpu::install::vgpu::bin |> -> Service[$gpu_services]
 }

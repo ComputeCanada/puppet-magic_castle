@@ -19,12 +19,14 @@ class profile::freeipa::base (String $ipa_domain) {
   }
 
   package { 'systemd':
-    ensure => 'latest',
+    ensure => present,
   }
 
   package { 'NetworkManager':
     ensure => present,
   }
+
+  package { 'sssd-dbus': }
 
   service { 'NetworkManager':
     ensure  => running,
@@ -53,6 +55,17 @@ class profile::freeipa::client (String $server_ip) {
   $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
 
+  if $facts['virtual'] =~ /^(container|lxc).*$/ {
+    file_line { 'chronyd_disable_clock_control':
+      ensure  => present,
+      require => Package['ipa-client'],
+      before  => Exec['ipa-install'],
+      path    => '/etc/sysconfig/chronyd',
+      match   => '^OPTIONS',
+      line    => 'OPTIONS="-F 2 -x"',
+    }
+  }
+
   file { '/etc/NetworkManager/conf.d/zzz-puppet.conf':
     mode    => '0644',
     content => epp('profile/freeipa/zzz-puppet.conf',
@@ -68,10 +81,18 @@ class profile::freeipa::client (String $server_ip) {
     ensure => 'installed',
   }
 
+  # We want to wait for the FreeIPA server to be fully configured
+  # before launching the FreeIPA client install. The mechanism we
+  # found thus far to validate the server is operational is to
+  # try to fetch the SSL certificate of the host ipa on port 443.
+  # We wait at most 20 minutes - polling every 10 seconds (polling_frequency)
+  # at most 120 times (max_retries). We chose 20 minutes as it
+  # the most time require to fully configure a node with the mgmt
+  # tag as of Magic Castle 15.
   wait_for { 'ipa_https':
     query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
-    polling_frequency => 5,
+    polling_frequency => 10,
     max_retries       => 120,
     refreshonly       => true,
     subscribe         => [
@@ -82,10 +103,12 @@ class profile::freeipa::client (String $server_ip) {
   }
 
   # Make sure heavy lifting operations are done before waiting on mgmt1
+  Archive <| |> -> Wait_for['ipa_https']
   Package <| |> -> Wait_for['ipa_https']
   Selinux::Module <| |> -> Wait_for['ipa_https']
   Selinux::Boolean <| |> -> Wait_for['ipa_https']
   Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
+  Uv::Venv <| |> -> Wait_for['ipa_https']
 
   if length($fqdn) > 63 {
     fail("The fully qualified domain name of ${fqdn} is longer than 63 characters which is not authorized by FreeIPA. Rename the host.")
@@ -118,6 +141,7 @@ class profile::freeipa::client (String $server_ip) {
     tries     => 2,
     try_sleep => 60,
     require   => [
+      File['/etc/ssh/sshd_config.d'],
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
@@ -192,10 +216,16 @@ class profile::freeipa::server (
   String $admin_password,
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
+  Boolean $enable_mokey = true,
 ) {
-  include profile::base::etc_hosts
-  include profile::freeipa::base
-  include profile::sssd::client
+  include cron
+
+  file { '/etc/ipa':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0755',
+  }
 
   file { 'kinit_wrapper':
     path   => '/usr/bin/kinit_wrapper',
@@ -211,11 +241,20 @@ class profile::freeipa::server (
   }
 
   if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    Exec['enable_idm:DL1'] -> Package['ipa-server-dns']
+  }
+
+  file { '/etc/ipa/dse-init.ldif':
+    source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
+    require => File['/etc/ipa'],
+  }
+
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
     # Fix FreeIPA issue adding 2 minutes of wait time for nothing
     # https://pagure.io/freeipa/issue/9358
     # TODO: remove this patch once FreeIPA >= 4.10 is made available
     # in RHEL 8.
-    ensure_packages(['patch'], { ensure => 'present' })
+    stdlib::ensure_packages(['patch'], { ensure => 'present' })
     $python_version = lookup('os::redhat::python3::version')
     file { 'freeipa_27e9181bdc.patch':
       path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
@@ -238,6 +277,7 @@ class profile::freeipa::server (
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $reverse_zone = profile::getreversezone()
   $ipaddress = lookup('terraform.self.local_ip')
+  $ds_domain = regsubst($realm, '\.', '-', 'G')
 
   $ipa_server_install_cmd = @("IPASERVERINSTALL"/L)
     /sbin/ipa-server-install \
@@ -259,6 +299,7 @@ class profile::freeipa::server (
     --reverse-zone=${reverse_zone} \
     --realm=${realm} \
     --domain=${ipa_domain} \
+    --dirsrv-config-file=/etc/ipa/dse-init.ldif \
     --no_hbac_allow
     | IPASERVERINSTALL
 
@@ -269,10 +310,13 @@ class profile::freeipa::server (
     require => [
       Package['ipa-server-dns'],
       File['/etc/hosts'],
+      File['/etc/ipa/dse-init.ldif'],
+      File['/etc/ssh/sshd_config.d'],
     ],
     notify  => [
       Service['systemd-logind'],
       Service['sssd'],
+      Service['httpd'],
     ],
   }
 
@@ -310,7 +354,7 @@ class profile::freeipa::server (
 
   file { '/etc/ipa/ipa_server_base_config.py':
     content => $ipa_server_base_config,
-    require => Exec['ipa-install'],
+    require => File['/etc/ipa'],
   }
 
   exec { 'ipa_server_base_config':
@@ -340,10 +384,7 @@ class profile::freeipa::server (
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
     try_sleep => 10,
-    require   => [
-      Exec['ipa_server_base_config'],
-      Exec['ipa-install'],
-    ],
+    require   => Service['certmonger'],
   }
 
   $instances = lookup('terraform.instances')
@@ -360,6 +401,7 @@ class profile::freeipa::server (
         'hbac_services' => $hbac_services,
       }
     ),
+    require => File['/etc/ipa'],
   }
 
   exec { 'hbac_rules':
@@ -382,11 +424,32 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  service { 'httpd':
+  ensure_resource('service', 'httpd', { 'ensure' => running, 'enable' => true, 'restart' => '/usr/bin/systemctl reload httpd' })
+
+  service { 'certmonger':
     ensure  => running,
     enable  => true,
-    restart => '/usr/bin/systemctl reload httpd',
     require => Exec['ipa-install'],
+  }
+
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    $named_service = 'named-pkcs11'
+  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+    $named_service = 'named'
+  }
+
+  $ipa_services = [
+    "dirsrv@${ds_domain}",
+    'krb5kdc',
+    'kadmin',
+    $named_service,
+    'ipa-custodia',
+    'pki-tomcatd@pki-tomcat',
+    'ipa-dnskeysyncd',
+  ]
+  service { $ipa_services:
+    ensure  => running,
+    require => Service['ipa'],
   }
 
   file { '/etc/httpd/conf.d/ipa-rewrite.conf':
@@ -403,13 +466,25 @@ class profile::freeipa::server (
     seltype => 'httpd_config_t',
   }
 
+  $server_status = @(EOF)
+    <Location /server-status>
+      SetHandler server-status
+      Require local
+    </Location>
+    |EOF
+  @file { '/etc/httpd/conf.d/server-status.conf':
+    content => $server_status,
+    notify  => Service['httpd'],
+    require => Exec['ipa-install'],
+    seltype => 'httpd_config_t',
+  }
+
   # Monitor change of the directory server password
   # and apply change if the current password hash does
   # not correspond to the password definned in the hieradata.
   # This is needed because the password is generated by
   # the puppet server during the bootstrap phase and it can
   # change if the puppet server is reinstalled.
-  $ds_domain = upcase(regsubst($ipa_domain, '\.', '-', 'G'))
   $ds_file = "/etc/dirsrv/slapd-${ds_domain}/dse.ldif"
   $reset_ds_password_cmd = @("EOT")
     dsctl ${ds_domain} stop && \
@@ -424,7 +499,7 @@ class profile::freeipa::server (
     command => Sensitive($reset_ds_password_cmd),
     unless  => Sensitive($check_ds_password_cmd),
     path    => ['/usr/sbin', '/usr/bin', '/bin'],
-    require => Exec['ipa-install'],
+    require => Service["dirsrv@${ds_domain}"],
   }
 
   $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
@@ -439,9 +514,53 @@ class profile::freeipa::server (
     unless  => Sensitive($check_admin_password_cmd),
     path    => ['/usr/sbin', '/usr/bin', '/bin'],
     require => [
-      Exec['ipa-install'],
+      Service["dirsrv@${ds_domain}"],
       Exec['reset ds password'],
     ],
+  }
+
+  Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
+  Service["dirsrv@${ds_domain}"] -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
+
+  # pki-tomcat has its own log rotation mechanism, but it does not properly clean file older than 7 days.
+  cron::job { 'clean_pki-tomcat_ca_debuglog':
+    minute      => '49',
+    hour        => '3',
+    date        => '*',
+    month       => '*',
+    weekday     => '*',
+    user        => 'root',
+    command     => 'find /var/log/pki/pki-tomcat/ca -maxdepth 1 -name debug.*.log -mtime +7 -delete',
+    description => 'clean pki-tomcat debug logs',
+  }
+
+  # httpd-core rpm installs /etc/logrotate.d/httpd with postrotate = /bin/systemctl reload httpd
+  # From our experience during winter 2026, the postrotate script would leave processes httpd
+  # every week, to the point where after multiple weeks, httpd could no longer be reloaded and the
+  # error_log would be filled with "AH03490: scoreboard is full, not at MaxRequestWorkers.Increase ServerLimit."
+  # With the objective of avoiding this issue, we define our own logrotate config file for httpd
+  # that instead of having httpd reload after rotating the log, we copy the log file and truncate the file
+  # currently used by httpd e.g: copytruncate in logrotate.
+  logrotate::rule { 'httpd':
+    path          => '/var/log/httpd/*log',
+    rotate        => 14,
+    rotate_every  => 'daily',
+    dateext       => true,
+    missingok     => true,
+    ifempty       => false,
+    sharedscripts => true,
+    compress      => true,
+    copytruncate  => true,
+    require       => Exec['ipa-install'],
+  }
+
+  include profile::base::etc_hosts
+  include profile::freeipa::base
+  include profile::sssd::client
+  include profile::users::ldap
+
+  if $enable_mokey {
+    include profile::freeipa::mokey
   }
 }
 
@@ -450,7 +569,6 @@ class profile::freeipa::mokey (
   String $password,
   Boolean $enable_user_signup,
   Boolean $require_verify_admin,
-  Array[String] $access_tags,
 ) {
   include mysql::server
 
@@ -567,11 +685,11 @@ class profile::freeipa::mokey (
         'password'             => $password,
         'dbname'               => 'mokey',
         'port'                 => $port,
-        'auth_key'             => seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
+        'auth_key'             => stdlib::seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
+        'enc_key'              => stdlib::seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
         'enable_user_signup'   => $enable_user_signup,
         'require_verify_admin' => $require_verify_admin,
-        'email_link_base'      => "https://${lookup('terraform.data.domain_name')}/",
+        'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",
         'email_from'           => "admin@${lookup('terraform.data.domain_name')}",
       }
     ),
@@ -632,20 +750,5 @@ class profile::freeipa::mokey (
     subscribe   => [
       Exec['ipa_self-signup_automember'],
     ],
-  }
-
-  $access_tags.each |$tag| {
-    exec { "ipa_hbacrule_self-signup_${tag}":
-      command     => "kinit_wrapper ipa hbacrule-add-user ${tag} --groups=self-signup",
-      refreshonly => true,
-      environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-      require     => [File['kinit_wrapper'],],
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-      returns     => [0, 1, 2],
-      subscribe   => [
-        Exec['ipa_group_self-signup'],
-        Exec['hbac_rules'],
-      ],
-    }
   }
 }

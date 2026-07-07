@@ -8,15 +8,15 @@ lookup_options:
     merge: 'hash'
 
 magic_castle::site::all:
+  - profile::freeipa
   - profile::base
   - profile::consul
-  - profile::freeipa
   - profile::users::local
   - profile::sssd::client
-  - profile::metrics::node_exporter
+  - profile::prometheus::node_exporter
   - profile::rsyslog::client
   - profile::volumes
-  - swap_file
+  - profile::mail
 
 magic_castle::site::tags:
   dtn:
@@ -29,34 +29,41 @@ magic_castle::site::tags:
     - profile::ssh::hostbased_auth::client
     - profile::nfs
     - profile::software_stack
+    - profile::swap
   mgmt:
     - mysql::server
     - prometheus::server
     - prometheus::alertmanager
-    - profile::metrics::slurm_exporter
+    - profile::prometheus::slurm_exporter
+    - profile::prometheus::apache_exporter
     - profile::rsyslog::server
     - profile::squid::server
     - profile::slurm::controller
-    - profile::freeipa::mokey
     - profile::slurm::accounting
     - profile::accounts
     - profile::nfs
-    - profile::users::ldap
+    - metrix::slurm_jobscripts
+    - profile::metrix
+    - profile::swap
   node:
     - profile::gpu
     - profile::jupyterhub::node
     - profile::slurm::node
     - profile::ssh::hostbased_auth::client
     - profile::ssh::hostbased_auth::server
-    - profile::metrics::slurm_job_exporter
-    - profile::nfs::client
+    - profile::prometheus::slurm_job_exporter
+    - profile::nfs
     - profile::software_stack
   nfs:
-    - profile::nfs::server
+    - profile::nfs
     - profile::cvmfs::alien_cache
   proxy:
     - profile::jupyterhub::hub
     - profile::jupyterhub::hub::keytab
     - profile::reverse_proxy
+    - profile::prometheus::caddy_exporter
   efa:
     - profile::efa
+  puppet:
+    - profile::puppetserver
+    - profile::swap

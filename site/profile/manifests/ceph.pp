@@ -6,17 +6,18 @@ type BindMount = Struct[{
 
 type CephFS = Struct[
   {
-    'share_name' => String,
-    'access_key' => String,
-    'export_path' => Stdlib::Unixpath,
-    'bind_mounts' => Optional[Array[BindMount]],
+    'share_name'                 => String,
+    'access_key'                 => String,
+    'export_path'                => Stdlib::Unixpath,
+    'bind_mounts'                => Optional[Array[BindMount]],
     'binds_fcontext_equivalence' => Optional[Stdlib::Unixpath],
+    'mon_host'                   => Optional[Array[String]],
   }
 ]
 
 class profile::ceph::client (
-  Array[String] $mon_host,
   Hash[String, CephFS] $shares,
+  Array[String] $mon_host = [],
 ) {
   require profile::ceph::client::install
 
@@ -49,7 +50,7 @@ class profile::ceph::client::install (
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
-    baseurl       => "https://download.ceph.com/${repo}/el${$::facts['os']['release']['major']}/${::facts['architecture']}/",
+    baseurl       => "https://download.ceph.com/${repo}/el${$::facts['os']['release']['major']}/${::facts['os']['architecture']}/",
     gpgcheck      => 1,
     gpgkey        => 'https://download.ceph.com/keys/release.asc',
     repo_gpgcheck => 0,
@@ -103,18 +104,18 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name}",
+    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name},_netdev",
     require => File['/etc/ceph/ceph.conf'],
   }
 
   $bind_mounts.each |$mount| {
     file { $mount['dst']:
-      ensure  => pick($mount['type'], 'directory'),
+      ensure => pick($mount['type'], 'directory'),
     }
     mount { $mount['dst']:
       ensure  => 'mounted',
       fstype  => 'none',
-      options => 'rw,bind',
+      options => 'rw,bind,_netdev',
       device  => "/mnt/${name}${mount['src']}",
       require => [
         File[$mount['dst']],

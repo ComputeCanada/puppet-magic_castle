@@ -4,3 +4,8 @@ profile::gpu::install::vgpu::rpm::packages:
   - nvidia-vgpu-kmod
   - nvidia-vgpu-gridd
   - nvidia-vgpu-tools
+profile::gpu::install::dcgm_packages: []
+profile::gpu::services::names:
+  - nvidia-persistenced
+  - nvidia-gridd
+

@@ -10,6 +10,9 @@ class profile::base (
   include profile::base::powertools
   include profile::ssh::base
 
+  package { 'selinux-policy': }
+  Package['selinux-policy'] -> Class['selinux::config']
+
   file { '/etc/magic-castle-release':
     content => "Magic Castle release ${version}",
   }
@@ -25,7 +28,6 @@ class profile::base (
   }
 
   if $admin_email {
-    include profile::mail::server
     file { '/opt/puppetlabs/bin/postrun':
       mode    => '0700',
       content => epp('profile/base/postrun',
@@ -64,11 +66,21 @@ class profile::base (
     tag => 'mc_bootstrap',
   }
 
+  # Sometimes systemd-tmpfiles-setup.service fails to create
+  # /run/lock/subsys folder which is required by iptables.
+  # This exec runs the command that should have created the folder
+  # if it is missing.
+  exec { 'systemd-tmpfiles --create --prefix=/run/lock/subsys':
+    unless => 'test -d /run/lock/subsys',
+    path   => ['/bin'],
+    notify => [Service['iptables'], Service['ip6tables']],
+  }
+
   firewall { '001 accept all from local network':
     chain  => 'INPUT',
     proto  => 'all',
     source => profile::getcidr(),
-    action => 'accept',
+    jump   => 'accept',
     tag    => 'mc_bootstrap',
   }
 
@@ -76,14 +88,9 @@ class profile::base (
     chain       => 'OUTPUT',
     proto       => 'tcp',
     destination => '169.254.169.254',
-    action      => 'drop',
+    jump        => 'drop',
     uid         => '! root',
     tag         => 'mc_bootstrap',
-  }
-
-  package { 'haveged':
-    ensure  => 'installed',
-    require => Yumrepo['epel'],
   }
 
   package { 'clustershell':
@@ -91,13 +98,22 @@ class profile::base (
     require => Yumrepo['epel'],
   }
 
-  service { 'haveged':
-    ensure  => running,
-    enable  => true,
-    require => Package['haveged'],
+  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
+    # haveged service is no longer required for kernel >= 5.4
+    # RHEL 8 is the last release with a kernel < 5
+    package { 'haveged':
+      ensure  => 'installed',
+      require => Yumrepo['epel'],
+    }
+
+    service { 'haveged':
+      ensure  => running,
+      enable  => true,
+      require => Package['haveged'],
+    }
   }
 
-  ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
+  stdlib::ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
     include profile::base::azure
@@ -106,6 +122,13 @@ class profile::base (
   # Remove scripts leftover by terraform remote-exec provisioner
   file { glob('/tmp/terraform_*.sh'):
     ensure => absent,
+  }
+
+  if !($facts['virtual'] =~ /^(container|lxc).*$/) {
+    sysctl { 'kernel.dmesg_restrict':
+      ensure => 'present',
+      value  => 1,
+    }
   }
 }
 
@@ -156,9 +179,11 @@ class profile::base::powertools {
   } else {
     $repo_name = 'crb'
   }
+  package { 'dnf-plugins-core': }
   exec { 'enable_powertools':
     command => "dnf config-manager --set-enabled ${$repo_name}",
     unless  => "dnf config-manager --dump ${repo_name} | grep -q \'enabled = 1\'",
     path    => ['/usr/bin'],
+    require => Package['dnf-plugins-core'],
   }
 }

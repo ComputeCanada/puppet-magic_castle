@@ -16,29 +16,28 @@ class profile::jupyterhub::hub (
   }
   include profile::slurm::submitter
 
-  consul::service { 'jupyterhub':
-    port  => 8081,
-    tags  => ['jupyterhub'],
-    token => lookup('profile::consul::acl_api_token'),
+  @consul::service { 'jupyterhub':
+    port => 8081,
+    tags => ['jupyterhub'],
   }
 
   file { "${jupyterhub::prefix}/bin/ipa_create_user.py":
-    source => 'puppet:///modules/profile/users/ipa_create_user.py',
-    mode   => '0755',
+    source  => 'puppet:///modules/profile/users/ipa_create_user.py',
+    mode    => '0755',
+    require => Uv::Venv['hub'],
   }
 
   file { "${jupyterhub::prefix}/bin/kinit_wrapper":
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755',
+    source  => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode    => '0755',
+    require => Uv::Venv['hub'],
   }
 }
 
 class profile::jupyterhub::node {
-  if lookup('jupyterhub::node::prefix', String, undef, '') !~ /^\/cvmfs.*/ {
-    include jupyterhub::node
-    if lookup('jupyterhub::kernel::setup') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
-      Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
-    }
+  include jupyterhub::node
+  if lookup('jupyterhub::kernel::install_method') == 'venv' and lookup('jupyterhub::kernel::venv::python') =~ /^\/cvmfs.*/ {
+    Class['profile::software_stack'] -> Class['jupyterhub::kernel::venv']
   }
 }
 
@@ -61,7 +60,7 @@ class profile::jupyterhub::hub::keytab {
 
   file { "${jupyterhub_prefix}/bin/ipa_register_service.py":
     content => $service_register_script,
-    require => Exec['jupyterhub_venv'],
+    require => Uv::Venv['hub'],
   }
 
   $ipa_passwd = lookup('profile::freeipa::server::admin_password')

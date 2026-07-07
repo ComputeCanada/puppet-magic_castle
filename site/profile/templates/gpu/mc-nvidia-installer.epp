@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+SOURCE=<%= $source %>
+LIB_SYMLINK_PATH=<%= $lib_symlink_path %>
+
+curl -L "${SOURCE}" -o /tmp/NVIDIA-driver.run
+LIB64_B4_INSTALL=$(find -L /usr/lib64 -maxdepth 1 -name "*.so*" -type f | sort)
+
+sh /tmp/NVIDIA-driver.run --ui=none --no-questions "$@"
+
+LIB64_AFTER_INSTALL=$(find -L /usr/lib64 -maxdepth 1 -name "*.so*" -type f | sort)
+INSTALLED_LIBS=$(comm -13 <(echo "${LIB64_B4_INSTALL}") <(echo "${LIB64_AFTER_INSTALL}"))
+if [ ! -z "${LIB_SYMLINK_PATH}" ]; then
+    mkdir -p "${LIB_SYMLINK_PATH}"
+    for lib in ${INSTALLED_LIBS}; do
+        ln -snf "${lib}" "${LIB_SYMLINK_PATH}"
+    done
+fi

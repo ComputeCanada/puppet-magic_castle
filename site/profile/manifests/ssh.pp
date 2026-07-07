@@ -1,12 +1,73 @@
-class profile::ssh::base {
+class profile::ssh::base (
+  Boolean $disable_passwd_auth = false,
+) {
   service { 'sshd':
     ensure => running,
     enable => true,
   }
 
-  sshd_config { 'PermitRootLogin':
+  file { '/etc/ssh/sshd_config.d':
+    ensure => directory,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0700',
+  }
+
+  file { '/etc/ssh/sshd_config.d/01-puppet.conf':
+    ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  file { '/etc/ssh/sshd_config.d/50-authenticationmethods.conf':
+    ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => File['/etc/ssh/sshd_config.d'],
+  }
+
+  file { '/etc/ssh/sshd_config.d/50-cloud-init.conf':
+    ensure => absent,
+    notify => Service['sshd'],
+  }
+
+  sshd_config { 'Include':
     ensure => present,
-    value  => 'no',
+    value  => '/etc/ssh/sshd_config.d/*',
+    notify => Service['sshd'],
+  }
+
+  sshd_config { 'PermitRootLogin-01-puppet':
+    ensure  => present,
+    key     => 'PermitRootLogin',
+    value   => 'no',
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
+  }
+
+  sshd_config { 'PermitRootLogin-sshd_config':
+    ensure => absent,
+    key    => 'PermitRootLogin',
+    notify => Service['sshd'],
+  }
+
+  $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
+  sshd_config { 'PasswordAuthentication-01-puppet':
+    ensure  => present,
+    key     => 'PasswordAuthentication',
+    value   => $password_auth,
+    notify  => Service['sshd'],
+    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
+    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
+  }
+
+  sshd_config { 'PasswordAuthentication-sshd_config':
+    ensure => absent,
+    key    => 'PasswordAuthentication',
     notify => Service['sshd'],
   }
 
@@ -52,12 +113,52 @@ class profile::ssh::base {
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
     file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
-      mode   => '0700',
-      owner  => 'root',
-      group  => 'root',
-      source => 'puppet:///modules/profile/base/opensshserver-9.config',
-      notify => Service['sshd'],
+      mode    => '0600',
+      owner   => 'root',
+      group   => 'root',
+      source  => 'puppet:///modules/profile/base/opensshserver-9.config',
+      notify  => Service['sshd'],
+      require => File['/etc/ssh/sshd_config.d'],
     }
+  }
+
+  sshd_config { 'tf_sshd_AuthenticationMethods':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthenticationMethods',
+    value     => 'publickey',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+    require   => File['/etc/ssh/sshd_config.d/50-authenticationmethods.conf'],
+  }
+
+  sshd_config { 'tf_sshd_AuthorizedKeysFile':
+    ensure    => present,
+    condition => 'User tf',
+    key       => 'AuthorizedKeysFile',
+    value     => '/etc/ssh/authorized_keys.%u',
+    target    => '/etc/ssh/sshd_config.d/50-authenticationmethods.conf',
+    notify    => Service['sshd'],
+    require   => File['/etc/ssh/sshd_config.d/50-authenticationmethods.conf'],
+  }
+
+  $tf_public_key = lookup('terraform.data.tf_public_key')
+  $tags          = lookup('terraform.self.tags')
+  $puppetserver_ips = lookup('terraform.tag_ip.puppet')
+
+  if 'puppet' in $tags {
+    $tf_authorized_keys_options = 'pty'
+  } else {
+    $permitopen = $puppetserver_ips.map |$ip| { "permitopen=\"${ip}:22\"" }.join(',')
+    $tf_authorized_keys_options = "${permitopen},port-forwarding,command=\"/sbin/nologin\""
+  }
+
+  $tf_authorized_keys = "restrict,${tf_authorized_keys_options} ${tf_public_key}"
+  file { '/etc/ssh/authorized_keys.tf':
+    content => $tf_authorized_keys,
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
   }
 }
 
@@ -83,7 +184,7 @@ class profile::ssh::known_hosts {
         {
           'key' => split($v['hostkeys'][$type], /\s/)[1],
           'type' => "ssh-${type}",
-          'host_aliases' => ["${k}.${ipa_domain}", $v['local_ip'],],
+          'host_aliases' => ["${k}.${ipa_domain}"] + ( $v['local_ip'] != '' ? { true => [$v['local_ip']], false => [] }),
           'require' => File['/etc/ssh/ssh_known_hosts'],
         }
       ]

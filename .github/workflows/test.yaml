@@ -1,17 +1,22 @@
 name: Validate Puppet code
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.5'
+          ruby-version: '3.4'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Test with Rake
         run: |
           bundle exec rake test
-          local-tests/puppet-missing-files
+          local-tests/puppet-missing-files ./site
+      - name: Scan for missing variables in documentation in Puppet file modified by this PR
+        run: |
+          python3 utils/missing_docs.py $(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '.pp')
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -2,14 +2,20 @@
 lookup_options:
   profile::users::ldap::users:
     merge: 'deep'
+  profile::users::ldap::groups:
+    merge: 'deep'
   profile::users::local::users:
     merge: 'deep'
   jupyterhub::jupyterhub_config_hash:
     merge: 'deep'
   prometheus::alerts:
     merge: 'deep'
+  prometheus::extra_alert:
+    merge: 'hash'
+  profile::volumes::devices:
+    merge: 'deep'
 
-profile::base::version: 14.1.2
+profile::base::version: 15.5.0
 profile::base::packages: []
 
 motd::content: ""
@@ -28,8 +34,8 @@ epel::epel_testing_source_managed: false
 epel::epel_testing_debuginfo_managed: false
 
 fail2ban::package_name: fail2ban-server
-fail2ban::jails: ['ssh-route', 'ssh-ban-root']
-fail2ban::custom_jails:
+fail2ban::el_firewalld_conf_ensure: absent
+profile::fail2ban::jails:
   'ssh-route':
     enabled: true
     filter: 'sshd'
@@ -44,13 +50,20 @@ fail2ban::custom_jails:
     bantime: 86400
     maxretry: 0
     action: 'route'
+    filter: 'filter-ssh-root'
     logpath: '%(sshd_log)s'
-    journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
-    filter_maxlines: 10
-    filter_includes: 'before = common.conf'
-    filter_failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
 
-jupyterhub::kernel::setup: venv
+profile::fail2ban::filters:
+  filter-ssh-root:
+    Init:
+      journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+      maxlines: 10
+    INCLUDES:
+      before: 'common.conf'
+    Definition:
+      failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
+
+jupyterhub::kernel::install_method: venv
 jupyterhub::jupyterhub_config_hash:
   SlurmFormSpawner:
     ui_args:
@@ -70,7 +83,7 @@ jupyterhub::jupyterhub_config_hash:
         url: '/code-server'
       desktop:
         name: Desktop
-        url: '/Desktop'
+        url: '/desktop'
 
   SbatchForm:
     ui:
@@ -86,13 +99,6 @@ squid::extra_config_sections:
     config_entries:
       maximum_object_size: "131072 KB"
 
-swap_file::files:
-  default:
-    ensure: "present"
-    swapfile: "/mnt/swap"
-    swapfilesize: "1 GB"
-
-
 mysql::server::remove_default_accounts: true
 mysql::server::override_options:
     mysqld:
@@ -102,45 +108,96 @@ mysql::server::override_options:
 
 prometheus::alerts:
   groups:
-    - name: 'recorder.rules'
+    - name: slurm
       rules:
-      - record: slurm_job:allocated_core:count
-        expr: count(slurm_job_core_usage_total)
-      - record: slurm_job:allocated_core:count_user_account
-        expr: count(slurm_job_core_usage_total) by (user,account)
-      - record: slurm_job:used_core:sum
-        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000)
-      - record: slurm_job:used_core:sum_user_account
-        expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000) by (user,account)
-      - record: slurm_job:allocated_memory:sum
-        expr: sum(slurm_job_memory_limit{})
-      - record: slurm_job:allocated_memory:sum_user_account
-        expr: sum(slurm_job_memory_limit{}) by (user,account)
-      - record: slurm_job:rss_memory:sum
-        expr: sum(slurm_job_memory_rss)
-      - record: slurm_job:rss_memory:sum_user_account
-        expr: sum(slurm_job_memory_rss) by (user, account)
-      - record: slurm_job:max_memory:sum_user_account
-        expr: sum(slurm_job_memory_max) by (user, account)
-      - record: slurm_job:allocated_gpu:count
-        expr: count(slurm_job_utilization_gpu)
-      - record: slurm_job:allocated_gpu:count_user_account
-        expr: count(slurm_job_utilization_gpu) by (user, account)
-      - record: slurm_job:used_gpu:sum
-        expr: sum(slurm_job_utilization_gpu) / 100
-      - record: slurm_job:used_gpu:sum_user_account
-        expr: sum(slurm_job_utilization_gpu) by (user,account) / 100
-      - record: slurm_job:non_idle_gpu:sum_user_account
-        expr: count(slurm_job_utilization_gpu > 0) by (user,account)
-      - record: slurm_job:power_gpu:sum
-        expr: sum(slurm_job_power_gpu)
-      - record: slurm_job:power_gpu:sum_user_account
-        expr: sum(slurm_job_power_gpu) by (user,account)
+        - alert: Slurm-nodes-down
+          expr: slurm_nodes_down  > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: "Slurm reports down nodes"
+            description: "slurmctld on {{ $labels.instance }} reports {{ $value }} nodes in the DOWN state"
+    - name: filesystem
+      rules:
+        - record: node_fileystem_avail_ratio
+          expr: node_filesystem_avail_bytes{device=~"/dev/.*"} / node_filesystem_size_bytes{device=~"/dev/.*"}
+        - alert: Filesystem-low-on-avail-space
+          expr: node_fileystem_avail_ratio * 100 < 10.0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Instance {{ $labels.instance }}'s {{ $labels.device }} has less than 10% space available"
+            description: "{{ $labels.instance }}'s {{ $labels.device }}(mountpoint={{ $labels.mountpoint }}) has {{ printf \"%.2f\" $value }}% space available"
+        - alert: Filesystem-low-on-avail-space
+          expr: node_fileystem_avail_ratio * 100 < 5.0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Instance {{ $labels.instance }}'s {{ $labels.device }} has less than 5% space available"
+            description: "{{ $labels.instance }}'s {{ $labels.device }}(mountpoint={{ $labels.mountpoint }}) has {{ printf \"%.2f\" $value }}% space available"
+    - name: puppet
+      rules:
+        - alert: Puppet-Failure
+          expr: puppet_report_events{name="Failure"} > 0
+          for: 1m
+          labels:
+            severity: error
+          annotations:
+            summary: "Instance {{ $labels.host }} reported puppet failure"
+            description: "{{ $labels.host }} reported {{ $value }} errors"
 
-prometheus::node_exporter::version: 1.5.0
+# Prometheus record and alert rules are put in the same type of files
+# that puppet-prometheus classified as "alerts".
+prometheus::extra_alerts:
+  slurm_job:
+    groups:
+      - name: 'slurm_job_core'
+        rules:
+        - record: slurm_job:allocated_core:count
+          expr: count(slurm_job_core_usage_total)
+        - record: slurm_job:allocated_core:count_user_account
+          expr: count(slurm_job_core_usage_total) by (user,account)
+        - record: slurm_job:used_core:sum
+          expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000)
+        - record: slurm_job:used_core:sum_user_account
+          expr: sum(rate(slurm_job_core_usage_total{}[2m]) / 1000000000) by (user,account)
+      - name: 'slurm_job_memory'
+        rules:
+        - record: slurm_job:allocated_memory:sum
+          expr: sum(slurm_job_memory_limit{})
+        - record: slurm_job:allocated_memory:sum_user_account
+          expr: sum(slurm_job_memory_limit{}) by (user,account)
+        - record: slurm_job:rss_memory:sum
+          expr: sum(slurm_job_memory_rss)
+        - record: slurm_job:rss_memory:sum_user_account
+          expr: sum(slurm_job_memory_rss) by (user, account)
+        - record: slurm_job:max_memory:sum_user_account
+          expr: sum(slurm_job_memory_max) by (user, account)
+      - name: 'slurm_job_gpu'
+        rules:
+        - record: slurm_job:allocated_gpu:count
+          expr: count(slurm_job_utilization_gpu)
+        - record: slurm_job:allocated_gpu:count_user_account
+          expr: count(slurm_job_utilization_gpu) by (user, account)
+        - record: slurm_job:used_gpu:sum
+          expr: sum(slurm_job_utilization_gpu) / 100
+        - record: slurm_job:used_gpu:sum_user_account
+          expr: sum(slurm_job_utilization_gpu) by (user,account) / 100
+        - record: slurm_job:non_idle_gpu:sum_user_account
+          expr: count(slurm_job_utilization_gpu > 0) by (user,account)
+        - record: slurm_job:power_gpu:sum
+          expr: sum(slurm_job_power_gpu)
+        - record: slurm_job:power_gpu:sum_user_account
+          expr: sum(slurm_job_power_gpu) by (user,account)
+
+prometheus::node_exporter::version: 1.11.1
+prometheus::node_exporter::collectors_enable:
+  - "textfile.directory=/var/lib/node_exporter"
 prometheus::server::version: 2.39.0
 prometheus::server::scrape_configs:
-  - job_name: node
+  - job_name: exporter
     scrape_interval: 10s
     scrape_timeout: 10s
     honor_labels: true
@@ -150,41 +207,14 @@ prometheus::server::scrape_configs:
     relabel_configs:
       - source_labels:
           - __meta_consul_tags
-        regex: '.*,node-exporter,.*'
+        regex: '.*,exporter,.*'
         action: keep
       - source_labels:
           - __meta_consul_node
         target_label: instance
-  - job_name: slurm_job
-    scrape_interval: 10s
-    scrape_timeout: 10s
-    honor_labels: true
-    consul_sd_configs:
-      - server: 127.0.0.1:8500
-        token: "%{hiera('profile::consul::acl_api_token')}"
-    relabel_configs:
       - source_labels:
-          - __meta_consul_tags
-        regex: '.*,slurm-job-exporter,.*'
-        action: keep
-      - source_labels:
-          - __meta_consul_node
-        target_label: instance
-  - job_name: prometheus-slurm-exporter
-    scrape_interval: 10s
-    scrape_timeout: 10s
-    honor_labels: true
-    consul_sd_configs:
-      - server: 127.0.0.1:8500
-        token: "%{hiera('profile::consul::acl_api_token')}"
-    relabel_configs:
-      - source_labels:
-          - __meta_consul_tags
-        regex: '.*,slurm-exporter,.*'
-        action: keep
-      - source_labels:
-          - __meta_consul_node
-        target_label: instance
+          - __meta_consul_service
+        target_label: job
   - job_name: jupyterhub
     metrics_path: "/hub/metrics"
     scrape_interval: 10s
@@ -215,12 +245,20 @@ prometheus::alertmanager::receivers:
   - name: 'Admin'
     email_configs:
       - to: 'root@localhost'
+        require_tls: false
 
 prometheus::alertmanagers_config:
   - static_configs:
     - targets:
       - "%{hiera('terraform.tag_ip.mgmt.0')}:9093"
 
+prometheus::alertmanager::inhibit_rules:
+  - source_matchers: [ severity = critical ]
+    target_matchers: [ severity = warning ]
+    equal: ['instance', 'alertname']
+
+prometheus::external_url: "https://metrics.%{lookup('terraform.data.domain_name')}/"
+prometheus::alertmanager::extra_options: "--web.external-url=%{lookup('prometheus::external_url')}"
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
@@ -230,12 +268,11 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(object-.*\.cloud\.computecanada\.ca)$'
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
-  - '^(.*\.cvmfs\.eessi-infra\.org)$'
   - '^(.*s1\.eessi\.science)$'
 
+profile::cvmfs::client::disable_autofs: "%{facts.is_unprivileged_container}"
 profile::cvmfs::client::quota_limit: 4096
 profile::cvmfs::client::repositories:
-  - pilot.eessi-hpc.org
   - software.eessi.io
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
@@ -246,24 +283,31 @@ profile::cvmfs::local_user::gid: 8000131
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
-profile::freeipa::mokey::access_tags: "%{alias('profile::users::ldap::access_tags')}"
 
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
 
-profile::slurm::base::slurm_version: '24.05'
+profile::slurm::base::slurm_version: '24.11'
 profile::slurm::base::os_reserved_memory: 512
-profile::slurm::controller::autoscale_version: '0.5.1'
+profile::slurm::controller::autoscale_version: '0.10.0'
 profile::slurm::node::enable_tmpfs_mounts: true
+profile::slurm::accounting::db_users:
+  - username: "%{alias('metrix::slurm_user')}"
+    password: "%{alias('metrix::slurm_password')}"
+    privileges: ['SELECT']
+    host: '127.0.0.1'
 
 profile::accounts::project_regex: '(ctb|def|rpp|rrg)-[a-z0-9_-]*'
-profile::users::ldap::access_tags: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 profile::users::ldap::users:
   'user':
     count: "%{alias('terraform.data.nb_users')}"
     passwd: "%{alias('terraform.data.guest_passwd')}"
-    groups: ['def-sponsor00']
     manage_password: true
+
+profile::users::ldap::groups:
+  'def-sponsor00':
+    automember: true
+    hbac_rules: ['login:sshd', 'node:sshd', 'proxy:jupyterhub-login']
 
 profile::users::local::users:
   "%{alias('terraform.data.sudoer_username')}":
@@ -281,18 +325,23 @@ profile::freeipa::client::server_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
 profile::consul::servers: "%{alias('terraform.tag_ip.puppet')}"
 
 profile::nfs::domain: "%{lookup('profile::freeipa::base::ipa_domain')}"
-profile::nfs::client::server_ip: "%{alias('terraform.tag_ip.nfs.0')}"
+profile::nfs::client::server: "%{alias('terraform.tag_ip.nfs.0')}"
 profile::volumes::devices: "%{alias('terraform.self.volumes')}"
+
+profile::mail::base::origin: "%{alias('terraform.data.domain_name')}"
+profile::mail::sender::relayhosts: "%{alias('terraform.tag_ip.public')}"
 
 profile::reverse_proxy::domain_name: "%{alias('terraform.data.domain_name')}"
 profile::reverse_proxy::subdomains:
   ipa: "ipa.%{lookup('profile::freeipa::base::ipa_domain')}"
   mokey: "%{lookup('terraform.tag_ip.mgmt.0')}:%{lookup('profile::freeipa::mokey::port')}"
   jupyter: "https://127.0.0.1:8000"
+  metrix: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
 
 profile::jupyterhub::hub::register_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/signup"
 profile::jupyterhub::hub::reset_pw_url: "https://mokey.%{lookup('terraform.data.domain_name')}/auth/forgotpw"
 
+profile::gpu::restrict_profiling: false
 profile::gpu::install::passthrough::packages:
   - nvidia-driver-cuda-libs
   - nvidia-driver
@@ -303,3 +352,20 @@ profile::gpu::install::passthrough::packages:
   - nvidia-xconfig
   - nvidia-persistenced
   - nvidia-driver-cuda
+
+profile::prometheus::slurm_job_exporter::version: 0.4.12
+
+metrix::prometheus_ip: "%{alias('terraform.tag_ip.mgmt.0')}"
+metrix::ldap_password: "%{alias('profile::freeipa::server::admin_password')}"
+metrix::slurm_user: "metrix_slurm"
+metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
+metrix::prometheus_port: 9090
+metrix::db_ip: 127.0.0.1
+metrix::db_port: 3306
+metrix::install::version: 1.7.0
+metrix::slurm_db_ip: 127.0.0.1
+metrix::slurm_db_port: 3306
+metrix::subdomain: 'metrix'
+
+metrix::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
+metrix::slurm_jobscripts::token: "%{alias('metrix::root_api_token')}"

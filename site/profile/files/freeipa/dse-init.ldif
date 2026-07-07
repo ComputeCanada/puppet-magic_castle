@@ -1,0 +1,4 @@
+dn: cn=config
+changetype: modify
+replace: nsslapd-accesslog-compress
+nsslapd-accesslog-compress: on
