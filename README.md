@@ -65,6 +65,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::squid::server`](#profilesquidserver)
 - [`profile::sssd::client`](#profilesssdclient)
 - [`profile::swap`](#profileswap)
+- [`profile::tfc_agent`](#profiletfc_agent)
 - [`profile::ssh::base`](#profilesshbase)
 - [`profile::ssh::known_hosts`](#profilesshknown_hosts)
 - [`profile::ssh::hostbased_auth::client`](#profilesshhostbased_authclient)
@@ -1875,6 +1876,37 @@ profile::swap::swappiness: 10
 ```yaml
 profile::swap::size: '4 GB'
 profile::swap::swappiness: 20
+```
+</details>
+
+## `profile::tfc_agent`
+
+This class installs the Terraform Cloud Agent binary, writes its environment
+file, configures its systemd service, and enables the service.
+
+### parameters
+
+| Variable      | Description                                  | Type   |
+| :------------ | :------------------------------------------- | :----- |
+| `token`       | Terraform Cloud agent token                  | String |
+| `agent_name`  | Name assigned to the Terraform Cloud agent   | String |
+| `version`     | Terraform Cloud Agent version to install     | String |
+
+<details>
+<summary>default values</summary>
+
+```yaml
+profile::tfc_agent::version: '1.28.8'
+```
+</details>
+
+<details>
+<summary>example</summary>
+
+```yaml
+profile::tfc_agent::token: 'xxxxxxxx.atlasv1.zzzzzzzzzzzzzzzzzzzzzzzz'
+profile::tfc_agent::agent_name: 'magic-castle'
+profile::tfc_agent::version: '1.28.8'
 ```
 </details>
 
