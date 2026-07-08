@@ -14,6 +14,8 @@ lookup_options:
     merge: 'hash'
   profile::volumes::devices:
     merge: 'deep'
+  globus::client_secret:
+    convert_to: "Sensitive"
 
 profile::base::version: 15.6.0
 profile::base::packages: []
@@ -369,3 +371,9 @@ metrix::subdomain: 'metrix'
 
 metrix::slurm_jobscripts::api_url: "http://%{lookup('terraform.tag_ip.mgmt.0')}:9000"
 metrix::slurm_jobscripts::token: "%{alias('metrix::root_api_token')}"
+
+globus::display_name: "%{lookup('terraform.data.domain_name')}"
+globus::advertised_owner: false
+globus::managed_firewall: true
+globus::ip_address: "%{lookup('terraform.self.public_ip')}"
+globus::owner: "%{lookup('globus::client_id')}@clients.auth.globus.org"

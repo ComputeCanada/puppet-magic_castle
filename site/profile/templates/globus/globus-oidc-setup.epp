@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+display_name=<%= $display_name %>
+domain_name=<%= $domain_name %>
+globus-connect-server -F json oidc create --display-name "${display_name} oidc" --quickstart-server-name identity --support-contact "${display_name} admin" --support-email "admin@${domain_name}"
+globus-connect-server oidc show | tail -n+2 > /var/lib/globus-connect-server/oidc.json

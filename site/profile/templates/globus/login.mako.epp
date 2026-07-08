@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${display_name}</title>
+
+  <link rel="stylesheet" type="text/css" href="assets/styles.css">
+</head>
+
+  <body>
+    <main>
+      <h1 class="sr-only">Log In</h1>
+      <div class="form-container">
+        <div class="form-content">
+
+          <img src="https://github.com/computecanada/magic_castle/raw/assets/logo.png" class="logo" alt="Magic Castle Logo" />
+
+          <p class="help-text">Enter your credentials for ${display_name}</p>
+
+          <form action="${action}" method="POST" id="login_form">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" id="login" name="login">
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password">
+            </div>
+
+            <div id="error-message"></div>
+                <script type="text/javascript">
+                     const params = new URLSearchParams(window.location.search)
+                     if (params.has('error_message')) {
+                         const errorMessage = document.createElement("p");
+                         errorMessage.textContent = params.get('error_message');
+                         document.getElementById('error-message').appendChild(errorMessage);
+                     }
+                  </script>
+
+            <button type="submit">Log In</button>
+
+            <input id="status" name="action" value="ok" type="hidden">
+            <input id="csrf" name="csrf" value="${csrf}" type="hidden">
+            <input id="query" name="query" value="${query}" type="hidden">
+          </form>
+
+        </div><!-- EOF form-content-->
+
+        <div class="form-footer">
+          <a href="mailto:${support_email}">Login Issues? Contact Administrator</a>
+        </div>
+
+      </div> <!-- EOF form-container-->
+    </main>
+
+  </body>
+</html>
