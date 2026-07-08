@@ -119,7 +119,7 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $nvidia_driver_stream = '550-dkms'
+  String $nvidia_driver_stream = '580-dkms'
 ) {
 
   package { 'nvidia-stream':
