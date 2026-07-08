@@ -3,10 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [15.6.1] UNRELEASED
+## [15.6.1] 2026-07-08
 
 ### Changed
 - Fixed unmounting NFS and bind-mounted NFS filesystems in `prepare4image.sh` (PR #577)
+- Update version of NVidia drivers (PR #576)
 
 ## [15.6.0] 2026-07-08
 
