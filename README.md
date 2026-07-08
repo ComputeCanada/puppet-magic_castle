@@ -941,7 +941,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-driver-libs
   - nvidia-driver-NVML
   - nvidia-modprobe
-profile::gpu::install::passthrough::nvidia_driver_stream: '550-dkms'
+profile::gpu::install::passthrough::nvidia_driver_stream: '580-dkms'
 ```
 </details>
 
@@ -953,7 +953,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-driver-cuda-libs
   - nvidia-driver
   - nvidia-modprobe
-profile::gpu::install::passthrough::nvidia_driver_stream: '575-dkms'
+profile::gpu::install::passthrough::nvidia_driver_stream: '595-dkms'
 ```
 </details>
 
