@@ -21,7 +21,7 @@ rm /opt/consul/node-id /opt/consul/checkpoint-signature /opt/consul/serf/local.s
 swapoff -a
 grep -q "swap" /etc/fstab && rm -f $(grep "swap" /etc/fstab | cut -f 1)
 # Unmount filesystems
-umount -a --types cephfs,nfs4
+umount -a --types cephfs,nfs4 -i
 # for xfs, we unmount only what's in /mnt, not things like / or /boot
 grep xfs /etc/fstab | cut -f 2 | grep /mnt | xargs --no-run-if-empty umount
 grep -P '(ext4|xfs|vfat|^#|^$)' /etc/fstab | grep -v /mnt > /etc/fstab.new
