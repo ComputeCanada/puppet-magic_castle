@@ -3,6 +3,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [15.6.0] UNRELEASED
+
+### Added
+- Added support for creating Globus v5 endpoints (PR #570)
+- Added an option to enable `PreferPoweredUpNodes` in Slurm (PR #574)
+
+### Changed
+- Mounted NFS volumes under `/nfs` before creating bind mounts (PR #570)
+- Bumped puppetlabs-firewall to v8 (PR #571)
+- Bumped concurrent-ruby from 1.3.6 to 1.3.7 (PR #572)
+- Bumped puppet-fail2ban to v7.0.0 (PR #568)
+- Replaced fail2ban `custom_jails` with managed jail creation (PR #568)
+- Disabled fail2ban firewalld integration (PR #568)
+- Configured metrix to connect to the Slurm database with a dedicated user (PR #569)
+- Ensured httpd is installed and running for metrix (PR #569)
+- Disabled `require_tls` for alertmanager local email (PR #567)
+- Added support for Slurm 26.05 (PR #574)
+
+### Removed
+- Dropped support for Slurm 24.05, 24.11 (PR #574)
+
 ## [15.5.0] 2026-06-08
 
 ### Added
