@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Bumped puppetlabs-firewall to v8 (PR #571)
 - Bumped concurrent-ruby from 1.3.6 to 1.3.7 (PR #572)
 - Bumped puppet-fail2ban to v7.0.0 (PR #568)
+- Bumped treydock-globus to 12.1.0 (PR #570)
 - Replaced fail2ban `custom_jails` with managed jail creation (PR #568)
 - Configured metrix to connect to the Slurm database with a dedicated user (PR #569)
 - Ensured httpd is installed and running for metrix (PR #569)
