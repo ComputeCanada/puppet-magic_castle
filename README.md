@@ -752,7 +752,8 @@ This class installs mokey, configures its files and manage its service.
 | `password`             | Password of Mokey table in MariaDB                             | String        |
 | `port`                 | Mokey internal web server port                                 | Integer       |
 | `enable_user_signup`   | Allow users to create an account on the cluster                | Boolean       |
-| `require_verify_admin` | Require a FreeIPA to enable Mokey created account before usage | Boolean       |
+| `require_admin_verify` | Require a FreeIPA to enable Mokey created account before usage | Boolean       |
+| `version`              | Mokey version to install                                       | String       |
 
 <details>
 <summary>default values</summary>
@@ -761,7 +762,8 @@ This class installs mokey, configures its files and manage its service.
 profile::freeipa::mokey::password: ENC[PKCS7,...]
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
-profile::freeipa::mokey::require_verify_admin: true
+profile::freeipa::mokey::require_admin_verify: true
+profile::freeipa::mokey::version: "0.6.6"
 ```
 </details>
 

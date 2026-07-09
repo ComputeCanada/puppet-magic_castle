@@ -561,54 +561,29 @@ class profile::freeipa::server (
 
   if $enable_mokey {
     include profile::freeipa::mokey
+  } else {
+    package { 'mokey': 
+      ensure => 'absent',
+    }
   }
 }
 
 class profile::freeipa::mokey (
   Integer $port,
   String $password,
-  Boolean $enable_user_signup,
-  Boolean $require_verify_admin,
+  Boolean $require_admin_verify,
+  String $version = '0.6.6',
 ) {
-  include mysql::server
-
-  yumrepo { 'mokey-copr-repo':
-    enabled             => true,
-    descr               => 'Copr repo for mokey owned by cmdntrf',
-    baseurl             => "https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/epel-\$releasever-\$basearch/",
-    skip_if_unavailable => true,
-    gpgcheck            => 1,
-    gpgkey              => 'https://download.copr.fedorainfracloud.org/results/cmdntrf/mokey/pubkey.gpg',
-    repo_gpgcheck       => 0,
-  }
-
+  $arch = $::facts['os']['architecture']
   package { 'mokey':
-    ensure  => 'installed',
-    require => [
-      Yumrepo['mokey-copr-repo'],
-    ],
+    ensure   => 'latest',
+    provider => 'rpm',
+    name     => 'mokey',
+    source   => "https://github.com/ubccr/mokey/releases/download/v${$version}/mokey-${version}.${arch}.rpm",
   }
 
   $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-
-  mysql::db { 'mokey':
-    ensure   => present,
-    user     => 'mokey',
-    password => $password,
-    host     => 'localhost',
-    grant    => ['ALL'],
-  }
-
-  exec { 'mysql_mokey_schema':
-    command     => Sensitive("mysql -u mokey -p${password} mokey < /usr/share/mokey/ddl/schema.sql"),
-    refreshonly => true,
-    require     => [
-      Package['mokey'],
-    ],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => Mysql::Db['mokey'],
-  }
 
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "mokey/${fqdn}"
@@ -672,23 +647,18 @@ class profile::freeipa::mokey (
     ],
   }
 
-  file { '/etc/mokey/mokey.yaml':
+  file { '/etc/mokey/mokey.toml':
     group   => 'mokey',
     mode    => '0640',
     require => [
       Package['mokey'],
     ],
     content => epp(
-      'profile/freeipa/mokey.yaml',
+      'profile/freeipa/mokey.toml',
       {
-        'user'                 => 'mokey',
-        'password'             => $password,
-        'dbname'               => 'mokey',
-        'port'                 => $port,
-        'auth_key'             => stdlib::seeded_rand_string(64, "${password}+auth_key", 'ABCDEF0123456789'),
-        'enc_key'              => stdlib::seeded_rand_string(64, "${password}+enc_key", 'ABCEDF0123456789'),
-        'enable_user_signup'   => $enable_user_signup,
-        'require_verify_admin' => $require_verify_admin,
+        'token_secret'         => stdlib::seeded_rand_string(64, "${password}+token_secret", 'ABCDEF0123456789'),
+        'csrf_secret'          => stdlib::seeded_rand_string(32, "${password}+csrf_secret", 'ABCDEF0123456789'),
+        'require_admin_verify' => $require_verify_admin,
         'email_link_base'      => "https://mokey.${lookup('terraform.data.domain_name')}",
         'email_from'           => "admin@${lookup('terraform.data.domain_name')}",
       }
@@ -703,8 +673,7 @@ class profile::freeipa::mokey (
       Exec['ipa_getkeytab_mokeyapp'],
     ],
     subscribe => [
-      File['/etc/mokey/mokey.yaml'],
-      Mysql::Db['mokey'],
+      File['/etc/mokey/mokey.toml'],
     ],
   }
 

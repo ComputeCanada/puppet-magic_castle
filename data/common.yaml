@@ -284,7 +284,7 @@ profile::cvmfs::local_user::gid: 8000131
 
 profile::freeipa::mokey::port: 12345
 profile::freeipa::mokey::enable_user_signup: true
-profile::freeipa::mokey::require_verify_admin: true
+profile::freeipa::mokey::require_admin_verify: true
 
 profile::freeipa::server::id_start: 60001
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
