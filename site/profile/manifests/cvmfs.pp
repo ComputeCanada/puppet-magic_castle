@@ -77,11 +77,11 @@ class profile::cvmfs::client (
 
   if Boolean($disable_autofs) {
     $repositories.each|$repository| {
-      file { "/cvmfs/${repository}":
+      file { "${cvmfs_root}/${repository}":
         ensure  => directory,
         require => File[$cvmfs_root],
       }
-      -> mount { "/cvmfs/${repository}":
+      -> mount { "${cvmfs_root}/${repository}":
         ensure  => 'mounted',
         device  => $repository,
         fstype  => 'cvmfs',
@@ -90,7 +90,7 @@ class profile::cvmfs::client (
           File_line['cvmfs_default'],
         ],
       }
-      Package<| tag == profile::software_stack |> -> Mount["/cvmfs/${repository}"]
+      Package<| tag == profile::software_stack |> -> Mount["${cvmfs_root}/${repository}"]
     }
   } else {
     file { '/etc/auto.master.d/cvmfs.autofs':
