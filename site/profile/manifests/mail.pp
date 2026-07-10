@@ -37,7 +37,7 @@ class profile::mail::sender (
     relayhost        => join($relayhosts, ','),
     myorigin         => $origin,
     satellite        => true,
-    manage_mailx     => false,
+    manage_mailx     => true,
     manage_conffiles => false,
     manage_mailname  => false,
   }

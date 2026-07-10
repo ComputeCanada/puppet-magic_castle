@@ -16,6 +16,8 @@ lookup_options:
     merge: 'deep'
   globus::client_secret:
     convert_to: "Sensitive"
+  yum_cron::extra_configs:
+    merge: 'deep'
 
 profile::base::version: 15.6.0
 profile::base::packages: []
@@ -377,3 +379,21 @@ globus::advertised_owner: false
 globus::managed_firewall: true
 globus::ip_address: "%{lookup('terraform.self.public_ip')}"
 globus::owner: "%{lookup('globus::client_id')}@clients.auth.globus.org"
+
+yum_cron::apply_updates: false
+yum_cron::reboot: 'when-needed'
+yum_cron::upgrade_type: 'security'
+yum_cron::reboot_command: "shutdown -r 10:00 'Rebooting after applying package updates'"
+yum_cron::extra_configs:
+  'emitters/emit_via':
+    value: 'stdio,command_email,motd'
+  'command_email/command_format':
+    value: '"/usr/bin/mail -Ssendwait -s {subject} -r {email_from} {email_to}"'
+  'command_email/stdin_format':
+    value: '"{body}"'
+  'command_email/email_to':
+    value: "%{alias('yum_cron::mailto')}"
+  'command_email/email_from':
+    value: "yum_cron@%{lookup('terraform.data.domain_name')}"
+  'email/email_from':
+    value: "yum_cron@%{lookup('terraform.data.domain_name')}"
