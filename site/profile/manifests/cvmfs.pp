@@ -76,15 +76,23 @@ class profile::cvmfs::client (
   }
 
   if Boolean($disable_autofs) {
+    service { 'autofs':
+      ensure => stopped,
+      enable => false,
+    }
     $repositories.each|$repository| {
       file { "${cvmfs_root}/${repository}":
         ensure  => directory,
-        require => File[$cvmfs_root],
+        require => [
+          File[$cvmfs_root],
+          Service['autofs'],
+        ],
       }
       -> mount { "${cvmfs_root}/${repository}":
         ensure  => 'mounted',
         device  => $repository,
         fstype  => 'cvmfs',
+        options => 'ro,_netdev',
         require => [
           Package['cvmfs'],
           File_line['cvmfs_default'],
