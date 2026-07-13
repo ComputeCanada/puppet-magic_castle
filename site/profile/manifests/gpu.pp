@@ -129,29 +129,33 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $nvidia_driver_stream = '580-dkms'
+  String $major_version = '580'
 ) {
-
-  package { 'nvidia-stream':
-    ensure      => $nvidia_driver_stream,
-    name        => 'nvidia-driver',
-    provider    => dnfmodule,
-    enable_only => true,
-    require     => [
-      Exec['cuda-repo'],
-    ],
+  if versioncmp($facts['os']['release']['major'], '9') <= 0 {
+    package { 'nvidia-stream':
+      ensure      => "${major_version}-dkms",
+      name        => 'nvidia-driver',
+      provider    => dnfmodule,
+      enable_only => true,
+      require     => [
+        Exec['cuda-repo'],
+      ],
+    }
+    $_packages = $packages
+    Package['nvidia-stream'] -> Package[$_packages]
+  } else {
+    $_packages = $packages.map |$pkg| { "${pkg}-${major_version}*" }
   }
 
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})
   class { 'profile::gpu::config::mig':
     mig_profile => $mig_profile,
-    require     => Package[$packages],
+    require     => Package[$_packages],
   }
 
-  package { $packages:
+  package { $_packages:
     ensure  => 'installed',
     require => [
-      Package['nvidia-stream'],
       Package['kernel-devel'],
       Exec['cuda-repo'],
       Yumrepo['epel'],

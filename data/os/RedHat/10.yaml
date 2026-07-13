@@ -1,0 +1,9 @@
+profile::gpu::install::passthrough::major_version: "610"
+profile::gpu::install::passthrough::packages:
+  - nvidia-driver-cuda-libs
+  - nvidia-driver
+  - nvidia-driver-libs
+  - nvidia-modprobe
+  - nvidia-persistenced
+  - nvidia-driver-cuda
+

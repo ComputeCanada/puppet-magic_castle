@@ -1,5 +1,5 @@
 # for the default cuda/12.6, need at least 560
-profile::gpu::install::passthrough::nvidia_driver_stream: '580-dkms'
+profile::gpu::install::passthrough::major_version: '580'
 profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 
 profile::software_stack::initial_profile: "/cvmfs/soft.computecanada.ca/config/profile/bash.sh"

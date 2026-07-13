@@ -934,7 +934,7 @@ yum repositories and installs the packages required for CUDA workloads.
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
 | `packages`             | NVIDIA-related packages installed for passthrough nodes. | Array[String] |
-| `nvidia_driver_stream` | NVIDIA driver module stream enabled for passthrough installations. | String |
+| `major_version`        | Major version of NVIDIA drivers for passthrough installations. | String |
 
 <details>
 <summary>default values</summary>
@@ -946,7 +946,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-driver-libs
   - nvidia-driver-NVML
   - nvidia-modprobe
-profile::gpu::install::passthrough::nvidia_driver_stream: '580-dkms'
+profile::gpu::install::passthrough::major_version: '580'
 ```
 </details>
 
@@ -958,7 +958,7 @@ profile::gpu::install::passthrough::packages:
   - nvidia-driver-cuda-libs
   - nvidia-driver
   - nvidia-modprobe
-profile::gpu::install::passthrough::nvidia_driver_stream: '595-dkms'
+profile::gpu::install::passthrough::major_version: '590'
 ```
 </details>
 
