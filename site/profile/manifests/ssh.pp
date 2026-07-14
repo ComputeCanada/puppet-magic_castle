@@ -108,7 +108,7 @@ class profile::ssh::base (
       source => 'puppet:///modules/profile/base/opensshserver.config',
       notify => Service['sshd'],
     }
-  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
+  } elsif versioncmp($::facts['os']['release']['major'], '9') == 0 and versioncmp($::facts['os']['release']['minor'], '8') < 0 {
     # In RedHat 9, the sshd policies are defined as an include of the
     # crypto policies. Parameters defined before the include supersede
     # the crypto policy. The include is done in a file named 50-redhat.conf.
@@ -117,6 +117,19 @@ class profile::ssh::base (
       owner   => 'root',
       group   => 'root',
       source  => 'puppet:///modules/profile/base/opensshserver-9.config',
+      notify  => Service['sshd'],
+      require => File['/etc/ssh/sshd_config.d'],
+    }
+  } elsif versioncmp($::facts['os']['release']['major'], '9') == 0 and versioncmp($::facts['os']['release']['minor'], '8') >= 0 {
+    # In RedHat 9, the sshd policies are defined as an include of the
+    # crypto policies. Parameters defined before the include supersede
+    # the crypto policy. The include is done in a file named 50-redhat.conf.
+    # RedHat 9.8 introduces support for Post-quantum Kex algorithms
+    file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
+      mode    => '0600',
+      owner   => 'root',
+      group   => 'root',
+      source  => 'puppet:///modules/profile/base/opensshserver-9.8.config',
       notify  => Service['sshd'],
       require => File['/etc/ssh/sshd_config.d'],
     }
