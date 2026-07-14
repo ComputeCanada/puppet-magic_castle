@@ -22,7 +22,8 @@ class profile::gpu::install (
   stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
   stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
   stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
-  $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
+  $nvidia_kmod = ['nvidia', 'nvidia_uvm']
+  $nvidia_kmod_false  = ['nvidia_drm', 'nvidia_modeset']
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
@@ -90,6 +91,8 @@ class profile::gpu::install (
       ],
     }
   }
+
+  kmod::install { $nvidia_kmod_false: command => '/bin/false' }
 
   if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
@@ -171,6 +174,7 @@ class profile::gpu::install::passthrough (
       'rm ExecStart/arguments',
     ],
   }
+  Kmod::Install <||> -> Package[$_packages]
 }
 
 class profile::gpu::config::mig (
