@@ -73,6 +73,7 @@ The `profile::` sections list the available classes, their role and their parame
 - [`profile::users::ldap`](#profileusersldap)
 - [`profile::users::local`](#profileuserslocal)
 - [`profile::volumes`](#profilevolumes)
+- [`yum_cron`](#yum_cron)
 
 For classes with parameters, a folded **default values** subsection provides the default
 value of each parameter as it would be defined in hieradata. For some parameters, the value is
@@ -2213,3 +2214,45 @@ profile::volumes::devices:
 ```
 
 </details>
+
+## `yum_cron`
+The package [yum_cron](https://forge.puppet.com/modules/treydock/yum_cron/readme) is installed on all instances by
+default. It allows for automatic upgrades. By default, it is configured such as
+```yaml
+yum_cron::apply_updates: false
+yum_cron::reboot: 'when-needed'
+yum_cron::upgrade_type: 'security'
+yum_cron::reboot_command: "shutdown -r 10:00 'Rebooting after applying package updates'"
+yum_cron::extra_configs:
+  'emitters/emit_via':
+    value: 'stdio,command_email,motd'
+  'command_email/command_format':
+    value: '"/usr/bin/mail -Ssendwait -s {subject} -r {email_from} {email_to}"'
+  'command_email/stdin_format':
+    value: '"{body}"'
+  'command_email/email_to':
+    value: "%{alias('yum_cron::mailto')}"
+  'command_email/email_from':
+    value: "yum_cron@%{lookup('terraform.data.domain_name')}"
+  'email/email_from':
+    value: "yum_cron@%{lookup('terraform.data.domain_name')}"
+```
+
+This means that automatic updates are disabled, but can be enabled simply by configuring:
+```yaml
+yum_cron::apply_updates: true
+yum_cron::mailto: 'some@email.address'
+```
+
+If you do not want to have emails sent, you may configure
+```yaml
+yum_cron::extra_configs:
+  'emitters/emit_via':
+    value: 'stdio,motd'
+```
+
+You may want to tweak `yum_cron::reboot`, `yum_cron::upgrade_type` and `yum_cron::reboot_command` according to your needs.
+Refer to the [yum_cron documentation](https://forge.puppet.com/modules/treydock/yum_cron/readme) for more details.
+
+It may also be useful to configure different behavior for different instances. To do so, configure different hieraadta for
+each prefix or hostname, as documented in the [Magic Castle documentation](https://github.com/ComputeCanada/magic_castle/tree/main/docs#414-hieradata_dir-optional).
