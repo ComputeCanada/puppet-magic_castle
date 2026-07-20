@@ -366,7 +366,6 @@ metrix::cluster_name: "%{alias('profile::slurm::base::cluster_name')}"
 metrix::prometheus_port: 9090
 metrix::db_ip: 127.0.0.1
 metrix::db_port: 3306
-metrix::install::version: 1.7.0
 metrix::slurm_db_ip: 127.0.0.1
 metrix::slurm_db_port: 3306
 metrix::subdomain: 'metrix'
