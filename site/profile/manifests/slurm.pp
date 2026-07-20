@@ -7,7 +7,7 @@
 # @param slurm_version Specifies which version of Slurm to install
 # @param os_reserved_memory Specifies the amount of memory reserved for the operating system in compute node
 class profile::slurm::base (
-  String $cluster_name,
+  String[1, 40] $cluster_name,
   String $munge_key,
   Enum['25.05', '25.11', '26.05'] $slurm_version,
   Integer $os_reserved_memory,
@@ -20,6 +20,7 @@ class profile::slurm::base (
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
   Boolean $prefer_powered_up = true,
+  Enum['running', 'stopped'] $ensure_munge = 'running',
 ) {
   include epel
   include profile::base::powertools
@@ -76,7 +77,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectory=munge',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file_line { 'munge_runtimedirectorymode':
@@ -85,7 +85,6 @@ class profile::slurm::base (
     line    => 'RuntimeDirectoryMode=0755',
     after   => 'Group=munge',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   # Fix a warning in systemctl status munge about the location of the PID file.
@@ -94,7 +93,6 @@ class profile::slurm::base (
     match   => '^PIDFile=',
     line    => 'PIDFile=/run/munge/munged.pid',
     require => Package['munge'],
-    notify  => Service['munge'],
   }
 
   file { '/var/log/slurm':
@@ -162,13 +160,27 @@ class profile::slurm::base (
     mode    => '0400',
     content => $munge_key,
     before  => Service['munge'],
+    require => File['/etc/munge'],
   }
 
   service { 'munge':
-    ensure    => 'running',
-    enable    => true,
-    subscribe => File['/etc/munge/munge.key'],
+    ensure    => $ensure_munge,
+    enable    => $ensure_munge == 'running',
+    subscribe => [
+      File['/etc/munge/munge.key'],
+      File_line['munge_runtimedirectory'],
+      File_line['munge_runtimedirectorymode'],
+      File_line['munge_pidfile'],
+    ],
     require   => Package['munge'],
+  }
+
+  file { '/var/log/munge/munged.log':
+    ensure  => file,
+    owner   => 'munge',
+    group   => 'munge',
+    mode    => '0640',
+    require => Package['munge'],
   }
 
   $yumrepo_prefix = "https://download.copr.fedorainfracloud.org/results/cmdntrf/Slurm${slurm_version}/"
@@ -218,8 +230,8 @@ class profile::slurm::base (
   }
 
   $instances = lookup('terraform.instances')
-  $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] }
-  $suspend_exc_nodes = keys($nodes.filter|$key, $attr| { !( 'pool' in $attr['tags'] ) })
+  $nodes = $instances.filter|$key, $attr| { 'node' in $attr['tags'] and !('image' in $attr['tags']) }
+  $suspend_exc_nodes = keys($nodes.filter|$key, $attr| { !('pool' in $attr['tags']) })
   $partition_names = unique($nodes.map |$key, $attr| { $attr['prefix'] })
   $partitions = Hash($partition_names.map | $name | { [$name, { 'nodes' => keys($nodes.filter|$key, $attr | { $name == $attr['prefix'] }) }] })
   file { '/etc/slurm/slurm.conf':
@@ -489,34 +501,37 @@ class profile::slurm::controller (
     }),
   }
 
-  $slurm_autoscale_cmd_epp = @(EOT)
-    #!/bin/bash
-    {
-      source /etc/slurm/env.secrets
-      export PATH=$PATH:/opt/software/slurm/bin
-      <%= $autoscale_env_prefix %>/bin/<%= $command %> $@
-    } &>> /var/log/slurm/slurm_autoscale.log
-    |EOT
-
   file { '/usr/bin/slurm_resume':
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => inline_epp($slurm_autoscale_cmd_epp, { 'autoscale_env_prefix' => $autoscale_env_prefix, 'command' => 'slurm_resume' }),
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_resume',
+      }
+    ),
   }
 
   file { '/usr/bin/slurm_resume_fail':
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => inline_epp($slurm_autoscale_cmd_epp, { 'autoscale_env_prefix' => $autoscale_env_prefix, 'command' => 'slurm_resume_fail' }),
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_resume_fail',
+      }
+    ),
   }
 
   file { '/usr/bin/slurm_suspend':
     ensure  => 'file',
     mode    => '0755',
     seltype => 'bin_t',
-    content => inline_epp($slurm_autoscale_cmd_epp, { 'autoscale_env_prefix' => $autoscale_env_prefix, 'command' => 'slurm_suspend' }),
+    content => epp('profile/slurm/slurm_autoscale', {
+        'prefix' => $autoscale_env_prefix,
+        'cmd'    => 'slurm_suspend',
+      }
+    ),
   }
 
   file { '/etc/slurm/job_submit.lua':
@@ -575,6 +590,7 @@ class profile::slurm::controller (
 
 # Slurm node class. This is where slurmd is ran.
 class profile::slurm::node (
+  Enum['running', 'stopped'] $ensure_slurmd = 'running',
   Boolean $enable_tmpfs_mounts = true,
   Array[String] $pam_access_groups = ['wheel'],
 ) {
@@ -617,23 +633,23 @@ class profile::slurm::node (
     content => $plugstack,
   }
 
-  pam { 'Add pam_slurm_adopt':
-    ensure   => present,
-    service  => 'sshd',
-    type     => 'account',
-    control  => 'sufficient',
-    module   => 'pam_slurm_adopt.so',
-    position => 'after module password-auth',
-  }
-
   pam { 'Add pam_access':
     ensure   => present,
     service  => 'sshd',
     type     => 'account',
-    control  => 'required',
+    control  => 'sufficient',
     module   => 'pam_access.so',
-    position => 'after module pam_slurm_adopt.so',
-    require  => Pam['Add pam_slurm_adopt'],
+    position => 'after module password-auth',
+  }
+
+  pam { 'Add pam_slurm_adopt':
+    ensure   => present,
+    service  => 'sshd',
+    type     => 'account',
+    control  => 'required',
+    module   => 'pam_slurm_adopt.so',
+    position => 'after module pam_access.so',
+    require  => Pam['Add pam_access'],
   }
 
   $access_conf = @(END)
@@ -778,7 +794,7 @@ class profile::slurm::node (
   }
 
   service { 'slurmd':
-    ensure    => 'running',
+    ensure    => $ensure_slurmd,
     enable    => false,
     subscribe => [
       File['/etc/slurm/cgroup.conf'],
@@ -800,11 +816,13 @@ class profile::slurm::node (
   # and if it is the case, it restarts slurmd so the state in
   # in slurmctld can be properly refreshed.
   $hostname = $facts['networking']['hostname']
-  exec { 'slurmd_state_invalid_restart':
-    command => 'systemctl restart slurmd',
-    onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
-    path    => ['/usr/bin', '/opt/software/slurm/bin'],
-    require => Service['slurmd'],
+  if $ensure_slurmd == 'running' {
+    exec { 'slurmd_state_invalid_restart':
+      command => 'systemctl restart slurmd',
+      onlyif  => "test $(sinfo -h --states=no_respond,powered_down -o %n -n ${hostname} | wc -l) -eq 1",
+      path    => ['/usr/bin', '/opt/software/slurm/bin'],
+      require => Service['slurmd'],
+    }
   }
 
   logrotate::rule { 'slurmd':
