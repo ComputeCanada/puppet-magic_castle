@@ -896,6 +896,7 @@ driver libraries when applications expect them in a specific path.
 | Variable               | Description                                                    | Type          |
 | :--------------------- | :------------------------------------------------------------- | :------------ |
 | `dcgm_packages`        | DCGM packages installed from the NVIDIA CUDA repository. These packages provide the NVIDIA Data Center GPU Manager service used for GPU metrics collection, for example by `slurm-job-exporter`. Set to an empty list to skip DCGM package installation. | Array[String] |
+| `load_modules`         | Load NVIDIA kernel modules and start NVIDIA services. Defaults to true when an NVIDIA GPU is detected. Set to false when building images without GPU access. | Boolean |
 | `lib_symlink_path`     | Path where symlinks to installed NVIDIA shared libraries are created. Useful when applications expect the driver libraries in a non-standard location. | Optional[String] |
 
 <details>
@@ -905,6 +906,7 @@ profile::gpu::install::dcgm_packages:
   - datacenter-gpu-manager-4-proprietary
   - datacenter-gpu-manager-4-core
   - datacenter-gpu-manager-4-cuda12
+profile::gpu::install::load_modules: true
 profile::gpu::install::lib_symlink_path: ~
 ```
 </details>
@@ -916,6 +918,7 @@ profile::gpu::install::lib_symlink_path: ~
 profile::gpu::install::dcgm_packages:
   - datacenter-gpu-manager-4-proprietary
   - datacenter-gpu-manager-4-core
+profile::gpu::install::load_modules: false
 profile::gpu::install::lib_symlink_path: '/usr/lib64/nvidia'
 ```
 </details>
