@@ -22,8 +22,8 @@ JobAcctGatherParams=NoOverMemoryKill
 
 # MANAGEMENT POLICIES
 ClusterName=<%= $cluster_name %>
-AuthType=auth/munge
-CryptoType=crypto/munge
+AuthType=auth/slurm
+CredType=cred/slurm
 SlurmUser=slurm
 # SCHEDULER CONFIGURATIONS
 SchedulerType=sched/backfill
