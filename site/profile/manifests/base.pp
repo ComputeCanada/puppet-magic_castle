@@ -62,7 +62,12 @@ class profile::base (
     ensure => 'absent',
   }
 
-  class { 'firewall':
+  package { 'kernel-modules-extra':
+    ensure => 'installed',
+    tag    => 'mc_bootstrap',
+  }
+
+  -> class { 'firewall':
     tag => 'mc_bootstrap',
   }
 
