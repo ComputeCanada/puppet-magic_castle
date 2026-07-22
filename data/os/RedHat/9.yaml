@@ -1,2 +1,3 @@
 ---
 os::redhat::python3::version: 3.9
+profile::ceph::release: "reef"

@@ -7,3 +7,4 @@ profile::gpu::install::passthrough::packages:
   - nvidia-persistenced
   - nvidia-driver-cuda
 
+profile::ceph::release: "umbrella"
