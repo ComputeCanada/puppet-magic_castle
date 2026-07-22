@@ -1,6 +1,41 @@
 class profile::ssh::base (
   Boolean $disable_passwd_auth = false,
 ) {
+  $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
+  $ciphers = [
+    'chacha20-poly1305@openssh.com',
+    'aes256-gcm@openssh.com',
+    'aes128-gcm@openssh.com',
+    'aes256-ctr',
+    'aes192-ctr',
+    'aes128-ctr',
+  ]
+  $macs = [
+    'hmac-sha2-256-etm@openssh.com',
+    'hmac-sha2-512-etm@openssh.com',
+    'umac-128-etm@openssh.com',
+  ]
+  $gssapikexalgorithms = ['gss-curve25519-sha256-']
+  $kexalgorithms = [
+    'curve25519-sha256',
+    'curve25519-sha256@libssh.org',
+    'diffie-hellman-group16-sha512',
+    'diffie-hellman-group18-sha512',
+    'diffie-hellman-group-exchange-sha256',
+  ]
+  $hostkeyalgorithms = [
+    'ssh-ed25519',
+    'ssh-ed25519-cert-v01@openssh.com',
+    'rsa-sha2-256',
+    'rsa-sha2-512',
+  ]
+  $pubkeyacceptedkeytypes = [
+    'ssh-ed25519',
+    'ssh-ed25519-cert-v01@openssh.com',
+    'rsa-sha2-256',
+    'rsa-sha2-512',
+  ]
+
   service { 'sshd':
     ensure => running,
     enable => true,
@@ -15,10 +50,22 @@ class profile::ssh::base (
 
   file { '/etc/ssh/sshd_config.d/01-puppet.conf':
     ensure  => file,
+    content => epp('profile/ssh/01-puppet.conf',
+      {
+        'password_auth'          => $password_auth,
+        'ciphers'                => $ciphers,
+        'macs'                   => $macs,
+        'gssapikexalgorithms'    => $gssapikexalgorithms,
+        'kexalgorithms'          => $kexalgorithms,
+        'hostkeyalgorithms'      => $hostkeyalgorithms,
+        'pubkeyacceptedkeytypes' => $pubkeyacceptedkeytypes,
+      }
+    ),
     owner   => 'root',
     group   => 'root',
     mode    => '0600',
     require => File['/etc/ssh/sshd_config.d'],
+    notify  => Service['sshd'],
   }
 
   file { '/etc/ssh/sshd_config.d/50-authenticationmethods.conf':
@@ -40,29 +87,10 @@ class profile::ssh::base (
     notify => Service['sshd'],
   }
 
-  sshd_config { 'PermitRootLogin-01-puppet':
-    ensure  => present,
-    key     => 'PermitRootLogin',
-    value   => 'no',
-    notify  => Service['sshd'],
-    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
-    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
-  }
-
   sshd_config { 'PermitRootLogin-sshd_config':
     ensure => absent,
     key    => 'PermitRootLogin',
     notify => Service['sshd'],
-  }
-
-  $password_auth = $disable_passwd_auth ? { true => 'no', false => 'yes' }
-  sshd_config { 'PasswordAuthentication-01-puppet':
-    ensure  => present,
-    key     => 'PasswordAuthentication',
-    value   => $password_auth,
-    notify  => Service['sshd'],
-    target  => '/etc/ssh/sshd_config.d/01-puppet.conf',
-    require => File['/etc/ssh/sshd_config.d/01-puppet.conf'],
   }
 
   sshd_config { 'PasswordAuthentication-sshd_config':
@@ -93,33 +121,6 @@ class profile::ssh::base (
     mode  => '0644',
     owner => 'root',
     group => 'root',
-  }
-
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    # sshd hardening in RedHat 8 requires fidgetting with crypto-policies
-    # instead of modifying /etc/ssh/sshd_config
-    # https://sshaudit.com/hardening_guides.html#rhel8
-    # We replace the file in /usr/share/crypto-policies instead of
-    # /etc/crypto-policies as suggested by sshaudit.com, because the script
-    # update-crypto-policies can be called by RPM scripts and overwrites the
-    # config in /etc by what's in /usr/share. The files in /etc/crypto-policies
-    # are in just symlinks to /usr/share
-    file { '/usr/share/crypto-policies/DEFAULT/opensshserver.txt':
-      source => 'puppet:///modules/profile/base/opensshserver.config',
-      notify => Service['sshd'],
-    }
-  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
-    # In RedHat 9, the sshd policies are defined as an include of the
-    # crypto policies. Parameters defined before the include supersede
-    # the crypto policy. The include is done in a file named 50-redhat.conf.
-    file { '/etc/ssh/sshd_config.d/49-magic_castle.conf':
-      mode    => '0600',
-      owner   => 'root',
-      group   => 'root',
-      source  => 'puppet:///modules/profile/base/opensshserver-9.config',
-      notify  => Service['sshd'],
-      require => File['/etc/ssh/sshd_config.d'],
-    }
   }
 
   sshd_config { 'tf_sshd_AuthenticationMethods':
