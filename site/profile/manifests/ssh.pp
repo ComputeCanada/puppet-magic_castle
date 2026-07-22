@@ -16,13 +16,22 @@ class profile::ssh::base (
     'umac-128-etm@openssh.com',
   ]
   $gssapikexalgorithms = ['gss-curve25519-sha256-']
-  $kexalgorithms = [
+  $kexalgorithms_prequantum = [
     'curve25519-sha256',
     'curve25519-sha256@libssh.org',
     'diffie-hellman-group16-sha512',
     'diffie-hellman-group18-sha512',
     'diffie-hellman-group-exchange-sha256',
   ]
+  $kexlagorithms_postquantum = [
+    'mlkem768x25519-sha256',
+    'sntrup761x25519-sha512',
+  ]
+  $kexalgorithms = (
+    $kexalgorithms_prequantum + (
+      versioncmp(pick($facts['openssh_server_version'], '8.7'), '9.9') >= 0 ? { true => $kexlagorithms_postquantum, false => [] }
+    )
+  )
   $hostkeyalgorithms = [
     'ssh-ed25519',
     'ssh-ed25519-cert-v01@openssh.com',
@@ -59,7 +68,7 @@ class profile::ssh::base (
         'kexalgorithms'          => $kexalgorithms,
         'hostkeyalgorithms'      => $hostkeyalgorithms,
         'pubkeyacceptedkeytypes' => $pubkeyacceptedkeytypes,
-      }
+      },
     ),
     owner   => 'root',
     group   => 'root',
