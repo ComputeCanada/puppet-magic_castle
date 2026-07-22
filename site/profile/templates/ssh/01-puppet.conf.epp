@@ -1,0 +1,9 @@
+PermitRootLogin no
+PasswordAuthentication <%= $password_auth %>
+
+Ciphers <%= $ciphers.join(',') %>
+MACs <%= $macs.join(',') %>
+GSSAPIKexAlgorithms <%= $gssapikexalgorithms.join(',') %>
+KexAlgorithms <%= $kexalgorithms.join(',') %>
+HostKeyAlgorithms <%= $hostkeyalgorithms.join(',') %>
+PubkeyAcceptedKeyTypes <%= $pubkeyacceptedkeytypes.join(',') %>

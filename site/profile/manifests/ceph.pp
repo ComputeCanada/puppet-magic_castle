@@ -36,7 +36,7 @@ class profile::ceph::client (
 }
 
 class profile::ceph::client::install (
-  String $release = 'reef',
+  String $release,
   Optional[String] $version = undef,
 ) {
   include epel

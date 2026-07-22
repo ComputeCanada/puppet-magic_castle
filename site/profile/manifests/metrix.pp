@@ -4,11 +4,13 @@ class profile::metrix (
   include mysql::server
   stdlib::ensure_packages(['httpd'], { ensure => 'installed' })
 
-  package { 'mariadb':
-    ensure      => '10.11',
-    provider    => 'dnfmodule',
-    enable_only => true,
-    before      => Package['mysql-server'],
+  if versioncmp($facts['os']['release']['major'], '9') == 0 {
+    package { 'mariadb':
+      ensure      => '10.11',
+      provider    => 'dnfmodule',
+      enable_only => true,
+      before      => Package['mysql-server'],
+    }
   }
 
   $instances = lookup('terraform.instances')

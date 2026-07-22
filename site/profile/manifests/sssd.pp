@@ -68,11 +68,19 @@ EOT
     $augeas_domains = ''
   }
 
+  if versioncmp($facts['os']['release']['major'], '10') >= 0 {
+    $sssd_conf_group = 'sssd'
+    $sssd_conf_mode  = '0640'
+  } else {
+    $sssd_conf_group = 'root'
+    $sssd_conf_mode  = '0600'
+  }
+
   file { '/etc/sssd/sssd.conf':
     ensure => 'file',
     owner  => 'root',
-    group  => 'root',
-    mode   => '0600',
+    group  => $sssd_conf_group,
+    mode   => $sssd_conf_mode,
     notify => Service['sssd'],
   }
 

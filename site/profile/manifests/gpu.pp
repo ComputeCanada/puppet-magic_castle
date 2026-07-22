@@ -22,7 +22,8 @@ class profile::gpu::install (
   stdlib::ensure_packages(['kernel-devel'], { 'name' => "kernel-devel-${facts['kernelrelease']}" })
   stdlib::ensure_packages(['kernel-headers'], { 'name' => "kernel-headers-${facts['kernelrelease']}" })
   stdlib::ensure_packages(['dkms'], { 'require' => [Package['kernel-devel'], Yumrepo['epel']] })
-  $nvidia_kmod = ['nvidia', 'nvidia_modeset', 'nvidia_drm', 'nvidia_uvm']
+  $nvidia_kmod = ['nvidia', 'nvidia_uvm']
+  $nvidia_kmod_false  = ['nvidia_drm', 'nvidia_modeset']
 
   selinux::module { 'nvidia-gpu':
     ensure    => 'present',
@@ -91,6 +92,8 @@ class profile::gpu::install (
     }
   }
 
+  kmod::install { $nvidia_kmod_false: command => '/bin/false' }
+
   if $lib_symlink_path and $installer == 'rpm' {
     $lib_symlink_path_split = split($lib_symlink_path, '/')
     $lib_symlink_dir = Hash(
@@ -129,29 +132,33 @@ class profile::gpu::install (
 
 class profile::gpu::install::passthrough (
   Array[String] $packages,
-  String $nvidia_driver_stream = '580-dkms'
+  String $major_version = '580'
 ) {
-
-  package { 'nvidia-stream':
-    ensure      => $nvidia_driver_stream,
-    name        => 'nvidia-driver',
-    provider    => dnfmodule,
-    enable_only => true,
-    require     => [
-      Exec['cuda-repo'],
-    ],
+  if versioncmp($facts['os']['release']['major'], '9') <= 0 {
+    package { 'nvidia-stream':
+      ensure      => "${major_version}-dkms",
+      name        => 'nvidia-driver',
+      provider    => dnfmodule,
+      enable_only => true,
+      require     => [
+        Exec['cuda-repo'],
+      ],
+    }
+    $_packages = $packages
+    Package['nvidia-stream'] -> Package[$_packages]
+  } else {
+    $_packages = $packages.map |$pkg| { "${pkg}-${major_version}*" }
   }
 
   $mig_profile = lookup("terraform.instances.${facts['networking']['hostname']}.specs.mig", Variant[Undef, Hash[String, Integer]], undef, {})
   class { 'profile::gpu::config::mig':
     mig_profile => $mig_profile,
-    require     => Package[$packages],
+    require     => Package[$_packages],
   }
 
-  package { $packages:
+  package { $_packages:
     ensure  => 'installed',
     require => [
-      Package['nvidia-stream'],
       Package['kernel-devel'],
       Exec['cuda-repo'],
       Yumrepo['epel'],
@@ -167,6 +174,7 @@ class profile::gpu::install::passthrough (
       'rm ExecStart/arguments',
     ],
   }
+  Kmod::Install <||> -> Package[$_packages]
 }
 
 class profile::gpu::config::mig (
