@@ -103,21 +103,6 @@ class profile::base (
     require => Yumrepo['epel'],
   }
 
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    # haveged service is no longer required for kernel >= 5.4
-    # RHEL 8 is the last release with a kernel < 5
-    package { 'haveged':
-      ensure  => 'installed',
-      require => Yumrepo['epel'],
-    }
-
-    service { 'haveged':
-      ensure  => running,
-      enable  => true,
-      require => Package['haveged'],
-    }
-  }
-
   stdlib::ensure_packages($packages, { ensure => 'installed', require => Yumrepo['epel'] })
 
   if $::facts.dig('cloud', 'provider') == 'azure' {
@@ -179,11 +164,7 @@ class profile::base::etc_hosts {
 }
 
 class profile::base::powertools {
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    $repo_name = 'powertools'
-  } else {
-    $repo_name = 'crb'
-  }
+  $repo_name = 'crb'
   package { 'dnf-plugins-core': }
   exec { 'enable_powertools':
     command => "dnf config-manager --set-enabled ${$repo_name}",

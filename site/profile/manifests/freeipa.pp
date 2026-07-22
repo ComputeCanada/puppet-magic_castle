@@ -10,14 +10,6 @@ class profile::freeipa {
 }
 
 class profile::freeipa::base (Stdlib::Fqdn $ipa_domain) {
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    exec { 'enable_idm:DL1':
-      command => 'yum module enable -y idm:DL1',
-      creates => '/etc/dnf/modules.d/idm.module',
-      path    => ['/usr/bin', '/usr/sbin'],
-    }
-  }
-
   package { 'systemd':
     ensure => present,
   }
@@ -271,37 +263,9 @@ class profile::freeipa::server (
     ensure => 'installed',
   }
 
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    Exec['enable_idm:DL1'] -> Package['ipa-server-dns']
-  }
-
   file { '/etc/ipa/dse-init.ldif':
     source  => 'puppet:///modules/profile/freeipa/dse-init.ldif',
     require => File['/etc/ipa'],
-  }
-
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    # Fix FreeIPA issue adding 2 minutes of wait time for nothing
-    # https://pagure.io/freeipa/issue/9358
-    # TODO: remove this patch once FreeIPA >= 4.10 is made available
-    # in RHEL 8.
-    stdlib::ensure_packages(['patch'], { ensure => 'present' })
-    $python_version = lookup('os::redhat::python3::version')
-    file { 'freeipa_27e9181bdc.patch':
-      path   => "/usr/lib/python${python_version}/site-packages/freeipa_27e9181bdc.patch",
-      source => 'puppet:///modules/profile/freeipa/27e9181bdc684915a7f9f15631f4c3dd6ac5f884.patch',
-    }
-    exec { 'patch -p1 -r - --forward --quiet < freeipa_27e9181bdc.patch':
-      cwd         => "/usr/lib/python${python_version}/site-packages",
-      path        => ['/usr/bin', '/bin'],
-      subscribe   => [
-        File['freeipa_27e9181bdc.patch'],
-        Package['ipa-server-dns'],
-      ],
-      refreshonly => true,
-      before      => Exec['ipa-install'],
-      returns     => [0, 1],
-    }
   }
 
   $realm = upcase($ipa_domain)
@@ -463,12 +427,7 @@ class profile::freeipa::server (
     require => Exec['ipa-install'],
   }
 
-  if versioncmp($::facts['os']['release']['major'], '8') == 0 {
-    $named_service = 'named-pkcs11'
-  } elsif versioncmp($::facts['os']['release']['major'], '9') >= 0 {
-    $named_service = 'named'
-  }
-
+  $named_service = 'named'
   $ipa_services = [
     "dirsrv@${ds_domain}",
     'krb5kdc',
