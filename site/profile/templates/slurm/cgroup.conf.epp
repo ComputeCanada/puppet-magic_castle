@@ -8,3 +8,6 @@ AllowedSwapSpace=0
 MaxRAMPercent=100
 MaxSwapPercent=100
 MinRAMSpace=30
+<% if versioncmp($slurm_version, '26.05') >= 0 { -%>
+CgroupJobIdPaths=yes
+<% } -%>
