@@ -185,6 +185,7 @@ class profile::freeipa::client::install {
       Service['sssd'],
     ],
   }
+  Exec['ipa-install'] -> Nfs::Client::Mount <| |>
 
   file_line { 'ssh_known_hosts':
     ensure    => present,
