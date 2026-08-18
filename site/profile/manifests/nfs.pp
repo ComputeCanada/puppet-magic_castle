@@ -87,14 +87,18 @@ class profile::nfs::client (
     if ! $self_volumes.any |$tag, $volume_hash| { $share_name in $volume_hash } {
       ensure_resource('file', "/${share_name}", { 'ensure' => 'directory' })
       mount { "/${share_name}":
-        ensure  => mounted,
+        ensure  => present,
         device  => $mount_point,
         fstype  => none,
         options => 'bind,x-systemd.automount',
         require => [
           File["/${share_name}"],
           Nfs::Client::Mount[$mount_point],
-        ]
+        ],
+        notify  => Systemd::Daemon_reload['nfs-client'],
+      }
+      -> service { "${share_name}.automount":
+        ensure => running,
       }
     }
   }
