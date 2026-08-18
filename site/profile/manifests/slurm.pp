@@ -20,7 +20,6 @@ class profile::slurm::base (
   String  $config_addendum = '',
   Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug2', 'debug3', 'debug4', 'debug5'] $log_level = 'info',
   Boolean $prefer_powered_up = true,
-  Enum['running', 'stopped'] $ensure_munge = 'running',
 ) {
   include epel
   include profile::base::powertools
