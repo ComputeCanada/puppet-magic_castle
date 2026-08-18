@@ -616,24 +616,52 @@ parameters to configure.
 ```yaml
 profile::fail2ban::ignoreip: []
 profile::fail2ban::jails:
-  ssh-ban-root:
+  'ssh-route':
+    enabled: true
+    filter: 'sshd'
+    findtime: 3600
+    bantime: 86400
+    maxretry: 20
+    action: 'route'
+    logpath: '%(sshd_log)s'
+  'ssh-ban-root':
     enabled: true
     findtime: 3600
     bantime: 86400
     maxretry: 0
-    action: route
-    filter: ssh-ban-root
+    action: 'route'
+    filter: 'filter-ssh-root'
+    logpath: '%(sshd_log)s'
+  'ssh-invalid-user':
+    enabled: true
+    findtime: 10800
+    bantime: 86400
+    maxretry: 5
+    action: 'route'
+    filter: 'filter-invalid-user'
     logpath: '%(sshd_log)s'
 
 profile::fail2ban::filters:
-  ssh-ban-root:
+  filter-ssh-root:
     Init:
       journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
       maxlines: 10
     INCLUDES:
-      before: common.conf
+      before: 'common.conf'
     Definition:
-      failregex: '^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$'
+      failregex: |
+        ^%(__prefix_line)spam_unix\(sshd:auth\):\s+authentication failure;\s*logname=\S*\s*uid=\d*\s*euid=\d*\s*tty=\S*\s*ruser=\S*\s*rhost=<HOST>\S*\s*user=(root|admin)\s.*$
+                    ^%(__prefix_line)sDisconnected from authenticating user (root|admin) <HOST> port \d+ \[preauth\]$
+                    ^%(__prefix_line)sConnection closed by authenticating user (root|admin) <HOST> port \d+ \[preauth\]$
+                    ^%(__prefix_line)sConnection reset by authenticating user (root|admin) <HOST> port \d+ \[preauth\]$
+  filter-invalid-user:
+    Init:
+      journalmatch: '_SYSTEMD_UNIT=sshd.service + _COMM=sshd'
+      maxlines: 10
+    INCLUDES:
+      before: 'common.conf'
+    Definition:
+      failregex: ^%(__prefix_line)sInvalid user \S* from <HOST> port \d+$
 
 profile::fail2ban::actions: {}
 ```
