@@ -1594,7 +1594,6 @@ to all Slurm's roles.
 | `config_addendum`       | Additional parameters included at the end of slurm.conf.  | String |
 | `log_level`             | Log level of all Slurm daemon  | Enum['quiet', 'fatal', 'error', 'info', 'verbose', 'debug', 'debug[2-5]'] |
 | `prefer_powered_up`     | Enable preference for powered up nodes when scheduling oversubscribed CPU jobs | Boolean |
-| `ensure_munge`          | Desired state of the `munge` service (`running` or `stopped`) | Enum['running', 'stopped'] |
 
 <details>
 <summary>default values</summary>

@@ -12,12 +12,10 @@ grep --quiet -P "^status: (changed|unchanged)" /opt/puppetlabs/puppet/cache/stat
 
 systemctl stop puppet
 systemctl stop slurmd &> /dev/null || true
-systemctl stop munge &> /dev/null || true
 systemctl stop consul &> /dev/null || true
 systemctl stop consul-template &> /dev/null || true
 systemctl disable puppet
 systemctl disable slurmd &> /dev/null || true
-systemctl disable munge &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
 
