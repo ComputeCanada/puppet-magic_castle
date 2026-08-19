@@ -6,6 +6,17 @@ err_report() {
 }
 trap 'err_report' ERR
 
+# Wait for puppet run to complete
+lock=$(/opt/puppetlabs/puppet/bin/puppet agent --configprint agent_catalog_run_lockfile)
+deadline=$((SECONDS + 60))
+until [[ ! -e "$lock" ]]; do
+    if (( SECONDS >= deadline )); then
+        echo "Timed out waiting for Puppet to complete" >&2
+        exit 1
+    fi
+    sleep 2
+done
+
 # verify puppet last run completed successfully
 test -f /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
 grep --quiet -P "^status: (changed|unchanged)" /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
@@ -68,10 +79,17 @@ rm -f /etc/udev/rules.d/70-persistent-net.rules
 rm /etc/NetworkManager/conf.d/zzz-puppet.conf
 : > /etc/resolv.conf
 
-cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+if [ -d /etc/sysconfig/network-scripts ]; then
+  cat > /etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
 DEVICE=eth0
 TYPE=Ethernet
 ONBOOT=yes
 BOOTPROTO=dhcp
 EOF
+fi
+
+if [ -d /etc/NetworkManager/system-connections ]; then
+  rm -f /etc/NetworkManager/system-connections/*.nmconnection
+fi
+
 halt -p
