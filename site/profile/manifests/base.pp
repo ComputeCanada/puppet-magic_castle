@@ -68,7 +68,8 @@ class profile::base (
   }
 
   -> class { 'firewall':
-    tag => 'mc_bootstrap',
+    package_name => ['nftables', 'iptables-nft-services'],
+    tag          => 'mc_bootstrap',
   }
 
   # Sometimes systemd-tmpfiles-setup.service fails to create
