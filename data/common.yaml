@@ -25,7 +25,7 @@ profile::base::packages: []
 motd::content: ""
 
 consul_template::version: 0.25.2
-consul::version: 1.15.2
+consul::version: 1.22.7
 consul_template::config_hash:
   consul:
     token: "%{hiera('profile::consul::acl_api_token')}"
@@ -225,7 +225,7 @@ prometheus::extra_alerts:
 prometheus::node_exporter::version: 1.11.1
 prometheus::node_exporter::collectors_enable:
   - "textfile.directory=/var/lib/node_exporter"
-prometheus::server::version: 2.39.0
+prometheus::server::version: 3.14.0
 prometheus::server::scrape_configs:
   - job_name: exporter
     scrape_interval: 10s
@@ -268,7 +268,7 @@ prometheus::server::scrape_configs:
 prometheus::storage_retention: '48h'
 prometheus::storage_retention_size: '5GB'
 
-prometheus::alertmanager::version: '0.26.0'
+prometheus::alertmanager::version: '0.31.1'
 # The default value has a syntax issue in the original puppet-prometheus
 # https://github.com/voxpupuli/puppet-prometheus/pull/540
 prometheus::alertmanager::receivers:
