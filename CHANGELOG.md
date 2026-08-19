@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [16.0.0] UNRELEASED
+
+### Added
+- Added support for Enterprise Linux 10 (PR #575)
+- Added environment-specific hieradata and image-building defaults (PR #517)
+- Added options to skip FreeIPA client installation, stop SSSD and Slurm services, and install GPU drivers without loading kernel modules (PR #517)
+- Added automatic security update configuration with `yum_cron` (PR #580)
+- Added post-quantum SSH key exchange algorithms (PR #575)
+
+### Changed
+- Replaced Munge authentication with native Slurm authentication (PR #528, PR #591)
+- Hardened fail2ban rules for SSH root and invalid-user attempts (PR #589)
+- Fixed NFS automount setup and prevented FreeIPA client installation from triggering mounts during `restorecon` (PR #590)
+- Fixed CVMFS mount handling when autofs is disabled (PR #581, PR #582)
+- Fixed slurm-job-exporter compatibility with Slurm 26.05 (PR #587)
+- Bumped puppet-metrix to v1.3.2 and followed its default metrix version (PR #584, PR #585)
+- Bumped Consul to 1.22.7, Prometheus to 3.14.0, and Alertmanager to 0.31.1 (PR #519)
+- Updated Puppet module dependencies for Enterprise Linux 10 compatibility (PR #575)
+
+### Removed
+- Dropped support for Enterprise Linux 8 (PR #575)
+
 ## [15.6.1] 2026-07-08
 
 ### Changed
