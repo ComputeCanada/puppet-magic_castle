@@ -97,10 +97,11 @@ class profile::freeipa::client (
   selinux::boolean { 'sssd_use_usb': }
 
   # Configure default login selinux mapping
-  exec { 'selinux_login_default':
-    command => 'semanage login -m -S targeted -s "user_u" -r s0 __default__',
-    unless  => 'grep -q "__default__:user_u:s0" /etc/selinux/targeted/seusers',
-    path    => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  selinux::login { 'default_user_u':
+    ensure             => 'present',
+    selinux_login_name => '__default__',
+    selinux_user       => 'user_u',
+    selinux_mlsrange   => 's0',
   }
 
   if ! $skip_ipa_install {

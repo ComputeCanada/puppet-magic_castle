@@ -251,11 +251,12 @@ define profile::users::local_user (
     }
   }
 
-  # Configure user selinux mapping
-  exec { "selinux_login_${name}":
-    command => "semanage login -a -S targeted -s '${selinux_user}' -r '${mls_range}' ${name}",
-    unless  => "grep -q '${name}:${selinux_user}:${mls_range}' /etc/selinux/targeted/seusers",
-    path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  # Configure selinux user login mapping
+  selinux::login { $name:
+    ensure             => 'present',
+    selinux_login_name => $name,
+    selinux_user       => $selinux_user,
+    selinux_mlsrange   => $mls_range,
   }
 
   $ensure_sudoer = $sudoer ? { true => 'present', false => 'absent' }
