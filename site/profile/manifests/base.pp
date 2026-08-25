@@ -70,6 +70,7 @@ class profile::base (
   -> class { 'firewall':
     tag => 'mc_bootstrap',
   }
+  Class['firewall'] -> Firewall <| |>
 
   # Sometimes systemd-tmpfiles-setup.service fails to create
   # /run/lock/subsys folder which is required by iptables.
