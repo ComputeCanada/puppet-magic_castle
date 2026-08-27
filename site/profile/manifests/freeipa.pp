@@ -20,6 +20,8 @@ class profile::freeipa::base (Stdlib::Fqdn $ipa_domain) {
 
   package { 'sssd-dbus': }
 
+  package { 'bind-utils': }
+
   service { 'NetworkManager':
     ensure  => running,
     enable  => true,
@@ -45,10 +47,7 @@ class profile::freeipa::client (
   include profile::sssd::client
 
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $admin_password = lookup('profile::freeipa::server::admin_password')
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
-  $realm = upcase($ipa_domain)
-  $ipaddress = lookup('terraform.self.local_ip')
 
   if $facts['virtual'] =~ /^(container|lxc).*$/ {
     file_line { 'chronyd_disable_clock_control':
@@ -116,45 +115,35 @@ class profile::freeipa::client (
 
 class profile::freeipa::client::install {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $admin_password = lookup('profile::freeipa::server::admin_password')
+  $server_ip = lookup('profile::freeipa::client::server_ip')
+  $host_enrollment_password = lookup('profile::freeipa::server::host_enrollment_password')
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
-  $realm = upcase($ipa_domain)
   $ipaddress = lookup('terraform.self.local_ip')
 
-  # We want to wait for the FreeIPA server to be fully configured
-  # before launching the FreeIPA client install. The mechanism we
-  # found thus far to validate the server is operational is to
-  # try to fetch the SSL certificate of the host ipa on port 443.
-  # We wait at most 20 minutes - polling every 10 seconds (polling_frequency)
-  # at most 120 times (max_retries). We chose 20 minutes as it
-  # the most time require to fully configure a node with the mgmt
-  # tag as of Magic Castle 15.
-  exec { 'is_ipa-client_installed':
-    command  => ':',
-    provider => shell,
-    unless   => ['/usr/bin/test -f /etc/ipa/default.conf'],
-    notify   => Wait_for['ipa_https'],
-  }
-  wait_for { 'ipa_https':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
-    exit_code         => 0,
-    polling_frequency => 10,
-    max_retries       => 120,
-    refreshonly       => true,
-    subscribe         => [
+  # Query the IPA DNS server directly for the marker published after the
+  # server-side enrollment configuration completes. Wait at most 20 minutes,
+  # polling every 10 seconds.
+  $ipa_host_enrollment_ready_cmd = "/usr/bin/dig +short TXT @${server_ip} _mc-ipa-enrollment-ready.${ipa_domain} | /usr/bin/grep --fixed-strings --line-regexp --quiet '\"v1\"'" # lint:ignore:140chars
+  exec { 'ipa_host_enrollment_ready':
+    command   => $ipa_host_enrollment_ready_cmd,
+    unless    => '/usr/bin/test -f /etc/ipa/default.conf',
+    tries     => 120,
+    try_sleep => 10,
+    require   => [
+      Package['bind-utils'],
       Package['ipa-client'],
       Exec['ipa-client-uninstall_bad-hostname'],
       Exec['ipa-client-uninstall_bad-server'],
     ],
   }
 
-  # Make sure heavy lifting operations are done before waiting on mgmt1
-  Archive <| |> -> Wait_for['ipa_https']
-  Package <| |> -> Wait_for['ipa_https']
-  Selinux::Module <| |> -> Wait_for['ipa_https']
-  Selinux::Boolean <| |> -> Wait_for['ipa_https']
-  Selinux::Exec_restorecon <| |> -> Wait_for['ipa_https']
-  Uv::Venv <| |> -> Wait_for['ipa_https']
+  # Make sure heavy lifting operations are done before waiting on mgmt1.
+  Archive <| |> -> Exec['ipa_host_enrollment_ready']
+  Package <| |> -> Exec['ipa_host_enrollment_ready']
+  Selinux::Module <| |> -> Exec['ipa_host_enrollment_ready']
+  Selinux::Boolean <| |> -> Exec['ipa_host_enrollment_ready']
+  Selinux::Exec_restorecon <| |> -> Exec['ipa_host_enrollment_ready']
+  Uv::Venv <| |> -> Exec['ipa_host_enrollment_ready']
 
   $ipa_client_install_cmd = @("IPACLIENTINSTALL"/L)
     /sbin/mc-ipa-client-install \
@@ -164,8 +153,8 @@ class profile::freeipa::client::install {
     --ssh-trust-dns \
     --unattended \
     --force-join \
-    -p admin \
-    -w ${admin_password}
+    -p host_enrollment \
+    -w ${host_enrollment_password}
     | IPACLIENTINSTALL
 
   exec { 'ipa-install':
@@ -177,7 +166,7 @@ class profile::freeipa::client::install {
       File['/sbin/mc-ipa-client-install'],
       File['/etc/NetworkManager/conf.d/zzz-puppet.conf'],
       Exec['set_hostname'],
-      Wait_for['ipa_https'],
+      Exec['ipa_host_enrollment_ready'],
       Augeas['sssd.conf'],
     ],
     creates   => '/etc/ipa/default.conf',
@@ -240,6 +229,7 @@ class profile::freeipa::server (
   Integer $id_start,
   String $admin_password,
   String $ds_password,
+  String $host_enrollment_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
@@ -366,10 +356,56 @@ class profile::freeipa::server (
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
+  file { '/etc/ipa/ipa_host_enrollment_config.py':
+    mode    => '0700',
+    source  => 'puppet:///modules/profile/freeipa/ipa_host_enrollment_config.py',
+    require => File['/etc/ipa'],
+  }
+
+  exec { 'ipa_host_enrollment_config':
+    command     => 'kinit_wrapper ipa console /etc/ipa/ipa_host_enrollment_config.py',
+    refreshonly => true,
+    subscribe   => File['/etc/ipa/ipa_host_enrollment_config.py'],
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require     => [
+      File['/etc/ipa/ipa_host_enrollment_config.py'],
+      Exec['ipa_server_base_config'],
+    ],
+  }
+
+  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
+  $reset_host_enrollment_password_cmd = @("EOT")
+    ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
+      -S uid=host_enrollment,cn=users,cn=accounts,${ldap_dc_string} \
+      -s ${host_enrollment_password} -H ldap://${fqdn} && \
+    echo ${host_enrollment_password} | kinit host_enrollment && kdestroy
+    |EOT
+  $check_host_enrollment_password_cmd = "echo ${host_enrollment_password} | kinit host_enrollment && kdestroy"
+  exec { 'reset host enrollment password':
+    command     => Sensitive($reset_host_enrollment_password_cmd),
+    unless      => Sensitive($check_host_enrollment_password_cmd),
+    environment => ['KRB5CCNAME=FILE:/run/ipa-host-enrollment-password-check.ccache'],
+    path        => ['/usr/sbin', '/usr/bin', '/bin'],
+    require     => Exec['ipa_host_enrollment_config'],
+  }
+
+  exec { 'publish ipa host enrollment readiness':
+    command     => "kinit_wrapper ipa dnsrecord-add ${ipa_domain} _mc-ipa-enrollment-ready --txt-rec=v1",
+    unless      => "/usr/bin/dig +short TXT @127.0.0.1 _mc-ipa-enrollment-ready.${ipa_domain} | /usr/bin/grep --fixed-strings --line-regexp --quiet '\"v1\"'", # lint:ignore:140chars
+    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
+    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+    require     => [
+      Exec['reset host enrollment password'],
+      Package['bind-utils'],
+    ],
+  }
+
   # Configure the password of the admin accounts to never expire
-  ~> exec { 'ipa_admin_passwd_reset':
+  exec { 'ipa_admin_passwd_reset':
     command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
     refreshonly => true,
+    subscribe   => Exec['ipa_server_base_config'],
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
@@ -497,7 +533,6 @@ class profile::freeipa::server (
     require => Service["dirsrv@${ds_domain}"],
   }
 
-  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reset_admin_password_cmd = @("EOT")
     ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
       -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
