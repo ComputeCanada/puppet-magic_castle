@@ -381,7 +381,10 @@ class profile::freeipa::server (
     unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
     tries     => 5,
     try_sleep => 10,
-    require   => Service['certmonger'],
+    require   => [
+      Exec['ipa_server_base_config'],
+      Service['certmonger'],
+    ],
   }
 
   $instances = lookup('terraform.instances')
