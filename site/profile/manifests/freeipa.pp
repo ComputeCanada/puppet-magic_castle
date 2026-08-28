@@ -527,7 +527,7 @@ class profile::freeipa::server (
   # the puppet server during the bootstrap phase and it can
   # change if the puppet server is reinstalled.
   $ds_file = "/etc/dirsrv/slapd-${ds_domain}/dse.ldif"
-  $reset_ds_password_cmd = @("EOT")
+  $reconcile_ds_password_cmd = @("EOT")
     dsctl ${ds_domain} stop && \
     sed -n ':loop N; s/\n //; t loop; P; D' ${ds_file} |\
         sed "s;^nsslapd-rootpw:.*$;nsslapd-rootpw: $(pwdhash ${ds_password});g" \
@@ -536,8 +536,8 @@ class profile::freeipa::server (
     dsctl ${ds_domain} start
     |EOT
   $check_ds_password_cmd = "pwdhash -c $(sed -n ':loop N; s/\\n //; t loop; P; D' ${ds_file} | grep -oP 'nsslapd-rootpw: \\K(.*)') ${ds_password}" # lint:ignore:140chars
-  exec { 'reset ds password':
-    command => Sensitive($reset_ds_password_cmd),
+  exec { 'reconcile ds password':
+    command => Sensitive($reconcile_ds_password_cmd),
     unless  => Sensitive($check_ds_password_cmd),
     path    => ['/usr/sbin', '/usr/bin', '/bin'],
     require => Service["dirsrv@${ds_domain}"],
@@ -562,7 +562,7 @@ class profile::freeipa::server (
     path        => ['/usr/sbin', '/usr/bin', '/bin'],
     require     => [
       Service["dirsrv@${ds_domain}"],
-      Exec['reset ds password'],
+      Exec['reconcile ds password'],
     ],
   }
 
