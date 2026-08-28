@@ -262,6 +262,7 @@ class profile::freeipa::server (
 
   $realm = upcase($ipa_domain)
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reverse_zone = profile::getreversezone()
   $ipaddress = lookup('terraform.self.local_ip')
   $ds_domain = regsubst($realm, '\.', '-', 'G')
@@ -301,6 +302,7 @@ class profile::freeipa::server (
       File['/etc/ssh/sshd_config.d'],
     ],
     notify  => [
+      Exec['clear admin password expiration date'],
       Service['systemd-logind'],
       Service['sssd'],
       Service['httpd'],
@@ -350,10 +352,28 @@ class profile::freeipa::server (
     require     => [
       File['/etc/ipa/ipa_server_base_config.py'],
       Exec['ipa-install'],
+      Exec['reconcile admin password'],
     ],
     subscribe   => File['/etc/ipa/ipa_server_base_config.py'],
     environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  }
+
+  # Make sure admin password never expires by removing
+  # its expiration attribute from LDAP. This is only
+  # notified by ipa-server-install.
+  $clear_admin_password_expiration_cmd = @("EOT"/L$)
+    printf '%s\n' \
+      'dn: uid=admin,cn=users,cn=accounts,${ldap_dc_string}' \
+      'changetype: modify' \
+      'delete: krbPasswordExpiration' |
+    ldapmodify -ZZ -H ldap://${fqdn} -D 'cn=Directory Manager' -w "\$IPA_DS_PASSWD"
+    | EOT
+  exec { 'clear admin password expiration date':
+    command     => $clear_admin_password_expiration_cmd,
+    refreshonly => true,
+    environment => ["IPA_DS_PASSWD=${ds_password}"],
+    path        => ['/usr/bin', '/bin'],
   }
 
   file { '/etc/ipa/ipa_host_enrollment_config.py':
@@ -374,7 +394,6 @@ class profile::freeipa::server (
     ],
   }
 
-  $ldap_dc_string = join(split($ipa_domain, '[.]').map |$dc| { "dc=${dc}" }, ',')
   $reset_host_enrollment_password_cmd = @("EOT")
     ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
       -S uid=host_enrollment,cn=users,cn=accounts,${ldap_dc_string} \
@@ -399,15 +418,6 @@ class profile::freeipa::server (
       Exec['reset host enrollment password'],
       Package['bind-utils'],
     ],
-  }
-
-  # Configure the password of the admin accounts to never expire
-  exec { 'ipa_admin_passwd_reset':
-    command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
-    refreshonly => true,
-    subscribe   => Exec['ipa_server_base_config'],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
   $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
@@ -533,17 +543,24 @@ class profile::freeipa::server (
     require => Service["dirsrv@${ds_domain}"],
   }
 
-  $reset_admin_password_cmd = @("EOT")
-    ldappasswd -ZZ -D 'cn=Directory Manager' -w ${ds_password} \
+  # Compare the actual FreeIPA admin credential with the password declared in Puppet,
+  # and update FreeIPA only when they differ.
+  $configure_admin_password_cmd = @("EOT"/$)
+    ldappasswd -ZZ -D 'cn=Directory Manager' -w "\$IPA_DS_PASSWD" \
       -S uid=admin,cn=users,cn=accounts,${ldap_dc_string} \
-      -s ${admin_password} -H ldap://${fqdn}
+      -s "\$IPA_ADMIN_PASSWD" -H ldap://${fqdn}
     |EOT
-  $check_admin_password_cmd = "echo ${admin_password} | kinit admin && kdestroy"
-  exec { 'reset admin password':
-    command => Sensitive($reset_admin_password_cmd),
-    unless  => Sensitive($check_admin_password_cmd),
-    path    => ['/usr/sbin', '/usr/bin', '/bin'],
-    require => [
+  $check_admin_password_cmd = 'echo "$IPA_ADMIN_PASSWD" | kinit admin && kdestroy'
+  exec { 'reconcile admin password':
+    command     => $configure_admin_password_cmd,
+    unless      => $check_admin_password_cmd,
+    environment => [
+      "IPA_ADMIN_PASSWD=${admin_password}",
+      "IPA_DS_PASSWD=${ds_password}",
+      'KRB5CCNAME=FILE:/run/ipa-admin-password-check.ccache',
+    ],
+    path        => ['/usr/sbin', '/usr/bin', '/bin'],
+    require     => [
       Service["dirsrv@${ds_domain}"],
       Exec['reset ds password'],
     ],
