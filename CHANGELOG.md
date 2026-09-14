@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [16.0.0] UNRELEASED
+## [16.0.0] 2026-09-14
 
 ### Added
 - Added support for Enterprise Linux 10 (PR #575)
@@ -19,8 +19,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed CVMFS mount handling when autofs is disabled (PR #581, PR #582)
 - Fixed slurm-job-exporter compatibility with Slurm 26.05 (PR #587)
 - Bumped puppet-metrix to v1.3.2 and followed its default metrix version (PR #584, PR #585)
+- Set the default Metrix authentication type to LDAP
 - Bumped Consul to 1.22.7, Prometheus to 3.14.0, and Alertmanager to 0.31.1 (PR #519)
 - Updated Puppet module dependencies for Enterprise Linux 10 compatibility (PR #575)
+- Fixed `prepare4image.sh` for Enterprise Linux 10 and postrun execution by waiting for Puppet to finish and cleaning up NetworkManager connections (PR #594)
+- Fixed Ceph client release defaults for Enterprise Linux 9 and 10 (PR #598)
+- Replaced SELinux login mapping commands with `selinux::login` resources and bumped puppet-selinux to v6.0.0 (PR #599)
+- Ensured firewall setup completes before applying firewall rules (PR #600)
+- Ensured FreeIPA server configuration completes before updating its certificate (PR #604)
+- Bumped puppet-jupyterhub to v7.4.1 (PR #605)
 
 ### Removed
 - Dropped support for Enterprise Linux 8 (PR #575)
