@@ -82,7 +82,7 @@ define profile::ceph::client::share (
     key = ${access_key}
     | EOT
 
-  file { "/etc/ceph/client.fullkey.${name}":
+  file { "/etc/ceph/ceph.client.${name}.keyring":
     content => $client_fullkey,
     mode    => '0600',
     owner   => 'root',
@@ -105,7 +105,12 @@ define profile::ceph::client::share (
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
     options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name},_netdev",
-    require => File['/etc/ceph/ceph.conf'],
+    require => [
+      File['/etc/ceph/ceph.conf'],
+      File["/etc/ceph/ceph.client.${name}.keyring"],
+      File["/etc/ceph/client.keyonly.${name}"],
+      File["/mnt/${name}"],
+    ],
   }
 
   $bind_mounts.each |$mount| {
