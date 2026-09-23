@@ -78,18 +78,18 @@ define profile::ceph::client::share (
   Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
 ) {
   $client_fullkey = @("EOT")
-    [client.${name}]
+    [client.${share_name}]
     key = ${access_key}
     | EOT
 
-  file { "/etc/ceph/ceph.client.${name}.keyring":
+  file { "/etc/ceph/ceph.client.${share_name}.keyring":
     content => $client_fullkey,
     mode    => '0600',
     owner   => 'root',
     group   => 'root',
   }
 
-  file { "/etc/ceph/client.keyonly.${name}":
+  file { "/etc/ceph/client.keyonly.${share_name}":
     content => Sensitive($access_key),
     mode    => '0600',
     owner   => 'root',
@@ -104,11 +104,11 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name},_netdev",
+    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${share_name},_netdev",
     require => [
       File['/etc/ceph/ceph.conf'],
-      File["/etc/ceph/ceph.client.${name}.keyring"],
-      File["/etc/ceph/client.keyonly.${name}"],
+      File["/etc/ceph/ceph.client.${share_name}.keyring"],
+      File["/etc/ceph/client.keyonly.${share_name}"],
       File["/mnt/${name}"],
     ],
   }
