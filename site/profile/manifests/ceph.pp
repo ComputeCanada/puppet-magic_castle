@@ -82,19 +82,27 @@ define profile::ceph::client::share (
     key = ${access_key}
     | EOT
 
-  file { "/etc/ceph/ceph.client.${share_name}.keyring":
-    content => $client_fullkey,
-    mode    => '0600',
-    owner   => 'root',
-    group   => 'root',
-  }
+  ensure_resource(
+    'file',
+    "/etc/ceph/ceph.client.${share_name}.keyring",
+    {
+      'content' => Sensitive($client_fullkey),
+      'mode'    => '0600',
+      'owner'   => 'root',
+      'group'   => 'root',
+    }
+  )
+  ensure_resource(
+    'file',
+    "/etc/ceph/client.keyonly.${share_name}",
+    {
+      'content' => Sensitive($access_key),
+      'mode'    => '0600',
+      'owner'   => 'root',
+      'group'   => 'root',
+    }
+  )
 
-  file { "/etc/ceph/client.keyonly.${share_name}":
-    content => Sensitive($access_key),
-    mode    => '0600',
-    owner   => 'root',
-    group   => 'root',
-  }
   file { "/mnt/${name}":
     ensure => directory,
   }
