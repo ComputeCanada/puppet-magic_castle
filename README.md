@@ -745,6 +745,22 @@ profile::freeipa::client::skip_ipa_install: false
 
 This class configures files and services of a FreeIPA server.
 
+After configuring the restricted host enrollment account, its permissions,
+and its password, the server publishes the DNS readiness marker
+`_mc-ipa-enrollment-ready.<ipa-domain> TXT "v1"`. Clients query the FreeIPA
+DNS server directly for this marker before enrolling. The marker represents
+completed enrollment provisioning and is monotonic: once published, it is not
+removed by Puppet.
+
+This readiness contract assumes that the enrollment principal, group, role,
+privilege, permissions, and supporting base configuration remain valid for the
+lifetime of the FreeIPA deployment. Changing the enrollment password alone is
+outside the marker's scope. The marker does not indicate current service
+health, and backups must not restore it without the corresponding enrollment
+configuration. Changes to the enrollment configuration on an existing
+deployment require rebuilding FreeIPA or explicitly removing the marker before
+reconciling the configuration.
+
 ### parameters
 
 | Variable         | Description                                 | Type           |
@@ -752,6 +768,7 @@ This class configures files and services of a FreeIPA server.
 | `id_start`       | Starting user and group id number           | Integer        |
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
+| `host_enrollment_password` | Password of the restricted host enrollment account | String |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
 | `enable_mokey`   | Enable the [mokey service](#profilefreeipamokey) | Boolean   |
 
@@ -762,6 +779,7 @@ This class configures files and services of a FreeIPA server.
 profile::freeipa::server::id_start: 60001
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
+profile::freeipa::server::host_enrollment_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
 profile::freeipa::server::enable_mokey: true
 ```
