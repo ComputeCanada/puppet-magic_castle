@@ -178,6 +178,5 @@ class profile::nfs::server (
     }
   }
   Profile::Volumes::Volume<| |> -> Nfs::Server::Export <| |>
-  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkhome' |>
-  Mount <| |> -> Service <| tag == 'profile::accounts' and title == 'mkproject' |>
+  Mount <| |> -> Service <| tag == 'profile::accounts' |>
 }

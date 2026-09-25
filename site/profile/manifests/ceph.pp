@@ -144,4 +144,5 @@ define profile::ceph::client::share (
       }
     }
   }
+  Mount <| |> -> Service <| tag == 'profile::accounts' |>
 }
