@@ -181,7 +181,7 @@ define profile::volumes::volume (
     # Save the xfs quota setting to avoid applying at every iteration
     if $quota.is_a(QuotaSpec) {
       # ensure defaults of no quota is set
-      $quotas = {'bsoft' => '0', 'bhard' => '0', 'ihard' => '0', 'isoft' => '0'} + $quota
+      $quotas = { 'bsoft' => '0', 'bhard' => '0', 'ihard' => '0', 'isoft' => '0' } + $quota
       $quota_options = "bsoft=${quotas['bsoft']} bhard=${quotas['bhard']} isoft=${quotas['isoft']} ihard=${quotas['ihard']}"
     }
     else {
