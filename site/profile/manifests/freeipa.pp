@@ -136,7 +136,7 @@ class profile::freeipa::client::install {
     notify   => Wait_for['ipa_https'],
   }
   wait_for { 'ipa_https':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -ext subjectAltName | grep --quiet DNS:ipa.${ipa_domain}",
     exit_code         => 0,
     polling_frequency => 10,
     max_retries       => 120,
@@ -374,11 +374,10 @@ class profile::freeipa::server (
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
-  $regen_cert_cmd = 'ipa-getcert list | grep -oP "Request ID \'\K[^\']+" | xargs -I \'{}\' ipa-getcert resubmit -i \'{}\' -w'
   exec { 'ipa_regen_cert':
-    command   => "${regen_cert_cmd} -D ipa.${ipa_domain}",
+    command   => "ipa-getcert resubmit -f /var/lib/ipa/certs/httpd.crt -w -D ipa-ca.${ipa_domain} -D ipa.${ipa_domain}",
     path      => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    unless    => ['ipa-getcert list | grep -oPq  \'dns:.*[\ ,]ipa\.int\..*\''],
+    unless    => ["openssl verify -verify_hostname ipa.${ipa_domain} /var/lib/ipa/certs/httpd.crt"],
     tries     => 5,
     try_sleep => 10,
     require   => [
