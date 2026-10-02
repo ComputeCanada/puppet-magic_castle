@@ -19,7 +19,7 @@ lookup_options:
   yum_cron::extra_configs:
     merge: 'deep'
 
-profile::base::version: 16.0.2
+profile::base::version: 16.0.3
 profile::base::packages: []
 
 motd::content: ""
