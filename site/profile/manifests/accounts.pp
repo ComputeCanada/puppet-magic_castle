@@ -72,6 +72,7 @@ class profile::accounts (
     $filename = $archive['filename']
     archive { "skel_${index}":
       path         => "/opt/puppetlabs/puppet/cache/puppet-archive/${filename}",
+      cleanup      => false,
       extract      => true,
       extract_path => '/etc/skel.ipa',
       source       => $archive['source'],
