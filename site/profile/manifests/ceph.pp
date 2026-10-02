@@ -6,7 +6,8 @@ type BindMount = Struct[{
 
 type CephFS = Struct[
   {
-    'share_name'                 => String,
+    'share_name'                 => Optional[String],
+    'access_to'                  => Optional[String],
     'access_key'                 => String,
     'export_path'                => Stdlib::Unixpath,
     'bind_mounts'                => Optional[Array[BindMount]],
@@ -71,20 +72,32 @@ class profile::ceph::client::install (
 
 define profile::ceph::client::share (
   Array[String] $mon_host,
-  String $share_name,
   String $access_key,
   Stdlib::Unixpath $export_path,
   Array[BindMount] $bind_mounts,
   Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
+  Optional[String] $access_to = undef,
+  Optional[String] $share_name = undef,
 ) {
+  if $access_to == undef and $share_name == undef {
+    fail('profile::ceph::client::share: $access_to is a required parameter.')
+  }
+
+  if $share_name != undef {
+    deprecation('share_name', 'The $share_name parameter is deprecated and will be removed in a future release. Use $access_to instead.')
+    $_access_to = pick($access_to, $share_name)
+  } else {
+    $_access_to = $access_to
+  }
+
   $client_fullkey = @("EOT")
-    [client.${share_name}]
+    [client.${_access_to}]
     key = ${access_key}
     | EOT
 
   ensure_resource(
     'file',
-    "/etc/ceph/ceph.client.${share_name}.keyring",
+    "/etc/ceph/ceph.client.${_access_to}.keyring",
     {
       'content' => Sensitive($client_fullkey),
       'mode'    => '0600',
@@ -94,7 +107,7 @@ define profile::ceph::client::share (
   )
   ensure_resource(
     'file',
-    "/etc/ceph/client.keyonly.${share_name}",
+    "/etc/ceph/client.keyonly.${_access_to}",
     {
       'content' => Sensitive($access_key),
       'mode'    => '0600',
@@ -112,11 +125,11 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${share_name},_netdev",
+    options => "name=${_access_to},secretfile=/etc/ceph/client.keyonly.${_access_to},_netdev",
     require => [
       File['/etc/ceph/ceph.conf'],
-      File["/etc/ceph/ceph.client.${share_name}.keyring"],
-      File["/etc/ceph/client.keyonly.${share_name}"],
+      File["/etc/ceph/ceph.client.${_access_to}.keyring"],
+      File["/etc/ceph/client.keyonly.${_access_to}"],
       File["/mnt/${name}"],
     ],
   }
