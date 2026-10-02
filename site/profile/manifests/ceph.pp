@@ -6,7 +6,7 @@ type BindMount = Struct[{
 
 type CephFS = Struct[
   {
-    'share_name'                 => Optional[String],
+    'share_name'                 => Optional[String], #deprecated
     'access_to'                  => Optional[String],
     'access_key'                 => String,
     'export_path'                => Stdlib::Unixpath,
@@ -84,7 +84,7 @@ define profile::ceph::client::share (
   }
 
   if $share_name != undef {
-    deprecation('share_name', 'The $share_name parameter is deprecated and will be removed in a future release. Use $access_to instead.')
+    deprecation('share_name', 'The CephFS $share_name parameter is deprecated and will be removed in a future release. Use $access_to instead.')
     $_access_to = pick($access_to, $share_name)
   } else {
     $_access_to = $access_to
@@ -105,16 +105,6 @@ define profile::ceph::client::share (
       'group'   => 'root',
     }
   )
-  ensure_resource(
-    'file',
-    "/etc/ceph/client.keyonly.${_access_to}",
-    {
-      'content' => Sensitive($access_key),
-      'mode'    => '0600',
-      'owner'   => 'root',
-      'group'   => 'root',
-    }
-  )
 
   file { "/mnt/${name}":
     ensure => directory,
@@ -125,11 +115,10 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${_access_to},secretfile=/etc/ceph/client.keyonly.${_access_to},_netdev",
+    options => "name=${_access_to},_netdev",
     require => [
       File['/etc/ceph/ceph.conf'],
       File["/etc/ceph/ceph.client.${_access_to}.keyring"],
-      File["/etc/ceph/client.keyonly.${_access_to}"],
       File["/mnt/${name}"],
     ],
   }
