@@ -6,7 +6,8 @@ type BindMount = Struct[{
 
 type CephFS = Struct[
   {
-    'share_name'                 => String,
+    'share_name'                 => Optional[String], #deprecated
+    'access_to'                  => Optional[String],
     'access_key'                 => String,
     'export_path'                => Stdlib::Unixpath,
     'bind_mounts'                => Optional[Array[BindMount]],
@@ -71,30 +72,40 @@ class profile::ceph::client::install (
 
 define profile::ceph::client::share (
   Array[String] $mon_host,
-  String $share_name,
   String $access_key,
   Stdlib::Unixpath $export_path,
   Array[BindMount] $bind_mounts,
   Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
+  Optional[String] $access_to = undef,
+  Optional[String] $share_name = undef,
 ) {
+  if $access_to == undef and $share_name == undef {
+    fail('profile::ceph::client::share: $access_to is a required parameter.')
+  }
+
+  if $share_name != undef {
+    deprecation('share_name', 'The CephFS $share_name parameter is deprecated and will be removed in a future release. Use $access_to instead.')
+    $_access_to = pick($access_to, $share_name)
+  } else {
+    $_access_to = $access_to
+  }
+
   $client_fullkey = @("EOT")
-    [client.${name}]
+    [client.${_access_to}]
     key = ${access_key}
     | EOT
 
-  file { "/etc/ceph/client.fullkey.${name}":
-    content => $client_fullkey,
-    mode    => '0600',
-    owner   => 'root',
-    group   => 'root',
-  }
+  ensure_resource(
+    'file',
+    "/etc/ceph/ceph.client.${_access_to}.keyring",
+    {
+      'content' => Sensitive($client_fullkey),
+      'mode'    => '0600',
+      'owner'   => 'root',
+      'group'   => 'root',
+    }
+  )
 
-  file { "/etc/ceph/client.keyonly.${name}":
-    content => Sensitive($access_key),
-    mode    => '0600',
-    owner   => 'root',
-    group   => 'root',
-  }
   file { "/mnt/${name}":
     ensure => directory,
   }
@@ -104,8 +115,12 @@ define profile::ceph::client::share (
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${share_name},secretfile=/etc/ceph/client.keyonly.${name},_netdev",
-    require => File['/etc/ceph/ceph.conf'],
+    options => "name=${_access_to},_netdev",
+    require => [
+      File['/etc/ceph/ceph.conf'],
+      File["/etc/ceph/ceph.client.${_access_to}.keyring"],
+      File["/mnt/${name}"],
+    ],
   }
 
   $bind_mounts.each |$mount| {
@@ -131,4 +146,5 @@ define profile::ceph::client::share (
       }
     }
   }
+  Mount <| |> -> Service <| tag == 'profile::accounts' |>
 }

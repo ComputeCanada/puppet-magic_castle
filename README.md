@@ -338,8 +338,8 @@ Defines a CephFS share configuration used by `profile::ceph::client::shares`.
 
 | Field                         | Description                                                       | Type                         | Required |
 | :---------------------------- | :---------------------------------------------------------------- | :--------------------------- | :------- |
-| `share_name`                  | Ceph share name                                                   | String                       | Yes      |
-| `access_key`                  | Ceph key for the user                                             | String                       | Yes      |
+| `access_to`                   | Access rule's `access to` value for the cephfs share              | String                       | Yes      |
+| `access_key`                  | Access rule's `access key` value for the cephfs share             | String                       | Yes      |
 | `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
 | `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
 | `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
@@ -348,7 +348,7 @@ Defines a CephFS share configuration used by `profile::ceph::client::shares`.
 ```yaml
 profile::ceph::client::shares:
   home:
-    share_name: "home"
+    access_to: "home-rw"
     access_key: "AQB...=="
     export_path: "/volumes/home"
     bind_mounts:
