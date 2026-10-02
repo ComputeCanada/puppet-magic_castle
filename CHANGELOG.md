@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [16.0.2] 2026-10-02
+
+### Changed
+
+- Improve unless condition for `ipa_regen_cert` (PR #610)
+
 ## [16.0.1] 2026-09-29
 
 ### Changed
