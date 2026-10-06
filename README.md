@@ -334,12 +334,12 @@ profile::ceph::client::shares:
 
 #### Type `CephFS`
 
-Defines a CephFS share configuration used by `profile::ceph::client::shares`.
+Defines access to a CephFS share configuration used by `profile::ceph::client::shares`.
 
 | Field                         | Description                                                       | Type                         | Required |
 | :---------------------------- | :---------------------------------------------------------------- | :--------------------------- | :------- |
-| `access_to`                   | Access rule's `access to` value for the cephfs share              | String                       | Yes      |
-| `access_key`                  | Access rule's `access key` value for the cephfs share             | String                       | Yes      |
+| `access_to`                   | Access rule's `access to` (name given to cephx access rule)       | String                       | Yes      |
+| `access_key`                  | Access rule's `access key` (secret key of cephx access rule)      | String                       | Yes      |
 | `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
 | `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
 | `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
