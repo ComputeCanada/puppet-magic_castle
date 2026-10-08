@@ -1798,6 +1798,8 @@ the default set of Lmod modules that will be loaded. The software stack selected
 depends on the Puppet fact `software_stack` which is set by Magic Castle Terraform
 variable [`software_stack`](https://github.com/ComputeCanada/magic_castle/tree/main/docs#416-software_stack-optional).
 
+### parameters
+
 | Variable                  | Description                                    | Type        |
 | :------------------------ | :--------------------------------------------- | -------------- |
 | `min_uid`                 | Mininum UID value required to load the software environment init script on login | Integer |
