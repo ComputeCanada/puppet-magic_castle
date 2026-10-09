@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [16.0.3] 2026-10-09
+
+### Changed
+
+- Disabled archive cleanup for account `skel_archives` (PR #612)
+- Fixed Ceph client keyring handling and allowed multiple mounts to use the same Ceph share (PR #607)
+- Renamed CephFS `share_name` to `access_to` and deprecated `share_name` (PR #607)
+- Ensured CephFS shares are mounted before starting account services (PR #607)
+- Fixed `ssh-keysign` permissions to allow reading the host private key on Enterprise Linux 9 (PR #613)
+
 ## [16.0.2] 2026-10-02
 
 ### Changed
