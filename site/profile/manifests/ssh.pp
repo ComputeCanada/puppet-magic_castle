@@ -132,6 +132,13 @@ class profile::ssh::base (
     group => 'root',
   }
 
+  # Make sure ssh-keysign can read the host private key in EL9.
+  if versioncmp($facts['os']['release']['major'], '9') <= 0 {
+    file { '/usr/libexec/openssh/ssh-keysign':
+      mode => '4555',
+    }
+  }
+
   sshd_config { 'tf_sshd_AuthenticationMethods':
     ensure    => present,
     condition => 'User tf',
