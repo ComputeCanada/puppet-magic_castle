@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- Added `profile::software_stack::eessi_version` to pick the EESSI version of the `eessi` software stack with one hiera key; the default stays 2023.06
+
 ## [16.0.3] 2026-10-09
 
 ### Changed
