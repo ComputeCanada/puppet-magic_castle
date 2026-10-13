@@ -3,7 +3,7 @@ class profile::software_stack (
   Optional[String] $initial_profile = undef,
   Optional[Array[String]] $lmod_default_modules = undef,
   Optional[Hash[String, String]] $extra_site_env_vars = undef,
-  Optional[Pattern[/\A\d{4}\.\d{2}\z/]] $eessi_version = undef,
+  Optional[Pattern[/\A\d{4}(\.\d{2})?\z/]] $version = undef,
 ) {
   include profile::consul
   include profile::cvmfs::client
@@ -53,8 +53,8 @@ class profile::software_stack (
     file { '/etc/profile.d/z-00-rsnt_arch.sh':
       ensure => 'absent',
     }
-    $software_stack_meta = ($facts['software_stack'] == 'eessi' and $eessi_version) ? {
-      true    => { version => $eessi_version },
+    $software_stack_meta = ($facts['software_stack'] == 'eessi' and $version) ? {
+      true    => { version => $version },
       default => {},
     }
   }

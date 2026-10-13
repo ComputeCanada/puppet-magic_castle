@@ -1806,7 +1806,7 @@ variable [`software_stack`](https://github.com/ComputeCanada/magic_castle/tree/m
 | `initial_profile`         | Path to shell script initializing software environment variables | String |
 | `extra_site_env_vars`     | Map of environment variables that will be exported before sourcing profile shell scripts. | Hash[String, String] |
 | `lmod_default_modules`    | List of lmod default modules |Array[String] |
-| `eessi_version`           | EESSI version (`YYYY.MM`) used by the `eessi` software stack. `data/software_stack/eessi.yaml` builds `initial_profile` and the JupyterHub kernel path from it. | String |
+| `version`                 | Software stack version: `YYYY` for `computecanada`, `YYYY.MM` for `eessi`. The stack's data file builds `initial_profile`, the default modules and the JupyterHub kernel path from it. | String |
 
 <details>
 <summary>default values</summary>
@@ -1830,8 +1830,8 @@ profile::software_stack::lmod_default_modules:
 ### `eessi` software stack
 
 ```yaml
-profile::software_stack::eessi_version: "2023.06"
-profile::software_stack::initial_profile: "/cvmfs/software.eessi.io/versions/%{lookup('profile::software_stack::eessi_version')}/init/Magic_Castle/bash"
+profile::software_stack::version: "2025.06"
+profile::software_stack::initial_profile: "/cvmfs/software.eessi.io/versions/%{lookup('profile::software_stack::version')}/init/Magic_Castle/bash"
 profile::software_stack::extra_site_env_vars: {}
 profile::software_stack::lmod_default_modules:
   - GCC
