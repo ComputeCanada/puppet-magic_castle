@@ -341,6 +341,7 @@ Defines access to a CephFS share configuration used by `profile::ceph::client::s
 | `access_to`                   | Access rule's `access to` (name given to cephx access rule)       | String                       | Yes      |
 | `access_key`                  | Access rule's `access key` (secret key of cephx access rule)      | String                       | Yes      |
 | `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
+| `mount_options`               | Optional list of additional mount options.                        | Array[String]                | No       |
 | `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
 | `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
 | `mon_host`                    | Optional list of monitor hosts for this mount (override default)  | Array[String]                | No       |

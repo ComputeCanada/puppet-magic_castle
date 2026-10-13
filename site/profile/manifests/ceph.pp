@@ -75,6 +75,7 @@ define profile::ceph::client::share (
   String $access_key,
   Stdlib::Unixpath $export_path,
   Array[BindMount] $bind_mounts,
+  Array[String] $mount_options = [],
   Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
   Optional[String] $access_to = undef,
   Optional[String] $share_name = undef,
@@ -111,11 +112,12 @@ define profile::ceph::client::share (
   }
 
   $mon_host_string = join($mon_host, ',')
+  $share_mount_options = join((["name=${_access_to}", '_netdev'] + $mount_options).unique, ',')
   mount { "/mnt/${name}":
     ensure  => 'mounted',
     fstype  => 'ceph',
     device  => "${mon_host_string}:${export_path}",
-    options => "name=${_access_to},_netdev",
+    options => $share_mount_options,
     require => [
       File['/etc/ceph/ceph.conf'],
       File["/etc/ceph/ceph.client.${_access_to}.keyring"],
