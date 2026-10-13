@@ -24,9 +24,11 @@ class profile::ceph::client (
 
   $mon_host_string = join($mon_host, ',')
   $ceph_conf = @("EOT")
+    [global]
+    mon host = ${mon_host_string}
+    
     [client]
     client quota = true
-    mon host = ${mon_host_string}
     | EOT
 
   file { '/etc/ceph/ceph.conf':
