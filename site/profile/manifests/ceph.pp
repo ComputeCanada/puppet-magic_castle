@@ -19,16 +19,21 @@ type CephFS = Struct[
 class profile::ceph::client (
   Hash[String, CephFS] $shares,
   Array[String] $mon_host = [],
+  Hash[String, Variant[String, Boolean, Integer]] $global_config = {},
+  Hash[String, Variant[String, Boolean, Integer]] $client_config = {},
 ) {
   require profile::ceph::client::install
 
   $mon_host_string = join($mon_host, ',')
+  $global_config_string = $global_config.map|$k, $v| { "${k} = ${v}" }.join("\n")
+  $client_config_string = $client_config.map|$k, $v| { "${k} = ${v}" }.join("\n")
   $ceph_conf = @("EOT")
     [global]
-    mon host = ${mon_host_string}
-    
+    mon_host = ${mon_host_string}
+    ${global_config_string}
     [client]
-    client quota = true
+    client_quota = true
+    ${client_config_string}
     | EOT
 
   file { '/etc/ceph/ceph.conf':
