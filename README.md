@@ -377,17 +377,15 @@ Ceph client packages.
 
 ### parameters
 
-| Variable      | Description                                                 | Type             |
-| :------------ | :---------------------------------------------------------- | :--------------- |
-| `release`     | Ceph release used to configure the upstream package repository when `version` is not set | String |
-| `version`     | Optional Ceph version used to configure the upstream package repository instead of `release` | Optional[String] |
+| Variable      | Description                                                                                       | Type                    |
+| :------------ | :------------------------------------------------------------------------------------------------ | :---------------------- |
+| `version`     | Ceph version used to configure the package repository (semantic version number or release name).  | Variant[SemVar, String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::ceph::client::install::release: reef
-profile::ceph::client::install::version: ~
+profile::ceph::client::install::version: reef
 ```
 </details>
 
@@ -395,8 +393,7 @@ profile::ceph::client::install::version: ~
 <summary>example</summary>
 
 ```yaml
-profile::ceph::client::install::release: squid
-profile::ceph::client::install::version: ~
+profile::ceph::client::install::version: squid
 ```
 </details>
 

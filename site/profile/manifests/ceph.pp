@@ -44,17 +44,11 @@ class profile::ceph::client (
 }
 
 class profile::ceph::client::install (
-  String $release,
-  Optional[String] $version = undef,
+  Variant[SemVer, String[1]] $version,
 ) {
   include epel
 
-  if $version != undef and $version != '' {
-    $repo = "rpm-${version}"
-  } else {
-    $repo = "rpm-${release}"
-  }
-
+  $repo = "rpm-${version}"
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
