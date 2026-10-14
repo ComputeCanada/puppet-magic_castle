@@ -19,14 +19,21 @@ type CephFS = Struct[
 class profile::ceph::client (
   Hash[String, CephFS] $shares,
   Array[String] $mon_host = [],
+  Hash[String, Variant[String, Boolean, Integer]] $global_config = {},
+  Hash[String, Variant[String, Boolean, Integer]] $client_config = {},
 ) {
   require profile::ceph::client::install
 
   $mon_host_string = join($mon_host, ',')
+  $global_config_string = $global_config.map|$k, $v| { "${k} = ${v}" }.join("\n")
+  $client_config_string = $client_config.map|$k, $v| { "${k} = ${v}" }.join("\n")
   $ceph_conf = @("EOT")
+    [global]
+    mon_host = ${mon_host_string}
+    ${global_config_string}
     [client]
-    client quota = true
-    mon host = ${mon_host_string}
+    client_quota = true
+    ${client_config_string}
     | EOT
 
   file { '/etc/ceph/ceph.conf':
@@ -37,17 +44,11 @@ class profile::ceph::client (
 }
 
 class profile::ceph::client::install (
-  String $release,
-  Optional[String] $version = undef,
+  Variant[SemVer, String[1]] $version,
 ) {
   include epel
 
-  if $version != undef and $version != '' {
-    $repo = "rpm-${version}"
-  } else {
-    $repo = "rpm-${release}"
-  }
-
+  $repo = "rpm-${version}"
   yumrepo { 'ceph-stable':
     ensure        => present,
     enabled       => true,
@@ -75,6 +76,7 @@ define profile::ceph::client::share (
   String $access_key,
   Stdlib::Unixpath $export_path,
   Array[BindMount] $bind_mounts,
+  Array[String] $mount_options = [],
   Optional[Stdlib::Unixpath] $binds_fcontext_equivalence = undef,
   Optional[String] $access_to = undef,
   Optional[String] $share_name = undef,
@@ -111,15 +113,18 @@ define profile::ceph::client::share (
   }
 
   $mon_host_string = join($mon_host, ',')
+  $share_mount_options = join((["name=${_access_to}", '_netdev'] + $mount_options).unique, ',')
   mount { "/mnt/${name}":
-    ensure  => 'mounted',
-    fstype  => 'ceph',
-    device  => "${mon_host_string}:${export_path}",
-    options => "name=${_access_to},_netdev",
-    require => [
+    ensure    => 'mounted',
+    fstype    => 'ceph',
+    device    => "${mon_host_string}:${export_path}",
+    options   => $share_mount_options,
+    require   => [
+      File["/mnt/${name}"],
+    ],
+    subscribe => [
       File['/etc/ceph/ceph.conf'],
       File["/etc/ceph/ceph.client.${_access_to}.keyring"],
-      File["/mnt/${name}"],
     ],
   }
 

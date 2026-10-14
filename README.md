@@ -315,6 +315,8 @@ This class installs the Ceph packages, and configure and mount CephFS shares.
 | :------------ | :---------------------------------------------------------- | -------------------- |
 | `mon_host`    | List of Ceph monitor hostnames                              | Array[String]        |
 | `shares`      | List of Ceph share structures                               | Hash[String, CephFS] |
+| `global_config` | Additional configuration entries for the `[global]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
+| `client_config` | Additional configuration entries for the `[client]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
 
 <details>
 <summary>example</summary>
@@ -341,6 +343,7 @@ Defines access to a CephFS share configuration used by `profile::ceph::client::s
 | `access_to`                   | Access rule's `access to` (name given to cephx access rule)       | String                       | Yes      |
 | `access_key`                  | Access rule's `access key` (secret key of cephx access rule)      | String                       | Yes      |
 | `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
+| `mount_options`               | Optional list of additional mount options.                        | Array[String]                | No       |
 | `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
 | `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
 | `mon_host`                    | Optional list of monitor hosts for this mount (override default)  | Array[String]                | No       |
@@ -374,17 +377,15 @@ Ceph client packages.
 
 ### parameters
 
-| Variable      | Description                                                 | Type             |
-| :------------ | :---------------------------------------------------------- | :--------------- |
-| `release`     | Ceph release used to configure the upstream package repository when `version` is not set | String |
-| `version`     | Optional Ceph version used to configure the upstream package repository instead of `release` | Optional[String] |
+| Variable      | Description                                                                                       | Type                    |
+| :------------ | :------------------------------------------------------------------------------------------------ | :---------------------- |
+| `version`     | Ceph version used to configure the package repository (semantic version number or release name).  | Variant[SemVar, String] |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
-profile::ceph::client::install::release: reef
-profile::ceph::client::install::version: ~
+profile::ceph::client::install::version: reef
 ```
 </details>
 
@@ -392,8 +393,7 @@ profile::ceph::client::install::version: ~
 <summary>example</summary>
 
 ```yaml
-profile::ceph::client::install::release: squid
-profile::ceph::client::install::version: ~
+profile::ceph::client::install::version: squid
 ```
 </details>
 
