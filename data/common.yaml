@@ -292,6 +292,7 @@ prometheus::alertmanager::extra_options: "--web.external-url=%{lookup('prometheu
 
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
+profile::squid::server::cache_dir: /var/spool/squid
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
