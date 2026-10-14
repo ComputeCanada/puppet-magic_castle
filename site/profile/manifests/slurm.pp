@@ -62,17 +62,6 @@ class profile::slurm::base (
     seltype => 'usr_t',
   }
 
-  file { '/etc/slurm/cgroup.conf':
-    ensure  => 'file',
-    owner   => 'slurm',
-    group   => 'slurm',
-    content => epp('profile/slurm/cgroup.conf',
-      {
-        'slurm_version' => $slurm_version,
-      }
-    ),
-  }
-
   $slurm_path = @(END)
     if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
       export SLURM_HOME=/opt/software/slurm
@@ -495,12 +484,26 @@ class profile::slurm::node (
   Enum['running', 'stopped'] $ensure_slurmd = 'running',
   Boolean $enable_tmpfs_mounts = true,
   Array[String] $pam_access_groups = ['wheel'],
+  Hash[String, Variant[String, Numeric]] $cgroup_params = {},
 ) {
   contain profile::slurm::base
 
   package { ['slurm-slurmd', 'slurm-pam_slurm']:
     ensure  => 'installed',
     require => Package['slurm'],
+  }
+
+  $slurm_version = lookup('profile::slurm::base::slurm_version')
+  file { '/etc/slurm/cgroup.conf':
+    ensure  => 'file',
+    owner   => 'slurm',
+    group   => 'slurm',
+    content => epp('profile/slurm/cgroup.conf',
+      {
+        'slurm_version' => $slurm_version,
+        'cgroup_params' => $cgroup_params,
+      }
+    ),
   }
 
   file { '/etc/slurm/prolog.d':
@@ -536,7 +539,6 @@ class profile::slurm::node (
   }
 
   if $enable_tmpfs_mounts {
-    $slurm_version = lookup('profile::slurm::base::slurm_version')
     $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
 
     yumrepo { 'spank-cc-tmpfs_mounts-copr-repo':
