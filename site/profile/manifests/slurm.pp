@@ -503,6 +503,13 @@ class profile::slurm::node (
     require => Package['slurm'],
   }
 
+  file { '/etc/slurm/prolog.d':
+    ensure => 'directory',
+    owner  => 'slurm',
+    group  => 'slurm',
+    mode   => '0755',
+  }
+
   file { '/etc/slurm/epilog.d':
     ensure => 'directory',
     owner  => 'slurm',
