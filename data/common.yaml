@@ -299,6 +299,7 @@ profile::squid::server::cvmfs_acl_regex:
   - '^(.*-cvmfs\.openhtc\.io)$'
   - '^(cvmfs-.*\.genap\.ca)$'
   - '^(.*s1\.eessi\.science)$'
+  - '^(jn-cvmfs-.*\.calculquebec\.ca)$'
 
 profile::cvmfs::client::disable_autofs: "%{facts.is_unprivileged_container}"
 profile::cvmfs::client::quota_limit: 4096
