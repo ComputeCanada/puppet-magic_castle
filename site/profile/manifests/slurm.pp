@@ -73,14 +73,6 @@ class profile::slurm::base (
     ),
   }
 
-  file { '/etc/slurm/epilog':
-    ensure => 'file',
-    owner  => 'slurm',
-    group  => 'slurm',
-    source => 'puppet:///modules/profile/slurm/epilog',
-    mode   => '0755',
-  }
-
   $slurm_path = @(END)
     if ! [[ ":$PATH:" == *":/opt/software/slurm/bin:"* ]]; then
       export SLURM_HOME=/opt/software/slurm
@@ -96,7 +88,7 @@ class profile::slurm::base (
   }
 
   file { '/etc/slurm/slurm.key':
-    ensure  => 'present',
+    ensure  => 'file',
     owner   => 'slurm',
     group   => 'slurm',
     mode    => '0600',
@@ -511,6 +503,13 @@ class profile::slurm::node (
     require => Package['slurm'],
   }
 
+  file { '/etc/slurm/epilog.d':
+    ensure => 'directory',
+    owner  => 'slurm',
+    group  => 'slurm',
+    mode   => '0755',
+  }
+
   if $enable_tmpfs_mounts {
     $slurm_version = lookup('profile::slurm::base::slurm_version')
     $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
@@ -532,6 +531,15 @@ class profile::slurm::node (
       ],
     }
     $plugstack = 'required /opt/software/slurm/lib64/slurm/cc-tmpfs_mounts.so bindself=/tmp bindself=/dev/shm target=/localscratch bind=/var/tmp/'
+
+    file { '/etc/slurm/epilog.d/50-clean-tmpfs.sh':
+      ensure  => 'file',
+      owner   => 'slurm',
+      group   => 'slurm',
+      source  => 'puppet:///modules/profile/slurm/epilog',
+      mode    => '0755',
+      require => File['/etc/slurm/epilog.d'],
+    }
   } else {
     $plugstack = ''
   }
