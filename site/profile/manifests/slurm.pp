@@ -517,6 +517,24 @@ class profile::slurm::node (
     mode   => '0755',
   }
 
+  file { '/etc/slurm/prolog.d/00-noop.sh':
+    ensure  => 'file',
+    owner   => 'slurm',
+    group   => 'slurm',
+    mode    => '0755',
+    content => "#!/bin/sh\nexit 0",
+    require => File['/etc/slurm/prolog.d'],
+  }
+
+  file { '/etc/slurm/epilog.d/00-noop.sh':
+    ensure  => 'file',
+    owner   => 'slurm',
+    group   => 'slurm',
+    mode    => '0755',
+    content => "#!/bin/sh\nexit 0",
+    require => File['/etc/slurm/epilog.d'],
+  }
+
   if $enable_tmpfs_mounts {
     $slurm_version = lookup('profile::slurm::base::slurm_version')
     $cc_tmpfs_mounts_url = "https://download.copr.fedorainfracloud.org/results/cmdntrf/spank-cc-tmpfs_mounts-${slurm_version}/"
