@@ -466,14 +466,15 @@ This class installs CVMFS client and configure repositories.
 
 ### parameters
 
-| Variable                  | Description                                    | Type        |
-| :------------------------ | :--------------------------------------------- | -------------- |
-| `quota_limit`             | Instance local cache directory soft quota (MB) | Integer |
-| `disable_autofs`          | If true, mount repositories directly instead of using autofs | Variant[Boolean, String] |
-| `strict_mount`            | If true, mount only repositories that are listed `repositories` | Boolean |
-| `repositories`            | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
-| `alien_cache_repositories`| List of repositories that require an alien cache | Array[String] |
-| `cvmfs_root`              | Mount root for CVMFS repositories | String |
+| Variable                    | Description                                    | Type        |
+| :-------------------------- | :--------------------------------------------- | -------------- |
+| `quota_limit`               | Instance local cache directory soft quota (MB) | Integer |
+| `disable_autofs`            | If true, mount repositories directly instead of using autofs | Variant[Boolean, String] |
+| `strict_mount`              | If true, mount only repositories that are listed `repositories` | Boolean |
+| `repositories`              | Fully qualified repository names to include in use of utilities such as `cvmfs_config` | Array[String] |
+| `alien_cache_repositories`  | List of repositories that require an alien cache | Array[String] |
+| `alien_cache_repo_template` | Module path to the cvmfs config template for alien cache repos | String |
+| `cvmfs_root`                | Mount root for CVMFS repositories | String |
 
 <details>
 <summary>default values</summary>
@@ -487,6 +488,7 @@ profile::cvmfs::client::repositories:
   - cvmfs-config.computecanada.ca
   - soft.computecanada.ca
 profile::cvmfs::client::alien_cache_repositories: [ ]
+profile::cvmfs::client::alien_cache_repo_template: "profile/cvmfs/alien_cache.conf.epp"
 profile::cvmfs::client::cvmfs_root: "/cvmfs"
 ```
 </details>
