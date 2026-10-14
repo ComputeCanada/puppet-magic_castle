@@ -1855,12 +1855,12 @@ act as an HTTP cache for CVMFS clients in the cluster.
 
 ### parameters
 
-| Variable          | Description                               | Type          |
-| :---------------- | :---------------------------------------- | :------------ |
-| `port`            | Squid service listening port              | Integer       |
-| `cache_size`      | Amount of disk space (MB)                 | Integer       |
-| `cvmfs_acl_regex` | List of allowed CVMFS stratums as regexes | Array[String] |
-
+| Variable          | Description                               | Type             |
+| :---------------- | :---------------------------------------- | :--------------- |
+| `port`            | Squid service listening port              | Integer          |
+| `cache_size`      | Amount of disk space (MB)                 | Integer          |
+| `cache_dir`       | Path to squid cache directory             | Stdlib::Unixpath |
+| `cvmfs_acl_regex` | List of allowed CVMFS stratums as regexes | Array[String]    |
 
 <details>
 <summary>default values</summary>
@@ -1868,6 +1868,7 @@ act as an HTTP cache for CVMFS clients in the cluster.
 ```yaml
 profile::squid::server::port: 3128
 profile::squid::server::cache_size: 4096
+profile::squid::server::cache_dir: /var/spool/squid
 profile::squid::server::cvmfs_acl_regex:
   - '^(cvmfs-.*\.computecanada\.ca)$'
   - '^(cvmfs-.*\.computecanada\.net)$'
