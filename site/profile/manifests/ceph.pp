@@ -121,14 +121,16 @@ define profile::ceph::client::share (
   $mon_host_string = join($mon_host, ',')
   $share_mount_options = join((["name=${_access_to}", '_netdev'] + $mount_options).unique, ',')
   mount { "/mnt/${name}":
-    ensure  => 'mounted',
-    fstype  => 'ceph',
-    device  => "${mon_host_string}:${export_path}",
-    options => $share_mount_options,
-    require => [
+    ensure    => 'mounted',
+    fstype    => 'ceph',
+    device    => "${mon_host_string}:${export_path}",
+    options   => $share_mount_options,
+    require   => [
+      File["/mnt/${name}"],
+    ],
+    subscribe => [
       File['/etc/ceph/ceph.conf'],
       File["/etc/ceph/ceph.client.${_access_to}.keyring"],
-      File["/mnt/${name}"],
     ],
   }
 
