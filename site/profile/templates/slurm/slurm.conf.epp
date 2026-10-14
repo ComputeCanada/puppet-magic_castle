@@ -80,8 +80,8 @@ PrologFlags=alloc,contain
 <% if $enable_scrontab { -%>
 ScronParameters=enable
 <% } -%>
-# Prolog=/etc/slurm/prolog
-Epilog=/etc/slurm/epilog
+Prolog=/etc/slurm/prolog.d/*
+Epilog=/etc/slurm/epilog.d/*
 PlugStackConfig=/etc/slurm/plugstack.conf
 MpiDefault=pmi2
 ProctrackType=proctrack/cgroup
