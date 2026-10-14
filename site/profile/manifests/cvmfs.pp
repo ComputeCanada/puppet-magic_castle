@@ -4,6 +4,7 @@ class profile::cvmfs::client (
   Boolean $strict_mount = false,
   Array[String] $repositories = [],
   Array[String] $alien_cache_repositories = [],
+  String $alien_cache_repo_template = 'profile/cvmfs/alien_cache.conf.epp',
   String $cvmfs_root = '/cvmfs',
 ) {
   include profile::consul
@@ -75,7 +76,7 @@ class profile::cvmfs::client (
 
   $alien_cache_repositories.each |$repo| {
     file { "/etc/cvmfs/config.d/${repo}.conf":
-      content => epp('profile/cvmfs/alien_cache.conf.epp', {
+      content => epp($alien_cache_repo_template, {
           'alien_fs_root'     => $alien_fs_root,
           'alien_folder_name' => $alien_folder_name,
       }),
