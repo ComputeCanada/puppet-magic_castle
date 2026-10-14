@@ -315,6 +315,8 @@ This class installs the Ceph packages, and configure and mount CephFS shares.
 | :------------ | :---------------------------------------------------------- | -------------------- |
 | `mon_host`    | List of Ceph monitor hostnames                              | Array[String]        |
 | `shares`      | List of Ceph share structures                               | Hash[String, CephFS] |
+| `global_config` | Additional configuration entries for the `[global]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
+| `client_config` | Additional configuration entries for the `[client]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
 
 <details>
 <summary>example</summary>
