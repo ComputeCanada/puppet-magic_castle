@@ -13,12 +13,14 @@ type CephFS = Struct[
     'bind_mounts'                => Optional[Array[BindMount]],
     'binds_fcontext_equivalence' => Optional[Stdlib::Unixpath],
     'mon_host'                   => Optional[Array[String]],
+    'mount_options'              => Optional[Array[String]],
   }
 ]
 
 class profile::ceph::client (
   Hash[String, CephFS] $shares,
   Array[String] $mon_host = [],
+  Array[String] $mount_options = [],
   Hash[String, Variant[String, Boolean, Integer]] $global_config = {},
   Hash[String, Variant[String, Boolean, Integer]] $client_config = {},
 ) {
@@ -40,7 +42,10 @@ class profile::ceph::client (
     content => $ceph_conf,
   }
 
-  ensure_resources(profile::ceph::client::share, $shares, { 'mon_host' => $mon_host, 'bind_mounts' => [] })
+  ensure_resources(
+    profile::ceph::client::share,
+    $shares, { 'mon_host' => $mon_host, 'bind_mounts' => [], 'mount_options' => $mount_options }
+  )
 }
 
 class profile::ceph::client::install (
