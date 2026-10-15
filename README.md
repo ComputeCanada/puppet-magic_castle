@@ -1769,6 +1769,22 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 | `ensure_slurmd`         | Desired state of the `slurmd` service (`running` or `stopped`)                               | Enum['running', 'stopped'] |
 | `enable_tmpfs_mounts`   | Enable [spank-cc-tmpfs_mounts](https://github.com/ComputeCanada/spank-cc-tmpfs_mounts) plugin | Boolean |
 | `pam_access_groups`     | Groups that can access the node regardless of Slurm jobs                                      | Array[String] |
+| `cgroup_params`         | Override parameters rendered in `/etc/slurm/cgroup.conf`                                      | Hash[String, Variant[String, Numeric]] |
+
+From [cgroup.conf](https://slurm.schedmd.com/cgroup.conf.html), `cgroup_params` supports:
+- `CgroupMountpoint`
+- `ConstrainCores`
+- `ConstrainRAMSpace`
+- `ConstrainSwapSpace`
+- `ConstrainDevices`
+- `AllowedRamSpace`
+- `AllowedSwapSpace`
+- `MaxRAMPercent`
+- `MaxSwapPercent`
+- `MinRAMSpace`
+- `CgroupJobIdPaths` (Slurm >= 26.05 and later)
+
+Unrecognized keys are ignored.
 
 <details>
 <summary>default values</summary>
@@ -1777,6 +1793,7 @@ This class installs and configure the Slurm node daemon - **slurmd**.
 profile::slurm::node::ensure_slurmd: 'running'
 profile::slurm::node::enable_tmpfs_mounts: true
 profile::slurm::node::pam_access_groups: ['wheel']
+profile::slurm::node::cgroup_params: {}
 ```
 </details>
 
@@ -1785,6 +1802,9 @@ profile::slurm::node::pam_access_groups: ['wheel']
 
 ```yaml
 profile::slurm::node::enable_tmpfs_mounts: false
+profile::slurm::node::cgroup_params:
+  AllowedRamSpace: 95
+  ConstrainSwapSpace: no
 ```
 </details>
 

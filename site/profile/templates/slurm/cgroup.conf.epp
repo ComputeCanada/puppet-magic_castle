@@ -1,13 +1,13 @@
-CgroupMountpoint="/sys/fs/cgroup"
-ConstrainCores=yes
-ConstrainRAMSpace=yes
-ConstrainSwapSpace=yes
-ConstrainDevices=yes
-AllowedRamSpace=100
-AllowedSwapSpace=0
-MaxRAMPercent=100
-MaxSwapPercent=100
-MinRAMSpace=30
+CgroupMountpoint=<%= pick($cgroup_params['CgroupMountpoint'], '/sys/fs/cgroup') %>
+ConstrainCores=<%= pick($cgroup_params['ConstrainCores'], 'yes') %>
+ConstrainRAMSpace=<%= pick($cgroup_params['ConstrainRAMSpace'], 'yes') %>
+ConstrainSwapSpace=<%= pick($cgroup_params['ConstrainSwapSpace'], 'yes') %>
+ConstrainDevices=<%= pick($cgroup_params['ConstrainDevices'], 'yes') %>
+AllowedRamSpace=<%= pick($cgroup_params['AllowedRamSpace'], 100) %>
+AllowedSwapSpace=<%= pick($cgroup_params['AllowedSwapSpace'], 0) %>
+MaxRAMPercent=<%= pick($cgroup_params['MaxRAMPercent'], 100) %>
+MaxSwapPercent=<%= pick($cgroup_params['MaxSwapPercent'], 100) %>
+MinRAMSpace=<%= pick($cgroup_params['MinRAMSpace'], 30) %>
 <% if versioncmp($slurm_version, '26.05') >= 0 { -%>
-CgroupJobIdPaths=yes
+CgroupJobIdPaths=<%= pick($cgroup_params['CgroupJobIdPaths'], yes) %>
 <% } -%>
