@@ -11,6 +11,11 @@ class profile::users::ldap (
     mode   => '0755',
   }
 
+  file { '/sbin/ipa_metadata.py':
+    source => 'puppet:///modules/profile/users/ipa_metadata.py',
+    mode   => '0755',
+  }
+
   # After adding a user or a group, we need to invalidate the SSS cache
   # that could otherwise return that the user or the group does not exist
   # when probing the Unix user account and password database or
@@ -52,6 +57,7 @@ define profile::users::ldap_group (
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
+  $quoted_name = shellquote($name)
   if $posix {
     $arg = ''
   }
@@ -59,15 +65,32 @@ define profile::users::ldap_group (
     $arg = '--nonposix'
   }
   exec { "ldap_group_${name}":
-    command     => "kinit_wrapper ipa group-add ${name} ${arg}",
+    command     => "kinit_wrapper ipa group-add ${quoted_name} ${arg}",
     environment => $environment,
     path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    unless      => "getent group ${name}",
+    unless      => "kinit_wrapper ipa group-show ${quoted_name}",
     notify      => Exec['sss_cache -E'],
     require     => [
       Exec['ipa-install'],
       File['kinit_wrapper'],
     ],
+  }
+
+  if $metadata != {} {
+    $metadata_args = join($metadata.map |$attribute, $value| { shellquote('--metadata', "${attribute}=${value}") }, ' ')
+    $metadata_command = "kinit_wrapper ipa_metadata.py --entity group ${quoted_name} ${metadata_args}"
+    exec { "ldap_group_metadata_${name}":
+      command     => $metadata_command,
+      unless      => "${metadata_command} --dry",
+      environment => $environment,
+      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+      require     => [
+        Exec["ldap_group_${name}"],
+        File['/sbin/ipa_metadata.py'],
+        File['/sbin/ipa_create_user.py'],
+      ],
+      notify      => Exec['sss_cache -E'],
+    }
   }
 
   if $hbac_rules != undef or $automember {
@@ -110,6 +133,7 @@ define profile::users::ldap_user (
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
+  $metadata_args = join($metadata.map |$attribute, $value| { shellquote('--metadata', "${attribute}=${value}") }, ' ')
   $cmd_args = "${group_args} ${$sshpubkey_string}"
   if $count > 1 {
     $page_size = 50
@@ -117,13 +141,13 @@ define profile::users::ldap_user (
     $exec_name = range(1, $count, $page_size).map |$i| {
       "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
     }
-    $command = range(1, $count, $page_size).map |$i| {
-      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+    $user_args = range(1, $count, $page_size).map |$i| {
+      "$(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)})"
     }
     $timeout = $page_size * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
-    $command = ["ipa_create_user.py ${name} ${cmd_args}"]
+    $user_args = [shellquote($name)]
     $timeout = 10
   }
 
@@ -131,9 +155,10 @@ define profile::users::ldap_user (
 
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
+      $command = "ipa_create_user.py ${user_args[$i]} ${cmd_args}"
       exec { $exec_name_i:
-        command     => "kinit_wrapper ${command[$i]}",
-        unless      => "${command[$i]} --dry",
+        command     => "kinit_wrapper ${command}",
+        unless      => "${command} --dry",
         environment => $environment,
         path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
         timeout     => $timeout,
@@ -142,6 +167,19 @@ define profile::users::ldap_user (
           File['/sbin/ipa_create_user.py'],
         ],
         notify      => Exec['sss_cache -E'],
+      }
+
+      if $metadata != {} {
+        $metadata_command = "kinit_wrapper ipa_metadata.py ${user_args[$i]} ${metadata_args}"
+        exec { "ldap_user_metadata_${name}_${i}":
+          command     => $metadata_command,
+          unless      => "${metadata_command} --dry",
+          environment => $environment,
+          path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+          timeout     => $timeout,
+          require     => [Exec[$exec_name_i], File['/sbin/ipa_metadata.py']],
+          notify      => Exec['sss_cache -E'],
+        }
       }
     }
 
