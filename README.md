@@ -315,6 +315,7 @@ This class installs the Ceph packages, and configure and mount CephFS shares.
 | :------------ | :---------------------------------------------------------- | -------------------- |
 | `mon_host`    | List of Ceph monitor hostnames                              | Array[String]        |
 | `shares`      | List of Ceph share structures                               | Hash[String, CephFS] |
+| `mount_options` | Optional list of additional mount options.                | Array[String]        |
 | `global_config` | Additional configuration entries for the `[global]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
 | `client_config` | Additional configuration entries for the `[client]` section of `/etc/ceph/ceph.conf`, written as `key = value`. Defaults to `{}`. | Hash[String, String] |
 
@@ -343,7 +344,7 @@ Defines access to a CephFS share configuration used by `profile::ceph::client::s
 | `access_to`                   | Access rule's `access to` (name given to cephx access rule)       | String                       | Yes      |
 | `access_key`                  | Access rule's `access key` (secret key of cephx access rule)      | String                       | Yes      |
 | `export_path`                 | CephFS export path to mount                                       | Stdlib::Unixpath             | Yes      |
-| `mount_options`               | Optional list of additional mount options.                        | Array[String]                | No       |
+| `mount_options`               | Optional list of additional mount options (override `profile::ceph::client::mount_options`)     | Array[String]                | No       |
 | `bind_mounts`                 | Optional list of bind mounts created from the mounted share       | Array[BindMount]             | No       |
 | `binds_fcontext_equivalence`  | Optional SELinux fcontext equivalence target for bind mounts      | Stdlib::Unixpath             | No       |
 | `mon_host`                    | Optional list of monitor hosts for this mount (override default)  | Array[String]                | No       |
