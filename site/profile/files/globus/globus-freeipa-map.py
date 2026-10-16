@@ -5,14 +5,15 @@ import json
 import pwd
 import os
 import socket
-import subprocess
 import tempfile
 from contextlib import contextmanager
 import sys
+import traceback
 from uuid import UUID
 
-from ipalib import api
-from ipaplatform.paths import paths
+from gssapi.exceptions import GSSError
+from ipalib import api, errors
+from ipalib.kinit import kinit_keytab
 
 
 POSIX_CONNECTOR = '145812c8-decc-41f1-83cf-bb2a85a2a70b'
@@ -21,19 +22,11 @@ TIMEOUT = 5
 
 @contextmanager
 def connect(config):
-    for key in ('principal', 'keytab'):
-        if not isinstance(config[key], str) or not config[key]:
-            raise ValueError('missing Kerberos configuration')
     # A private FILE cache isolates concurrent invocations and is removed even
     # when kinit, API initialization, or the lookup fails.
     with tempfile.TemporaryDirectory(prefix='globus-freeipa-') as directory:
         ccache = 'FILE:' + os.path.join(directory, 'ccache')
-        subprocess.run(
-            [paths.KINIT, '-k', '-t', config['keytab'], '-c', ccache, config['principal']],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=TIMEOUT,
-        )
-        previous_cache = os.environ.get('KRB5CCNAME')
-        os.environ['KRB5CCNAME'] = ccache
+        kinit_keytab(config['principal'], config['keytab'], ccache_name=ccache)
         previous_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(TIMEOUT)
         try:
@@ -43,13 +36,10 @@ def connect(config):
             yield api
         finally:
             try:
-                api.Backend.rpcclient.disconnect()
+                if api.isdone('finalize') and api.Backend.rpcclient.isconnected():
+                    api.Backend.rpcclient.disconnect()
             finally:
                 socket.setdefaulttimeout(previous_timeout)
-                if previous_cache is None:
-                    os.environ.pop('KRB5CCNAME', None)
-                else:
-                    os.environ['KRB5CCNAME'] = previous_cache
 
 
 def lookup(client, username):
