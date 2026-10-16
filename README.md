@@ -2073,6 +2073,29 @@ A `profile::users::ldap_user` is defined as a dictionary with the following keys
 | `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
+| `metadata`        | LDAP attributes managed on every Puppet run               | Hash[Pattern[/^[a-zA-Z][a-zA-Z0-9-]*$/], Variant[String, Integer]] | Yes        |
+
+`profile::freeipa::server` collects metadata attribute names from the users and groups
+configured in `profile::users::ldap`. It creates missing attributes as single-valued strings with case-sensitive equality
+and stable UUID-based OIDs, and permits them through the auxiliary object class
+`mcUserMetadata` for users and `mcGroupMetadata` for groups. Attribute definitions are
+shared when the same key is used by users and groups. Existing LDAP attributes retain their original types and
+constraints. Names must start with a letter and contain only letters, digits, or hyphens.
+
+The FreeIPA server class provisions the schema and default object classes before user
+and group creation. `profile::users` attaches the classes to existing entries when
+managing their metadata. Values are checked and updated
+on each Puppet run. An empty string clears an attribute; removing a metadata key stops
+managing its value. Schema definitions and previously permitted attributes are retained
+when keys disappear, so existing entries remain valid.
+
+```yaml
+profile::users::ldap::users:
+  alice:
+    metadata:
+      mcProject: research
+      mcTeam: astronomy
+```
 
 A `profile::users::ldap_group` is defined as a dictionary with the following keys:
 | Variable          | Description                                                        | Type                            | Optional ? |
@@ -2080,7 +2103,17 @@ A `profile::users::ldap_group` is defined as a dictionary with the following key
 | `posix`           | Whether this is a posix group or not                               | Boolean                         | Yes        |
 | `automember`      | Whether users are automatically member of that group               | Boolean                         | Yes        |
 | `hbac_rules`      | List of HBAC rule names (`"tag:service"`) that apply to this group | Array[String]                   | Yes        |
+| `metadata`        | LDAP attributes managed on every Puppet run                        | Hash[Pattern[/^[a-zA-Z][a-zA-Z0-9-]*$/], Variant[String, Integer]] | Yes        |
 
+Group metadata uses the same schema and value-management rules described above:
+
+```yaml
+profile::users::ldap::groups:
+  research:
+    metadata:
+      mcProject: astronomy
+      mcSponsor: university
+```
 
 By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
 longer match to what is prescribed in YAML. To disable this feature, add

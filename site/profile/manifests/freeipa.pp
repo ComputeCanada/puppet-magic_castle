@@ -553,6 +553,36 @@ class profile::freeipa::server (
   include profile::sssd::client
   include profile::users::ldap
 
+  # Discover metadata from the declared class so explicit parameters and Hiera agree.
+  $user_metadata_attributes = sort(unique(flatten($profile::users::ldap::users.map |$username, $user| {
+    keys(pick($user['metadata'], {}))
+  })))
+  $group_metadata_attributes = sort(unique(flatten($profile::users::ldap::groups.map |$groupname, $group| {
+    keys(pick($group['metadata'], {}))
+  })))
+  if $user_metadata_attributes != [] or $group_metadata_attributes != [] {
+    file { '/sbin/ipa_metadata_schema.py':
+      source => 'puppet:///modules/profile/freeipa/ipa_metadata_schema.py',
+      mode   => '0755',
+    }
+    file { '/etc/ipa/mc-metadata-attributes.json':
+      content => to_json({ 'user' => $user_metadata_attributes, 'group' => $group_metadata_attributes }),
+      mode    => '0644',
+      require => Exec['ipa-install'],
+    }
+    exec { 'ipa_metadata_schema':
+      command => '/sbin/ipa_metadata_schema.py /etc/ipa/mc-metadata-attributes.json',
+      unless  => '/sbin/ipa_metadata_schema.py /etc/ipa/mc-metadata-attributes.json --dry',
+      require => [
+        File['/sbin/ipa_metadata_schema.py'],
+        File['/etc/ipa/mc-metadata-attributes.json'],
+        Service['ipa'],
+      ],
+    }
+    Exec['ipa_metadata_schema'] -> Profile::Users::Ldap_user <| |>
+    Exec['ipa_metadata_schema'] -> Profile::Users::Ldap_group <| |>
+  }
+
   if $enable_mokey {
     include profile::freeipa::mokey
   }
