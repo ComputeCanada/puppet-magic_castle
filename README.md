@@ -2073,6 +2073,7 @@ A `profile::users::ldap_user` is defined as a dictionary with the following keys
 | `public_keys`     | List of ssh authorized keys for the user                  | Array[String]                   | Yes        |
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
+| `idp_user_id`     | External IdP user identifier                              | String (non-empty)              | Yes        |
 
 A `profile::users::ldap_group` is defined as a dictionary with the following keys:
 | Variable          | Description                                                        | Type                            | Optional ? |
@@ -2125,6 +2126,13 @@ profile::users::ldap::users:
   alice:
     groups: ['def-sponsor00']
     public_keys: ['ssh-rsa ... user@local', 'ssh-ed25519 ...']
+```
+
+A user with an external IdP identity set at creation:
+```yaml
+profile::users::ldap::users:
+  alice:
+    idp_user_id: 'alice@example.org'
 ```
 
 Allowing LDAP users to connect to the cluster only via JupyterHub:

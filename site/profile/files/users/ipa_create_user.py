@@ -34,7 +34,7 @@ def init_api():
     api.Backend.cli.create_context()
 
 
-def user_add(uid, first, last, password, shell, sshpubkeys):
+def user_add(uid, first, last, password, shell, sshpubkeys, idp_user_id=None):
     kargs = dict()
     kargs['uid'] = text_type(uid)
     kargs['givenname'] = text_type(first)
@@ -44,6 +44,8 @@ def user_add(uid, first, last, password, shell, sshpubkeys):
     if sshpubkeys:
         kargs['ipasshpubkey'] = list(map(text_type, sshpubkeys))
     kargs['loginshell'] = text_type(shell)
+    if idp_user_id is not None:
+        kargs['ipaidpsub'] = text_type(idp_user_id)
 
     try:
         uidnumber = os.stat("/mnt/home/" + uid).st_uid
@@ -111,7 +113,7 @@ def dry_run(users, groups):
     return False
 
 
-def main(users, groups, passwd, sshpubkeys):
+def main(users, groups, passwd, sshpubkeys, idp_user_id=None):
     init_api()
     added_users = set()
     for username in users:
@@ -121,7 +123,8 @@ def main(users, groups, passwd, sshpubkeys):
             last=username,
             password=passwd,
             shell="/bin/bash",
-            sshpubkeys=sshpubkeys
+            sshpubkeys=sshpubkeys,
+            idp_user_id=idp_user_id,
         )
         if user is not None:
             added_users.add(username)
@@ -145,8 +148,14 @@ if __name__ == "__main__":
     parser.add_argument("--group", action='append', help="group the users will be member of (can be specified multiple times)")
     parser.add_argument("--passwd", help="users's password")
     parser.add_argument("--sshpubkey", action="append", help="SSH public key (can be specified multiple times)")
+    parser.add_argument("--idp-user-id", help="external IdP user identifier, set only at creation (single user only)")
     parser.add_argument("--dry", help="determine if changes are required", action='store_true')
     args = parser.parse_args()
+    if args.idp_user_id is not None:
+        if not args.idp_user_id:
+            parser.error("--idp-user-id must not be empty")
+        if len(args.users) != 1:
+            parser.error("--idp-user-id requires a single user")
 
     if args.passwd is not None:
         passwd = args.passwd
@@ -163,5 +172,6 @@ if __name__ == "__main__":
             users=args.users,
             groups=args.group,
             passwd=passwd,
-            sshpubkeys=args.sshpubkey
+            sshpubkeys=args.sshpubkey,
+            idp_user_id=args.idp_user_id,
         )

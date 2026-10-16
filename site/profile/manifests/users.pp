@@ -104,11 +104,20 @@ define profile::users::ldap_user (
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
+  Optional[String[1]] $idp_user_id = undef,
 ) {
+  if $idp_user_id != undef and $count > 1 {
+    fail('idp_user_id cannot be used with count > 1')
+  }
+
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
-  $cmd_args = "${group_args} ${$sshpubkey_string}"
+  $idp_args = $idp_user_id ? {
+    undef   => '',
+    default => shellquote("--idp-user-id=${idp_user_id}"),
+  }
+  $cmd_args = "${group_args} ${$sshpubkey_string} ${idp_args}"
   if $count > 1 {
     $page_size = 50
     $prefix = $name
