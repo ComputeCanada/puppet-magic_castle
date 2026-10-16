@@ -11,7 +11,12 @@ class profile::globus (
   Array[String] $domains = [],
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
+  Boolean $freeipa_mapping = false,
 ) {
+  if $freeipa_mapping and $identity_mapping != undef {
+    fail('freeipa_mapping and identity_mapping are mutually exclusive')
+  }
+
   stdlib::ensure_packages(['wget'], { ensure => 'present' })
   stdlib::ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
@@ -33,7 +38,7 @@ class profile::globus (
         'public_ip'        => lookup('terraform.self.public_ip'),
         'display_name'     => $display_name,
         'domain_string'    => $domain_string,
-        'identity_mapping' => $identity_mapping != undef,
+        'identity_mapping' => $identity_mapping != undef or $freeipa_mapping,
       }
     ),
   }
@@ -69,13 +74,52 @@ class profile::globus (
     ),
   }
 
-  if $identity_mapping {
+  if $freeipa_mapping {
+    include profile::globus::keytab
+
+    file { '/usr/local/bin/globus-freeipa-map':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0755',
+      seltype => 'bin_t',
+      source  => 'puppet:///modules/profile/globus/globus-freeipa-map.py',
+      before  => Exec['globus-gateway-setup'],
+    }
+
+    $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+    $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+    $principal = "gcsweb/${fqdn}@${upcase($ipa_domain)}"
+
+    file { '/etc/globus/freeipa-mapping.json':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      content => stdlib::to_json_pretty({
+          'principal' => $principal,
+          'keytab'    => '/etc/globus/gcsweb.keytab',
+      }),
+      require => Exec['globus-node-setup'],
+      before  => Exec['globus-gateway-setup'],
+    }
+    $mapping_document = {
+      'DATA_TYPE' => 'external_identity_mapping#1.0.0',
+      'command'   => ['/usr/local/bin/globus-freeipa-map'],
+    }
+
+    Class['profile::globus::keytab'] -> Exec['globus-gateway-setup']
+  } else {
+    $mapping_document = { 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }
+  }
+
+  if $identity_mapping or $freeipa_mapping {
     file { '/etc/globus/identity_mapping.json':
       ensure  => 'file',
       owner   => 'root',
       group   => 'root',
       mode    => '0700',
-      content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
+      content => stdlib::to_json_pretty($mapping_document),
       require => Exec['globus-node-setup'],
       before  => Exec['globus-gateway-setup'],
     }
@@ -139,4 +183,78 @@ class profile::globus (
 
   Firewall <| |> -> Exec['globus-endpoint-setup']
   Mount <| |> -> Exec['globus-collection-setup']
+}
+
+# Provision the mapper's service keytab using the same lifecycle as JupyterHub.
+class profile::globus::keytab {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $service_name = "gcsweb/${fqdn}"
+  $role_name = 'Globus FreeIPA identity mapping'
+  $service_register_script = @("EOF")
+    results = api.Command.batch(
+      { 'method': 'service_add', 'params': [['${service_name}'], {}]},
+      { 'method': 'permission_add', 'params': [['${role_name}'], {
+          'type': 'user',
+          'ipapermright': ['read', 'search', 'compare'],
+          'attrs': ['uid', 'ipaidpsub', 'nsaccountlock', 'objectclass'],
+          'ipapermbindruletype': 'permission',
+      }]},
+      { 'method': 'privilege_add', 'params': [['${role_name}'], {}]},
+      { 'method': 'role_add', 'params': [['${role_name}'], {'description': 'Globus identity mapping lookups'}]},
+      { 'method': 'privilege_add_permission', 'params': [['${role_name}'], {'permission': '${role_name}'}]},
+      { 'method': 'role_add_privilege', 'params': [['${role_name}'], {'privilege': '${role_name}'}]},
+      { 'method': 'role_add_member', 'params': [['${role_name}'], {'service': '${service_name}'}]},
+    )
+    for result in results['results']:
+        if result.get('error') and result.get('error_name') != 'DuplicateEntry':
+            raise RuntimeError(result['error'])
+    if '${role_name}' not in api.Command.privilege_show('${role_name}')['result'].get('memberof_permission', []):
+        raise RuntimeError('permission assignment failed')
+    if '${role_name}' not in api.Command.role_show('${role_name}')['result'].get('memberof_privilege', []):
+        raise RuntimeError('privilege assignment failed')
+    if '${service_name}@${upcase($ipa_domain)}' not in api.Command.role_show('${role_name}')['result'].get('member_service', []):
+        raise RuntimeError('service assignment failed')
+    |EOF
+
+  file { '/etc/globus/ipa_register_service.py':
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    content => $service_register_script,
+    require => Exec['globus-node-setup'],
+  }
+
+  file { 'kinit_wrapper':
+    path   => '/usr/bin/kinit_wrapper',
+    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
+    mode   => '0755',
+  }
+
+  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
+  $keytab_command = @("EOT")
+    umask 077 && \
+    kinit_wrapper ipa console /etc/globus/ipa_register_service.py && \
+    kinit_wrapper ipa-getkeytab -p ${service_name} -k /etc/globus/gcsweb.keytab
+    |EOT
+  exec { 'globus_gcsweb_keytab':
+    command     => $keytab_command,
+    creates     => '/etc/globus/gcsweb.keytab',
+    require     => [
+      Exec['globus-node-setup'],
+      Exec['ipa-install'],
+      File['kinit_wrapper'],
+    ],
+    subscribe   => File['/etc/globus/ipa_register_service.py'],
+    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
+    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  }
+
+  file { '/etc/globus/gcsweb.keytab':
+    owner     => 'root',
+    group     => 'gcsweb',
+    mode      => '0640',
+    subscribe => Exec['globus_gcsweb_keytab'],
+    require   => Exec['globus-node-setup'],
+  }
 }
