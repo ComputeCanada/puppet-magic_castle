@@ -99,6 +99,19 @@ def map_identities(document, client, all_matches=False):
     return results
 
 
+def write_result(results):
+    json.dump({'DATA_TYPE': 'identity_mapping_output#1.0.0', 'result': results}, sys.stdout)
+    sys.stdout.write('\n')
+
+
+def fail(message, error=None):
+    print('FreeIPA identity mapping failed: {}'.format(message), file=sys.stderr)
+    if error is not None:
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+    write_result([])
+    return 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-c', required=True, help='Globus connector UUID')
@@ -106,25 +119,44 @@ def main(argv=None):
     parser.add_argument('-a', action='store_true', help='return all mappings')
     parser.add_argument('--config', default='/etc/globus/freeipa-mapping.json')
     args = parser.parse_args(argv)
-    output = {'DATA_TYPE': 'identity_mapping_output#1.0.0', 'result': []}
-    status = 0
+    if args.c != POSIX_CONNECTOR:
+        return fail('only the POSIX connector is supported')
+
     try:
-        if args.c != POSIX_CONNECTOR:
-            raise ValueError('only the POSIX connector is supported')
         document = json.load(sys.stdin)
+    except (json.JSONDecodeError, UnicodeError, OSError) as error:
+        return fail('cannot read identity mapping input', error)
+
+    try:
         with open(args.config) as config_file:
             config = json.load(config_file)
+    except (json.JSONDecodeError, UnicodeError, OSError) as error:
+        return fail('cannot read Kerberos configuration', error)
+
+    if not isinstance(config, dict) or any(
+            not isinstance(config.get(key), str) or not config[key]
+            for key in ('principal', 'keytab')):
+        return fail('Kerberos configuration requires nonempty principal and keytab strings')
+
+    try:
         with connect(config) as client:
             results = map_identities(document, client, args.a)
-        output['result'] = results
+    except GSSError as error:
+        return fail('Kerberos authentication failed', error)
+    except errors.PublicError as error:
+        return fail('FreeIPA API request failed', error)
+    except OSError as error:
+        return fail('system or connection error', error)
+    except ValueError as error:
+        return fail('invalid identity mapping input or ambiguous lookup', error)
+    except AssertionError as error:
+        return fail('FreeIPA API assertion failed', error)
     except Exception as error:
-        # Fail closed for IPA, Kerberos, transport and input errors, without
-        # exposing credentials or identity data in diagnostics.
-        print('FreeIPA identity mapping failed ({})'.format(type(error).__name__), file=sys.stderr)
-        status = 1
-    json.dump(output, sys.stdout)
-    sys.stdout.write('\n')
-    return status
+        # Unexpected API or mapping failures must still return Globus JSON.
+        return fail('unexpected API or mapping error', error)
+
+    write_result(results)
+    return 0
 
 
 if __name__ == '__main__':
