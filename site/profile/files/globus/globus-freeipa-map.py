@@ -55,19 +55,18 @@ def connect(config):
     with tempfile.TemporaryDirectory(prefix='globus-freeipa-') as directory:
         ccache = 'FILE:' + os.path.join(directory, 'ccache')
         kinit_keytab(config['principal'], config['keytab'], ccache_name=ccache)
+        os.environ['KRB5CCNAME'] = ccache
         previous_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(TIMEOUT)
-        rpcclient = None
         try:
             api.bootstrap(context='cli')
             api.finalize()
-            rpcclient = api.Backend.rpcclient
-            rpcclient.connect(ccache=ccache)
+            api.Backend.rpcclient.connect(ccache=ccache)
             yield api
         finally:
             try:
-                if rpcclient is not None and rpcclient.isconnected():
-                    rpcclient.disconnect()
+                if api.Backend.rpcclient is not None and api.Backend.rpcclient.isconnected():
+                    api.Backend.rpcclient.disconnect()
             finally:
                 socket.setdefaulttimeout(previous_timeout)
 
