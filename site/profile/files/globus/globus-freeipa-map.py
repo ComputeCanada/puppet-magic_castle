@@ -11,7 +11,7 @@ from contextlib import contextmanager
 import sys
 from uuid import UUID
 
-from ipalib import create_api
+from ipalib import api
 from ipaplatform.paths import paths
 
 
@@ -36,17 +36,15 @@ def connect(config):
         os.environ['KRB5CCNAME'] = ccache
         previous_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(TIMEOUT)
-        client = None
         try:
-            client = create_api(mode='production')
-            client.bootstrap(context='cli', confdir='/etc/ipa', in_server=False)
-            client.finalize()
-            client.Backend.rpcclient.connect(ccache=ccache)
-            yield client
+            api.bootstrap(context='cli')
+            api.finalize()
+            api.Backend.rpcclient.connect(ccache=ccache)
+            yield api
         finally:
             try:
-                if client is not None and client.isdone('finalize') and client.Backend.rpcclient.isconnected():
-                    client.Backend.rpcclient.disconnect()
+                if api is not None and api.isdone('finalize') and api.Backend.rpcclient.isconnected():
+                    api.Backend.rpcclient.disconnect()
             finally:
                 socket.setdefaulttimeout(previous_timeout)
                 if previous_cache is None:
@@ -60,7 +58,7 @@ def lookup(client, username):
     # rejected. Do not accept a partial result if the server truncates a search.
     response = client.Command.user_find(
         ipaidpsub=username, sizelimit=2, timelimit=TIMEOUT,
-        preserved=False, no_members=True,
+        preserved=False,
     )
     entries = response['result']
     if response.get('truncated') or len(entries) > 1:
