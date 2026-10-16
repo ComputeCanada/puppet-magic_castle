@@ -48,6 +48,7 @@ define profile::users::ldap_group (
   Boolean $posix = true,
   Boolean $automember = false,
   Optional[Array[String]] $hbac_rules = undef,
+  Hash[Pattern[/^[a-zA-Z][a-zA-Z0-9-]*$/], Variant[String, Integer]] $metadata = {},
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
@@ -104,6 +105,7 @@ define profile::users::ldap_user (
   Integer[0] $count = 1,
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
+  Hash[Pattern[/^[a-zA-Z][a-zA-Z0-9-]*$/], Variant[String, Integer]] $metadata = {},
 ) {
   $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
