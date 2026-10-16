@@ -11,6 +11,7 @@ import sys
 import traceback
 from uuid import UUID
 
+import jsonschema
 from gssapi.exceptions import GSSError
 from ipalib import api, errors
 from ipalib.kinit import kinit_keytab
@@ -18,6 +19,33 @@ from ipalib.kinit import kinit_keytab
 
 POSIX_CONNECTOR = '145812c8-decc-41f1-83cf-bb2a85a2a70b'
 TIMEOUT = 5
+INPUT_SCHEMA = {
+    '$schema': 'http://json-schema.org/draft-07/schema#',
+    'type': 'object',
+    'required': ['DATA_TYPE', 'identities'],
+    'properties': {
+        'DATA_TYPE': {'const': 'identity_mapping_input#1.0.0'},
+        'identities': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'required': ['id'],
+                'properties': {'id': {'type': 'string', 'format': 'uuid'}},
+            },
+        },
+    },
+}
+FORMAT_CHECKER = jsonschema.FormatChecker()
+
+
+# jsonschema 3.2.0 has no built-in UUID checker. Use the same check on both
+# supported versions to preserve the UUID formats previously accepted here.
+@FORMAT_CHECKER.checks('uuid', raises=ValueError)
+def is_uuid(value):
+    if not isinstance(value, str):
+        return True  # The schema's type constraint rejects non-string IDs.
+    UUID(value)
+    return True
 
 
 @contextmanager
@@ -73,27 +101,16 @@ def lookup(client, username):
     return uid
 
 
-def map_identities(document, client, all_matches=False):
-    if (not isinstance(document, dict) or
-            document.get('DATA_TYPE') != 'identity_mapping_input#1.0.0' or
-            not isinstance(document.get('identities'), list)):
-        raise ValueError('invalid identity mapping input')
-    identities = document['identities']
-    for identity in identities:
-        if not isinstance(identity, dict) or not isinstance(identity.get('id'), str):
-            raise ValueError('invalid identity')
-        # Raise a ValueError if the provided UUID is invalid
-        UUID(identity['id'])
+def map_identities(identities, client, all_matches=False):
     results = []
     for identity in identities:
         username = identity.get('username')
+        # Skip if the identity does not have a valid username
         if not isinstance(username, str) or not username:
             continue
         uid = lookup(client, username)
         if uid is not None:
-            mapping = {'id': identity['id'], 'output': uid}
-            if mapping not in results:
-                results.append(mapping)
+            results.append({'id': identity['id'], 'output': uid})
             if not all_matches:
                 break
     return results
@@ -128,6 +145,11 @@ def main(argv=None):
         return fail('cannot read identity mapping input', error)
 
     try:
+        jsonschema.validate(document, INPUT_SCHEMA, format_checker=FORMAT_CHECKER)
+    except jsonschema.ValidationError as error:
+        return fail('invalid identity mapping input', error)
+
+    try:
         with open(args.config) as config_file:
             config = json.load(config_file)
     except (json.JSONDecodeError, UnicodeError, OSError) as error:
@@ -140,7 +162,7 @@ def main(argv=None):
 
     try:
         with connect(config) as client:
-            results = map_identities(document, client, args.a)
+            results = map_identities(document['identities'], client, args.a)
     except GSSError as error:
         return fail('Kerberos authentication failed', error)
     except errors.PublicError as error:
