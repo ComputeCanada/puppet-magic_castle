@@ -43,8 +43,7 @@ def connect(config):
             yield api
         finally:
             try:
-                if api is not None and api.isdone('finalize') and api.Backend.rpcclient.isconnected():
-                    api.Backend.rpcclient.disconnect()
+                api.Backend.rpcclient.disconnect()
             finally:
                 socket.setdefaulttimeout(previous_timeout)
                 if previous_cache is None:
@@ -93,6 +92,7 @@ def map_identities(document, client, all_matches=False):
     for identity in identities:
         if not isinstance(identity, dict) or not isinstance(identity.get('id'), str):
             raise ValueError('invalid identity')
+        # Raise a ValueError if the provided UUID is invalid
         UUID(identity['id'])
     results = []
     for identity in identities:
