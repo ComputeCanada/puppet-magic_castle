@@ -57,15 +57,17 @@ def connect(config):
         kinit_keytab(config['principal'], config['keytab'], ccache_name=ccache)
         previous_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(TIMEOUT)
+        rpcclient = None
         try:
             api.bootstrap(context='cli')
             api.finalize()
-            api.Backend.rpcclient.connect(ccache=ccache)
+            rpcclient = api.Backend.rpcclient
+            rpcclient.connect(ccache=ccache)
             yield api
         finally:
             try:
-                if api.isdone('finalize') and api.Backend.rpcclient.isconnected():
-                    api.Backend.rpcclient.disconnect()
+                if rpcclient is not None and rpcclient.isconnected():
+                    rpcclient.disconnect()
             finally:
                 socket.setdefaulttimeout(previous_timeout)
 
