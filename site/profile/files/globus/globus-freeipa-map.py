@@ -55,7 +55,8 @@ def connect(config):
     with tempfile.TemporaryDirectory(prefix='globus-freeipa-') as directory:
         ccache = 'FILE:' + os.path.join(directory, 'ccache')
         kinit_keytab(config['principal'], config['keytab'], ccache_name=ccache)
-        os.environ['KRB5CCNAME'] = ccache
+        # TODO: find out if required or not
+        # os.environ['KRB5CCNAME'] = ccache
         previous_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(TIMEOUT)
         try:
