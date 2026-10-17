@@ -35,6 +35,15 @@ INPUT_SCHEMA = {
         },
     },
 }
+CONFIG_SCHEMA = {
+    '$schema': 'http://json-schema.org/draft-07/schema#',
+    'type': 'object',
+    'required': ['principal', 'keytab'],
+    'properties': {
+        'principal': {'type': 'string', 'minLength': 1},
+        'keytab': {'type': 'string', 'minLength': 1},
+    },
+}
 FORMAT_CHECKER = jsonschema.FormatChecker()
 
 
@@ -157,10 +166,10 @@ def main(argv=None):
     except (json.JSONDecodeError, UnicodeError, OSError) as error:
         return fail('cannot read Kerberos configuration', error)
 
-    if not isinstance(config, dict) or any(
-            not isinstance(config.get(key), str) or not config[key]
-            for key in ('principal', 'keytab')):
-        return fail('Kerberos configuration requires nonempty principal and keytab strings')
+    try:
+        jsonschema.validate(config, CONFIG_SCHEMA)
+    except jsonschema.ValidationError as error:
+        return fail('invalid Kerberos configuration', error)
 
     try:
         with connect(config) as client:
