@@ -27,9 +27,6 @@ define profile::freeipa::service_keytab (
   String[1] $owner = 'root',
   String[1] $mode = '0640',
 ) {
-  include profile::freeipa::kinit_wrapper
-
-  $wrapper_path = '/usr/local/bin/kinit_wrapper'
   $service_registration = '/usr/local/sbin/register_service.py'
   ensure_resource(
     'file',
@@ -44,7 +41,6 @@ define profile::freeipa::service_keytab (
   )
 
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $config = {
     'service'           => $service_name,
     'realm'             => upcase($ipa_domain),
@@ -64,22 +60,19 @@ define profile::freeipa::service_keytab (
     content => stdlib::to_json_pretty($config),
   }
 
-  exec { "ipa_register_service_${title}":
-    command     => shellquote($wrapper_path, 'ipa', 'console', $service_registration),
+  profile::freeipa::admin_exec { "ipa_register_service_${title}":
+    command     => shellquote('ipa', 'console', $service_registration),
     refreshonly => true,
     subscribe   => [File[$service_registration], File[$config_path]],
-    require     => [File[$wrapper_path], Exec['ipa-install']],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}", "IPA_SERVICE_CONFIG=${config_path}"],
-    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+    require     => Exec['ipa-install'],
+    environment => ["IPA_SERVICE_CONFIG=${config_path}"],
   }
 
-  $getkeytab_command = shellquote($wrapper_path, 'ipa-getkeytab', '-p', $keytab_principal, '-k', $keytab_path)
-  exec { "ipa_service_keytab_${title}":
-    command     => "umask 077 && ${getkeytab_command}",
-    creates     => $keytab_path,
-    require     => Exec["ipa_register_service_${title}"],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+  $getkeytab_command = shellquote('ipa-getkeytab', '-p', $keytab_principal, '-k', $keytab_path)
+  profile::freeipa::admin_exec { "ipa_service_keytab_${title}":
+    command => "umask 077 && ${getkeytab_command}",
+    creates => $keytab_path,
+    require => Profile::Freeipa::Admin_exec["ipa_register_service_${title}"],
   }
 
   file { $keytab_path:
@@ -87,6 +80,6 @@ define profile::freeipa::service_keytab (
     owner   => $owner,
     group   => $group,
     mode    => $mode,
-    require => Exec["ipa_service_keytab_${title}"],
+    require => Profile::Freeipa::Admin_exec["ipa_service_keytab_${title}"],
   }
 }

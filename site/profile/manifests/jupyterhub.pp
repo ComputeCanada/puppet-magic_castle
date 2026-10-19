@@ -52,7 +52,6 @@ class profile::jupyterhub::hub::keytab {
     keytab_principal => 'jupyterhub/jupyterhub',
     config_path      => "${jupyterhub_prefix}/bin/ipa_register_service.json",
     keytab_path      => '/etc/jupyterhub/jupyterhub.keytab',
-    wrapper_path     => "${jupyterhub_prefix}/bin/kinit_wrapper",
     group            => 'jupyterhub',
     role_name        => 'JupyterHub',
     role_description => 'JupyterHub User management',

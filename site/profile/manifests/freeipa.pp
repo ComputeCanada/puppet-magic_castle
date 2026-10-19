@@ -252,8 +252,6 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
-  include profile::freeipa::kinit_wrapper
-
   $proxy_domain = lookup('profile::reverse_proxy::domain_name')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
@@ -350,24 +348,20 @@ class profile::freeipa::server (
     require => File['/etc/ipa'],
   }
 
-  exec { 'ipa_server_base_config':
-    command     => 'kinit_wrapper ipa console /etc/ipa/ipa_server_base_config.py',
+  profile::freeipa::admin_exec { 'ipa_server_base_config':
+    command     => 'ipa console /etc/ipa/ipa_server_base_config.py',
     refreshonly => true,
     require     => [
       File['/etc/ipa/ipa_server_base_config.py'],
       Exec['ipa-install'],
     ],
     subscribe   => File['/etc/ipa/ipa_server_base_config.py'],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
   # Configure the password of the admin accounts to never expire
-  ~> exec { 'ipa_admin_passwd_reset':
-    command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
+  ~> profile::freeipa::admin_exec { 'ipa_admin_passwd_reset':
+    command     => 'printf "%s\n" "$IPA_ADMIN_PASSWD" "$IPA_ADMIN_PASSWD" "$IPA_ADMIN_PASSWD" | kpasswd',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
   exec { 'ipa_regen_cert':
@@ -377,7 +371,7 @@ class profile::freeipa::server (
     tries     => 5,
     try_sleep => 10,
     require   => [
-      Exec['ipa_server_base_config'],
+      Profile::Freeipa::Admin_exec['ipa_server_base_config'],
       Service['certmonger'],
     ],
   }
@@ -399,14 +393,9 @@ class profile::freeipa::server (
     require => File['/etc/ipa'],
   }
 
-  exec { 'hbac_rules':
-    command     => 'kinit_wrapper ipa console /etc/ipa/hbac_rules.py',
+  profile::freeipa::admin_exec { 'hbac_rules':
+    command     => 'ipa console /etc/ipa/hbac_rules.py',
     refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
       File['/etc/ipa/hbac_rules.py'],
       Exec['ipa-install'],
@@ -579,7 +568,6 @@ class profile::freeipa::mokey (
     ],
   }
 
-  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   mysql::db { 'mokey':
@@ -659,28 +647,20 @@ class profile::freeipa::mokey (
     ],
   }
 
-  exec { 'ipa_group_self-signup':
-    command     => 'kinit_wrapper ipa group-add self-signup --nonposix',
+  profile::freeipa::admin_exec { 'ipa_group_self-signup':
+    command     => 'ipa group-add self-signup --nonposix',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
       Package['mokey'],
       Exec['ipa-install'],
     ],
   }
 
-  exec { 'ipa_self-signup_automember':
-    command     => 'kinit_wrapper ipa automember-add --type=group self-signup',
+  profile::freeipa::admin_exec { 'ipa_self-signup_automember':
+    command     => 'ipa automember-add --type=group self-signup',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
-      Exec['ipa_group_self-signup']
+      Profile::Freeipa::Admin_exec['ipa_group_self-signup']
     ],
   }
 
@@ -691,15 +671,11 @@ class profile::freeipa::mokey (
   # part of the self-signup group.
   # We had to come up with this automember rule because Mokey does not provide the ability
   # to assign a group to users who self-signup.
-  exec { 'ipa_self-signup_automember-rule':
-    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
+  profile::freeipa::admin_exec { 'ipa_self-signup_automember-rule':
+    command     => "ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
-      Exec['ipa_self-signup_automember'],
+      Profile::Freeipa::Admin_exec['ipa_self-signup_automember'],
     ],
   }
 }
