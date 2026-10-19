@@ -185,76 +185,29 @@ class profile::globus (
   Mount <| |> -> Exec['globus-collection-setup']
 }
 
-# Provision the mapper's service keytab using the same lifecycle as JupyterHub.
+# Provision the mapper's service principal, permissions, and keytab.
 class profile::globus::keytab {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
-  $service_name = "gcsweb/${fqdn}"
   $role_name = 'Globus FreeIPA identity mapping'
-  $service_register_script = @("EOF")
-    results = api.Command.batch(
-      { 'method': 'service_add', 'params': [['${service_name}'], {}]},
-      { 'method': 'permission_add', 'params': [['${role_name}'], {
-          'type': 'user',
-          'ipapermright': ['read', 'search', 'compare'],
-          'attrs': ['uid', 'ipaidpsub', 'nsaccountlock', 'objectclass'],
-          'ipapermbindruletype': 'permission',
-      }]},
-      { 'method': 'privilege_add', 'params': [['${role_name}'], {}]},
-      { 'method': 'role_add', 'params': [['${role_name}'], {'description': 'Globus identity mapping lookups'}]},
-      { 'method': 'privilege_add_permission', 'params': [['${role_name}'], {'permission': '${role_name}'}]},
-      { 'method': 'role_add_privilege', 'params': [['${role_name}'], {'privilege': '${role_name}'}]},
-      { 'method': 'role_add_member', 'params': [['${role_name}'], {'service': '${service_name}'}]},
-    )
-    for result in results['results']:
-        if result.get('error') and result.get('error_name') != 'DuplicateEntry':
-            raise RuntimeError(result['error'])
-    if '${role_name}' not in api.Command.privilege_show('${role_name}')['result'].get('memberof_permission', []):
-        raise RuntimeError('permission assignment failed')
-    if '${role_name}' not in api.Command.role_show('${role_name}')['result'].get('memberof_privilege', []):
-        raise RuntimeError('privilege assignment failed')
-    if '${service_name}@${upcase($ipa_domain)}' not in api.Command.role_show('${role_name}')['result'].get('member_service', []):
-        raise RuntimeError('service assignment failed')
-    |EOF
 
-  file { '/etc/globus/ipa_register_service.py':
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0600',
-    content => $service_register_script,
-    require => Exec['globus-node-setup'],
-  }
-
-  file { 'kinit_wrapper':
-    path   => '/usr/bin/kinit_wrapper',
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755',
-  }
-
-  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
-  $keytab_command = @("EOT")
-    umask 077 && \
-    kinit_wrapper ipa console /etc/globus/ipa_register_service.py && \
-    kinit_wrapper ipa-getkeytab -p ${service_name} -k /etc/globus/gcsweb.keytab
-    |EOT
-  exec { 'globus_gcsweb_keytab':
-    command     => $keytab_command,
-    creates     => '/etc/globus/gcsweb.keytab',
-    require     => [
-      Exec['globus-node-setup'],
-      Exec['ipa-install'],
-      File['kinit_wrapper'],
-    ],
-    subscribe   => File['/etc/globus/ipa_register_service.py'],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
-  }
-
-  file { '/etc/globus/gcsweb.keytab':
-    owner     => 'root',
-    group     => 'gcsweb',
-    mode      => '0640',
-    subscribe => Exec['globus_gcsweb_keytab'],
-    require   => Exec['globus-node-setup'],
+  profile::freeipa::service_keytab { 'globus':
+    service_name      => "gcsweb/${fqdn}",
+    config_path       => '/etc/globus/ipa_register_service.json',
+    keytab_path       => '/etc/globus/gcsweb.keytab',
+    group             => 'gcsweb',
+    role_name         => $role_name,
+    role_description  => 'Globus identity mapping lookups',
+    privileges        => [$role_name],
+    custom_privileges => { $role_name => [$role_name] },
+    permissions       => {
+      $role_name => {
+        'type'                => 'user',
+        'ipapermright'        => ['read', 'search', 'compare'],
+        'attrs'               => ['uid', 'ipaidpsub', 'nsaccountlock', 'objectclass'],
+        'ipapermbindruletype' => 'permission',
+      },
+    },
+    require           => Exec['globus-node-setup'],
   }
 }

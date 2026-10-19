@@ -252,11 +252,7 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
-  file { 'kinit_wrapper':
-    path   => '/usr/bin/kinit_wrapper',
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755',
-  }
+  include profile::freeipa::kinit_wrapper
 
   $proxy_domain = lookup('profile::reverse_proxy::domain_name')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
@@ -606,33 +602,17 @@ class profile::freeipa::mokey (
 
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "mokey/${fqdn}"
-  $service_register_script = @("EOF")
-    api.Command.batch(
-      { 'method': 'service_add',           'params': [['${service_name}'], {}]},
-      { 'method': 'service_add_principal', 'params': [['${service_name}', 'mokey/mokey'], {}]},
-      { 'method': 'role_add',              'params': [['MokeyApp'], {'description' : 'Mokey User management'}]},
-      { 'method': 'role_add_privilege',    'params': [['MokeyApp'], {'privilege'   : 'User Administrators'}]},
-      { 'method': 'role_add_member',       'params': [['MokeyApp'], {'service'     : '${service_name}'}]},
-    )
-    |EOF
-
-  file { '/etc/mokey/mokey_ipa_service_register.py':
-    content => $service_register_script,
-    require => [
-      Package['mokey'],
-    ],
-  }
-
-  exec { 'mokey_ipa_service_register':
-    command     => 'kinit_wrapper ipa console /etc/mokey/mokey_ipa_service_register.py',
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa-install'],
-    ],
-    subscribe   => File['/etc/mokey/mokey_ipa_service_register.py'],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  profile::freeipa::service_keytab { 'mokey':
+    service_name     => $service_name,
+    aliases          => ['mokey/mokey'],
+    keytab_principal => 'mokey/mokey',
+    config_path      => '/etc/mokey/mokey_ipa_service_register.json',
+    keytab_path      => '/etc/mokey/keytab/mokeyapp.keytab',
+    group            => 'mokey',
+    role_name        => 'MokeyApp',
+    role_description => 'Mokey User management',
+    privileges       => ['User Administrators'],
+    require          => [Package['mokey'], File['/etc/mokey/keytab']],
   }
 
   file { '/etc/mokey/keytab':
@@ -641,29 +621,6 @@ class profile::freeipa::mokey (
     group   => 'mokey',
     mode    => '0640',
     require => Package['mokey'],
-  }
-
-  exec { 'ipa_getkeytab_mokeyapp':
-    command     => 'kinit_wrapper ipa-getkeytab -p mokey/mokey -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
-    creates     => '/etc/mokey/keytab/mokeyapp.keytab',
-    require     => [
-      File['kinit_wrapper'],
-      File['/etc/mokey/keytab']
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [
-      Exec['mokey_ipa_service_register'],
-    ],
-  }
-
-  file { '/etc/mokey/keytab/mokeyapp.keytab':
-    group   => 'mokey',
-    mode    => '0640',
-    require => [
-      Package['mokey'],
-      Exec['mokey_ipa_service_register'],
-    ],
   }
 
   file { '/etc/mokey/mokey.yaml':
@@ -694,7 +651,7 @@ class profile::freeipa::mokey (
     enable    => true,
     require   => [
       Package['mokey'],
-      Exec['ipa_getkeytab_mokeyapp'],
+      Profile::Freeipa::Service_keytab['mokey'],
     ],
     subscribe => [
       File['/etc/mokey/mokey.yaml'],
