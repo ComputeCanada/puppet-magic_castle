@@ -11,7 +11,12 @@ class profile::globus (
   Array[String] $domains = [],
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
+  Boolean $freeipa_mapping = false,
 ) {
+  if $freeipa_mapping and $identity_mapping != undef {
+    fail('freeipa_mapping and identity_mapping are mutually exclusive')
+  }
+
   stdlib::ensure_packages(['wget'], { ensure => 'present' })
   stdlib::ensure_packages(['jq'], { ensure => 'present', require => Yumrepo['epel'] })
 
@@ -33,7 +38,7 @@ class profile::globus (
         'public_ip'        => lookup('terraform.self.public_ip'),
         'display_name'     => $display_name,
         'domain_string'    => $domain_string,
-        'identity_mapping' => $identity_mapping != undef,
+        'identity_mapping' => $identity_mapping != undef or $freeipa_mapping,
       }
     ),
   }
@@ -69,13 +74,52 @@ class profile::globus (
     ),
   }
 
-  if $identity_mapping {
+  if $freeipa_mapping {
+    include profile::globus::keytab
+
+    file { '/usr/local/bin/globus-freeipa-map':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0755',
+      seltype => 'bin_t',
+      source  => 'puppet:///modules/profile/globus/globus-freeipa-map.py',
+      before  => Exec['globus-gateway-setup'],
+    }
+
+    $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+    $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+    $principal = "gcsweb/${fqdn}@${upcase($ipa_domain)}"
+
+    file { '/etc/globus/freeipa-mapping.json':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      content => stdlib::to_json_pretty({
+          'principal' => $principal,
+          'keytab'    => '/etc/globus/gcsweb.keytab',
+      }),
+      require => Exec['globus-node-setup'],
+      before  => Exec['globus-gateway-setup'],
+    }
+    $mapping_document = {
+      'DATA_TYPE' => 'external_identity_mapping#1.0.0',
+      'command'   => ['/usr/local/bin/globus-freeipa-map'],
+    }
+
+    Class['profile::globus::keytab'] -> Exec['globus-gateway-setup']
+  } else {
+    $mapping_document = { 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }
+  }
+
+  if $identity_mapping or $freeipa_mapping {
     file { '/etc/globus/identity_mapping.json':
       ensure  => 'file',
       owner   => 'root',
       group   => 'root',
       mode    => '0700',
-      content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'expression_identity_mapping#1.0.0', 'mappings' => $identity_mapping }),
+      content => stdlib::to_json_pretty($mapping_document),
       require => Exec['globus-node-setup'],
       before  => Exec['globus-gateway-setup'],
     }
@@ -139,4 +183,31 @@ class profile::globus (
 
   Firewall <| |> -> Exec['globus-endpoint-setup']
   Mount <| |> -> Exec['globus-collection-setup']
+}
+
+# Provision the mapper's service principal, permissions, and keytab.
+class profile::globus::keytab {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
+  $role_name = 'Globus FreeIPA identity mapping'
+
+  profile::freeipa::service_keytab { 'globus':
+    service_name      => "gcsweb/${fqdn}",
+    config_path       => '/etc/globus/ipa_register_service.json',
+    keytab_path       => '/etc/globus/gcsweb.keytab',
+    group             => 'gcsweb',
+    role_name         => $role_name,
+    role_description  => 'Globus identity mapping lookups',
+    privileges        => [$role_name],
+    custom_privileges => { $role_name => [$role_name] },
+    permissions       => {
+      $role_name => {
+        'type'                => 'user',
+        'ipapermright'        => ['read', 'search', 'compare'],
+        'attrs'               => ['uid', 'ipaidpsub', 'nsaccountlock', 'objectclass'],
+        'ipapermbindruletype' => 'permission',
+      },
+    },
+    require           => Exec['globus-node-setup'],
+  }
 }

@@ -819,9 +819,11 @@ from the Globus Connect Server automated deployment documentation.
 
 Gateway, collection, and OIDC setup are one-time operations guarded by JSON
 state files in `/var/lib/globus-connect-server`. Changing parameters such as
-`domains`, `collection_path`, `enable_oidc`, or `identity_mapping` after setup
-requires removing the affected Globus service and its corresponding JSON state
-file before the next Puppet run.
+`domains`, `collection_path`, `enable_oidc`, or `identity_mapping`/`freeipa_mapping`
+after setup requires removing the affected Globus service and its corresponding JSON state
+file before the next Puppet run. Identity mapping changes can instead be applied
+to an existing gateway with `globus-connect-server storage-gateway update posix`,
+as shown below; Puppet does not update an existing gateway automatically.
 
 By default, this class creates a local OIDC server and uses it as the gateway
 authentication domain. If `enable_oidc` is set to `false`, at least one external
@@ -835,6 +837,7 @@ authentication domain must be listed in `domains`.
 | `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
 | `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
 | `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
+| `freeipa_mapping` | Enable external username mapping through the FreeIPA API using a dedicated gcsweb keytab; mutually exclusive with `identity_mapping` | Boolean |
 
 <details>
 <summary>default values</summary>
@@ -844,6 +847,7 @@ profile::globus::collection_path: /nfs
 profile::globus::domains: []
 profile::globus::enable_oidc: true
 profile::globus::identity_mapping: ~
+profile::globus::freeipa_mapping: false
 ```
 </details>
 
@@ -865,6 +869,48 @@ profile::globus::identity_mapping:
     match: "(.*)@example\\.org"
     output: "{0}"
 ```
+</details>
+
+<details>
+<summary>example: map Globus identities through FreeIPA</summary>
+
+Configure a user's `idp_user_id` with their full Globus identity **username**,
+including its domain. The external program matches that username exactly against
+FreeIPA's `ipaidpsub` attribute and returns the FreeIPA `uid`. It does not use the
+identity's email address or perform a Globus Auth API lookup.
+
+```yaml
+profile::users::ldap::users:
+  felix:
+    idp_user_id: 'fafor10@computecanada.ca'
+
+profile::globus::enable_oidc: false
+profile::globus::domains:
+  - computecanada.ca
+profile::globus::freeipa_mapping: true
+```
+
+Leave `identity_mapping` unset when using this mode.
+
+The storage gateway's allowed-domain and user policies still apply. Username
+reassignment is accepted by this mapping policy: a new holder of the same Globus
+username receives the existing mapping. The FreeIPA attribute remains
+creation-only in Puppet, so adding or changing `idp_user_id` for an existing user
+has no effect.
+
+For an existing gateway, apply the generated mapping after Puppet has installed
+the files, using an authenticated Globus administrator session:
+
+```sh
+globus-connect-server storage-gateway update posix GATEWAY_UUID \
+  --identity-mapping file:/etc/globus/identity_mapping.json
+```
+
+This changes the gateway's mapping policy without recreating it. Ensure its
+allowed domains include the intended identity domain. See the
+[Globus identity mapping guide](https://docs.globus.org/globus-connect-server/v5/identity-mapping-guide/)
+for the external program protocol and `globus-idm-validator` usage.
+
 </details>
 
 ### dependencies

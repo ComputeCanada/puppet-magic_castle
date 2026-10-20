@@ -252,12 +252,6 @@ class profile::freeipa::server (
     mode   => '0755',
   }
 
-  file { 'kinit_wrapper':
-    path   => '/usr/bin/kinit_wrapper',
-    source => 'puppet:///modules/profile/freeipa/kinit_wrapper',
-    mode   => '0755',
-  }
-
   $proxy_domain = lookup('profile::reverse_proxy::domain_name')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
@@ -354,24 +348,20 @@ class profile::freeipa::server (
     require => File['/etc/ipa'],
   }
 
-  exec { 'ipa_server_base_config':
-    command     => 'kinit_wrapper ipa console /etc/ipa/ipa_server_base_config.py',
+  profile::freeipa::admin_exec { 'ipa_server_base_config':
+    command     => 'ipa console /etc/ipa/ipa_server_base_config.py',
     refreshonly => true,
     require     => [
       File['/etc/ipa/ipa_server_base_config.py'],
       Exec['ipa-install'],
     ],
     subscribe   => File['/etc/ipa/ipa_server_base_config.py'],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
   # Configure the password of the admin accounts to never expire
-  ~> exec { 'ipa_admin_passwd_reset':
-    command     => 'echo -e "$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD\n$IPA_ADMIN_PASSWD" | kinit_wrapper kpasswd',
+  ~> profile::freeipa::admin_exec { 'ipa_admin_passwd_reset':
+    command     => 'printf "%s\n" "$IPA_ADMIN_PASSWD" "$IPA_ADMIN_PASSWD" "$IPA_ADMIN_PASSWD" | kpasswd',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
   }
 
   exec { 'ipa_regen_cert':
@@ -381,7 +371,7 @@ class profile::freeipa::server (
     tries     => 5,
     try_sleep => 10,
     require   => [
-      Exec['ipa_server_base_config'],
+      Profile::Freeipa::Admin_exec['ipa_server_base_config'],
       Service['certmonger'],
     ],
   }
@@ -403,14 +393,9 @@ class profile::freeipa::server (
     require => File['/etc/ipa'],
   }
 
-  exec { 'hbac_rules':
-    command     => 'kinit_wrapper ipa console /etc/ipa/hbac_rules.py',
+  profile::freeipa::admin_exec { 'hbac_rules':
+    command     => 'ipa console /etc/ipa/hbac_rules.py',
     refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${admin_password}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
     subscribe   => [
       File['/etc/ipa/hbac_rules.py'],
       Exec['ipa-install'],
@@ -583,7 +568,6 @@ class profile::freeipa::mokey (
     ],
   }
 
-  $ipa_passwd = lookup('profile::freeipa::server::admin_password')
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
 
   mysql::db { 'mokey':
@@ -606,33 +590,17 @@ class profile::freeipa::mokey (
 
   $fqdn = "${facts['networking']['hostname']}.${ipa_domain}"
   $service_name = "mokey/${fqdn}"
-  $service_register_script = @("EOF")
-    api.Command.batch(
-      { 'method': 'service_add',           'params': [['${service_name}'], {}]},
-      { 'method': 'service_add_principal', 'params': [['${service_name}', 'mokey/mokey'], {}]},
-      { 'method': 'role_add',              'params': [['MokeyApp'], {'description' : 'Mokey User management'}]},
-      { 'method': 'role_add_privilege',    'params': [['MokeyApp'], {'privilege'   : 'User Administrators'}]},
-      { 'method': 'role_add_member',       'params': [['MokeyApp'], {'service'     : '${service_name}'}]},
-    )
-    |EOF
-
-  file { '/etc/mokey/mokey_ipa_service_register.py':
-    content => $service_register_script,
-    require => [
-      Package['mokey'],
-    ],
-  }
-
-  exec { 'mokey_ipa_service_register':
-    command     => 'kinit_wrapper ipa console /etc/mokey/mokey_ipa_service_register.py',
-    refreshonly => true,
-    require     => [
-      File['kinit_wrapper'],
-      Exec['ipa-install'],
-    ],
-    subscribe   => File['/etc/mokey/mokey_ipa_service_register.py'],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
+  profile::freeipa::service_keytab { 'mokey':
+    service_name     => $service_name,
+    aliases          => ['mokey/mokey'],
+    keytab_principal => 'mokey/mokey',
+    config_path      => '/etc/mokey/mokey_ipa_service_register.json',
+    keytab_path      => '/etc/mokey/keytab/mokeyapp.keytab',
+    group            => 'mokey',
+    role_name        => 'MokeyApp',
+    role_description => 'Mokey User management',
+    privileges       => ['User Administrators'],
+    require          => [Package['mokey'], File['/etc/mokey/keytab']],
   }
 
   file { '/etc/mokey/keytab':
@@ -641,29 +609,6 @@ class profile::freeipa::mokey (
     group   => 'mokey',
     mode    => '0640',
     require => Package['mokey'],
-  }
-
-  exec { 'ipa_getkeytab_mokeyapp':
-    command     => 'kinit_wrapper ipa-getkeytab -p mokey/mokey -k /etc/mokey/keytab/mokeyapp.keytab', # lint:ignore:140chars
-    creates     => '/etc/mokey/keytab/mokeyapp.keytab',
-    require     => [
-      File['kinit_wrapper'],
-      File['/etc/mokey/keytab']
-    ],
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    subscribe   => [
-      Exec['mokey_ipa_service_register'],
-    ],
-  }
-
-  file { '/etc/mokey/keytab/mokeyapp.keytab':
-    group   => 'mokey',
-    mode    => '0640',
-    require => [
-      Package['mokey'],
-      Exec['mokey_ipa_service_register'],
-    ],
   }
 
   file { '/etc/mokey/mokey.yaml':
@@ -694,7 +639,7 @@ class profile::freeipa::mokey (
     enable    => true,
     require   => [
       Package['mokey'],
-      Exec['ipa_getkeytab_mokeyapp'],
+      Profile::Freeipa::Service_keytab['mokey'],
     ],
     subscribe => [
       File['/etc/mokey/mokey.yaml'],
@@ -702,28 +647,20 @@ class profile::freeipa::mokey (
     ],
   }
 
-  exec { 'ipa_group_self-signup':
-    command     => 'kinit_wrapper ipa group-add self-signup --nonposix',
+  profile::freeipa::admin_exec { 'ipa_group_self-signup':
+    command     => 'ipa group-add self-signup --nonposix',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
       Package['mokey'],
       Exec['ipa-install'],
     ],
   }
 
-  exec { 'ipa_self-signup_automember':
-    command     => 'kinit_wrapper ipa automember-add --type=group self-signup',
+  profile::freeipa::admin_exec { 'ipa_self-signup_automember':
+    command     => 'ipa automember-add --type=group self-signup',
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
-      Exec['ipa_group_self-signup']
+      Profile::Freeipa::Admin_exec['ipa_group_self-signup']
     ],
   }
 
@@ -734,15 +671,11 @@ class profile::freeipa::mokey (
   # part of the self-signup group.
   # We had to come up with this automember rule because Mokey does not provide the ability
   # to assign a group to users who self-signup.
-  exec { 'ipa_self-signup_automember-rule':
-    command     => "kinit_wrapper ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
+  profile::freeipa::admin_exec { 'ipa_self-signup_automember-rule':
+    command     => "ipa automember-add-condition self-signup --type=group --key=mail --inclusive-regex=\'^(?!\s*$).+\' --exclusive-regex=\'@${ipa_domain}$\'",
     refreshonly => true,
-    environment => ["IPA_ADMIN_PASSWD=${ipa_passwd}"],
-    require     => [File['kinit_wrapper'],],
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    returns     => [0],
     subscribe   => [
-      Exec['ipa_self-signup_automember'],
+      Profile::Freeipa::Admin_exec['ipa_self-signup_automember'],
     ],
   }
 }

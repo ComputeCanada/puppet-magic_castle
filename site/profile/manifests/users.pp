@@ -49,23 +49,18 @@ define profile::users::ldap_group (
   Boolean $automember = false,
   Optional[Array[String]] $hbac_rules = undef,
 ) {
-  $admin_password = lookup('profile::freeipa::server::admin_password')
-  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
   if $posix {
     $arg = ''
   }
   else {
     $arg = '--nonposix'
   }
-  exec { "ldap_group_${name}":
-    command     => "kinit_wrapper ipa group-add ${name} ${arg}",
-    environment => $environment,
-    path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-    unless      => "getent group ${name}",
-    notify      => Exec['sss_cache -E'],
-    require     => [
+  profile::freeipa::admin_exec { "ldap_group_${name}":
+    command => "ipa group-add ${name} ${arg}",
+    unless  => "getent group ${name}",
+    notify  => Exec['sss_cache -E'],
+    require => [
       Exec['ipa-install'],
-      File['kinit_wrapper'],
     ],
   }
 
@@ -81,18 +76,13 @@ define profile::users::ldap_group (
         }
       ),
     }
-    exec { "group_rules_${name}":
-      command     => "kinit_wrapper ipa console /etc/ipa/group_rules_${name}.py",
+    profile::freeipa::admin_exec { "group_rules_${name}":
+      command     => "ipa console /etc/ipa/group_rules_${name}.py",
       refreshonly => true,
-      require     => [
-        File['kinit_wrapper'],
-      ],
-      environment => $environment,
-      path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
       subscribe   => [
         File["/etc/ipa/group_rules_${name}.py"],
-        Exec['hbac_rules'],
-        Exec["ldap_group_${name}"],
+        Profile::Freeipa::Admin_exec['hbac_rules'],
+        Profile::Freeipa::Admin_exec["ldap_group_${name}"],
       ],
     }
   }
@@ -110,7 +100,6 @@ define profile::users::ldap_user (
     fail('idp_user_id cannot be used with count > 1')
   }
 
-  $admin_password = lookup('profile::freeipa::server::admin_password')
   $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
   $sshpubkey_string = join($public_keys.map |$key| { "--sshpubkey '${key}'" }, ' ')
   $idp_args = $idp_user_id ? {
@@ -134,21 +123,16 @@ define profile::users::ldap_user (
     $timeout = 10
   }
 
-  $environment = ["IPA_ADMIN_PASSWD=${admin_password}"]
-
   if $count > 0 {
     $exec_name.each |Integer $i, String $exec_name_i| {
-      exec { $exec_name_i:
-        command     => "kinit_wrapper ${command[$i]}",
-        unless      => "${command[$i]} --dry",
-        environment => $environment,
-        path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
-        timeout     => $timeout,
-        require     => [
-          File['kinit_wrapper'],
+      profile::freeipa::admin_exec { $exec_name_i:
+        command => $command[$i],
+        unless  => "${command[$i]} --dry",
+        timeout => $timeout,
+        require => [
           File['/sbin/ipa_create_user.py'],
         ],
-        notify      => Exec['sss_cache -E'],
+        notify  => Exec['sss_cache -E'],
       }
     }
 
@@ -183,7 +167,7 @@ define profile::users::ldap_user (
           unless      => Sensitive($check_password_cmd[$i]),
           path        => ['/bin', '/usr/bin', '/sbin','/usr/sbin'],
           refreshonly => ! $manage_password,
-          subscribe   => Exec[$exec_name_i],
+          subscribe   => Profile::Freeipa::Admin_exec[$exec_name_i],
         }
       }
     }
