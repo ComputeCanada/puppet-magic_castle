@@ -13,9 +13,6 @@ from ipaplatform.paths import paths
 
 from six import text_type
 
-# TODO: get this value from /etc/login.defs
-UID_MAX = 60000
-
 iau_logger = logging.getLogger("IPA_CREATE_USER.PY")
 iau_logger.setLevel(logging.INFO,)
 formatter = logging.Formatter(
@@ -34,7 +31,8 @@ def init_api():
     api.Backend.cli.create_context()
 
 
-def user_add(uid, first, last, password, shell, sshpubkeys, idp_user_id=None):
+def user_add(uid, first, last, password, shell, sshpubkeys, idp_user_id=None,
+             uidnumber=None, gidnumber=None):
     kargs = dict()
     kargs['uid'] = text_type(uid)
     kargs['givenname'] = text_type(first)
@@ -47,13 +45,10 @@ def user_add(uid, first, last, password, shell, sshpubkeys, idp_user_id=None):
     if idp_user_id is not None:
         kargs['ipaidpsub'] = text_type(idp_user_id)
 
-    try:
-        uidnumber = os.stat("/mnt/home/" + uid).st_uid
-    except:
-        pass
-    else:
-        if uidnumber > UID_MAX:
-            kargs["uidnumber"] = uidnumber
+    if uidnumber is not None:
+        kargs["uidnumber"] = uidnumber
+    if gidnumber is not None:
+        kargs["gidnumber"] = gidnumber
 
     # Try up to 5 times to add user to the database
     for i in range(1, 6):
@@ -113,10 +108,10 @@ def dry_run(users, groups):
     return False
 
 
-def main(users, groups, passwd, sshpubkeys, idp_user_id=None):
+def main(users, groups, passwd, sshpubkeys, idp_user_id=None, uid=None, gid=None):
     init_api()
     added_users = set()
-    for username in users:
+    for offset, username in enumerate(users):
         user = user_add(
             username,
             first=username,
@@ -125,6 +120,8 @@ def main(users, groups, passwd, sshpubkeys, idp_user_id=None):
             shell="/bin/bash",
             sshpubkeys=sshpubkeys,
             idp_user_id=idp_user_id,
+            uidnumber=None if uid is None else uid + offset,
+            gidnumber=None if gid is None else gid + offset,
         )
         if user is not None:
             added_users.add(username)
@@ -149,8 +146,14 @@ if __name__ == "__main__":
     parser.add_argument("--passwd", help="users's password")
     parser.add_argument("--sshpubkey", action="append", help="SSH public key (can be specified multiple times)")
     parser.add_argument("--idp-user-id", help="external IdP user identifier, set only at creation (single user only)")
+    parser.add_argument("--uid", type=int, help="starting numeric user ID, incremented for each username")
+    parser.add_argument("--gid", type=int, help="starting primary group ID, incremented for each username")
     parser.add_argument("--dry", help="determine if changes are required", action='store_true')
     args = parser.parse_args()
+    for option in ('uid', 'gid'):
+        value = getattr(args, option)
+        if value is not None and value < 1:
+            parser.error("--{} must be a positive integer".format(option))
     if args.idp_user_id is not None:
         if not args.idp_user_id:
             parser.error("--idp-user-id must not be empty")
@@ -174,4 +177,6 @@ if __name__ == "__main__":
             passwd=passwd,
             sshpubkeys=args.sshpubkey,
             idp_user_id=args.idp_user_id,
+            uid=args.uid,
+            gid=args.gid,
         )
