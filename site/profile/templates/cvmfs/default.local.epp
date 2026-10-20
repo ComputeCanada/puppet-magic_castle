@@ -6,3 +6,4 @@ CVMFS_QUOTA_LIMIT=<%= $quota_limit %>
 {{ if service "squid" -}}
 CVMFS_HTTP_PROXY='{{ range $i, $s := service "squid" }}{{if $i}}|{{end}}http://{{.Address}}:{{.Port}}{{end}}'
 {{ end -}}
+CVMFS_PREFETCH_FILEBUNDLES="<%= $prefetch_filebundles %>"
