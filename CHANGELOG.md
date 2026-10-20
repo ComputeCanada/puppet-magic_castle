@@ -7,7 +7,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Added `profile::software_stack::version` to pick the software stack version with one hiera key: `2023` for `computecanada` and `2025.06` for `eessi`
+- Added `profile::software_stack::version` to pick the software stack version with one hiera key: `2023` for `computecanada` and `2025.06` for `eessi` (PR #614)
+- Added support for CephFS mount options at the client and share levels and custom global and client configuration (PR #615, PR #622)
+- Added support for custom Slurm prolog and epilog scripts under `/etc/slurm/prolog.d` and `/etc/slurm/epilog.d` (PR #617)
+- Added an option to customize the Squid cache directory path (PR #619)
+- Added an option to replace the CVMFS alien cache repository configuration template (PR #620)
+- Added `profile::slurm::node::cgroup_params` to customize Slurm cgroup configuration (PR #621)
+- Added support for setting an external IdP user identifier when creating LDAP users (PR #625)
+- Added optional Globus identity mapping through FreeIPA with a dedicated service keytab and JSON schema validation (PR #626)
+
+### Changed
+
+- Bumped the default EESSI software stack version to 2025.06 (PR #614)
+- Replaced `profile::ceph::client::install::release` with `version`, accepting a version number or release name (PR #615)
+- Moved Ceph monitor configuration to the global section and refreshed CephFS mounts on configuration and keyring changes (PR #615)
+- Moved Slurm tmpfs cleanup to `epilog.d` on compute nodes with tmpfs mounts enabled (PR #617)
+- Allowed Juno CVMFS servers in the default Squid ACLs (PR #618)
+- Limited Slurm cgroup configuration to compute nodes (PR #621)
+- Consolidated FreeIPA service registration and keytab generation in `profile::freeipa::service_keytab` (PR #626)
+- Replaced FreeIPA administrator commands with `profile::freeipa::admin_exec` and improved Kerberos credential cache cleanup and authentication failure handling (PR #626)
 
 ## [16.0.3] 2026-10-09
 
