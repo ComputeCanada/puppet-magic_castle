@@ -476,6 +476,7 @@ This class installs CVMFS client and configure repositories.
 | `alien_cache_repositories`  | List of repositories that require an alien cache | Array[String] |
 | `alien_cache_repo_template` | Module path to the cvmfs config template for alien cache repos | String |
 | `cvmfs_root`                | Mount root for CVMFS repositories | String |
+| `prefetch_filebundles`      | Whether CVMFS_PREFETCH_FILEBUNDLES is enabled | Boolean |
 
 <details>
 <summary>default values</summary>
@@ -491,6 +492,7 @@ profile::cvmfs::client::repositories:
 profile::cvmfs::client::alien_cache_repositories: [ ]
 profile::cvmfs::client::alien_cache_repo_template: "profile/cvmfs/alien_cache.conf.epp"
 profile::cvmfs::client::cvmfs_root: "/cvmfs"
+profile::cvmfs::client::prefetch_filebundles: false
 ```
 </details>
 

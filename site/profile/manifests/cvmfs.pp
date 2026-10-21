@@ -6,6 +6,7 @@ class profile::cvmfs::client (
   Array[String] $alien_cache_repositories = [],
   String $alien_cache_repo_template = 'profile/cvmfs/alien_cache.conf.epp',
   String $cvmfs_root = '/cvmfs',
+  Boolean $prefetch_filebundles = false,
 ) {
   include profile::consul
   include profile::cvmfs::local_user
@@ -66,9 +67,10 @@ class profile::cvmfs::client (
 
   file { '/etc/cvmfs/default.local.ctmpl':
     content => epp('profile/cvmfs/default.local', {
-        'strict_mount' => $strict_mount ? { true => 'yes', false => 'no' }, # lint:ignore:selector_inside_resource
-        'quota_limit'  => $quota_limit,
-        'repositories' => $repositories + $alien_cache_repositories,
+        'strict_mount'         => $strict_mount ? { true => 'yes', false => 'no' }, # lint:ignore:selector_inside_resource
+        'prefetch_filebundles' => $prefetch_filebundles ? { true => 'yes', false => 'no' }, # lint:ignore:selector_inside_resource
+        'quota_limit'          => $quota_limit,
+        'repositories'         => $repositories + $alien_cache_repositories,
     }),
     notify  => Service['consul-template'],
     require => Package['cvmfs'], # 'cvmfs' packages provides /etc/cvmfs
