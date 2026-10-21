@@ -48,9 +48,20 @@ define profile::users::ldap_group (
   Boolean $posix = true,
   Boolean $automember = false,
   Optional[Array[String]] $hbac_rules = undef,
+  Optional[Integer[1]] $gid = undef,
 ) {
+  if !$posix and $gid != undef {
+    fail('gid cannot be used with a non-POSIX group')
+  }
+  if $gid != undef {
+    profile::validate_ldap_id($gid, "LDAP group ${name} gid")
+  }
+
   if $posix {
-    $arg = ''
+    $arg = $gid ? {
+      undef   => '',
+      default => "--gid=${gid}",
+    }
   }
   else {
     $arg = '--nonposix'
@@ -95,9 +106,19 @@ define profile::users::ldap_user (
   Boolean $manage_password = true,
   Optional[String[1]] $passwd = undef,
   Optional[String[1]] $idp_user_id = undef,
+  Optional[Integer[1]] $uid = undef,
+  Optional[Integer[1]] $gid = undef,
 ) {
   if $idp_user_id != undef and $count > 1 {
     fail('idp_user_id cannot be used with count > 1')
+  }
+  if $count > 0 {
+    if $uid != undef {
+      profile::validate_ldap_id($uid, "LDAP user ${name} uid", $count)
+    }
+    if $gid != undef {
+      profile::validate_ldap_id($gid, "LDAP user ${name} gid", $count)
+    }
   }
 
   $group_args = join($groups.map |$group| { "--group ${group}" }, ' ')
@@ -111,15 +132,31 @@ define profile::users::ldap_user (
     $page_size = 50
     $prefix = $name
     $exec_name = range(1, $count, $page_size).map |$i| {
-      "ldap_user_${name}_${i}-${min($i+$page_size, $count)}"
+      "ldap_user_${name}_${i}-${min($i + $page_size - 1, $count)}"
     }
     $command = range(1, $count, $page_size).map |$i| {
-      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)}) ${cmd_args}"
+      $uid_arg = $uid ? {
+        undef   => '',
+        default => "--uid=${uid + $i - 1}",
+      }
+      $gid_arg = $gid ? {
+        undef   => '',
+        default => "--gid=${gid + $i - 1}",
+      }
+      "ipa_create_user.py $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i + $page_size - 1)}) ${cmd_args} ${uid_arg} ${gid_arg}"
     }
     $timeout = $page_size * 10
   } elsif $count == 1 {
     $exec_name = ["ldap_user_${name}"]
-    $command = ["ipa_create_user.py ${name} ${cmd_args}"]
+    $uid_arg = $uid ? {
+      undef   => '',
+      default => "--uid=${uid}",
+    }
+    $gid_arg = $gid ? {
+      undef   => '',
+      default => "--gid=${gid}",
+    }
+    $command = ["ipa_create_user.py ${name} ${cmd_args} ${uid_arg} ${gid_arg}"]
     $timeout = 10
   }
 
@@ -151,10 +188,10 @@ define profile::users::ldap_user (
 
       if $count > 1 {
         $set_password_cmd = range(1, $count, $page_size).map |$i| {
-          "seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | xargs -I '{}' ${ldad_passwd_cmd}"
+          "seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i + $page_size - 1)} | xargs -I '{}' ${ldad_passwd_cmd}"
         }
         $check_password_cmd = range(1, $count, $page_size).map |$i| {
-          "echo ${passwd} | kinit $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i+$page_size)} | shuf | head -n1) && kdestroy"
+          "echo ${passwd} | kinit $(seq -f'${prefix}%0${length(String($count))}g' ${i} ${min($count, $i + $page_size - 1)} | shuf | head -n1) && kdestroy"
         }
       } else {
         $set_password_cmd = [regsubst($ldad_passwd_cmd, '{}', $name)]

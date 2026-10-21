@@ -755,6 +755,7 @@ This class configures files and services of a FreeIPA server.
 | Variable         | Description                                 | Type           |
 | :--------------  | :------------------------------------------ | :------------- |
 | `id_start`       | Starting user and group id number           | Integer        |
+| `id_max`         | Maximum user and group id number (inclusive) | Integer       |
 | `admin_password` | Password of the FreeIPA admin account       | String         |
 | `ds_password`    | Password of the directory server            | String         |
 | `hbac_services`  | Name of services to control with HBAC rules | Array[String]  |
@@ -765,6 +766,7 @@ This class configures files and services of a FreeIPA server.
 
 ```yaml
 profile::freeipa::server::id_start: 60001
+profile::freeipa::server::id_max: 260000
 profile::freeipa::server::admin_password: ENC[PKCS7,...]
 profile::freeipa::server::ds_password: ENC[PKCS7,...]
 profile::freeipa::server::hbac_services: ["sshd", "jupyterhub-login"]
@@ -772,6 +774,11 @@ profile::freeipa::server::enable_mokey: true
 ```
 
 </details>
+
+`id_start` and `id_max` must be positive integers no greater than 2147483647,
+with `id_max >= id_start`. These bounds configure the range at installation;
+changing them does not update an existing FreeIPA server's range. For an existing
+server, configure values matching its actual range.
 
 ## `profile::freeipa::mokey`
 
@@ -2122,11 +2129,15 @@ A `profile::users::ldap_user` is defined as a dictionary with the following keys
 | `passwd`          | User's password                                           | String                          | Yes        |
 | `manage_password` | If enable, agents verify the password hashes match        | Boolean                         | Yes        |
 | `idp_user_id`     | External IdP user identifier                              | String (non-empty)              | Yes        |
+| `count`          | Number of users; values greater than 1 generate numbered usernames | Integer (non-negative) | Yes (1) |
+| `uid`            | Numeric user ID, or starting UID for numbered users        | Integer (positive)              | Yes        |
+| `gid`            | Numeric primary group ID, or starting GID for numbered users | Integer (positive)            | Yes        |
 
 A `profile::users::ldap_group` is defined as a dictionary with the following keys:
 | Variable          | Description                                                        | Type                            | Optional ? |
 | ----------------- | :----------------------------------------------------------------- | :------------------------------ | ---------  |
 | `posix`           | Whether this is a posix group or not                               | Boolean                         | Yes        |
+| `gid`             | Numeric group ID (requires `posix: true`)                         | Integer (positive)              | Yes        |
 | `automember`      | Whether users are automatically member of that group               | Boolean                         | Yes        |
 | `hbac_rules`      | List of HBAC rule names (`"tag:service"`) that apply to this group | Array[String]                   | Yes        |
 
@@ -2134,6 +2145,14 @@ A `profile::users::ldap_group` is defined as a dictionary with the following key
 By default, Puppet will manage the LDAP user(s) password and change it in LDAP if its hash no
 longer match to what is prescribed in YAML. To disable this feature, add
 `manage_password: false` to the user(s) definition.
+
+Numeric IDs are set only when creating users and groups; existing accounts are
+not renumbered. Omitted IDs are allocated by FreeIPA.
+For numbered users, each supplied `uid` and `gid` increases by one per user,
+including across batches.
+Puppet rejects explicit IDs outside `profile::freeipa::server::id_start` through
+`profile::freeipa::server::id_max` at compilation, checking the entire numbered
+user range. Definitions with `count: 0` create no users and skip this range check.
 
 <details>
 <summary>default values</summary>
@@ -2174,6 +2193,23 @@ profile::users::ldap::users:
   alice:
     groups: ['def-sponsor00']
     public_keys: ['ssh-rsa ... user@local', 'ssh-ed25519 ...']
+```
+
+To reuse numeric IDs across clusters sharing storage, assign IDs explicitly.
+This creates `user01` through `user10` with UIDs 200000–200009 and primary
+GIDs 210000–210009, and a supplementary group with GID 220000:
+
+```yaml
+profile::users::ldap::users:
+  user:
+    count: 10
+    uid: 200000
+    gid: 210000
+    groups: ['research']
+
+profile::users::ldap::groups:
+  research:
+    gid: 220000
 ```
 
 A user with an external IdP identity set at creation:

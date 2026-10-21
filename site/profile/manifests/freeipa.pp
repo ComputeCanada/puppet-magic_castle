@@ -237,12 +237,17 @@ class profile::freeipa::client::install {
 }
 
 class profile::freeipa::server (
-  Integer $id_start,
+  Integer[1] $id_start,
+  Integer[1] $id_max,
   String $admin_password,
   String $ds_password,
   Array[String] $hbac_services = ['sshd', 'jupyterhub-login'],
   Boolean $enable_mokey = true,
 ) {
+  if $id_max < $id_start {
+    fail('profile::freeipa::server::id_max must be greater than or equal to id_start')
+  }
+
   include cron
 
   file { '/etc/ipa':
@@ -277,6 +282,7 @@ class profile::freeipa::server (
     --ds-password ${ds_password} \
     --admin-password ${admin_password} \
     --idstart=${id_start} \
+    --idmax=${id_max} \
     --ssh-trust-dns \
     --unattended \
     --auto-forwarders \

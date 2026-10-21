@@ -317,6 +317,7 @@ profile::freeipa::mokey::enable_user_signup: true
 profile::freeipa::mokey::require_verify_admin: true
 
 profile::freeipa::server::id_start: 60001
+profile::freeipa::server::id_max: 260000
 profile::software_stack::min_uid: "%{alias('profile::freeipa::server::id_start')}"
 
 profile::slurm::base::slurm_version: '26.05'
