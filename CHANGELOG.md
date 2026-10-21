@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `profile::slurm::node::cgroup_params` to customize Slurm cgroup configuration (PR #621)
 - Added support for setting an external IdP user identifier when creating LDAP users (PR #625)
 - Added optional Globus identity mapping through FreeIPA with a dedicated service keytab and JSON schema validation (PR #626)
+- Added parameter to allow enabling CVMFS filebundle prefetching (PR #628)
+- Added ability for operator to define ldap users and group id (PR #629)
 
 ### Changed
 
@@ -26,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Limited Slurm cgroup configuration to compute nodes (PR #621)
 - Consolidated FreeIPA service registration and keytab generation in `profile::freeipa::service_keytab` (PR #626)
 - Replaced FreeIPA administrator commands with `profile::freeipa::admin_exec` and improved Kerberos credential cache cleanup and authentication failure handling (PR #626)
+- Fixed an overlap in batch creation of LDAP user (PR #629)
 
 ## [16.0.3] 2026-10-09
 
