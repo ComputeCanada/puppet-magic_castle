@@ -22,10 +22,12 @@ test -f /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
 grep --quiet -P "^status: (changed|unchanged)" /opt/puppetlabs/puppet/cache/state/last_run_report.yaml
 
 systemctl stop puppet
+systemctl stop dnf-automatic.timer &> /dev/null || true
 systemctl stop slurmd &> /dev/null || true
 systemctl stop consul &> /dev/null || true
 systemctl stop consul-template &> /dev/null || true
 systemctl disable puppet
+systemctl disable dnf-automatic.timer &> /dev/null || true
 systemctl disable slurmd &> /dev/null || true
 systemctl disable consul &> /dev/null || true
 systemctl disable consul-template &> /dev/null || true
