@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [16.1.1] 2026-10-22
+
+### Added
+
+- Added stopping and disabling dnf-automatic in prepare4image.sh (PR #631)
+
 ## [16.1.0] 2026-10-21
 
 ### Added
