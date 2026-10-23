@@ -1,6 +1,8 @@
 #!/bin/bash
 source /sbin/account_functions.sh
 
+SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
+
 PROJECT_REGEX="<%= $project_regex %>"
 
 MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
@@ -23,14 +25,14 @@ fi
 
 if [ -e $LAST_TIMESTAMP_FILE ]; then
     LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
-    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
+    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" ${SLAPD_LOG_FILE})
     start_index=$(($start_index+1))
 else
     start_index=1
 fi
 
 (
-    tail -n +${start_index} -F /var/log/dirsrv/slapd-*/access | 
+    tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
     grep --line-buffered -P 'ADD dn=\"uid=\K(.*)(?=,cn=users)' |
     sed -u -r 's/^\[(.*) \+[0-9]{4}\].*uid=(.*),cn=users.*$/\1 \2/' &
     tail -n+1 -F ${MKHOME_RETRY_PIPE}

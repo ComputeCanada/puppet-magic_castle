@@ -15,6 +15,7 @@
 #   and the removal of the symlink to the project from all previous member
 #   home folders.
 
+SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
 
 PROJECT_REGEX="<%= $project_regex %>"
 BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
@@ -157,13 +158,13 @@ done &
 # Do not reprocess previous entries if we remember the last timestamp treated
 if [ -e ${LAST_TIMESTAMP_FILE} ]; then
     LAST_TIMESTAMP=$(cat ${LAST_TIMESTAMP_FILE})
-    start_index=$(grep -n -F "${LAST_TIMESTAMP}" /var/log/dirsrv/slapd-*/access | cut -d: -f1)
+    start_index=$(grep -n -F "${LAST_TIMESTAMP}" ${SLAPD_LOG_FILE} | cut -d: -f1)
     start_index=$(($start_index+1))
 else
     start_index=1
 fi
 
-tail -n +${start_index} -F /var/log/dirsrv/slapd-*/access |
+tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
 grep --line-buffered -P "dn=\"cn=${PROJECT_REGEX},cn=groups" |
 sed -u -r 's/^\[(.*) \+[0-9]{4}\] conn=([0-9]*) op=[0-9]* (\w+) dn="cn=(.*),cn=groups.*$/\1 \2 \3 \4/' |
 while read TIMESTAMP CONN OP GROUP; do
@@ -180,7 +181,7 @@ while read TIMESTAMP CONN OP GROUP; do
     {
         grep --line-buffered -q -m 1 "conn=${CONN} op=[0-9]* UNBIND";
         kill -s PIPE "$!";
-    } < <(tail -n +0 -F /var/log/dirsrv/slapd-*/access 2> /dev/null)
+    } < <(tail -n +0 -F ${SLAPD_LOG_FILE} 2> /dev/null)
 
     # We support three operations : ADD, MOD or DEL
     case ${OP} in
@@ -205,9 +206,9 @@ while read TIMESTAMP CONN OP GROUP; do
         MOD)
             # One or more groups have been modified
             # We grep the log for all operations related to request $CONN that contain a uid
-            USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K(.*)(?=,cn=users)" /var/log/dirsrv/slapd-*/access | sort | uniq)
+            USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K(.*)(?=,cn=users)" ${SLAPD_LOG_FILE} | sort | uniq)
             # We grep all unique groups that have been modified
-            MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" /var/log/dirsrv/slapd-*/access | uniq)
+            MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" ${SLAPD_LOG_FILE} | uniq)
             for GROUP in ${MOD_GROUPS}; do
                 echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
             done
