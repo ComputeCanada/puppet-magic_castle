@@ -132,8 +132,11 @@ define profile::volumes::volume (
   if $enable_resize {
     $logical_volume_size_cmd = "pvs --noheadings -o pv_size --unit b --nosuffix ${device}"
     $physical_volume_size_cmd = "pvs --noheadings -o dev_size --unit b --nosuffix ${device}"
+    # Cloud volumes grow in whole GiB increments. Ignore the small difference
+    # between device and PV sizes caused by LVM metadata and extent alignment.
+    $resize_threshold = 512 * 1024 * 1024
     exec { "pvresize ${device}":
-      onlyif  => "test `${logical_volume_size_cmd}` -lt `${physical_volume_size_cmd}`",
+      onlyif  => "test $(($(${physical_volume_size_cmd}) - $(${logical_volume_size_cmd}))) -gt ${resize_threshold}",
       path    => ['/usr/bin', '/bin', '/usr/sbin'],
       require => Lvm::Logical_volume[$name],
     }
