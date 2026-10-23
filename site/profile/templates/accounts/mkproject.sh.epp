@@ -31,6 +31,10 @@ MODPROJECT_CACHE_SIZE=1000
 
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=1000
+MKPROJECT_CACHE_LOCK=${MKHOME_PROJECT_DIR}/mkproject.cache.lock
+update_mkproject_cache () {
+    flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
+}
 
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
@@ -77,7 +81,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         # and that are still in cache.
         USERNAMES=$(
             for USERNAME in ${USERNAMES}; do
-                if ! grep -q "${GROUP} ${WITH_FOLDER} ${USERNAME}" ${MODPROJECT_CACHE}; then
+                if ! grep -Fxq "${GROUP} ${WITH_FOLDER} ${USERNAME}" ${MODPROJECT_CACHE}; then
                     echo ${USERNAME}
                 fi
             done
@@ -95,10 +99,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
         if mkproject ${GROUP} ${WITH_FOLDER}; then
             rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
-            echo "${GROUP}" >> ${MKPROJECT_CACHE}
-            if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
-                sed -i '1d' ${MKPROJECT_CACHE}
-            fi
+            update_mkproject_cache ${GROUP}
             # Identify usernames that are already member of the group - most likely through automembership
             USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
             if [[ ! -z ${USERNAMES} ]]; then
@@ -129,7 +130,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
                 # from the group. The variable $REMOVE_USERNAMES is configured by modproject and
                 # contains all usernames that were successfully removed from the group $GROUP
                 for USERNAME in ${REMOVED_USERNAMES}; do
-                    sed -i "/${GROUP} ${WITH_FOLDER} ${USERNAME}/d" ${MODPROJECT_CACHE}
+                    sed -i "/^${GROUP} ${WITH_FOLDER} ${USERNAME}$/d" ${MODPROJECT_CACHE}
                 done
                 unset REMOVED_USERNAMES
             fi
@@ -184,17 +185,14 @@ while read TIMESTAMP CONN OP GROUP; do
     # We support three operations : ADD, MOD or DEL
     case ${OP} in
         ADD)
-            if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
+            if grep -Fxq "${GROUP}" ${MKPROJECT_CACHE}; then
                 echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
                 PREV_CONN="${CONN}"
                 continue
             fi
 
             if mkproject ${GROUP} ${WITH_FOLDER}; then
-                echo "${GROUP}" >> ${MKPROJECT_CACHE}
-                if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
-                    sed -i '1d' ${MKPROJECT_CACHE}
-                fi
+                update_mkproject_cache ${GROUP}
                 # Identify usernames that are already member of the group - most likely through automembership
                 USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
                 if [[ ! -z ${USERNAMES} ]]; then
