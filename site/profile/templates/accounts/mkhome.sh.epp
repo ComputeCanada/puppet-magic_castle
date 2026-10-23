@@ -23,9 +23,9 @@ if [[ ! -p ${MKHOME_MODPROJECT_PIPE} ]]; then
     mkfifo -m=600 ${MKHOME_MODPROJECT_PIPE}
 fi
 
-if [ -e $LAST_TIMESTAMP_FILE ]; then
-    LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
-    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" ${SLAPD_LOG_FILE})
+if [ -e ${LAST_TIMESTAMP_FILE} ]; then
+    LAST_TIMESTAMP=$(cat ${LAST_TIMESTAMP_FILE})
+    start_index=$(grep -n -F "${LAST_TIMESTAMP}" ${SLAPD_LOG_FILE} | cut -d: -f1)
     start_index=$(($start_index+1))
 else
     start_index=1
