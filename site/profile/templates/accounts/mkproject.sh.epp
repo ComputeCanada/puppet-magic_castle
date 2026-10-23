@@ -129,7 +129,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
                 # from the group. The variable $REMOVE_USERNAMES is configured by modproject and
                 # contains all usernames that were successfully removed from the group $GROUP
                 for USERNAME in ${REMOVED_USERNAMES}; do
-                    sed -i "/${GROUP} ${WITH_FOLDER} ${USERNAME}/d" ${MODPROJECT_CACHE}
+                    sed -i "/^${GROUP} ${WITH_FOLDER} ${USERNAME}$/d" ${MODPROJECT_CACHE}
                 done
                 unset REMOVED_USERNAMES
             fi
