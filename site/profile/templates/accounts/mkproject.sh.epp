@@ -77,7 +77,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
         # and that are still in cache.
         USERNAMES=$(
             for USERNAME in ${USERNAMES}; do
-                if ! grep -q "${GROUP} ${WITH_FOLDER} ${USERNAME}" ${MODPROJECT_CACHE}; then
+                if ! grep -Fxq "${GROUP} ${WITH_FOLDER} ${USERNAME}" ${MODPROJECT_CACHE}; then
                     echo ${USERNAME}
                 fi
             done
@@ -184,7 +184,7 @@ while read TIMESTAMP CONN OP GROUP; do
     # We support three operations : ADD, MOD or DEL
     case ${OP} in
         ADD)
-            if grep -q "${GROUP}" ${MKPROJECT_CACHE}; then
+            if grep -Fxq "${GROUP}" ${MKPROJECT_CACHE}; then
                 echo "${TIMESTAMP}" > ${LAST_TIMESTAMP_FILE}
                 PREV_CONN="${CONN}"
                 continue
