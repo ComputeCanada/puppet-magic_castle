@@ -62,7 +62,7 @@ mkhome () {
 
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
-        rsync -opg -r -u --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
+        rsync -opg -r --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
         if [ $? -eq 0 ]; then
             RSYNC_DONE=1
             break
