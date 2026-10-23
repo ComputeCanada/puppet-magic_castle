@@ -31,6 +31,10 @@ MODPROJECT_CACHE_SIZE=1000
 
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=1000
+MKPROJECT_CACHE_LOCK=${MKHOME_PROJECT_DIR}/mkproject.cache.lock
+update_mkproject_cache () {
+    flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
+}
 
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
@@ -95,10 +99,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
     if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
         if mkproject ${GROUP} ${WITH_FOLDER}; then
             rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
-            echo "${GROUP}" >> ${MKPROJECT_CACHE}
-            if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
-                sed -i '1d' ${MKPROJECT_CACHE}
-            fi
+            update_mkproject_cache ${GROUP}
             # Identify usernames that are already member of the group - most likely through automembership
             USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
             if [[ ! -z ${USERNAMES} ]]; then
@@ -191,10 +192,7 @@ while read TIMESTAMP CONN OP GROUP; do
             fi
 
             if mkproject ${GROUP} ${WITH_FOLDER}; then
-                echo "${GROUP}" >> ${MKPROJECT_CACHE}
-                if [[ $(wc -l < ${MKPROJECT_CACHE}) -gt ${MKPROJECT_CACHE_SIZE} ]]; then
-                    sed -i '1d' ${MKPROJECT_CACHE}
-                fi
+                update_mkproject_cache ${GROUP}
                 # Identify usernames that are already member of the group - most likely through automembership
                 USERNAMES=$(kexec ipa group-show ${GROUP} --raw |  grep -o -P "uid=\K(.*)(?=,cn=users)")
                 if [[ ! -z ${USERNAMES} ]]; then
