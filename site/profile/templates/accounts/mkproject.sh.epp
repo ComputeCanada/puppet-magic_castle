@@ -155,9 +155,9 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
 done &
 
 # Do not reprocess previous entries if we remember the last timestamp treated
-if [ -e $LAST_TIMESTAMP_FILE ]; then
-    LAST_TIMESTAMP=$(cat $LAST_TIMESTAMP_FILE)
-    start_index=$(sed -n "/${LAST_TIMESTAMP//\//\\\/}/=" /var/log/dirsrv/slapd-*/access)
+if [ -e ${LAST_TIMESTAMP_FILE} ]; then
+    LAST_TIMESTAMP=$(cat ${LAST_TIMESTAMP_FILE})
+    start_index=$(grep -n -F "${LAST_TIMESTAMP}" /var/log/dirsrv/slapd-*/access | cut -d: -f1)
     start_index=$(($start_index+1))
 else
     start_index=1
