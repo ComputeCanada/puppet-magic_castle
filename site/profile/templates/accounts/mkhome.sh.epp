@@ -26,7 +26,9 @@ fi
 if [ -e ${LAST_TIMESTAMP_FILE} ]; then
     LAST_TIMESTAMP=$(cat ${LAST_TIMESTAMP_FILE})
     if [ "${LAST_TIMESTAMP}" != "" ]; then
-        start_index=$(grep -n -F "${LAST_TIMESTAMP}" ${SLAPD_LOG_FILE} | cut -d: -f1)
+        # We don't expect more than one line matching the timestamp but if
+        # it happens, we will replay from the first match.
+        start_index=$(grep -m 1 -n -F "${LAST_TIMESTAMP}" ${SLAPD_LOG_FILE} | cut -d: -f1)
         start_index=$(($start_index+1))
     else
         start_index=1
