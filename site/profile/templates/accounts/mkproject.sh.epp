@@ -15,6 +15,36 @@
 #   and the removal of the symlink to the project from all previous member
 #   home folders.
 
+# IPA membership workflow observed in 389-ds access logs
+# IPA VERSION: 4.13.4, API_VERSION: 2.257
+#
+# Adding user01-user05 to def-sponsor01, connection 3233:
+#   op=2,4,6,8,10: SRCH base="uid=<user>,cn=users,..." attrs="distinguishedName"
+#   op=3,5,7,9,11: MOD dn="cn=def-sponsor01,cn=groups,..."
+#   Each MOD returned RESULT err=0; op=15 was UNBIND.
+#
+# Removing those users, connection 3237:
+#   op=1-5: MOD dn="cn=def-sponsor01,cn=groups,..."
+#   Each MOD returned RESULT err=0; op=10 was UNBIND.
+#   No SRCH base="uid=..." occurred on this connection.
+#
+# This observed distinction is the basis for the current heuristic:
+#   user searches present -> pass those users to the addition path;
+#   no user searches      -> reconcile removals against LDAP membership.
+# Searches on other connections are excluded.
+#
+# Source-code basis:
+# - LDAPAddMember.execute() loops over members using the same LDAP backend.
+#   add_entry_to_group() calls get_entry() to check that the member exists,
+#   then issues modify_s() with MOD_ADD on the group's member attribute.
+# - LDAPRemoveMember.execute() also loops over members, but
+#   remove_entry_from_group() issues MOD_DELETE without that member lookup.
+
+# These traces validate successful additions/removals through this IPA
+# workflow, not every LDAP client or failure case. MOD RESULT statuses
+# are currently not checked; UNBIND alone does not establish success
+
+
 SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
 
 PROJECT_REGEX="<%= $project_regex %>"
