@@ -155,7 +155,7 @@ mkproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         rmdir /var/lock/mkproject.$GROUP.lock
         return 1
@@ -239,7 +239,7 @@ modproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
@@ -340,7 +340,7 @@ modproject() {
             echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in slurm"
             return 1
         fi
-        if USER_GROUP=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member"); then
+        if USER_GROUP=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member"); then
             USER_GROUP=$(echo "${USER_GROUP}"| grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
         else
             echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in ldap"
@@ -405,7 +405,7 @@ delproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
