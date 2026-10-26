@@ -64,8 +64,11 @@ while read TIMESTAMP USERNAME; do
     fi
     <% } -%>
 
-    PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null |
-               grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
+    if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null); then
+        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
+        continue
+    fi
+    PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
     for PROJECT in $PROJECTS; do
         if [[ ! -z "${PROJECT}" ]]; then
             echo 0 ${PROJECT} <%= $manage_project %> ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
