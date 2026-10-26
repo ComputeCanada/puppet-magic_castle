@@ -1,11 +1,17 @@
 #!/bin/bash
 
 kexec () {
-    local TMP_KRB_CACHE=$(mktemp)
-    kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
-    KRB5CCNAME=${TMP_KRB_CACHE} ${@} &&
-    kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
-    rm -f $TMP_KRB_CACHE
+    local TMP_KRB_CACHE CMD_EXIT_CODE
+    TMP_KRB_CACHE=$(mktemp) || return 1
+    if kinit -kt /etc/krb5.keytab -c "${TMP_KRB_CACHE}" &> /dev/null; then
+        KRB5CCNAME="${TMP_KRB_CACHE}" "${@}"
+        CMD_EXIT_CODE=$?
+        kdestroy -c "${TMP_KRB_CACHE}" &> /dev/null
+    else
+        CMD_EXIT_CODE=1
+    fi
+    rm -f "${TMP_KRB_CACHE}"
+    return $CMD_EXIT_CODE
 }
 
 wait_for_slurm() {
