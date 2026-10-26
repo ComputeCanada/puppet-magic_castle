@@ -154,8 +154,8 @@ mkproject() {
     # Retrieve the group information that are only available in LDAP:
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
+    local GROUP_INFO
+    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         rmdir /var/lock/mkproject.$GROUP.lock
         return 1
@@ -239,8 +239,7 @@ modproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
+    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
@@ -334,8 +333,19 @@ modproject() {
         # If group has been modified but no uid were found in the log, it means
         # user(s) have been removed from the groups.
         # We identify which ones by comparing Slurm account with group.
-        local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
-        local USER_GROUP=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member" | grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
+        local SLURM_ACCOUNT USER_GROUP
+        if SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
+            SLURM_ACCOUNT=$(echo "${SLURM_ACCOUNT}" | awk NF | sort)
+        else
+            echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in slurm"
+            return 1
+        fi
+        if USER_GROUP=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member"); then
+            USER_GROUP=$(echo "${USER_GROUP}"| grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
+        else
+            echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in ldap"
+            return 1
+        fi
         local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
         if [[ ! -z "$USERNAMES" ]]; then
             if [[ "${WITH_FOLDER}" == "true" ]]; then
@@ -395,8 +405,7 @@ delproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
+    if ! GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
