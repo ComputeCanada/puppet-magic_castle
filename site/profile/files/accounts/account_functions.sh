@@ -238,7 +238,8 @@ modproject() {
     # Retrieve the group information that are only available in LDAP:
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
+    local GROUP_INFO
+    GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
     if [ ! $? -eq 0 ]; then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
@@ -393,7 +394,8 @@ delproject() {
     # Retrieve the group information that are only available in LDAP:
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
+    local GROUP_INFO
+    GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
     if [ ! $? -eq 0 ]; then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
