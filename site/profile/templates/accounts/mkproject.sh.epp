@@ -41,8 +41,15 @@
 #   remove_entry_from_group() issues MOD_DELETE without that member lookup.
 
 # These traces validate successful additions/removals through this IPA
-# workflow, not every LDAP client or failure case. MOD RESULT statuses
-# are currently not checked; UNBIND alone does not establish success
+# workflow, not every LDAP client or failure case. Groups are queued only
+# after at least one matching MOD RESULT succeeds.
+
+# Assumes standard IPA UI user-membership actions or CLI
+# group-add-member/group-remove-member --users commands.
+# Mixed add/remove batches and direct member attribute edits are unsupported.
+#
+# Usernames are inferred connection-wide. For multiple users in one group,
+# failed or missing MOD results trigger a membership check before addition.
 
 
 SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
@@ -107,7 +114,40 @@ CONSECUTIVE_FAILURES=0
     tail -n+1 -F ${MODPROJECT_RETRY_PIPE} &
     tail -n+1 -F ${MKHOME_MODPROJECT_PIPE}
 ) |
-while read NRETRY GROUP WITH_FOLDER USERNAMES; do
+while read NRETRY GROUP WITH_FOLDER VALIDATE_MEMBER USERNAMES; do
+    if [[ ${CONSECUTIVE_FAILURES} -gt 0 ]] && [[ ${NRETRY} -gt 0 ]]; then
+        # Back off before retrying either membership validation or modproject.
+        sleep ${CONSECUTIVE_FAILURES}
+    fi
+    # Queue format: NRETRY GROUP WITH_FOLDER VALIDATE_MEMBER [USERNAMES...].
+    # Preserve the candidate users across failed IPA lookups.
+    if [[ "${VALIDATE_MEMBER}" == "true" ]]; then
+        CANDIDATE_USERNAMES=${USERNAMES}
+        if GROUP_MEMBERS=$(kexec ipa group-show "${GROUP}" --raw); then
+            GROUP_MEMBERS=$(echo "${GROUP_MEMBERS}" | grep -oP 'uid=\K([^,]*)(?=,cn=users)')
+            USERNAMES=$(
+                for USERNAME in ${CANDIDATE_USERNAMES}; do
+                    if grep -Fxq -- "${USERNAME}" <<< "${GROUP_MEMBERS}"; then
+                        echo "${USERNAME}"
+                    fi
+                done
+            )
+            # Empty additions must never become removal reconciliation requests.
+            if [[ -z "${USERNAMES}" ]]; then
+                CONSECUTIVE_FAILURES=0
+                continue
+            fi
+            VALIDATE_MEMBER=false
+        else
+            CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES+1))
+            if [[ ${NRETRY} -lt 10 ]]; then
+                echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} true ${CANDIDATE_USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
+            else
+                echo "ERROR::ipa group-show ${GROUP}: giving up membership validation after 10 attempts."
+            fi
+            continue
+        fi
+    fi
     if [[ ! -z "${USERNAMES}" ]]; then
         # Filter group+usernames that have been successfully modified
         # and that are still in cache.
@@ -122,12 +162,6 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             continue
         fi
     fi
-    if [[ ${CONSECUTIVE_FAILURES} -gt 0 ]] && [[ ${NRETRY} -gt 0 ]]; then
-        # NRETRY corresponds to the number of times that modproject has been called
-        # with these arguments without success. If it is greater than 0, the script
-        # sleeps to give time to the system internal to adjust before retrying.
-        sleep ${CONSECUTIVE_FAILURES}
-    fi
     if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed" ]; then
         if mkproject ${GROUP} ${WITH_FOLDER} && USERNAMES=$(kexec ipa group-show ${GROUP} --raw); then
             # Identify usernames that are already member of the group - most likely through automembership
@@ -135,11 +169,11 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             rm "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
             update_mkproject_cache ${GROUP}
             if [[ ! -z ${USERNAMES} ]]; then
-                echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+                echo 0 ${GROUP} ${WITH_FOLDER} false ${USERNAMES} > ${MODPROJECT_PIPE} &
             fi
         else
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             continue
         fi
     fi
@@ -173,7 +207,7 @@ while read NRETRY GROUP WITH_FOLDER USERNAMES; do
             # later. We increment the number of retry and add the arguments the retry pipeline.
             CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
             if [[ ${NRETRY} -lt 10 ]]; then
-                echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
+                echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
             else
                 echo "ERROR::modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}: giving up after 10 attempts."
             fi
@@ -234,22 +268,80 @@ while read TIMESTAMP CONN OP GROUP; do
                 # Identify usernames that are already member of the group - most likely through automembership
                 USERNAMES=$(echo "${USERNAMES}" |  grep -o -P "uid=\K(.*)(?=,cn=users)")
                 if [[ ! -z ${USERNAMES} ]]; then
-                    echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+                    echo 0 ${GROUP} ${WITH_FOLDER} false ${USERNAMES} > ${MODPROJECT_PIPE} &
                 fi
             else
                 touch "${MKHOME_PROJECT_DIR}/${GROUP}.slurm.failed"
-                echo 1 "${GROUP}" "${WITH_FOLDER}" > "${MODPROJECT_RETRY_PIPE}" &
+                echo 1 "${GROUP}" "${WITH_FOLDER}" false > "${MODPROJECT_RETRY_PIPE}" &
             fi
             ;;
         MOD)
             # One or more groups have been modified
-            # We grep the log for all operations related to request $CONN that contain a uid
-            USERNAMES=$(grep -oP "conn=${CONN} op=[0-9]* SRCH base=\"uid=\K(.*)(?=,cn=users)" ${SLAPD_LOG_FILE} | sort | uniq)
-            # We grep all unique groups that have been modified
-            MOD_GROUPS=$(grep -oP "conn=${CONN} op=[0-9]* MOD dn=\"cn=\K${PROJECT_REGEX}" ${SLAPD_LOG_FILE} | uniq)
-            for GROUP in ${MOD_GROUPS}; do
-                echo 0 ${GROUP} ${WITH_FOLDER} ${USERNAMES} > ${MODPROJECT_PIPE} &
-            done
+            # We grep the log for all successful search operation
+            # during connection $CONN that contain a uid to identify the list
+            # of users affected by the modification.
+            USERNAMES=$(
+                awk -v cur_conn="${CONN}" '
+                {
+                    split($3, conn, "=")
+                    split($4, op , "=")
+                    action = $5
+                    split($6, err, "=")
+                    split($7, tag, "=")
+                    split($8, nentries, "=")
+                }
+                conn[2] == cur_conn && action == "SRCH" { search[op[2]] = $0 }
+                conn[2] == cur_conn && action == "RESULT" && err[2] == "0" && nentries[2] == "1" && tag[2] == "101" { succeeded[op[2]] = 1 }
+                END {
+                    for (op_i in search)
+                        if (succeeded[op_i] == 1)
+                            print search[op_i]
+                }
+                ' ${SLAPD_LOG_FILE} | grep -oP "SRCH base=\"uid=\K(.*)(?=,cn=users)" | sort -u
+            )
+            # Match MOD requests and successful results by connection and operation.
+            # Entries may be interleaved; missing or failed results do not qualify.
+            MOD_RESULTS=$(
+                awk -v cur_conn="${CONN}" '
+                    {
+                        split($3, conn, "=")
+                        split($4, op , "=")
+                        action = $5
+                        split($6, err, "=")
+                        split($7, tag, "=")
+                    }
+                    conn[2] == cur_conn && action == "MOD" { modifications[op[2]] = $0 }
+                    conn[2] == cur_conn && action == "RESULT" && err[2] == "0" && tag[2] == "103" { succeeded[op[2]] = 1 }
+                    END {
+                        failed = 0
+                        for (op_i in modifications)
+                            if (op_i in succeeded)
+                                print modifications[op_i]
+                            else
+                                failed++
+                        exit(failed > 0)
+                    }
+                ' "${SLAPD_LOG_FILE}"
+            )
+            FAILED_MOD="${?}"
+            MOD_GROUPS=$(echo "${MOD_RESULTS}" | grep -oP " MOD dn=\"cn=\K${PROJECT_REGEX}" | sort -u)
+            USERNAME_COUNT=$(echo "${USERNAMES}" | awk 'NF' | wc -l)
+            VALIDATE_MEMBER=false
+            if [[ ${USERNAME_COUNT} -gt 1 && ${FAILED_MOD} -gt 0 ]]; then
+                VALIDATE_MEMBER=true
+            fi
+            # We only support two cases:
+            # - Multiple group are modified in regards to a single user
+            # - A single group is modified in regards to multiple users
+            GROUP_COUNT=$(echo "${MOD_GROUPS}" | wc -l)
+            if ! [[ ${USERNAME_COUNT} -gt 1 && ${GROUP_COUNT} -gt 1 ]]; then
+                # We assume that under the UI and CLI workflows, multiple distinct searched
+                # usernames should correspond to the modification of a single group.
+                # Any other scenario is currently not supported by our heuristic.
+                for GROUP in ${MOD_GROUPS}; do
+                    echo 0 ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES} > ${MODPROJECT_PIPE} &
+                done
+            fi
             ;;
         DEL)
             delproject ${GROUP} ${WITH_FOLDER}
