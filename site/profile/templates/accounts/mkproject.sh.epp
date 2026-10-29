@@ -119,6 +119,23 @@ while read NRETRY GROUP WITH_FOLDER VALIDATE_MEMBER USERNAMES; do
         # Back off before retrying either membership validation or modproject.
         sleep ${CONSECUTIVE_FAILURES}
     fi
+
+    if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.mkproject.failed" ]; then
+        if mkproject ${GROUP} ${WITH_FOLDER} && USERNAMES=$(kexec ipa group-show ${GROUP} --raw); then
+            # Identify usernames that are already member of the group - most likely through automembership
+            USERNAMES=$(echo "${USERNAMES}" | grep -o -P "uid=\K(.*)(?=,cn=users)")
+            rm "${MKHOME_PROJECT_DIR}/${GROUP}.mkproject.failed"
+            update_mkproject_cache ${GROUP}
+            if [[ ! -z ${USERNAMES} ]]; then
+                echo 0 ${GROUP} ${WITH_FOLDER} false ${USERNAMES} > ${MODPROJECT_PIPE} &
+            fi
+        else
+            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
+            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
+        fi
+        continue
+    fi
+
     # Queue format: NRETRY GROUP WITH_FOLDER VALIDATE_MEMBER [USERNAMES...].
     # Preserve the candidate users across failed IPA lookups.
     if [[ "${VALIDATE_MEMBER}" == "true" ]]; then
@@ -161,21 +178,6 @@ while read NRETRY GROUP WITH_FOLDER VALIDATE_MEMBER USERNAMES; do
         if [[ -z "${USERNAMES}" ]]; then
             continue
         fi
-    fi
-    if [ -e "${MKHOME_PROJECT_DIR}/${GROUP}.mkproject.failed" ]; then
-        if mkproject ${GROUP} ${WITH_FOLDER} && USERNAMES=$(kexec ipa group-show ${GROUP} --raw); then
-            # Identify usernames that are already member of the group - most likely through automembership
-            USERNAMES=$(echo "${USERNAMES}" | grep -o -P "uid=\K(.*)(?=,cn=users)")
-            rm "${MKHOME_PROJECT_DIR}/${GROUP}.mkproject.failed"
-            update_mkproject_cache ${GROUP}
-            if [[ ! -z ${USERNAMES} ]]; then
-                echo 0 ${GROUP} ${WITH_FOLDER} false ${USERNAMES} > ${MODPROJECT_PIPE} &
-            fi
-        else
-            CONSECUTIVE_FAILURES=$(($CONSECUTIVE_FAILURES+1))
-            echo $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES} > ${MODPROJECT_RETRY_PIPE} &
-        fi
-        continue
     fi
     modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}
     case $? in
