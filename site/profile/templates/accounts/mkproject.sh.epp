@@ -105,7 +105,15 @@ install -m 600 /dev/null ${MODPROJECT_CACHE}
 wait_for_slurm
 
 RETRY_DELAY=15
+MAX_RETRIES=10
 queue_action () {
+    local action=$1
+    local nretry=$2
+    local group=$3
+    if [[ ${nretry} -gt "${MAX_RETRIES}" ]]; then
+        echo "ERROR::${action} ${group}: retry limit reached"
+        return 1
+    fi
     # Wait outside the consumer so fresh requests can continue processing.
     (
         if [[ ${2} -gt 0 ]]; then
@@ -169,11 +177,7 @@ while read ACTION NRETRY GROUP WITH_FOLDER ARGS; do
             fi
             VALIDATE_MEMBER=false
         else
-            if [[ ${NRETRY} -lt 10 ]]; then
-                queue_action modproject $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} true ${CANDIDATE_USERNAMES}
-            else
-                echo "ERROR::ipa group-show ${GROUP}: giving up membership validation after 10 attempts."
-            fi
+            queue_action modproject $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} true ${CANDIDATE_USERNAMES}
             continue
         fi
     fi
@@ -218,11 +222,7 @@ while read ACTION NRETRY GROUP WITH_FOLDER ARGS; do
         1)
             # modproject was not successul, but the arguments are valid, so we should try again
             # later. We increment the number of retry and add the arguments the retry pipeline.
-            if [[ ${NRETRY} -lt 10 ]]; then
-                queue_action modproject $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES}
-            else
-                echo "ERROR::modproject ${GROUP} ${WITH_FOLDER} ${USERNAMES}: giving up after 10 attempts."
-            fi
+            queue_action modproject $((NRETRY+1)) ${GROUP} ${WITH_FOLDER} ${VALIDATE_MEMBER} ${USERNAMES}
             ;;
     esac
 done &
