@@ -38,6 +38,14 @@ else
     start_index=1
 fi
 
+RETRY_DELAY=15
+queue_retry () {
+    (
+        sleep "${RETRY_DELAY}"
+        echo "retry" ${1} > ${MKHOME_RETRY_PIPE}
+    ) &
+}
+
 (
     tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
     grep --line-buffered -P 'ADD dn=\"uid=\K(.*)(?=,cn=users)' |
@@ -53,19 +61,19 @@ while read TIMESTAMP USERNAME; do
     fi
     <% if $manage_home { -%>
     if ! mkhome $USERNAME; then
-        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
+        queue_retry ${USERNAME}
         continue
     fi
     <% } -%>
     <% if $manage_scratch { -%>
     if ! mkscratch $USERNAME <%= $manage_home %>; then
-        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
+        queue_retry ${USERNAME}
         continue
     fi
     <% } -%>
 
     if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null); then
-        echo "retry" $USERNAME > ${MKHOME_RETRY_PIPE} &
+        queue_retry ${USERNAME}
         continue
     fi
     PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
