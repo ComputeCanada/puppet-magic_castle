@@ -71,7 +71,7 @@ while read TIMESTAMP USERNAME; do
     PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
     for PROJECT in $PROJECTS; do
         if [[ ! -z "${PROJECT}" ]]; then
-            echo 0 ${PROJECT} <%= $manage_project %> false ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
+            echo 0 "modproject" ${PROJECT} <%= $manage_project %> false ${USERNAME} > ${MKHOME_MODPROJECT_PIPE} &
         fi
     done
 done
