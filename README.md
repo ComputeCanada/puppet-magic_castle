@@ -848,6 +848,7 @@ authentication domain must be listed in `domains`.
 | `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
 | `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
 | `freeipa_mapping` | Enable external username mapping through the FreeIPA API using a dedicated gcsweb keytab; mutually exclusive with `identity_mapping` | Boolean |
+| `restrict_paths`   | Path restrictions for accessing data on collections created using this storage gateway | [GlobusPathRestrictions](https://docs.globus.org/globus-connect-server/v5/api/schemas/PathRestrictions_schema/) |
 
 <details>
 <summary>default values</summary>
@@ -859,6 +860,7 @@ profile::globus::domains: []
 profile::globus::enable_oidc: true
 profile::globus::identity_mapping: ~
 profile::globus::freeipa_mapping: false
+profile::globus::restrict_paths: {}
 ```
 </details>
 

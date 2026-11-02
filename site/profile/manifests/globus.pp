@@ -6,6 +6,16 @@
 # Changing parameters such as domains, collection_path, or OIDC settings
 # after setup requires removing the affected Globus service and its
 # corresponding JSON state file before the next Puppet run.
+
+type GlobusPathRestrictions = Struct[
+  {
+    'DATA_TYPE'  => Optional[String],
+    'read_write' => Optional[Array[String]],
+    'read'       => Optional[Array[String]],
+    'none'       => Optional[Array[String]],
+  }
+]
+
 class profile::globus (
   String[1] $default_directory = '/~/',
   String[1] $collection_path = '/nfs',
@@ -13,6 +23,7 @@ class profile::globus (
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
   Boolean $freeipa_mapping = false,
+  GlobusPathRestrictions $restrict_paths = {},
 ) {
   if $freeipa_mapping and $identity_mapping != undef {
     fail('freeipa_mapping and identity_mapping are mutually exclusive')
@@ -125,6 +136,16 @@ class profile::globus (
       require => Exec['globus-node-setup'],
       before  => Exec['globus-gateway-setup'],
     }
+  }
+
+  file { '/etc/globus/restrict_paths.json':
+    ensure  => 'file',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0700',
+    content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'path_restrictions#1.0.0' } + $restrict_paths),
+    require => Exec['globus-node-setup'],
+    before  => Exec['globus-gateway-setup'],
   }
 
   if $enable_oidc == false and length($domains) == 0 {
