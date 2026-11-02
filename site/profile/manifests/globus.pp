@@ -7,6 +7,7 @@
 # after setup requires removing the affected Globus service and its
 # corresponding JSON state file before the next Puppet run.
 class profile::globus (
+  String[1] $default_directory = '/~/',
   String[1] $collection_path = '/nfs',
   Array[String] $domains = [],
   Boolean $enable_oidc = true,
@@ -52,9 +53,10 @@ class profile::globus (
     content   => epp(
       'profile/globus/globus-collection-setup',
       {
-        'public_ip'       => lookup('terraform.self.public_ip'),
-        'display_name'    => $display_name,
-        'collection_path' => $collection_path,
+        'default_directory' => $default_directory,
+        'public_ip'         => lookup('terraform.self.public_ip'),
+        'display_name'      => $display_name,
+        'collection_path'   => $collection_path,
       }
     ),
   }

@@ -842,6 +842,7 @@ authentication domain must be listed in `domains`.
 
 | Variable           | Description                                                   | Type                  |
 | :----------------- | :------------------------------------------------------------ | :-------------------- |
+| `default_directory`| Default directory when browsing the collection                | String[1]             |
 | `collection_path`  | Local path exported by the Globus collection                  | String[1]             |
 | `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
 | `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
@@ -852,6 +853,7 @@ authentication domain must be listed in `domains`.
 <summary>default values</summary>
 
 ```yaml
+profile::globus::default_directory: '/~/'
 profile::globus::collection_path: /nfs
 profile::globus::domains: []
 profile::globus::enable_oidc: true
