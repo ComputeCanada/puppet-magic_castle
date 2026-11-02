@@ -209,6 +209,18 @@ mkproject() {
     return 0
 }
 
+# Coalesce group reconciliation requests, including requests from mkhome.
+# pending covers queued/running/retrying work; dirty requests another snapshot.
+queue_modproject() {
+    local group=$1 with_folder=$2 pipe=$3
+    local sync_dir="${MKHOME_PROJECT_DIR}/project_sync"
+    mkdir -p "${sync_dir}" || return 1
+    touch "${sync_dir}/${group}.dirty" || return 1
+    if mkdir "${sync_dir}/${group}.pending" 2> /dev/null; then
+        (echo modproject 0 "${group}" "${with_folder}" > "${pipe}") &
+    fi
+}
+
 # return codes
 # 0: project was correctly modified
 # 1: context did not allow function to execute, retry later
@@ -217,7 +229,7 @@ mkproject() {
 modproject() {
     local GROUP=$1
     local WITH_FOLDER=$2
-    local USERNAMES="${@:3}"
+    local USERNAMES
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
@@ -266,10 +278,71 @@ modproject() {
             return 1
         fi
     fi
-    # The operation that add users to a group would have operations with a uid.
-    # If we found none, $USERNAMES will be empty, and it means we don't have
-    # anything to add to Slurm and /project
-    if [[ ! -z "${USERNAMES}" ]]; then
+    # Use one authoritative snapshot for both additions and removals. IPA
+    # expands indirect membership; LDAP access-log searches are not membership.
+    local GROUP_MEMBERS SLURM_MEMBERS MISSING_MEMBERS OBSOLETE_MEMBERS
+    if ! GROUP_MEMBERS=$(kexec ipa group-show "${GROUP}" --raw); then
+        echo "ERROR::${FUNCNAME} ${GROUP}: could not retrieve IPA membership"
+        return 1
+    fi
+    GROUP_MEMBERS=$(echo "${GROUP_MEMBERS}" |
+        grep -Ei '^[[:space:]]*(member|memberindirect):' |
+        grep -oP 'uid=\K[^,]+(?=,cn=users,cn=accounts,)' | LC_ALL=C sort -u)
+    if ! SLURM_MEMBERS=$(/opt/software/slurm/bin/sacctmgr list assoc account="${GROUP}" format=user --noheader -P); then
+        echo "ERROR::${FUNCNAME} ${GROUP}: could not retrieve Slurm membership"
+        return 1
+    fi
+    SLURM_MEMBERS=$(echo "${SLURM_MEMBERS}" | awk NF | LC_ALL=C sort -u)
+    MISSING_MEMBERS=$(LC_ALL=C comm -23 <(printf '%s\n' "${GROUP_MEMBERS}" | awk NF) <(printf '%s\n' "${SLURM_MEMBERS}" | awk NF))
+    OBSOLETE_MEMBERS=$(LC_ALL=C comm -13 <(printf '%s\n' "${GROUP_MEMBERS}" | awk NF) <(printf '%s\n' "${SLURM_MEMBERS}" | awk NF))
+
+    # Revoke obsolete associations before adding new ones.
+    USERNAMES=${OBSOLETE_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
+        if [[ "${WITH_FOLDER}" == "true" ]]; then
+            for USERNAME in $USERNAMES; do
+                if ! getent passwd -s sss "$USERNAME" > /dev/null; then
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user unavailable; skipping home symlink cleanup"
+                    continue
+                fi
+                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
+                local USER_HOME=${USER_INFO[2]}
+
+                if [ -z "${USER_HOME}" ]; then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
+                    sss_cache --user=${USERNAME} 2> /dev/null
+                    return 1
+                fi
+
+                if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
+                    echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
+                    continue
+                fi
+
+                local RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1)
+                if [ $? -eq 0 ]; then
+                    echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
+                else
+                    echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                    echo "\t${RM_OUTPUT}"
+                    return 1
+                fi
+            done
+        fi
+        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
+            echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+        elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
+        else
+            echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
+            echo "${sacctmgr_output}" | sed 's/^/\t/'
+            return 1
+        fi
+    fi
+
+    # Ensure folders also exist for users already associated with Slurm.
+    USERNAMES=${GROUP_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
                 if ! getent passwd -s sss $USERNAME > /dev/null; then
@@ -315,86 +388,23 @@ modproject() {
                     chmod 2700 "${PROJECT_USER}"
                     restorecon -F -R "${PROJECT_USER}"
                     echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PROJECT_USER}"
-                else
-                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} already exists"
                 fi
             done
         fi
+    fi
+    USERNAMES=${MISSING_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
-            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES//[$'\n']/ } added to ${GROUP} in SlurmDB"
         elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
-            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: already added to SlurmDB account"
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES//[$'\n']/ }: already added to SlurmDB account"
         else
-            echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
+            echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES//[$'\n']/ } added to ${GROUP}"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
-    else
-        # If group has been modified but no uid were found in the log, it means
-        # user(s) have been removed from the groups.
-        # We identify which ones by comparing Slurm account with group.
-        local SLURM_ACCOUNT USER_GROUP
-        if SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
-            SLURM_ACCOUNT=$(echo "${SLURM_ACCOUNT}" | awk NF | sort)
-        else
-            echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in slurm"
-            return 1
-        fi
-        if USER_GROUP=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member"); then
-            USER_GROUP=$(echo "${USER_GROUP}"| grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
-        else
-            echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: error while looking up the group in ldap"
-            return 1
-        fi
-        local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
-        if [[ ! -z "$USERNAMES" ]]; then
-            if [[ "${WITH_FOLDER}" == "true" ]]; then
-                for USERNAME in $USERNAMES; do
-                    if ! getent passwd -s sss $USERNAME > /dev/null; then
-                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                        sss_cache --user=${USERNAME} 2> /dev/null
-                        return 1
-                    fi
-                done
-                for USERNAME in $USERNAMES; do
-                    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                    local USER_HOME=${USER_INFO[2]}
-
-                    if [ -z "${USER_HOME}" ]; then
-                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
-                        sss_cache --user=${USERNAME} 2> /dev/null
-                        return 1
-                    fi
-
-                    if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
-                        echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
-                        continue
-                    fi
-
-                    local RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1)
-                    if [ $? -eq 0 ]; then
-                        echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
-                    else
-                        echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
-                        echo "\t${RM_OUTPUT}"
-                        return 1
-                    fi
-                done
-            fi
-            if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
-                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-            elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
-                echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
-            else
-                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-                echo "${sacctmgr_output}" | sed 's/^/\t/'
-                return 1
-            fi
-            REMOVED_USERNAMES=$USERNAMES
-        else
-            echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
-        fi
     fi
+    return 0
 }
 
 delproject() {
