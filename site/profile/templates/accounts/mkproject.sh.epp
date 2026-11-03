@@ -33,6 +33,19 @@ update_mkproject_cache () {
     flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
 }
 
+remove_from_mkproject_cache () (
+    flock -x 9 || return 1
+    local temporary_cache result
+    temporary_cache=$(mktemp "${MKPROJECT_CACHE}.XXXXXX") || return 1
+    grep -Fxv -- "${1}" "${MKPROJECT_CACHE}" > "${temporary_cache}"
+    result=$?
+    if [[ ${result} -gt 1 ]]; then
+        rm -f "${temporary_cache}"
+        return "${result}"
+    fi
+    mv -f "${temporary_cache}" "${MKPROJECT_CACHE}"
+) 9> "${MKPROJECT_CACHE_LOCK}"
+
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
 # FIFO pipes could eventually be replaced by sockets
@@ -159,6 +172,9 @@ while read -r ACTION NRETRY GROUP WITH_FOLDER; do
             finish_modproject "${GROUP}" "${WITH_FOLDER}"
             ;;
         delproject)
+            if [[ "${NRETRY}" -eq 0 ]]; then
+                remove_from_mkproject_cache "${GROUP}"
+            fi
             if ! delproject "${GROUP}" "${WITH_FOLDER}"; then
                 queue_action delproject $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}"
             fi
