@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+
+- Avoided repeated `pvresize` calls for unchanged cloud volumes by requiring a size difference greater than 512 MiB (PR #632)
+- Preserved existing home directory files when copying the FreeIPA skeleton (PR #633)
+- Fixed project and membership cache matching to prevent partial matches and serialized `mkproject` cache updates and trimming (PR #635)
+
 ## [16.1.1] 2026-10-22
 
 ### Added
