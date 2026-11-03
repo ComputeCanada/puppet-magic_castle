@@ -143,8 +143,8 @@ mkproject() {
     fi
 
     if ! mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
-        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
-        return 0
+        echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
+        return 1
     fi
 
     if [ -z "${BASEDN}" ]; then
@@ -238,10 +238,10 @@ modproject() {
 
     local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
-    while [ -d /var/lock/mkproject.$GROUP.lock ]; do
-        echo "WARN::${FUNCNAME}: $GROUP $USERNAMES group folder is locked, waiting 2s..."
-        sleep 2
-    done
+    if [[ -d "/var/lock/mkproject.${GROUP}.lock" ]]; then
+        echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
+        return 1
+    fi
 
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)

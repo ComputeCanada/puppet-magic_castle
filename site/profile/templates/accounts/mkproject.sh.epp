@@ -26,6 +26,9 @@ source /sbin/account_functions.sh
 MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 mkdir -p ${MKHOME_PROJECT_DIR}
 
+# Remove stale locks from a previous mkproject execution
+rm -rf /var/lock/mkproject.*.lock
+
 MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
 MKPROJECT_CACHE_SIZE=1000
 MKPROJECT_CACHE_LOCK=${MKHOME_PROJECT_DIR}/mkproject.cache.lock
