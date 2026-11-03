@@ -428,7 +428,13 @@ delproject() {
     # A group has been removed.
     # Since we do not want to delete any data we only remove the
     # symlinks and remove the users from the slurm account.
-    local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
+    local USERNAMES
+    if USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
+        USERNAMES=$(echo "${USERNAMES}" | awk NF | sort)
+    else
+        echo "ERROR::${FUNCNAME}: failure while querying ${GROUP} in SlurmDB"
+        return 1
+    fi
     if [[ ! -z "$USERNAMES" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
