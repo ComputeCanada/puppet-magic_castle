@@ -319,8 +319,8 @@ modproject() {
                     continue
                 fi
 
-                local RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1)
-                if [ $? -eq 0 ]; then
+                local RM_OUTPUT
+                if RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1); then
                     echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
                 else
                     echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
