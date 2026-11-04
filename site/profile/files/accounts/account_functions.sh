@@ -184,6 +184,10 @@ mkproject() {
         local PROJECT_GID="/project/$GID"
         local PROJECT_GROUP="/project/$GROUP"
         if [ ! -d ${PROJECT_GID} ]; then
+            # SELinux labeling is best-effort: mkdir -Z may warn about labeling
+            # failures while returning success. We accept this across the provisioning
+            # functions and do not run recursive restorecon, to avoid relabeling
+            # existing user content. Directory-creation failures still require a retry.
             mkdir -Z -m 2770 -p ${PROJECT_GID} || return 1
         fi
         local PROJECT_OWNER_GID
