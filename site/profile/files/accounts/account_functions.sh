@@ -305,45 +305,7 @@ modproject() {
     # Revoke obsolete associations before adding new ones.
     USERNAMES=${OBSOLETE_MEMBERS}
     if [[ -n "${USERNAMES}" ]]; then
-        if [[ "${WITH_FOLDER}" == "true" ]]; then
-            for USERNAME in $USERNAMES; do
-                local USER_INFO USER_HOME
-                if ! USER_INFO=$(getent passwd -s sss "$USERNAME"); then
-                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user unavailable; skipping home symlink cleanup"
-                    continue
-                fi
-                USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
-
-                if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
-                    return 1
-                fi
-
-                if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
-                    echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
-                    continue
-                fi
-
-                local RM_OUTPUT
-                if RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1); then
-                    echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
-                else
-                    echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
-                    echo "\t${RM_OUTPUT}"
-                    return 1
-                fi
-            done
-        fi
-        if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
-            echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-        elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
-            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
-        else
-            echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-            echo "${sacctmgr_output}" | sed 's/^/\t/'
-            return 1
-        fi
+        delproject "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" || return 1
     fi
 
     # Ensure folders also exist for users already associated with Slurm.
@@ -420,8 +382,11 @@ modproject() {
 }
 
 delproject() {
+    # Remove users from a group, if no users is provided in argument
+    # every users from that group in SlurmDB are removed.
     local GROUP=$1
     local WITH_FOLDER=$2
+    local USERNAMES=$3
 
     local PROJECT_GROUP="/project/$GROUP"
     # If group folder does not exist, we disable folder and symlinks removal.
@@ -429,15 +394,13 @@ delproject() {
         WITH_FOLDER="false"
     fi
 
-    # A group has been removed.
-    # Since we do not want to delete any data we only remove the
-    # symlinks and remove the users from the slurm account.
-    local USERNAMES
-    if USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
-        USERNAMES=$(echo "${USERNAMES}" | awk NF | sort)
-    else
-        echo "ERROR::${FUNCNAME}: failure while querying ${GROUP} in SlurmDB"
-        return 1
+    if [[ -z "${USERNAMES}" ]]; then
+        if USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
+            USERNAMES=$(echo "${USERNAMES}" | awk NF | sort)
+        else
+            echo "ERROR::${FUNCNAME}: failure while querying ${GROUP} in SlurmDB"
+            return 1
+        fi
     fi
     if [[ ! -z "$USERNAMES" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
@@ -458,7 +421,14 @@ delproject() {
                     echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
                     continue
                 fi
-                rm "${USER_HOME}/projects/$GROUP" || return 1
+                local RM_OUTPUT
+                if RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1); then
+                    echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
+                else
+                    echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                    echo "\t${RM_OUTPUT}"
+                    return 1
+                fi
             done
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
