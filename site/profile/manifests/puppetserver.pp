@@ -48,4 +48,25 @@ class profile::puppetserver (
     ensure => running,
     enable => true,
   }
+
+  ensure_packages(['python3-dnf-plugin-post-transaction-actions'], {
+    ensure => installed,
+  })
+
+  ensure_resource('file', '/etc/dnf/plugins/post-transaction-actions.d', {
+    ensure  => directory,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0755',
+    require => Package['python3-dnf-plugin-post-transaction-actions'],
+  })
+
+  file { '/etc/dnf/plugins/post-transaction-actions.d/puppetserver.action':
+    ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0644',
+    content => "# Managed by Puppet\njava-*-openjdk*:any:/usr/bin/systemctl try-restart puppetserver\n",
+    require => File['/etc/dnf/plugins/post-transaction-actions.d'],
+  }
 }
