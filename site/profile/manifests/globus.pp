@@ -158,7 +158,7 @@ class profile::globus (
       "GCS_CLI_CLIENT_ID=${globus::client_id}",
       "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ],
-    unless      => '/bin/test -s /var/lib/globus-connect-server/gateway.json',
+    creates     => '/var/lib/globus-connect-server/gateway.json',
     require     => [
       Package['jq'],
       Exec['globus-node-setup'],
@@ -172,7 +172,7 @@ class profile::globus (
       "GCS_CLI_CLIENT_ID=${globus::client_id}",
       "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ],
-    unless      => '/bin/test -s /var/lib/globus-connect-server/collection.json',
+    creates     => '/var/lib/globus-connect-server/collection.json',
     require     => [
       Package['jq'],
       Exec['globus-gateway-setup'],
@@ -187,7 +187,7 @@ class profile::globus (
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
         "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
       ],
-      unless      => '/bin/test -s /var/lib/globus-connect-server/oidc.json',
+      creates     => '/var/lib/globus-connect-server/oidc.json',
       require     => [
         Exec['globus-node-setup'],
         File['/root/globus-oidc-setup'],
