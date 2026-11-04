@@ -121,16 +121,16 @@ mkscratch () {
 
     local USER_SCRATCH="/scratch/${USERNAME}"
     if [[ ! -d "${USER_SCRATCH}" ]]; then
-        mkdir -p ${USER_SCRATCH}
-        if [ "$WITH_HOME" == "true" ]; then
-            ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch"
-            chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch"
-        fi
-        chown -h ${USER_UID}:${USER_GID} ${USER_SCRATCH}
-        chmod 750 ${USER_SCRATCH}
-        restorecon -F -R ${USER_SCRATCH}
-        echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_SCRATCH}"
+        mkdir -Z -m 750 -p ${USER_SCRATCH} || return 1
     fi
+    if [ "$WITH_HOME" == "true" ]; then
+        ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch" || return 1
+        chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch" || return 1
+    fi
+    if [ -O "${USER_SCRATCH}" ]; then
+        chown ${USER_UID}:${USER_GID} ${USER_SCRATCH} || return 1
+    fi
+    echo "INFO::${FUNCNAME} ${USERNAME}: scratch configured"
     return 0
 }
 
