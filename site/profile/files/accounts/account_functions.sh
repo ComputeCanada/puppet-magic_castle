@@ -79,10 +79,12 @@ mkhome () {
     if [ ! $RSYNC_DONE -eq 1 ]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
-    else
-        echo ${SUCCESS_LOG}
     fi
-    restorecon -F -R ${USER_HOME}
+    if ! restorecon -F -R ${USER_HOME}; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not restore SELinux security context of ${USER_HOME}"
+        return 1
+    fi
+    echo ${SUCCESS_LOG}
 }
 
 mkscratch () {
