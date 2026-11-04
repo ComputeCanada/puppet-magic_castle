@@ -842,21 +842,25 @@ authentication domain must be listed in `domains`.
 
 | Variable           | Description                                                   | Type                  |
 | :----------------- | :------------------------------------------------------------ | :-------------------- |
+| `default_directory`| Default directory when browsing the collection                | String[1]             |
 | `collection_path`  | Local path exported by the Globus collection                  | String[1]             |
 | `domains`          | Authentication domains allowed for the POSIX storage gateway  | Array[String]         |
 | `enable_oidc`      | Enable local OpenID Connect authentication for cluster users   | Boolean               |
 | `identity_mapping` | Optional expression-based identity mappings for storage gateway accounts | Optional[Array[Hash]] |
 | `freeipa_mapping` | Enable external username mapping through the FreeIPA API using a dedicated gcsweb keytab; mutually exclusive with `identity_mapping` | Boolean |
+| `restrict_paths`   | Path restrictions for accessing data on collections created using this storage gateway | [GlobusPathRestrictions](https://docs.globus.org/globus-connect-server/v5/api/schemas/PathRestrictions_schema/) |
 
 <details>
 <summary>default values</summary>
 
 ```yaml
+profile::globus::default_directory: '/~/'
 profile::globus::collection_path: /nfs
 profile::globus::domains: []
 profile::globus::enable_oidc: true
 profile::globus::identity_mapping: ~
 profile::globus::freeipa_mapping: false
+profile::globus::restrict_paths: {}
 ```
 </details>
 

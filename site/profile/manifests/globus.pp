@@ -6,12 +6,24 @@
 # Changing parameters such as domains, collection_path, or OIDC settings
 # after setup requires removing the affected Globus service and its
 # corresponding JSON state file before the next Puppet run.
+
+type GlobusPathRestrictions = Struct[
+  {
+    'DATA_TYPE'  => Optional[String],
+    'read_write' => Optional[Array[String]],
+    'read'       => Optional[Array[String]],
+    'none'       => Optional[Array[String]],
+  }
+]
+
 class profile::globus (
+  String[1] $default_directory = '/~/',
   String[1] $collection_path = '/nfs',
   Array[String] $domains = [],
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
   Boolean $freeipa_mapping = false,
+  GlobusPathRestrictions $restrict_paths = {},
 ) {
   if $freeipa_mapping and $identity_mapping != undef {
     fail('freeipa_mapping and identity_mapping are mutually exclusive')
@@ -52,9 +64,10 @@ class profile::globus (
     content   => epp(
       'profile/globus/globus-collection-setup',
       {
-        'public_ip'       => lookup('terraform.self.public_ip'),
-        'display_name'    => $display_name,
-        'collection_path' => $collection_path,
+        'default_directory' => $default_directory,
+        'public_ip'         => lookup('terraform.self.public_ip'),
+        'display_name'      => $display_name,
+        'collection_path'   => $collection_path,
       }
     ),
   }
@@ -125,6 +138,16 @@ class profile::globus (
     }
   }
 
+  file { '/etc/globus/restrict_paths.json':
+    ensure  => 'file',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0700',
+    content => stdlib::to_json_pretty({ 'DATA_TYPE' => 'path_restrictions#1.0.0' } + $restrict_paths),
+    require => Exec['globus-node-setup'],
+    before  => Exec['globus-gateway-setup'],
+  }
+
   if $enable_oidc == false and length($domains) == 0 {
     fail('Globus requires at least one authentication domain or ensure OIDC server is running  (profile::globus::enable_oidc: true)')
   }
@@ -135,7 +158,7 @@ class profile::globus (
       "GCS_CLI_CLIENT_ID=${globus::client_id}",
       "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ],
-    unless      => '/bin/test -s /var/lib/globus-connect-server/gateway.json',
+    creates     => '/var/lib/globus-connect-server/gateway.json',
     require     => [
       Package['jq'],
       Exec['globus-node-setup'],
@@ -149,7 +172,7 @@ class profile::globus (
       "GCS_CLI_CLIENT_ID=${globus::client_id}",
       "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
     ],
-    unless      => '/bin/test -s /var/lib/globus-connect-server/collection.json',
+    creates     => '/var/lib/globus-connect-server/collection.json',
     require     => [
       Package['jq'],
       Exec['globus-gateway-setup'],
@@ -164,7 +187,7 @@ class profile::globus (
         "GCS_CLI_CLIENT_ID=${globus::client_id}",
         "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
       ],
-      unless      => '/bin/test -s /var/lib/globus-connect-server/oidc.json',
+      creates     => '/var/lib/globus-connect-server/oidc.json',
       require     => [
         Exec['globus-node-setup'],
         File['/root/globus-oidc-setup'],
