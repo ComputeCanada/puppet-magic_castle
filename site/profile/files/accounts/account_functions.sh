@@ -378,19 +378,25 @@ modproject() {
                     return 1
                 fi
 
-                mkdir -p "${USER_HOME}/projects"
-                chgrp "${USER_GID}" "${USER_HOME}/projects"
-                chmod 0755 "${USER_HOME}/projects"
-                ln -sfT "${PROJECT_GROUP}" "${USER_HOME}/projects/${GROUP}"
+                if [ ! -d "${USER_HOME}/projects" ]; then
+                    mkdir -m 0755 -Z -p "${USER_HOME}/projects" || return 1
+                fi
+                local PROJECTS_OWNER_GID
+                PROJECTS_OWNER_GID=$(stat -c '%g' -- "${USER_HOME}/projects") || return 1
+                if [[ "${PROJECTS_OWNER_GID}" == "0" ]]; then
+                    chgrp "${USER_GID}" "${USER_HOME}/projects" || return 1
+                fi
+
+                ln -sfT "${PROJECT_GROUP}" "${USER_HOME}/projects/${GROUP}" || return 1
 
                 local PROJECT_USER="${PROJECT_GROUP}/${USERNAME}"
                 if [ ! -d "${PROJECT_USER}" ]; then
-                    mkdir -p ${PROJECT_USER}
-                    chown "${USER_UID}" "${PROJECT_USER}"
-                    chmod 2700 "${PROJECT_USER}"
-                    restorecon -F -R "${PROJECT_USER}"
-                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PROJECT_USER}"
+                    mkdir -Z -m 2700 ${PROJECT_USER} || return 1
                 fi
+                if [ -O "${PROJECT_USER}" ]; then
+                    chown "${USER_UID}" "${PROJECT_USER}" || return 1
+                fi
+                echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} configured"
             done
         fi
     fi
