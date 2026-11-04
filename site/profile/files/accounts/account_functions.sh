@@ -307,12 +307,12 @@ modproject() {
     if [[ -n "${USERNAMES}" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                if ! getent passwd -s sss "$USERNAME" > /dev/null; then
+                local USER_INFO USER_HOME
+                if ! USER_INFO=$(getent passwd -s sss "$USERNAME"); then
                     echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user unavailable; skipping home symlink cleanup"
                     continue
                 fi
-                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                local USER_HOME=${USER_INFO[2]}
+                USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
 
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
@@ -452,7 +452,7 @@ delproject() {
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
                     sss_cache --user=${USERNAME} 2> /dev/null
-                    continue
+                    return 1
                 fi
                 if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
                     echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
@@ -463,6 +463,8 @@ delproject() {
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
+        elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
         else
             echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
