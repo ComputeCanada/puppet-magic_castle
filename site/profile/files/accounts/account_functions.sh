@@ -441,29 +441,24 @@ delproject() {
     fi
     if [[ ! -z "$USERNAMES" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
+            local USER_INFO USER_HOME
             for USERNAME in $USERNAMES; do
-                if ! getent passwd -s sss $USERNAME > /dev/null; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                if ! USER_INFO=$(getent passwd -s sss $USERNAME); then
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in database - skipping"
                     sss_cache --user=${USERNAME} 2> /dev/null
-                    return 1
+                    continue
                 fi
-            done
-            for USERNAME in $USERNAMES; do
-                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                local USER_HOME=${USER_INFO[2]}
-
+                USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
                     sss_cache --user=${USERNAME} 2> /dev/null
-                    return 1
+                    continue
                 fi
-
                 if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
                     echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
                     continue
                 fi
-
-                rm "${USER_HOME}/projects/$GROUP"
+                rm "${USER_HOME}/projects/$GROUP" || return 1
             done
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
