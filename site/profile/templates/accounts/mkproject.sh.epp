@@ -205,7 +205,7 @@ fi
 
 tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
 grep --line-buffered -P " (ADD|DEL|MOD) dn=\"cn=${PROJECT_REGEX},cn=groups" |
-sed -u -r 's/^\[(.*) \+[0-9]{4}\] conn=([0-9]*) op=([0-9]*) (ADD|DEL|MOD) dn="cn=(.*),cn=groups.*$/\1 \2 \3 \4 \5/' |
+sed -n -u -r 's/^\[(.*) [-+][0-9]{4}\] conn=([0-9]*) op=([0-9]*) (ADD|DEL|MOD) dn="cn=(.*),cn=groups.*$/\1 \2 \3 \4 \5/p' |
 while read TIMESTAMP CONN OP_ID OP GROUP; do
     # We only treat successful operations.
     if wait_for_result "${CONN}" "${OP_ID}" "${TIMESTAMP}"; then
