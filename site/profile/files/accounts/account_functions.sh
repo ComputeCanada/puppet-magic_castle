@@ -149,6 +149,8 @@ mkproject() {
         return 1
     fi
 
+    trap 'rmdir -- /var/lock/mkproject.$GROUP.lock; trap - RETURN' RETURN
+
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
@@ -159,7 +161,6 @@ mkproject() {
     local GROUP_INFO
     if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
-        rmdir /var/lock/mkproject.$GROUP.lock
         return 1
     fi
 
@@ -177,22 +178,23 @@ mkproject() {
         if [ -z "${GID}" ]; then
             echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
             sss_cache -g ${GROUP} 2> /dev/null
-            rmdir /var/lock/mkproject.$GROUP.lock
             return 1
         fi
 
         local PROJECT_GID="/project/$GID"
+        local PROJECT_GROUP="/project/$GROUP"
         if [ ! -d ${PROJECT_GID} ]; then
-            local PROJECT_GROUP="/project/$GROUP"
-            mkdir -p ${PROJECT_GID}
-            chown root:${GID} ${PROJECT_GID}
-            chmod 2770 ${PROJECT_GID}
-            ln -sfT "/project/$GID" ${PROJECT_GROUP}
-            restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
-            echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
-        else
-            echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
+            mkdir -Z -m 2770 -p ${PROJECT_GID} || return 1
         fi
+        local PROJECT_OWNER_GID
+        PROJECT_OWNER_GID=$(stat -c '%g' -- "${PROJECT_GID}") || return 1
+        if [[ "${PROJECT_OWNER_GID}" == "0" ]]; then
+            chown "root:${GID}" "${PROJECT_GID}" || return 1
+        fi
+        ln -sfT "/project/$GID" ${PROJECT_GROUP} || return 1
+        restorecon -F ${PROJECT_GROUP} || return 1
+
+        echo "INFO::${FUNCNAME} ${GROUP}: ${PROJECT_GID} configured"
     fi
 
     # We create the associated account in slurm
@@ -203,11 +205,9 @@ mkproject() {
     else
         echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
         echo "${sacctmgr_output}" | sed 's/^/\t/'
-        rmdir /var/lock/mkproject.$GROUP.lock
         return 1
     fi
 
-    rmdir /var/lock/mkproject.$GROUP.lock
     return 0
 }
 
