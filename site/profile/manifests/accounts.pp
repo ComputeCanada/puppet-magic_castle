@@ -13,6 +13,9 @@ class profile::accounts (
 ) {
   stdlib::ensure_packages(['rsync'], { ensure => 'installed' })
 
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  $ipa_realm = regsubst(upcase($ipa_domain), '\.', '-', 'G')
+
   file { 'account_functions.sh':
     path   => '/sbin/account_functions.sh',
     source => 'puppet:///modules/profile/accounts/account_functions.sh',
@@ -25,6 +28,7 @@ class profile::accounts (
         manage_scratch => $manage_scratch,
         project_regex  => $project_regex,
         manage_project => $manage_project,
+        ipa_realm      => $ipa_realm,
       }
     ),
     mode    => '0755',
@@ -108,6 +112,7 @@ class profile::accounts (
       {
         project_regex => $project_regex,
         manage_folder => $manage_project,
+        ipa_realm     => $ipa_realm,
       }
     ),
     mode    => '0755',
