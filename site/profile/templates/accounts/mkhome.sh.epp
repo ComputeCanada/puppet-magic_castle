@@ -59,6 +59,14 @@ while read TIMESTAMP USERNAME; do
     if [[ "${USERNAME}" == "admin" ]]; then
         continue
     fi
+    if ! USER_CLASSES=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=*)' objectClass); then
+        queue_retry "${USERNAME}"
+        continue
+    fi
+    if ! grep -qi '^objectClass: posixAccount$' <<< "${USER_CLASSES}"; then
+        continue
+    fi
     <% if $manage_home { -%>
     if ! mkhome $USERNAME; then
         queue_retry ${USERNAME}
