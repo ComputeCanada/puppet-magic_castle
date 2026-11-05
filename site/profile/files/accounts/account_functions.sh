@@ -163,11 +163,10 @@ mkproject() {
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
-    # Retrieve the group information that are only available in LDAP:
-    # - does the group exist?
-    # - is it a posix group (objectClass: posixgroup)?
+    # Retrieve the group object class and numeric GID directly from LDAP.
     local GROUP_INFO
-    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" objectClass gidNumber); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
@@ -179,13 +178,10 @@ mkproject() {
 
     # Function is called with the intent to create folders under /project
     if [[ "${WITH_FOLDER}" == "true" ]]; then
-        # Folders under /project are only created for posix groups
-        # We use getent to retrieve the group number because the GID needs
-        # to be readily available in via sssd for chown to work properly
-        local GID=$(getent group -s sss ${GROUP} | cut -d: -f3)
-        if [ -z "${GID}" ]; then
-            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-            sss_cache -g ${GROUP} 2> /dev/null
+        local GID
+        GID=$(sed -n 's/^gidNumber: //p' <<< "${GROUP_INFO}")
+        if [[ ! "${GID}" =~ ^[0-9]+$ ]]; then
+            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined or invalid in LDAP"
             return 1
         fi
 
