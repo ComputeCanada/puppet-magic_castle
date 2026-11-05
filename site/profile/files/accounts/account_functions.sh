@@ -384,7 +384,7 @@ modproject() {
             # Wait for SSSD identity resolution before adding the Slurm association,
             # to reduce the risk of slurmctld caching an unresolved UID.
             if ! getent passwd -s sss $USERNAME > /dev/null; then
-                echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database; retry later"
+                echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database; retry later"
                 sss_cache --user=${USERNAME} 2> /dev/null
                 RETRY_REQUIRED=1
             else
