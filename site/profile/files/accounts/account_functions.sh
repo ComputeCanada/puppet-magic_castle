@@ -313,32 +313,29 @@ modproject() {
     if [[ -n "${USERNAMES}" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                # Slurm needs the UID to be available via SSSD
                 local USER_INFO
-                if ! USER_INFO=$(getent passwd -s sss $USERNAME); then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+                    -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+                    uidNumber gidNumber homeDirectory); then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
                     return 1
                 fi
-                local USER_UID=$(echo "${USER_INFO}" | cut -d: -f3)
-                local USER_GID=$(echo "${USER_INFO}" | cut -d: -f4)
-                local USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
+                local USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
+                local USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
+                local USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
-                if [ -z "${USER_UID}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
                     return 1
                 fi
 
-                if [ -z "${USER_GID}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
                     return 1
                 fi
 
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
                     return 1
                 fi
 
@@ -377,6 +374,15 @@ modproject() {
     fi
     USERNAMES=${MISSING_MEMBERS}
     if [[ -n "${USERNAMES}" ]]; then
+        for USERNAME in $USERNAMES; do
+            # Wait for SSSD identity resolution before adding the Slurm association,
+            # to reduce the risk of slurmctld caching an unresolved UID.
+            if ! getent passwd -s sss $USERNAME > /dev/null; then
+                echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                sss_cache --user=${USERNAME} 2> /dev/null
+                return 1
+            fi
+        done
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES//[$'\n']/ } added to ${GROUP} in SlurmDB"
         elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
