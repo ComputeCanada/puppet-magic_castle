@@ -35,32 +35,36 @@ mkhome () {
         return 3
     fi
 
-    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-    local USER_UID=${USER_INFO[0]}
-    local USER_GID=${USER_INFO[1]}
-    local USER_HOME=${USER_INFO[2]}
+    local USER_INFO
+    if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+        uidNumber gidNumber homeDirectory); then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
+        return 1
+    fi
+    local USER_UID USER_GID USER_HOME
+    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
+    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
+    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
         return 1
     fi
 
-    if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
         return 1
     fi
 
     # Home folder can be created by modproject function, but it will only create ~/project folder
     # and not the dot files and other files from /etc/skel.ipa
-    if [[ -d ${USER_HOME} && -n "$(find ${USER_HOME} -mindepth 1 -maxdepth 1 -not -path ${USER_HOME}/projects)" ]]; then
+    if [[ -d "${USER_HOME}" && -n "$(find "${USER_HOME}" -mindepth 1 -maxdepth 1 -not -path "${USER_HOME}/projects")" ]]; then
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already created)"
     else
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
@@ -68,7 +72,7 @@ mkhome () {
 
     local RSYNC_DONE=0
     for i in $(seq 1 5); do
-        rsync -opg -r --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
+        rsync -opg -r --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ "${USER_HOME}"
         if [ $? -eq 0 ]; then
             RSYNC_DONE=1
             break
@@ -80,7 +84,7 @@ mkhome () {
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
     fi
-    if ! restorecon -F -R ${USER_HOME}; then
+    if ! restorecon -F -R "${USER_HOME}"; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: could not restore SELinux security context of ${USER_HOME}"
         return 1
     fi
@@ -96,26 +100,30 @@ mkscratch () {
         return 3
     fi
 
-    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-    local USER_UID=${USER_INFO[0]}
-    local USER_GID=${USER_INFO[1]}
-    local USER_HOME=${USER_INFO[2]}
+    local USER_INFO
+    if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+        uidNumber gidNumber homeDirectory); then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
+        return 1
+    fi
+    local USER_UID USER_GID USER_HOME
+    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
+    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
+    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
         return 1
     fi
 
-    if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
         return 1
     fi
 
@@ -421,15 +429,22 @@ delproject() {
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             local USER_INFO USER_HOME
             for USERNAME in $USERNAMES; do
-                if ! USER_INFO=$(getent passwd -s sss $USERNAME); then
-                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in database - skipping"
-                    sss_cache --user=${USERNAME} 2> /dev/null
-                    continue
+                if USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+                    -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+                    homeDirectory); then
+                    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
+                else
+                    local LDAP_RESULT=$?
+                    if [[ "${LDAP_RESULT}" -eq 32 ]]; then
+                        # LDAP noSuchObject: the user was already deleted.
+                        echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user not found in LDAP - skipping home symlink cleanup"
+                        continue
+                    fi
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
+                    return 1
                 fi
-                USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined in LDAP"
                     return 1
                 fi
                 if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
