@@ -378,15 +378,23 @@ modproject() {
     fi
     USERNAMES=${MISSING_MEMBERS}
     if [[ -n "${USERNAMES}" ]]; then
+        local READY_USERNAMES=()
+        local RETRY_REQUIRED=0
         for USERNAME in $USERNAMES; do
             # Wait for SSSD identity resolution before adding the Slurm association,
             # to reduce the risk of slurmctld caching an unresolved UID.
             if ! getent passwd -s sss $USERNAME > /dev/null; then
-                echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
+                echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database; retry later"
                 sss_cache --user=${USERNAME} 2> /dev/null
-                return 1
+                RETRY_REQUIRED=1
+            else
+                READY_USERNAMES+=("${USERNAME}")
             fi
         done
+        USERNAMES="${READY_USERNAMES[*]}"
+        if [[ -z "${USERNAMES}" ]]; then
+            return 1
+        fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES//[$'\n']/ } added to ${GROUP} in SlurmDB"
         elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
@@ -396,6 +404,8 @@ modproject() {
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
+        # Retry unresolved members after committing additions for ready users.
+        return "${RETRY_REQUIRED}"
     fi
     return 0
 }
