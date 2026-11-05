@@ -313,18 +313,16 @@ modproject() {
     if [[ -n "${USERNAMES}" ]]; then
         if [[ "${WITH_FOLDER}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                if ! getent passwd -s sss $USERNAME > /dev/null; then
+                # Slurm needs the UID to be available via SSSD
+                local USER_INFO
+                if ! USER_INFO=$(getent passwd -s sss $USERNAME); then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
                     sss_cache --user=${USERNAME} 2> /dev/null
                     return 1
                 fi
-            done
-            for USERNAME in $USERNAMES; do
-                # Slurm needs the UID to be available via SSSD
-                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                local USER_UID=${USER_INFO[0]}
-                local USER_GID=${USER_INFO[1]}
-                local USER_HOME=${USER_INFO[2]}
+                local USER_UID=$(echo "${USER_INFO}" | cut -d: -f3)
+                local USER_GID=$(echo "${USER_INFO}" | cut -d: -f4)
+                local USER_HOME=$(echo "${USER_INFO}" | cut -d: -f6)
 
                 if [ -z "${USER_UID}" ]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
@@ -344,25 +342,36 @@ modproject() {
                     return 1
                 fi
 
+                local PROJECT_CHANGED=false
                 if [ ! -d "${USER_HOME}/projects" ]; then
                     mkdir -m 0755 -Z -p "${USER_HOME}/projects" || return 1
+                    PROJECT_CHANGED=true
                 fi
                 local PROJECTS_OWNER_GID
                 PROJECTS_OWNER_GID=$(stat -c '%g' -- "${USER_HOME}/projects") || return 1
-                if [[ "${PROJECTS_OWNER_GID}" == "0" ]]; then
+                if [[ "${PROJECTS_OWNER_GID}" == "0" && "${USER_GID}" != "0" ]]; then
                     chgrp "${USER_GID}" "${USER_HOME}/projects" || return 1
+                    PROJECT_CHANGED=true
                 fi
 
-                ln -sfT "${PROJECT_GROUP}" "${USER_HOME}/projects/${GROUP}" || return 1
+                local PROJECT_LINK="${USER_HOME}/projects/${GROUP}"
+                if [[ ! -L "${PROJECT_LINK}" || "$(readlink -- "${PROJECT_LINK}")" != "${PROJECT_GROUP}" ]]; then
+                    ln -sfT "${PROJECT_GROUP}" "${PROJECT_LINK}" || return 1
+                    PROJECT_CHANGED=true
+                fi
 
                 local PROJECT_USER="${PROJECT_GROUP}/${USERNAME}"
                 if [ ! -d "${PROJECT_USER}" ]; then
                     mkdir -Z -m 2700 ${PROJECT_USER} || return 1
+                    PROJECT_CHANGED=true
                 fi
-                if [ -O "${PROJECT_USER}" ]; then
+                if [ -O "${PROJECT_USER}" ] && [[ "${USER_UID}" != "0" ]]; then
                     chown "${USER_UID}" "${PROJECT_USER}" || return 1
+                    PROJECT_CHANGED=true
                 fi
-                echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} configured"
+                if [[ "${PROJECT_CHANGED}" == "true" ]]; then
+                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} configured"
+                fi
             done
         fi
     fi
