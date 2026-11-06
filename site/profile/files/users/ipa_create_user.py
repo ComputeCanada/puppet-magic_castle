@@ -3,12 +3,13 @@ import argparse
 import logging
 import os
 import time
-import grp
-import pwd
+import ldap
 
 from ipalib import api, errors
 from ipalib.cli import cli
 from ipapython import ipautil
+from ipapython.dn import DN
+from ipapython.ipaldap import LDAPClient
 from ipaplatform.paths import paths
 
 from six import text_type
@@ -89,22 +90,46 @@ def kdestroy():
 
 
 def dry_run(users, groups):
-    "Verify if changes are required and true if needed."
+    """Check LDAP directly, without negatively caching missing users in SSSD."""
     users = set(users)
-    if groups:
-        for group in groups:
-            try:
-                members = set(grp.getgrnam(group).gr_mem)
-            except KeyError:
-                return True
-            if not members.issuperset(users):
-                return True
-    else:
-        for user in users:
-            try:
-                pwd.getpwnam(user)
-            except KeyError:
-                return True
+    names = set(groups) if groups else users
+    if not names:
+        return False
+
+    api.bootstrap(context="cli")
+    attribute = "cn" if groups else "uid"
+    container = api.env.container_group if groups else api.env.container_user
+
+    with LDAPClient(api.env.ldap_uri) as conn:
+        conn.gssapi_bind()
+        search_filter = conn.make_filter_from_attr(
+            attribute, sorted(names), rules=conn.MATCH_ANY
+        )
+        try:
+            entries = conn.get_entries(
+                DN(container, api.env.basedn),
+                scope=ldap.SCOPE_ONELEVEL,
+                filter=search_filter,
+                attrs_list=["cn", "member", "memberindirect"] if groups else ["uid"],
+            )
+        except errors.NotFound:
+            return True
+
+        found = {entry[attribute][0]: entry for entry in entries}
+        if names - set(found):
+            return True
+
+        if groups:
+            user_dns = {
+                DN(("uid", user), api.env.container_user, api.env.basedn)
+                for user in users
+            }
+            for entry in found.values():
+                # Include indirect members, as SSSD group resolution can do.
+                members = set(entry.get("member", []))
+                members.update(entry.get("memberindirect", []))
+                if not user_dns.issubset(members):
+                    return True
     return False
 
 
