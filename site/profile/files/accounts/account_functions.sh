@@ -43,7 +43,6 @@ wait_for_slurm() {
             break
         fi
     done
-    CLUSTER_NAME=$(echo $CLUSTER_INFO | cut -d'|' -f1)
 }
 
 mkhome () {
