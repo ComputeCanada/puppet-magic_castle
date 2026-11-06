@@ -8,6 +8,7 @@ Type=simple
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=mkproject
+EnvironmentFile=/etc/mkhome-project.conf
 ExecStart=/sbin/mkproject.sh
 
 [Install]

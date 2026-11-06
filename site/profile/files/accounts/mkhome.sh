@@ -1,10 +1,6 @@
 #!/bin/bash
 source /sbin/account_functions.sh
 
-SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
-
-PROJECT_REGEX="<%= $project_regex %>"
-
 MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 MKHOME_RETRY_PIPE="${MKHOME_PROJECT_DIR}/mkhome_retry.pipe"
 MKHOME_MODPROJECT_PIPE="${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe"
@@ -72,18 +68,16 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
     if ! grep -qi '^objectClass: posixAccount$' <<< "${USER_CLASSES}"; then
         continue
     fi
-    <% if $manage_home { -%>
-    if ! mkhome $USERNAME; then
+
+    if [ "${MANAGE_HOME_DIR}" = "true" ] && ! mkhome $USERNAME; then
         queue_retry ${USERNAME}
         continue
     fi
-    <% } -%>
-    <% if $manage_scratch { -%>
-    if ! mkscratch $USERNAME <%= $manage_home %>; then
+
+    if [ "${MANAGE_SCRATCH_DIR}" = "true" ] && ! mkscratch $USERNAME "${MANAGE_HOME_DIR}"; then
         queue_retry ${USERNAME}
         continue
     fi
-    <% } -%>
 
     if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null); then
         queue_retry ${USERNAME}
@@ -92,7 +86,7 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
     PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
     for PROJECT in $PROJECTS; do
         if [[ ! -z "${PROJECT}" ]]; then
-            queue_modproject "${PROJECT}" "<%= $manage_project %>" "${MKHOME_MODPROJECT_PIPE}"
+            queue_modproject "${PROJECT}" "${MANAGE_PROJECT_DIR}" "${MKHOME_MODPROJECT_PIPE}"
         fi
     done
 done

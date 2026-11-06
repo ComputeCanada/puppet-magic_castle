@@ -14,12 +14,9 @@
 # Pending MODs are coalesced by group. Updates received during reconciliation
 # mark the group dirty and cause another pass, so later changes converge too.
 
-SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
-
-PROJECT_REGEX="<%= $project_regex %>"
 BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 LDAP_URI=$(grep -o -P "ldap_uri = \K(.*)" /etc/ipa/default.conf)
-WITH_FOLDER="<%= $manage_folder %>"
+WITH_FOLDER="${MANAGE_PROJECT_DIR}"
 
 source /sbin/account_functions.sh
 
