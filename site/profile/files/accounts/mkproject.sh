@@ -21,9 +21,6 @@ source /sbin/account_functions.sh
 
 mkdir -p ${MKHOME_PROJECT_DIR}
 
-# Remove stale locks from a previous mkproject execution
-rm -rf ${MKPROJECT_LOCK_DIR}/mkproject.*.lock
-
 update_mkproject_cache () {
     flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
 }
