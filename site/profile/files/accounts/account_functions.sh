@@ -153,20 +153,12 @@ mkscratch () {
 mkproject() {
     local GROUP=$1
     local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
-    local MKPROJECT_LOCK_DIR="${MKPROJECT_LOCK_DIR:-/var/lock}"
     local PROJECT_GROUP="/project/$GROUP"
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
         return 3
     fi
-
-    if ! mkdir "${MKPROJECT_LOCK_DIR}/mkproject.$GROUP.lock" 2> /dev/null; then
-        echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
-        return 1
-    fi
-
-    trap 'rmdir -- ${MKPROJECT_LOCK_DIR}/mkproject.$GROUP.lock; trap - RETURN' RETURN
 
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
@@ -249,7 +241,6 @@ modproject() {
     local GROUP=$1
     local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
     local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
-    local MKPROJECT_LOCK_DIR="${MKPROJECT_LOCK_DIR:-/var/lock}"
     local USERNAMES
 
     if [ -z "${GROUP}" ]; then
@@ -258,11 +249,6 @@ modproject() {
     fi
 
     local PROJECT_GROUP="/project/$GROUP"
-    # mkproject is currently running, we skip adding more folder under the project
-    if [[ -d "${MKPROJECT_LOCK_DIR}/mkproject.${GROUP}.lock" ]]; then
-        echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
-        return 1
-    fi
 
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
