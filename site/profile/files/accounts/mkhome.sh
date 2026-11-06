@@ -74,7 +74,7 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
         continue
     fi
 
-    if [ "${MANAGE_SCRATCH_DIR}" = "true" ] && ! mkscratch $USERNAME "${MANAGE_HOME_DIR}"; then
+    if [ "${MANAGE_SCRATCH_DIR}" = "true" ] && ! mkscratch $USERNAME; then
         queue_retry ${USERNAME}
         continue
     fi
@@ -86,7 +86,7 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
     PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
     for PROJECT in $PROJECTS; do
         if [[ ! -z "${PROJECT}" ]]; then
-            queue_modproject "${PROJECT}" "${MANAGE_PROJECT_DIR}" "${MKHOME_MODPROJECT_PIPE}"
+            queue_modproject "${PROJECT}" "${MKHOME_MODPROJECT_PIPE}"
         fi
     done
 done
