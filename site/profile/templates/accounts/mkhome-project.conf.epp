@@ -1,0 +1,5 @@
+MANAGE_HOME_DIR="<%= $manage_home %>"
+MANAGE_SCRATCH_DIR="<%= $manage_scratch %>"
+MANAGE_PROJECT_DIR="<%= $manage_project %>"
+PROJECT_REGEX="<%= $project_regex %>"
+SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
