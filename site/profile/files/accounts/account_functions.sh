@@ -45,6 +45,18 @@ wait_for_slurm() {
     done
 }
 
+# Retrieve POSIX attributes into the caller's local USER_UID, USER_GID and USER_HOME.
+get_user_info () {
+    local USERNAME=$1 USER_INFO
+    USER_UID= USER_GID= USER_HOME=
+    USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+        uidNumber gidNumber homeDirectory) || return $?
+    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
+    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
+    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
+}
+
 mkhome () {
     local USERNAME=$1
 
@@ -53,17 +65,11 @@ mkhome () {
         return 3
     fi
 
-    local USER_INFO
-    if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
-        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
-        uidNumber gidNumber homeDirectory); then
+    local USER_UID USER_GID USER_HOME
+    if ! get_user_info "${USERNAME}"; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
         return 1
     fi
-    local USER_UID USER_GID USER_HOME
-    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
-    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
-    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
     if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
@@ -108,17 +114,11 @@ mkscratch () {
         return 3
     fi
 
-    local USER_INFO
-    if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
-        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
-        uidNumber gidNumber homeDirectory); then
+    local USER_UID USER_GID USER_HOME
+    if ! get_user_info "${USERNAME}"; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
         return 1
     fi
-    local USER_UID USER_GID USER_HOME
-    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
-    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
-    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
     if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
@@ -314,16 +314,11 @@ modproject() {
     if [[ -n "${USERNAMES}" ]]; then
         if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                local USER_INFO
-                if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
-                    -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
-                    uidNumber gidNumber homeDirectory); then
+                local USER_UID USER_GID USER_HOME
+                if ! get_user_info "${USERNAME}"; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
                     return 1
                 fi
-                local USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
-                local USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
-                local USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 
                 if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
                     echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
@@ -433,22 +428,19 @@ delproject() {
     fi
     if [[ ! -z "$USERNAMES" ]]; then
         if [[ "${MANAGE_PROJECT_DIR}" == "true" && "${MANAGE_HOME_DIR}" == "true" ]]; then
-            local USER_INFO USER_HOME
+            local USER_UID USER_GID USER_HOME
             for USERNAME in $USERNAMES; do
-                if USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
-                    -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
-                    homeDirectory); then
-                    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
-                else
-                    local LDAP_RESULT=$?
-                    if [[ "${LDAP_RESULT}" -eq 32 ]]; then
-                        # LDAP noSuchObject: the user was already deleted.
-                        echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user not found in LDAP - skipping home symlink cleanup"
-                        continue
-                    fi
+                get_user_info "${USERNAME}"
+                local LDAP_OUTPUT=$?
+                if [[ "${LDAP_OUTPUT}" -eq 32 ]]; then
+                    # LDAP noSuchObject: the user was already deleted.
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user not found in LDAP - skipping home symlink cleanup"
+                    continue
+                elif [[ ! "${LDAP_OUTPUT}" -eq 0 ]]; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
                     return 1
                 fi
+
                 if [ -z "${USER_HOME}" ]; then
                     echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined in LDAP"
                     return 1
