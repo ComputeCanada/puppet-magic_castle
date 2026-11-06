@@ -6,7 +6,6 @@ MODPROJECT_PIPE="/var/lib/mkhome_project/modproject.pipe"
 MODPROJECT_RETRY_PIPE="/var/lib/mkhome_project/modproject_retry.pipe"
 
 MKPROJECT_CACHE="/var/lib/mkhome_project/mkproject.cache"
-MKPROJECT_CACHE_LOCK="/var/lib/mkhome_project/mkproject.cache.lock"
 
 MKPROJECT_CACHE_SIZE=1000
 RETRY_DELAY=15

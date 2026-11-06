@@ -22,11 +22,10 @@ source /sbin/account_functions.sh
 mkdir -p ${MKHOME_PROJECT_DIR}
 
 update_mkproject_cache () {
-    flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
+    echo ${1} >> ${MKPROJECT_CACHE} && (test $(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})
 }
 
 remove_from_mkproject_cache () (
-    flock -x 9 || return 1
     local temporary_cache result
     temporary_cache=$(mktemp "${MKPROJECT_CACHE}.XXXXXX") || return 1
     grep -Fxv -- "${1}" "${MKPROJECT_CACHE}" > "${temporary_cache}"
@@ -36,7 +35,7 @@ remove_from_mkproject_cache () (
         return "${result}"
     fi
     mv -f "${temporary_cache}" "${MKPROJECT_CACHE}"
-) 9> "${MKPROJECT_CACHE_LOCK}"
+)
 
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 
