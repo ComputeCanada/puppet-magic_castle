@@ -14,6 +14,24 @@ kexec () {
     return $CMD_EXIT_CODE
 }
 
+# Wait for this request, excluding older connections that reused its conn/op IDs.
+wait_for_result () {
+    local conn=$1 op_id=$2 timestamp=$3
+    local request_line result tail_pid
+    request_line=$(grep -n -m 1 -F "${timestamp}" "${SLAPD_LOG_FILE}" | cut -d: -f1)
+    if [[ -z "${request_line}" ]]; then
+        echo "WARN::${0##*/} conn=${conn} op=${op_id}: request no longer present in access log"
+        return 1
+    fi
+    {
+        tail_pid=$!
+        result=$(grep --line-buffered -m 1 -F "conn=${conn} op=${op_id} RESULT ")
+        kill "${tail_pid}" 2> /dev/null
+        wait "${tail_pid}" 2> /dev/null
+    } < <(tail -n +${request_line} -F "${SLAPD_LOG_FILE}" 2> /dev/null)
+    [[ "${result}" == *" RESULT err=0 "* ]]
+}
+
 wait_for_slurm() {
     while : ; do
         CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P 2> /dev/null)

@@ -42,19 +42,24 @@ RETRY_DELAY=15
 queue_retry () {
     (
         sleep "${RETRY_DELAY}"
-        echo "retry" ${1} > ${MKHOME_RETRY_PIPE}
+        echo "retry" - - ${1} > ${MKHOME_RETRY_PIPE}
     ) &
 }
 
 (
     tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
     grep --line-buffered -P 'ADD dn=\"uid=\K(.*)(?=,cn=users)' |
-    sed -n -u -r 's/^\[(.*) [-+][0-9]{4}\].*uid=(.*),cn=users.*$/\1 \2/p' &
+    sed -n -u -r 's/^\[(.*) [-+][0-9]{4}\] conn=([0-9]*) op=([0-9]*) ADD dn="uid=(.*),cn=users.*$/\1 \2 \3 \4/p' &
     tail -n+1 -F ${MKHOME_RETRY_PIPE}
 ) |
-while read TIMESTAMP USERNAME; do
+while read -r TIMESTAMP CONN OP_ID USERNAME; do
     if [[ "${TIMESTAMP}" != "retry" ]]; then
-        echo ${TIMESTAMP} > ${LAST_TIMESTAMP_FILE}
+        wait_for_result "${CONN}" "${OP_ID}" "${TIMESTAMP}"
+        RESULT=$?
+        echo $TIMESTAMP > $LAST_TIMESTAMP_FILE
+        if [[ "${RESULT}" -ne 0 ]]; then
+            continue
+        fi
     fi
     if [[ "${USERNAME}" == "admin" ]]; then
         continue
