@@ -16,7 +16,6 @@
 
 BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 LDAP_URI=$(grep -o -P "ldap_uri = \K(.*)" /etc/ipa/default.conf)
-WITH_FOLDER="${MANAGE_PROJECT_DIR}"
 
 source /sbin/account_functions.sh
 
@@ -54,7 +53,7 @@ LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 # be replaced by a UNIX socket with netcat and this command:
 #   nc -lkU /var/tmp/dsocket
 # To write data to the UNIX socket:
-#   echo "${ACTION}" $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}" | nc -N -U /var/tmp/dsocket
+#   echo "${ACTION}" $((NRETRY+1)) "${GROUP}" | nc -N -U /var/tmp/dsocket
 MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/modproject.pipe
 MODPROJECT_RETRY_PIPE=${MKHOME_PROJECT_DIR}/modproject_retry.pipe
 MKHOME_MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe
@@ -106,16 +105,16 @@ done
 for DIRTY in "${PROJECT_SYNC_DIR}"/*.dirty; do
     [[ -f "${DIRTY}" ]] || continue
     GROUP=${DIRTY##*/}
-    queue_modproject "${GROUP%.dirty}" "${WITH_FOLDER}" "${MODPROJECT_PIPE}"
+    queue_modproject "${GROUP%.dirty}" "${MODPROJECT_PIPE}"
 done
 
 finish_modproject () {
-    local group=$1 with_folder=$2
+    local group=$1
     # Release before checking dirty: a concurrent producer either leaves a
     # dirty flag for us or claims pending itself and queues the next pass.
     rmdir "${PROJECT_SYNC_DIR}/${group}.pending"
     if [[ -f "${PROJECT_SYNC_DIR}/${group}.dirty" ]]; then
-        queue_modproject "${group}" "${with_folder}" "${MODPROJECT_PIPE}"
+        queue_modproject "${group}" "${MODPROJECT_PIPE}"
     fi
 }
 
@@ -128,37 +127,37 @@ finish_modproject () {
     tail -n+1 -F ${MODPROJECT_RETRY_PIPE} &
     tail -n+1 -F ${MKHOME_MODPROJECT_PIPE}
 ) |
-# Queue format: ACTION NRETRY GROUP WITH_FOLDER.
-while read -r ACTION NRETRY GROUP WITH_FOLDER; do
+# Queue format: ACTION NRETRY GROUP.
+while read -r ACTION NRETRY GROUP; do
     case "${ACTION}" in
         mkproject)
             # Duplicate creation retries retain their action after success.
             if grep -Fxq "${GROUP}" "${MKPROJECT_CACHE}"; then
                 continue
             fi
-            if mkproject "${GROUP}" "${WITH_FOLDER}"; then
+            if mkproject "${GROUP}"; then
                 update_mkproject_cache "${GROUP}"
-                queue_modproject "${GROUP}" "${WITH_FOLDER}" "${MODPROJECT_PIPE}"
+                queue_modproject "${GROUP}" "${MODPROJECT_PIPE}"
             else
-                queue_action mkproject $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}"
+                queue_action mkproject $((NRETRY+1)) "${GROUP}"
             fi
             ;;
         modproject)
             # Requests arriving after this point require another snapshot.
             rm -f "${PROJECT_SYNC_DIR}/${GROUP}.dirty"
-            modproject "${GROUP}" "${WITH_FOLDER}"
+            modproject "${GROUP}"
             RESULT=$?
-            if [[ "${RESULT}" -eq 1 ]] && queue_action modproject $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}"; then
+            if [[ "${RESULT}" -eq 1 ]] && queue_action modproject $((NRETRY+1)) "${GROUP}"; then
                 continue
             fi
-            finish_modproject "${GROUP}" "${WITH_FOLDER}"
+            finish_modproject "${GROUP}"
             ;;
         delproject)
             if [[ "${NRETRY}" -eq 0 ]]; then
                 remove_from_mkproject_cache "${GROUP}"
             fi
-            if ! delproject "${GROUP}" "${WITH_FOLDER}"; then
-                queue_action delproject $((NRETRY+1)) "${GROUP}" "${WITH_FOLDER}"
+            if ! delproject "${GROUP}"; then
+                queue_action delproject $((NRETRY+1)) "${GROUP}"
             fi
             ;;
         *)
@@ -191,13 +190,13 @@ while read TIMESTAMP CONN OP_ID OP GROUP; do
         # We support three operations : ADD, MOD or DEL
         case ${OP} in
             ADD)
-                queue_action mkproject 0 "${GROUP}" "${WITH_FOLDER}"
+                queue_action mkproject 0 "${GROUP}"
                 ;;
             MOD)
-                queue_modproject "${GROUP}" "${WITH_FOLDER}" "${MODPROJECT_PIPE}"
+                queue_modproject "${GROUP}" "${MODPROJECT_PIPE}"
                 ;;
             DEL)
-                queue_action delproject 0 "${GROUP}" "${WITH_FOLDER}"
+                queue_action delproject 0 "${GROUP}"
                 ;;
             *)
                 echo "Unknown operation ${OP}"

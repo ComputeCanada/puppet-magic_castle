@@ -111,7 +111,7 @@ mkhome () {
 
 mkscratch () {
     local USERNAME=$1
-    local WITH_HOME=$2
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
 
     if [ -z "${USERNAME}" ]; then
         echo "ERROR::${FUNCNAME}: username unspecified"
@@ -149,7 +149,7 @@ mkscratch () {
     if [[ ! -d "${USER_SCRATCH}" ]]; then
         mkdir -Z -m 750 -p ${USER_SCRATCH} || return 1
     fi
-    if [ "$WITH_HOME" == "true" ]; then
+    if [ "${MANAGE_HOME_DIR}" == "true" ]; then
         ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch" || return 1
         chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch" || return 1
     fi
@@ -162,7 +162,7 @@ mkscratch () {
 
 mkproject() {
     local GROUP=$1
-    local WITH_FOLDER=$2
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
     local PROJECT_GROUP="/project/$GROUP"
 
     if [ -z "${GROUP}" ]; then
@@ -191,11 +191,11 @@ mkproject() {
 
     # If group is not posix, we disable folder creation.
     if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-        WITH_FOLDER="false"
+        MANAGE_PROJECT_DIR="false"
     fi
 
     # Function is called with the intent to create folders under /project
-    if [[ "${WITH_FOLDER}" == "true" ]]; then
+    if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
         local GID
         GID=$(sed -n 's/^gidNumber: //p' <<< "${GROUP_INFO}")
         if [[ ! "${GID}" =~ ^[0-9]+$ ]]; then
@@ -240,12 +240,12 @@ mkproject() {
 # Coalesce group reconciliation requests, including requests from mkhome.
 # pending covers queued/running/retrying work; dirty requests another snapshot.
 queue_modproject() {
-    local group=$1 with_folder=$2 pipe=$3
+    local group=$1 pipe=$2
     local sync_dir="${MKHOME_PROJECT_DIR}/project_sync"
     mkdir -p "${sync_dir}" || return 1
     touch "${sync_dir}/${group}.dirty" || return 1
     if mkdir "${sync_dir}/${group}.pending" 2> /dev/null; then
-        (echo modproject 0 "${group}" "${with_folder}" > "${pipe}") &
+        (echo modproject 0 "${group}" > "${pipe}") &
     fi
 }
 
@@ -256,7 +256,8 @@ queue_modproject() {
 # 3: invalid arguments, do not retry
 modproject() {
     local GROUP=$1
-    local WITH_FOLDER=$2
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
     local USERNAMES
 
     if [ -z "${GROUP}" ]; then
@@ -291,10 +292,10 @@ modproject() {
 
     # If group is not posix, we disable folder creation.
     if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-        WITH_FOLDER="false"
+        MANAGE_PROJECT_DIR="false"
     fi
 
-    if [[ "${WITH_FOLDER}" == "true" ]]; then
+    if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
         local GROUP_LINK=$(readlink /project/${GROUP})
         if [[ -z "${GROUP_LINK}" ]]; then
             echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group"
@@ -327,13 +328,13 @@ modproject() {
     # Revoke obsolete associations before adding new ones.
     USERNAMES=${OBSOLETE_MEMBERS}
     if [[ -n "${USERNAMES}" ]]; then
-        delproject "${GROUP}" "${WITH_FOLDER}" "${USERNAMES}" || return 1
+        delproject "${GROUP}" "${USERNAMES}" || return 1
     fi
 
     # Ensure folders also exist for users already associated with Slurm.
     USERNAMES=${GROUP_MEMBERS}
     if [[ -n "${USERNAMES}" ]]; then
-        if [[ "${WITH_FOLDER}" == "true" ]]; then
+        if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
                 local USER_INFO
                 if ! USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
@@ -351,32 +352,34 @@ modproject() {
                     return 1
                 fi
 
-                if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
-                    return 1
-                fi
-
-                if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
-                    return 1
-                fi
-
                 local PROJECT_CHANGED=false
-                if [ ! -d "${USER_HOME}/projects" ]; then
-                    mkdir -m 0755 -Z -p "${USER_HOME}/projects" || return 1
-                    PROJECT_CHANGED=true
-                fi
-                local PROJECTS_OWNER_GID
-                PROJECTS_OWNER_GID=$(stat -c '%g' -- "${USER_HOME}/projects") || return 1
-                if [[ "${PROJECTS_OWNER_GID}" == "0" && "${USER_GID}" != "0" ]]; then
-                    chgrp "${USER_GID}" "${USER_HOME}/projects" || return 1
-                    PROJECT_CHANGED=true
-                fi
+                if [[ "${MANAGE_HOME_DIR}" == "true" ]]; then
+                    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+                        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
+                        return 1
+                    fi
 
-                local PROJECT_LINK="${USER_HOME}/projects/${GROUP}"
-                if [[ ! -L "${PROJECT_LINK}" || "$(readlink -- "${PROJECT_LINK}")" != "${PROJECT_GROUP}" ]]; then
-                    ln -sfT "${PROJECT_GROUP}" "${PROJECT_LINK}" || return 1
-                    PROJECT_CHANGED=true
+                    if [ -z "${USER_HOME}" ]; then
+                        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
+                        return 1
+                    fi
+
+                    if [ ! -d "${USER_HOME}/projects" ]; then
+                        mkdir -m 0755 -Z -p "${USER_HOME}/projects" || return 1
+                        PROJECT_CHANGED=true
+                    fi
+                    local PROJECTS_OWNER_GID
+                    PROJECTS_OWNER_GID=$(stat -c '%g' -- "${USER_HOME}/projects") || return 1
+                    if [[ "${PROJECTS_OWNER_GID}" == "0" && "${USER_GID}" != "0" ]]; then
+                        chgrp "${USER_GID}" "${USER_HOME}/projects" || return 1
+                        PROJECT_CHANGED=true
+                    fi
+
+                    local PROJECT_LINK="${USER_HOME}/projects/${GROUP}"
+                    if [[ ! -L "${PROJECT_LINK}" || "$(readlink -- "${PROJECT_LINK}")" != "${PROJECT_GROUP}" ]]; then
+                        ln -sfT "${PROJECT_GROUP}" "${PROJECT_LINK}" || return 1
+                        PROJECT_CHANGED=true
+                    fi
                 fi
 
                 local PROJECT_USER="${PROJECT_GROUP}/${USERNAME}"
@@ -432,13 +435,14 @@ delproject() {
     # Remove users from a group, if no users is provided in argument
     # every users from that group in SlurmDB are removed.
     local GROUP=$1
-    local WITH_FOLDER=$2
-    local USERNAMES=$3
+    local USERNAMES=$2
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
 
     local PROJECT_GROUP="/project/$GROUP"
     # If group folder does not exist, we disable folder and symlinks removal.
     if [ ! -L "${PROJECT_GROUP}" ]; then
-        WITH_FOLDER="false"
+        MANAGE_PROJECT_DIR="false"
     fi
 
     if [[ -z "${USERNAMES}" ]]; then
@@ -450,7 +454,7 @@ delproject() {
         fi
     fi
     if [[ ! -z "$USERNAMES" ]]; then
-        if [[ "${WITH_FOLDER}" == "true" ]]; then
+        if [[ "${MANAGE_PROJECT_DIR}" == "true" && "${MANAGE_HOME_DIR}" == "true" ]]; then
             local USER_INFO USER_HOME
             for USERNAME in $USERNAMES; do
                 if USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
