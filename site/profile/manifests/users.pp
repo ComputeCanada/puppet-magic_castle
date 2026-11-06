@@ -164,7 +164,7 @@ define profile::users::ldap_user (
     $exec_name.each |Integer $i, String $exec_name_i| {
       profile::freeipa::admin_exec { $exec_name_i:
         command => $command[$i],
-        unless  => "${command[$i]} --dry",
+        unless  => shellquote('/usr/local/bin/kinit_wrapper', '/bin/sh', '-c', "${command[$i]} --dry"),
         timeout => $timeout,
         require => [
           File['/sbin/ipa_create_user.py'],

@@ -1,0 +1,88 @@
+#!/bin/bash
+source /sbin/account_functions.sh
+
+LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkhome.last_timestamp
+BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
+LDAP_URI=$(grep -o -P "ldap_uri = \K(.*)" /etc/ipa/default.conf)
+
+trap "rm -f ${MKHOME_RETRY_PIPE}; rm -f ${MKHOME_MODPROJECT_PIPE}" EXIT
+
+mkdir -p ${MKHOME_PROJECT_DIR}
+
+if [[ ! -p ${MKHOME_RETRY_PIPE} ]]; then
+    mkfifo -m=600 ${MKHOME_RETRY_PIPE}
+fi
+
+if [[ ! -p ${MKHOME_MODPROJECT_PIPE} ]]; then
+    mkfifo -m=600 ${MKHOME_MODPROJECT_PIPE}
+fi
+
+if [ -e ${LAST_TIMESTAMP_FILE} ]; then
+    LAST_TIMESTAMP=$(cat ${LAST_TIMESTAMP_FILE})
+    if [ "${LAST_TIMESTAMP}" != "" ]; then
+        # We don't expect more than one line matching the timestamp but if
+        # it happens, we will replay from the first match.
+        start_index=$(grep -m 1 -n -F "${LAST_TIMESTAMP}" ${SLAPD_LOG_FILE} | cut -d: -f1)
+        start_index=$(($start_index+1))
+    else
+        start_index=1
+    fi
+else
+    start_index=1
+fi
+
+queue_retry () {
+    (
+        sleep "${RETRY_DELAY}"
+        echo "retry" - - ${1} > ${MKHOME_RETRY_PIPE}
+    ) &
+}
+
+(
+    tail -n +${start_index} -F ${SLAPD_LOG_FILE} |
+    grep --line-buffered -P 'ADD dn=\"uid=\K(.*)(?=,cn=users)' |
+    sed -n -u -r 's/^\[(.*) [-+][0-9]{4}\] conn=([0-9]*) op=([0-9]*) ADD dn="uid=(.*),cn=users.*$/\1 \2 \3 \4/p' &
+    tail -n+1 -F ${MKHOME_RETRY_PIPE}
+) |
+while read -r TIMESTAMP CONN OP_ID USERNAME; do
+    if [[ "${TIMESTAMP}" != "retry" ]]; then
+        wait_for_result "${CONN}" "${OP_ID}" "${TIMESTAMP}"
+        RESULT=$?
+        echo $TIMESTAMP > $LAST_TIMESTAMP_FILE
+        if [[ "${RESULT}" -ne 0 ]]; then
+            continue
+        fi
+    fi
+    if [[ "${USERNAME}" == "admin" ]]; then
+        continue
+    fi
+    if ! USER_CLASSES=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=*)' objectClass); then
+        queue_retry "${USERNAME}"
+        continue
+    fi
+    if ! grep -qi '^objectClass: posixAccount$' <<< "${USER_CLASSES}"; then
+        continue
+    fi
+
+    if [ "${MANAGE_HOME_DIR}" = "true" ] && ! mkhome $USERNAME; then
+        queue_retry ${USERNAME}
+        continue
+    fi
+
+    if [ "${MANAGE_SCRATCH_DIR}" = "true" ] && ! mkscratch $USERNAME; then
+        queue_retry ${USERNAME}
+        continue
+    fi
+
+    if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null); then
+        queue_retry ${USERNAME}
+        continue
+    fi
+    PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
+    for PROJECT in $PROJECTS; do
+        if [[ ! -z "${PROJECT}" ]]; then
+            queue_modproject "${PROJECT}" "${MKHOME_MODPROJECT_PIPE}"
+        fi
+    done
+done
