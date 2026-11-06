@@ -1,9 +1,6 @@
 #!/bin/bash
 source /sbin/account_functions.sh
 
-MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
-MKHOME_RETRY_PIPE="${MKHOME_PROJECT_DIR}/mkhome_retry.pipe"
-MKHOME_MODPROJECT_PIPE="${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe"
 LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkhome.last_timestamp
 BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
 LDAP_URI=$(grep -o -P "ldap_uri = \K(.*)" /etc/ipa/default.conf)
@@ -34,7 +31,6 @@ else
     start_index=1
 fi
 
-RETRY_DELAY=15
 queue_retry () {
     (
         sleep "${RETRY_DELAY}"
