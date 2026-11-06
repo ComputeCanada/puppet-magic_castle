@@ -33,11 +33,12 @@ wait_for_result () {
 }
 
 wait_for_slurm() {
+    local RETRY_DELAY="${WAIT_FOR_SLURM_RETRY_DELAY:-15}"
     while : ; do
         CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P 2> /dev/null)
         if [ -z ${CLUSTER_INFO} ]; then
-            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting 15s..."
-            sleep 15
+            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting ${RETRY_DELAY}s..."
+            sleep $RETRY_DELAY
         else
             break
         fi
@@ -163,6 +164,7 @@ mkscratch () {
 mkproject() {
     local GROUP=$1
     local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
+    local MKPROJECT_LOCK_DIR="${MKPROJECT_LOCK_DIR:-/var/lock}"
     local PROJECT_GROUP="/project/$GROUP"
 
     if [ -z "${GROUP}" ]; then
@@ -170,12 +172,12 @@ mkproject() {
         return 3
     fi
 
-    if ! mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
+    if ! mkdir "${MKPROJECT_LOCK_DIR}/mkproject.$GROUP.lock" 2> /dev/null; then
         echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
         return 1
     fi
 
-    trap 'rmdir -- /var/lock/mkproject.$GROUP.lock; trap - RETURN' RETURN
+    trap 'rmdir -- ${MKPROJECT_LOCK_DIR}/mkproject.$GROUP.lock; trap - RETURN' RETURN
 
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
@@ -258,6 +260,7 @@ modproject() {
     local GROUP=$1
     local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
     local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
+    local MKPROJECT_LOCK_DIR="${MKPROJECT_LOCK_DIR:-/var/lock}"
     local USERNAMES
 
     if [ -z "${GROUP}" ]; then
@@ -267,7 +270,7 @@ modproject() {
 
     local PROJECT_GROUP="/project/$GROUP"
     # mkproject is currently running, we skip adding more folder under the project
-    if [[ -d "/var/lock/mkproject.${GROUP}.lock" ]]; then
+    if [[ -d "${MKPROJECT_LOCK_DIR}/mkproject.${GROUP}.lock" ]]; then
         echo "WARN::${FUNCNAME} ${GROUP}: project is locked; retry later"
         return 1
     fi

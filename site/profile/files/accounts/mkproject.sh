@@ -19,15 +19,11 @@ LDAP_URI=$(grep -o -P "ldap_uri = \K(.*)" /etc/ipa/default.conf)
 
 source /sbin/account_functions.sh
 
-MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
 mkdir -p ${MKHOME_PROJECT_DIR}
 
 # Remove stale locks from a previous mkproject execution
-rm -rf /var/lock/mkproject.*.lock
+rm -rf ${MKPROJECT_LOCK_DIR}/mkproject.*.lock
 
-MKPROJECT_CACHE=${MKHOME_PROJECT_DIR}/mkproject.cache
-MKPROJECT_CACHE_SIZE=1000
-MKPROJECT_CACHE_LOCK=${MKHOME_PROJECT_DIR}/mkproject.cache.lock
 update_mkproject_cache () {
     flock ${MKPROJECT_CACHE_LOCK} -c "echo ${1} >> ${MKPROJECT_CACHE} && (test \$(wc -l < ${MKPROJECT_CACHE}) -le ${MKPROJECT_CACHE_SIZE} || sed -i '1d' ${MKPROJECT_CACHE})"
 }
@@ -54,9 +50,6 @@ LAST_TIMESTAMP_FILE=${MKHOME_PROJECT_DIR}/mkproject.last_timestamp
 #   nc -lkU /var/tmp/dsocket
 # To write data to the UNIX socket:
 #   echo "${ACTION}" $((NRETRY+1)) "${GROUP}" | nc -N -U /var/tmp/dsocket
-MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/modproject.pipe
-MODPROJECT_RETRY_PIPE=${MKHOME_PROJECT_DIR}/modproject_retry.pipe
-MKHOME_MODPROJECT_PIPE=${MKHOME_PROJECT_DIR}/mkhome_modproject.pipe
 
 trap "rm -f ${MODPROJECT_PIPE} ${MODPROJECT_RETRY_PIPE} ${MKPROJECT_CACHE}" EXIT
 
@@ -73,8 +66,6 @@ install -m 600 /dev/null ${MKPROJECT_CACHE}
 
 wait_for_slurm
 
-RETRY_DELAY=15
-MAX_RETRIES=10
 queue_action () {
     local action=$1
     local nretry=$2
