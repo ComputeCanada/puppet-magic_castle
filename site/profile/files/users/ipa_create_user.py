@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import syslog
 import time
 import ldap
 
@@ -101,7 +102,13 @@ def dry_run(users, groups):
     container = api.env.container_group if groups else api.env.container_user
 
     with LDAPClient(api.env.ldap_uri) as conn:
-        conn.gssapi_bind()
+        # Cyrus SASL sends negotiation progress directly to syslog at LOG_DEBUG.
+        log_mask = syslog.setlogmask(0)
+        syslog.setlogmask(log_mask & ~syslog.LOG_MASK(syslog.LOG_DEBUG))
+        try:
+            conn.gssapi_bind()
+        finally:
+            syslog.setlogmask(log_mask)
         search_filter = conn.make_filter_from_attr(
             attribute, sorted(names), rules=conn.MATCH_ANY
         )
