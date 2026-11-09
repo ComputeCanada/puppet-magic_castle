@@ -56,8 +56,15 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
     if [[ "${USERNAME}" == "admin" ]]; then
         continue
     fi
-    if ! USER_CLASSES=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
-        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=*)' objectClass); then
+    USER_CLASSES=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=*)' objectClass)
+    LDAP_RESULT=$?
+    if [[ "${LDAP_RESULT}" -eq 32 ]]; then
+        # A successful ADD can be queued after the user has already been deleted.
+        echo "WARN::mkhome ${USERNAME}: user no longer exists in LDAP - skipping provisioning"
+        continue
+    elif [[ "${LDAP_RESULT}" -ne 0 ]]; then
+        echo "ERROR::mkhome ${USERNAME}: could not retrieve user object classes from LDAP (exit ${LDAP_RESULT})"
         queue_retry "${USERNAME}"
         continue
     fi
