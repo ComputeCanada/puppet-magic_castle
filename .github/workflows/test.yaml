@@ -17,6 +17,6 @@ jobs:
           local-tests/puppet-missing-files ./site
       - name: Scan for missing variables in documentation in Puppet file modified by this PR
         run: |
-          python3 utils/missing_docs.py $(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '.pp')
+          python3 utils/missing_docs.py $(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep -F '.pp')
         env:
           GH_TOKEN: ${{ github.token }}
