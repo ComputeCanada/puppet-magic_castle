@@ -94,7 +94,7 @@ mkhome () {
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
     fi
 
-    if ! rsync -opg -r --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ "${USER_HOME}"; then
+    if ! rsync -opg -r -l --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ "${USER_HOME}"; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
     fi
