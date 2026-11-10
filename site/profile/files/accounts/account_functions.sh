@@ -98,7 +98,7 @@ mkhome () {
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
     fi
-    if ! restorecon -F -R "${USER_HOME}"; then
+    if ! find /etc/skel.ipa -printf "${USER_HOME}/%P\n" | restorecon -f -; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: could not restore SELinux security context of ${USER_HOME}"
         return 1
     fi
