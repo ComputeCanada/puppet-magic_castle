@@ -88,8 +88,6 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
     fi
     PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
     for PROJECT in $PROJECTS; do
-        if [[ ! -z "${PROJECT}" ]]; then
-            queue_modproject "${PROJECT}" "${MKHOME_MODPROJECT_PIPE}"
-        fi
+        queue_modproject "${PROJECT}" "${MKHOME_MODPROJECT_PIPE}"
     done
 done
