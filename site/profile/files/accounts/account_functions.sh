@@ -187,7 +187,6 @@ mkproject() {
         fi
 
         local PROJECT_GID="/project/$GID"
-        local PROJECT_GROUP="/project/$GROUP"
         if [ ! -d ${PROJECT_GID} ]; then
             # SELinux labeling is best-effort: mkdir -Z may warn about labeling
             # failures while returning success. We accept this across the provisioning
