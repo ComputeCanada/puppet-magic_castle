@@ -257,7 +257,7 @@ modproject() {
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
     local GROUP_INFO
-    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
