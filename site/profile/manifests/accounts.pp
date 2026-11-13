@@ -21,18 +21,27 @@ class profile::accounts (
     source => 'puppet:///modules/profile/accounts/account_functions.sh',
   }
 
-  file { '/sbin/mkhome.sh':
-    content => epp('profile/accounts/mkhome.sh',
+  file { 'mkhome-project.conf':
+    ensure  => file,
+    path    => '/etc/mkhome-project.conf',
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0755',
+    content => epp('profile/accounts/mkhome-project.conf',
       {
         manage_home    => $manage_home,
         manage_scratch => $manage_scratch,
-        project_regex  => $project_regex,
         manage_project => $manage_project,
+        project_regex  => $project_regex,
         ipa_realm      => $ipa_realm,
       }
     ),
-    mode    => '0755',
-    owner   => 'root',
+  }
+
+  file { '/sbin/mkhome.sh':
+    source => 'puppet:///modules/profile/accounts/mkhome.sh',
+    mode   => '0755',
+    owner  => 'root',
   }
 
   file { 'mkhome.service':
@@ -99,6 +108,7 @@ class profile::accounts (
       File['/sbin/mkhome.sh'],
       File['/sbin/account_functions.sh'],
       File['mkhome.service'],
+      File['mkhome-project.conf'],
     ],
   }
 
@@ -108,15 +118,9 @@ class profile::accounts (
   }
 
   file { '/sbin/mkproject.sh':
-    content => epp('profile/accounts/mkproject.sh',
-      {
-        project_regex => $project_regex,
-        manage_folder => $manage_project,
-        ipa_realm     => $ipa_realm,
-      }
-    ),
-    mode    => '0755',
-    owner   => 'root',
+    source => 'puppet:///modules/profile/accounts/mkproject.sh',
+    mode   => '0755',
+    owner  => 'root',
   }
 
   # mkproject is always running even if /project does not exist
@@ -129,6 +133,7 @@ class profile::accounts (
       File['/sbin/mkproject.sh'],
       File['/sbin/account_functions.sh'],
       File['mkproject.service'],
+      File['mkhome-project.conf'],
     ],
   }
 }
