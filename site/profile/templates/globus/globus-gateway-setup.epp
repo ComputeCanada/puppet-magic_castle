@@ -9,7 +9,7 @@ GATEWAY_OUTPUT=$(
   posix "<%= $display_name %> gateway" \
   <%= $domain_string %> ${OIDC_DOMAIN} \
   <% if $identity_mapping { %>--identity-mapping file:/etc/globus/identity_mapping.json<% } %> \
-  <% if $high_assurance { %>--high-assurance<% } %> \
+  <% if $high_assurance { %>--high-assurance --authentication-timeout-mins <%= $auth_timeout %><% } %> \
   --restrict-paths file:/etc/globus/restrict_paths.json
 )
 exit_code=$?
