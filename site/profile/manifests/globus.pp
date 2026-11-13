@@ -23,6 +23,7 @@ class profile::globus (
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
   Boolean $freeipa_mapping = false,
+  Boolean $high_assurance = false,
   GlobusPathRestrictions $restrict_paths = {},
 ) {
   if $freeipa_mapping and $identity_mapping != undef {
@@ -51,6 +52,7 @@ class profile::globus (
         'display_name'     => $display_name,
         'domain_string'    => $domain_string,
         'identity_mapping' => $identity_mapping != undef or $freeipa_mapping,
+        'high_assurance'   => $high_assurance,
       }
     ),
   }
