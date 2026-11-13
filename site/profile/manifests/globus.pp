@@ -23,6 +23,9 @@ class profile::globus (
   Boolean $enable_oidc = true,
   Optional[Array[Hash]] $identity_mapping = undef,
   Boolean $freeipa_mapping = false,
+  Boolean $high_assurance = false,
+  Integer[1] $authentication_timeout_mins = 60,
+  Optional[String[1]] $subscription_id = undef,
   GlobusPathRestrictions $restrict_paths = {},
 ) {
   if $freeipa_mapping and $identity_mapping != undef {
@@ -51,6 +54,8 @@ class profile::globus (
         'display_name'     => $display_name,
         'domain_string'    => $domain_string,
         'identity_mapping' => $identity_mapping != undef or $freeipa_mapping,
+        'high_assurance'   => $high_assurance,
+        'auth_timeout'     => $authentication_timeout_mins,
       }
     ),
   }
@@ -150,6 +155,39 @@ class profile::globus (
 
   if $enable_oidc == false and length($domains) == 0 {
     fail('Globus requires at least one authentication domain or ensure OIDC server is running  (profile::globus::enable_oidc: true)')
+  }
+
+  if $subscription_id {
+    file { '/root/globus-subscription-setup':
+      ensure  => 'file',
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
+      content => epp(
+        'profile/globus/globus-subscription-setup',
+        {
+          'subscription_id' => $subscription_id,
+        }
+      ),
+    }
+
+    # Runs once after the endpoint and node are set up, and again whenever
+    # subscription_id differs from the one recorded in subscription.json.
+    exec { 'globus-subscription-setup':
+      command     => '/bin/sh /root/globus-subscription-setup',
+      environment => [
+        "GCS_CLI_CLIENT_ID=${globus::client_id}",
+        "GCS_CLI_CLIENT_SECRET=${globus::client_secret.unwrap}",
+      ],
+      unless      => "/usr/bin/test \"\$(/usr/bin/jq -r .subscription_id /var/lib/globus-connect-server/subscription.json 2>/dev/null)\" = '${subscription_id}'",
+      provider    => 'shell',
+      require     => [
+        Package['jq'],
+        Exec['globus-node-setup'],
+        File['/root/globus-subscription-setup'],
+      ],
+      before      => Exec['globus-gateway-setup'],
+    }
   }
 
   exec { 'globus-gateway-setup':
