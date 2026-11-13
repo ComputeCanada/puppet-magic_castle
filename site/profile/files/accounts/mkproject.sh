@@ -6,11 +6,12 @@
 # groups.
 
 # Each ADD/MOD/DEL must have its own successful RESULT before it is queued.
-# ADD creates the project; MOD reconciles its complete IPA membership with
+# ADD creates the project; MOD reconciles its direct user membership with
 # Slurm; DEL removes its Slurm associations. All actions share one consumer.
 #
 # Access-log user searches are not used to infer membership. A reconciliation
-# uses one IPA snapshot (direct and indirect users) for additions and removals.
+# uses one LDAP snapshot of direct user members for additions and removals.
+# Membership inherited through nested groups is unsupported.
 # Pending MODs are coalesced by group. Updates received during reconciliation
 # mark the group dirty and cause another pass, so later changes converge too.
 

@@ -37,3 +37,14 @@ and project provisioning do not transfer an existing directory owned by an old,
 non-root UID to a new UID. A different UID can therefore encounter inaccessible
 directories; reusing the old UID can expose the previous person's data. Slurm
 membership comparisons also use usernames and cannot distinguish those people.
+
+## Project group membership
+
+Project provisioning and Slurm account synchronization performed by `mkhome` and
+`mkproject` support only users listed directly in a project group's LDAP `member`
+attribute. Membership inherited through nested groups is unsupported. Add each
+user directly to every project group for which they require provisioning and
+Slurm account access.
+
+Home and scratch directory creation are independent of this membership
+restriction.

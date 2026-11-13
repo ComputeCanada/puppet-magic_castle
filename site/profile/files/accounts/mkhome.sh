@@ -82,11 +82,15 @@ while read -r TIMESTAMP CONN OP_ID USERNAME; do
         continue
     fi
 
-    if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -o ldif-wrap=no -LLL -s base -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" memberOf 2> /dev/null); then
+    # Search groups by their direct member attribute; memberOf may include
+    # inherited memberships, which project provisioning does not support.
+    if ! PROJECTS=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s one \
+        -b "cn=groups,cn=accounts,${BASEDN}" \
+        "(member=uid=${USERNAME},cn=users,cn=accounts,${BASEDN})" cn 2> /dev/null); then
         queue_retry ${USERNAME}
         continue
     fi
-    PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^memberOf: cn=\K${PROJECT_REGEX}(?=,cn=groups)")
+    PROJECTS=$(echo "${PROJECTS}" | grep -P -o "^cn: \K${PROJECT_REGEX}$")
     for PROJECT in $PROJECTS; do
         queue_modproject "${PROJECT}" "${MKHOME_MODPROJECT_PIPE}"
     done

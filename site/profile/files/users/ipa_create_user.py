@@ -91,7 +91,7 @@ def kdestroy():
 
 
 def dry_run(users, groups):
-    """Check LDAP directly, without negatively caching missing users in SSSD."""
+    """Check users and direct group membership in LDAP without querying SSSD."""
     users = set(users)
     names = set(groups) if groups else users
     if not names:
@@ -117,7 +117,7 @@ def dry_run(users, groups):
                 DN(container, api.env.basedn),
                 scope=ldap.SCOPE_ONELEVEL,
                 filter=search_filter,
-                attrs_list=["cn", "member", "memberindirect"] if groups else ["uid"],
+                attrs_list=["cn", "member"] if groups else ["uid"],
             )
         except errors.NotFound:
             return True
@@ -132,9 +132,8 @@ def dry_run(users, groups):
                 for user in users
             }
             for entry in found.values():
-                # Include indirect members, as SSSD group resolution can do.
+                # Only direct user membership satisfies the provisioning contract.
                 members = set(entry.get("member", []))
-                members.update(entry.get("memberindirect", []))
                 if not user_dns.issubset(members):
                     return True
     return False

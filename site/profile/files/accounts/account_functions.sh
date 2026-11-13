@@ -1,19 +1,5 @@
 #!/bin/bash
 
-kexec () {
-    local TMP_KRB_CACHE CMD_EXIT_CODE
-    TMP_KRB_CACHE=$(mktemp) || return 1
-    if kinit -kt /etc/krb5.keytab -c "${TMP_KRB_CACHE}" &> /dev/null; then
-        KRB5CCNAME="${TMP_KRB_CACHE}" "${@}"
-        CMD_EXIT_CODE=$?
-        kdestroy -c "${TMP_KRB_CACHE}" &> /dev/null
-    else
-        CMD_EXIT_CODE=1
-    fi
-    rm -f "${TMP_KRB_CACHE}"
-    return $CMD_EXIT_CODE
-}
-
 # Wait for this request, excluding older connections that reused its conn/op IDs.
 wait_for_result () {
     local conn=$1 op_id=$2 timestamp=$3
@@ -256,8 +242,10 @@ modproject() {
     # Retrieve the group information that are only available in LDAP:
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
+    # - which users are direct members?
     local GROUP_INFO
-    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass"); then
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" objectClass member); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
@@ -284,16 +272,11 @@ modproject() {
             return 1
         fi
     fi
-    # Use one authoritative snapshot for both additions and removals. IPA
-    # expands indirect membership; LDAP access-log searches are not membership.
+    # Reconcile direct user members from the same LDAP snapshot used above.
+    # Nested group members are unsupported and are not expanded.
     local GROUP_MEMBERS SLURM_MEMBERS MISSING_MEMBERS OBSOLETE_MEMBERS
-    if ! GROUP_MEMBERS=$(kexec ipa group-show "${GROUP}" --raw); then
-        echo "ERROR::${FUNCNAME} ${GROUP}: could not retrieve IPA membership"
-        return 1
-    fi
-    GROUP_MEMBERS=$(echo "${GROUP_MEMBERS}" |
-        grep -Ei '^[[:space:]]*(member|memberindirect):' |
-        grep -oP 'uid=\K[^,]+(?=,cn=users,cn=accounts,)' | LC_ALL=C sort -u)
+    GROUP_MEMBERS=$(echo "${GROUP_INFO}" |
+        grep -oP '^member: uid=\K[^,]+(?=,cn=users,cn=accounts,)' | LC_ALL=C sort -u)
     if ! SLURM_MEMBERS=$(/opt/software/slurm/bin/sacctmgr list assoc account="${GROUP}" format=user --noheader -P); then
         echo "ERROR::${FUNCNAME} ${GROUP}: could not retrieve Slurm membership"
         return 1
