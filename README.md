@@ -926,6 +926,27 @@ for the external program protocol and `globus-idm-validator` usage.
 
 </details>
 
+### removing the endpoint before destroying a cluster
+
+Destroying the cluster does not remove the endpoint registered with Globus.
+Before running `terraform destroy`, run this command on each node that includes
+`profile::globus`:
+
+```sh
+sudo globus-teardown
+```
+
+The script asks for confirmation (skip it with `--yes`) and then does the following:
+1. disables the Puppet agent, so a later run does not register a new endpoint;
+2. runs `globus-connect-server node cleanup` to remove the node from the endpoint;
+3. runs `globus-connect-server endpoint cleanup` to delete the endpoint from Globus,
+   along with its storage gateways, collections and OIDC server;
+4. removes the local state files in `/var/lib/globus-connect-server`.
+
+If a step fails, the script keeps the state it still needs, so it can be re-run.
+After teardown, the Puppet agent stays disabled. Re-enabling it with
+`puppet agent --enable` would register a new endpoint.
+
 ### dependencies
 
 When `profile::globus` is included, these classes are included too:
