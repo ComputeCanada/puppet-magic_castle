@@ -933,7 +933,7 @@ Before running `terraform destroy`, run this command on each node that includes
 `profile::globus`:
 
 ```sh
-sudo globus-teardown
+sudo globus-teardown.sh
 ```
 
 The script asks for confirmation (skip it with `--yes`) and then does the following:
