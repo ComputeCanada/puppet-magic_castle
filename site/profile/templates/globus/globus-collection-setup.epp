@@ -9,6 +9,7 @@ COLLECTION_OUTPUT=$(
   collection create ${GATEWAY_ID} \
   <%= $collection_path %> \
   --default-directory <%= $default_directory %> \
+  <% if $allow_guest_collections { %>--allow-guest-collections<% } %> \
   "<%= $display_name %> collection"
 )
 exit_code=$?

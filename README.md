@@ -852,6 +852,7 @@ authentication domain must be listed in `domains`.
 | `subscription_id`  | Attache the Globus endpoint to a subscription ID. Required for `high_assurance` | Optional[String[1]] |
 | `high_assurance`   | Creates a Globus `high-assurance` storage gateway, requires a subscribed endpoint | Boolean |
 | `authentication_timeout_mins` | Minutes before users must re-authenticate to a `high-assurance` gateway | Integer[1] |
+| `allow_guest_collections` | Allow users to create guest collections on the mapped collection, requires a subscribed endpoint | Boolean |
 
 <details>
 <summary>default values</summary>
@@ -866,6 +867,7 @@ profile::globus::freeipa_mapping: false
 profile::globus::high_assurance: false
 profile::globus::authentication_timeout_mins: 60
 profile::globus::subscription_id: ~
+profile::globus::allow_guest_collections: false
 profile::globus::restrict_paths: {}
 ```
 </details>

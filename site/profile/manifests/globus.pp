@@ -26,6 +26,7 @@ class profile::globus (
   Boolean $high_assurance = false,
   Integer[1] $authentication_timeout_mins = 60,
   Optional[String[1]] $subscription_id = undef,
+  Boolean $allow_guest_collections = false,
   GlobusPathRestrictions $restrict_paths = {},
 ) {
   if $freeipa_mapping and $identity_mapping != undef {
@@ -69,10 +70,11 @@ class profile::globus (
     content   => epp(
       'profile/globus/globus-collection-setup',
       {
-        'default_directory' => $default_directory,
-        'public_ip'         => lookup('terraform.self.public_ip'),
-        'display_name'      => $display_name,
-        'collection_path'   => $collection_path,
+        'default_directory'       => $default_directory,
+        'public_ip'               => lookup('terraform.self.public_ip'),
+        'display_name'            => $display_name,
+        'collection_path'         => $collection_path,
+        'allow_guest_collections' => $allow_guest_collections,
       }
     ),
   }
