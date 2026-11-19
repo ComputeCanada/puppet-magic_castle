@@ -94,6 +94,16 @@ class profile::globus (
     ),
   }
 
+  # Manually run by an admin on the Globus node before destroying the cluster
+  # to remove the node and delete the endpoint from Globus.
+  file { '/usr/local/sbin/globus-teardown':
+    ensure => file,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0700',
+    source => 'puppet:///modules/profile/globus/globus-teardown.sh',
+  }
+
   if $freeipa_mapping {
     include profile::globus::keytab
 
