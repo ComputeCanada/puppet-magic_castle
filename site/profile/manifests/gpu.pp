@@ -359,7 +359,7 @@ class profile::gpu::install::vgpu::rpm (
 
 class profile::gpu::install::vgpu::bin (
   String $source,
-  String $installer_flags = '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms',
+  String $installer_flags = '--kernel-module-type=proprietary --disable-nouveau --no-install-compat32-libs --no-wine-files --dkms --no-drm',
 ) {
   $lib_symlink_path = lookup('profile::gpu::install::lib_symlink_path', undef, undef, '')
   file { '/usr/bin/mc-nvidia-installer':
