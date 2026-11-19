@@ -385,7 +385,7 @@ class profile::gpu::install::vgpu::bin (
       Package['dkms'],
     ],
   }
-  Kmod::Install <||> -> Exec['vgpu-driver-install-bin']
+  Kmod::Install <||> -> Exec['vgpu-driver-install-bin'] -> Kmod::Load <| tag == profile::gpu::install |>
 }
 
 class profile::gpu::services (
