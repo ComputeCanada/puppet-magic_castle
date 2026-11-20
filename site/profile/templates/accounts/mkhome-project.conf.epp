@@ -1,0 +1,20 @@
+MKHOME_PROJECT_DIR="/var/lib/mkhome_project/"
+
+MKHOME_RETRY_PIPE="/var/lib/mkhome_project/mkhome_retry.pipe"
+MKHOME_MODPROJECT_PIPE="/var/lib/mkhome_project/mkhome_modproject.pipe"
+MODPROJECT_PIPE="/var/lib/mkhome_project/modproject.pipe"
+MODPROJECT_RETRY_PIPE="/var/lib/mkhome_project/modproject_retry.pipe"
+
+MKPROJECT_CACHE="/var/lib/mkhome_project/mkproject.cache"
+
+MKPROJECT_CACHE_SIZE=1000
+RETRY_DELAY=15
+MAX_RETRIES=10
+
+WAIT_FOR_SLURM_RETRY_DELAY=15
+
+MANAGE_HOME_DIR="<%= $manage_home %>"
+MANAGE_SCRATCH_DIR="<%= $manage_scratch %>"
+MANAGE_PROJECT_DIR="<%= $manage_project %>"
+PROJECT_REGEX="<%= $project_regex %>"
+SLAPD_LOG_FILE="/var/log/dirsrv/slapd-<%= $ipa_realm %>/access"
