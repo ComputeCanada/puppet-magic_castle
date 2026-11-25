@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- Added support for Slurm 26.11 (PR #649)
+- Added options to configure the Globus collection default directory and storage gateway path restrictions (PR #639)
+- Added support for Globus endpoint subscriptions, high-assurance storage gateways with configurable authentication timeouts, and guest collections (PR #642)
+- Added `globus-teardown` to remove a Globus node and endpoint before destroying a cluster and disable the Puppet agent to prevent re-registration (PR #643)
+- Added documentation on identity reuse constraints and direct project group membership requirements, and moved configuration examples to `docs/config-examples.md` (PR #640)
+
+### Changed
+
+- Restarted Puppet Server after OpenJDK package updates (PR #638)
+- Fixed `mkproject` log replay to resume at the correct start index (PR #636)
+- Fixed `mkhome` and `mkproject` log replay timestamp matching and timezone offset handling, and waited for successful LDAP operations before provisioning (PR #640)
+- Replaced SSSD lookups with direct LDAP queries for account provisioning and `ipa_create_user` dry-run checks (PR #640)
+- Reconciled Slurm project associations against direct LDAP group membership; nested group membership is unsupported (PR #640)
+- Serialized project actions, coalesced membership updates, and improved retry, cache, filesystem error, and project deletion handling (PR #640)
+- Skipped non-POSIX users and users deleted before home provisioning, preserved skeleton symlinks, and limited home SELinux context restoration to skeleton paths (PR #640)
+- Moved `mkhome` and `mkproject` settings into `/etc/mkhome-project.conf` (PR #640)
+- Used `jupyterhub_node` from CVMFS, named the default kernel `Python bundle`, and loaded `jupyterlab-apps` by default for the Compute Canada software stack (PR #641)
+- Changed the default Globus collection browsing directory from `/home/$USER` to `/~/` and saved gateway and collection state files only after successful setup (PR #639)
+- Updated the Arbutus NVIDIA vGPU driver to 580.178.04 (PR #644)
+- Fixed NVIDIA vGPU installation ordering, skipped module loading during installation, and disabled DRM installation (PR #645)
+
 ## [16.1.2] 2026-11-04
 
 ### Changed
