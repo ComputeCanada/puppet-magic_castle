@@ -1,24 +1,46 @@
 #!/bin/bash
 
-kexec () {
-    local TMP_KRB_CACHE=$(mktemp)
-    kinit -kt /etc/krb5.keytab -c ${TMP_KRB_CACHE} &> /dev/null &&
-    KRB5CCNAME=${TMP_KRB_CACHE} ${@} &&
-    kdestroy -c ${TMP_KRB_CACHE} &> /dev/null
-    rm -f $TMP_KRB_CACHE
+# Wait for this request, excluding older connections that reused its conn/op IDs.
+wait_for_result () {
+    local conn=$1 op_id=$2 timestamp=$3
+    local request_line result tail_pid
+    request_line=$(grep -n -m 1 -F "${timestamp}" "${SLAPD_LOG_FILE}" | cut -d: -f1)
+    if [[ -z "${request_line}" ]]; then
+        echo "WARN::${0##*/} conn=${conn} op=${op_id}: request no longer present in access log"
+        return 1
+    fi
+    {
+        tail_pid=$!
+        result=$(grep --line-buffered -m 1 -F "conn=${conn} op=${op_id} RESULT ")
+        kill "${tail_pid}" 2> /dev/null
+        wait "${tail_pid}" 2> /dev/null
+    } < <(tail -n +${request_line} -F "${SLAPD_LOG_FILE}" 2> /dev/null)
+    [[ "${result}" == *" RESULT err=0 "* ]]
 }
 
 wait_for_slurm() {
+    local RETRY_DELAY="${WAIT_FOR_SLURM_RETRY_DELAY:-15}"
     while : ; do
         CLUSTER_INFO=$(/opt/software/slurm/bin/sacctmgr list cluster -n -P 2> /dev/null)
         if [ -z ${CLUSTER_INFO} ]; then
-            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting 15s..."
-            sleep 15
+            echo "WARN::${FUNCNAME} cannot not connect to SlurmDBD, waiting ${RETRY_DELAY}s..."
+            sleep $RETRY_DELAY
         else
             break
         fi
     done
-    CLUSTER_NAME=$(echo $CLUSTER_INFO | cut -d'|' -f1)
+}
+
+# Retrieve POSIX attributes into the caller's local USER_UID, USER_GID and USER_HOME.
+get_user_info () {
+    local USERNAME=$1 USER_INFO
+    USER_UID= USER_GID= USER_HOME=
+    USER_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "uid=${USERNAME},cn=users,cn=accounts,${BASEDN}" '(objectClass=posixAccount)' \
+        uidNumber gidNumber homeDirectory) || return $?
+    USER_UID=$(sed -n 's/^uidNumber: //p' <<< "${USER_INFO}")
+    USER_GID=$(sed -n 's/^gidNumber: //p' <<< "${USER_INFO}")
+    USER_HOME=$(sed -n 's/^homeDirectory: //p' <<< "${USER_INFO}")
 }
 
 mkhome () {
@@ -29,106 +51,94 @@ mkhome () {
         return 3
     fi
 
-    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-    local USER_UID=${USER_INFO[0]}
-    local USER_GID=${USER_INFO[1]}
-    local USER_HOME=${USER_INFO[2]}
-
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    local USER_UID USER_GID USER_HOME
+    if ! get_user_info "${USERNAME}"; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
         return 1
     fi
 
-    if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
+        return 1
+    fi
+
+    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
         return 1
     fi
 
     # Home folder can be created by modproject function, but it will only create ~/project folder
     # and not the dot files and other files from /etc/skel.ipa
-    if [[ -d ${USER_HOME} && -n "$(find ${USER_HOME} -mindepth 1 -maxdepth 1 -not -path ${USER_HOME}/projects)" ]]; then
+    if [[ -d "${USER_HOME}" && -n "$(find "${USER_HOME}" -mindepth 1 -maxdepth 1 -not -path "${USER_HOME}/projects")" ]]; then
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: synced ${USER_HOME} (home already created)"
     else
         local SUCCESS_LOG="INFO::${FUNCNAME} ${USERNAME}: created ${USER_HOME}"
     fi
 
-    local RSYNC_DONE=0
-    for i in $(seq 1 5); do
-        rsync -opg -r --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ ${USER_HOME}
-        if [ $? -eq 0 ]; then
-            RSYNC_DONE=1
-            break
-        else
-            sleep 5
-        fi
-    done
-    if [ ! $RSYNC_DONE -eq 1 ]; then
+    if ! rsync -opg -r -l --ignore-existing --chown=$USER_UID:$USER_GID --chmod=Dg-rwx,o-rwx,Fg-rwx,o-rwx,u+X /etc/skel.ipa/ "${USER_HOME}"; then
         echo "ERROR::${FUNCNAME} ${USERNAME}: cannot copy /etc/skel.ipa in ${USER_HOME}"
         return 1
-    else
-        echo ${SUCCESS_LOG}
     fi
-    restorecon -F -R ${USER_HOME}
+    if ! find /etc/skel.ipa -printf "${USER_HOME}/%P\n" | restorecon -f -; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not restore SELinux security context of ${USER_HOME}"
+        return 1
+    fi
+    echo ${SUCCESS_LOG}
 }
 
 mkscratch () {
     local USERNAME=$1
-    local WITH_HOME=$2
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
 
     if [ -z "${USERNAME}" ]; then
         echo "ERROR::${FUNCNAME}: username unspecified"
         return 3
     fi
 
-    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-    local USER_UID=${USER_INFO[0]}
-    local USER_GID=${USER_INFO[1]}
-    local USER_HOME=${USER_INFO[2]}
-
-    if [ -z "${USER_UID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    local USER_UID USER_GID USER_HOME
+    if ! get_user_info "${USERNAME}"; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: could not retrieve user attributes from LDAP"
         return 1
     fi
 
-    if [ -z "${USER_GID}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+    if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
+        return 1
+    fi
+
+    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
         return 1
     fi
 
     if [ -z "${USER_HOME}" ]; then
-        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-        sss_cache --user=${USERNAME} 2> /dev/null
+        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
         return 1
     fi
 
     local USER_SCRATCH="/scratch/${USERNAME}"
     if [[ ! -d "${USER_SCRATCH}" ]]; then
-        mkdir -p ${USER_SCRATCH}
-        if [ "$WITH_HOME" == "true" ]; then
-            ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch"
-            chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch"
-        fi
-        chown -h ${USER_UID}:${USER_GID} ${USER_SCRATCH}
-        chmod 750 ${USER_SCRATCH}
-        restorecon -F -R ${USER_SCRATCH}
-        echo "INFO::${FUNCNAME} ${USERNAME}: created ${USER_SCRATCH}"
+        mkdir -Z -m 750 -p ${USER_SCRATCH} || return 1
     fi
+    if [ "${MANAGE_HOME_DIR}" == "true" ]; then
+        ln -sfT ${USER_SCRATCH} "${USER_HOME}/scratch" || return 1
+        chown -h ${USER_UID}:${USER_GID} "${USER_HOME}/scratch" || return 1
+    fi
+    if [ -O "${USER_SCRATCH}" ]; then
+        chown ${USER_UID}:${USER_GID} ${USER_SCRATCH} || return 1
+    fi
+    echo "INFO::${FUNCNAME} ${USERNAME}: scratch configured"
     return 0
 }
 
 mkproject() {
     local GROUP=$1
-    local WITH_FOLDER=$2
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
     local PROJECT_GROUP="/project/$GROUP"
 
     if [ -z "${GROUP}" ]; then
@@ -136,55 +146,49 @@ mkproject() {
         return 3
     fi
 
-    if ! mkdir /var/lock/mkproject.$GROUP.lock 2> /dev/null; then
-        echo "WARN::${FUNCNAME} ${GROUP}: already running..."
-        return 0
-    fi
-
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
     fi
 
-    # Retrieve the group information that are only available in LDAP:
-    # - does the group exist?
-    # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
+    # Retrieve the group object class and numeric GID directly from LDAP.
+    local GROUP_INFO
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" objectClass gidNumber); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
-        rmdir /var/lock/mkproject.$GROUP.lock
         return 1
     fi
 
     # If group is not posix, we disable folder creation.
     if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-        WITH_FOLDER="false"
+        MANAGE_PROJECT_DIR="false"
     fi
 
     # Function is called with the intent to create folders under /project
-    if [[ "${WITH_FOLDER}" == "true" ]]; then
-        # Folders under /project are only created for posix groups
-        # We use getent to retrieve the group number because the GID needs
-        # to be readily available in via sssd for chown to work properly
-        local GID=$(getent group -s sss ${GROUP} | cut -d: -f3)
-        if [ -z "${GID}" ]; then
-            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined"
-            sss_cache -g ${GROUP} 2> /dev/null
-            rmdir /var/lock/mkproject.$GROUP.lock
+    if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
+        local GID
+        GID=$(sed -n 's/^gidNumber: //p' <<< "${GROUP_INFO}")
+        if [[ ! "${GID}" =~ ^[0-9]+$ ]]; then
+            echo "ERROR::${FUNCNAME} ${GROUP}: GID not defined or invalid in LDAP"
             return 1
         fi
 
         local PROJECT_GID="/project/$GID"
         if [ ! -d ${PROJECT_GID} ]; then
-            local PROJECT_GROUP="/project/$GROUP"
-            mkdir -p ${PROJECT_GID}
-            chown root:${GID} ${PROJECT_GID}
-            chmod 2770 ${PROJECT_GID}
-            ln -sfT "/project/$GID" ${PROJECT_GROUP}
-            restorecon -F -R ${PROJECT_GID} ${PROJECT_GROUP}
-            echo "INFO::${FUNCNAME} ${GROUP}: created ${PROJECT_GID}"
-        else
-            echo "WARN::${FUNCNAME} ${GROUP}: ${PROJECT_GID} already exists"
+            # SELinux labeling is best-effort: mkdir -Z may warn about labeling
+            # failures while returning success. We accept this across the provisioning
+            # functions and do not run recursive restorecon, to avoid relabeling
+            # existing user content. Directory-creation failures still require a retry.
+            mkdir -Z -m 2770 -p ${PROJECT_GID} || return 1
         fi
+        local PROJECT_OWNER_GID
+        PROJECT_OWNER_GID=$(stat -c '%g' -- "${PROJECT_GID}") || return 1
+        if [[ "${PROJECT_OWNER_GID}" == "0" ]]; then
+            chown "root:${GID}" "${PROJECT_GID}" || return 1
+        fi
+        ln -sfT "/project/$GID" ${PROJECT_GROUP} || return 1
+        restorecon -F ${PROJECT_GROUP} || return 1
+
+        echo "INFO::${FUNCNAME} ${GROUP}: ${PROJECT_GID} configured"
     fi
 
     # We create the associated account in slurm
@@ -195,12 +199,22 @@ mkproject() {
     else
         echo "ERROR::${FUNCNAME} ${GROUP}: could not create SlurmDB account:"
         echo "${sacctmgr_output}" | sed 's/^/\t/'
-        rmdir /var/lock/mkproject.$GROUP.lock
         return 1
     fi
 
-    rmdir /var/lock/mkproject.$GROUP.lock
     return 0
+}
+
+# Coalesce group reconciliation requests, including requests from mkhome.
+# pending covers queued/running/retrying work; dirty requests another snapshot.
+queue_modproject() {
+    local group=$1 pipe=$2
+    local sync_dir="${MKHOME_PROJECT_DIR}/project_sync"
+    mkdir -p "${sync_dir}" || return 1
+    touch "${sync_dir}/${group}.dirty" || return 1
+    if mkdir "${sync_dir}/${group}.pending" 2> /dev/null; then
+        (echo modproject 0 "${group}" > "${pipe}") &
+    fi
 }
 
 # return codes
@@ -210,8 +224,9 @@ mkproject() {
 # 3: invalid arguments, do not retry
 modproject() {
     local GROUP=$1
-    local WITH_FOLDER=$2
-    local USERNAMES="${@:3}"
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
+    local USERNAMES
 
     if [ -z "${GROUP}" ]; then
         echo "ERROR::${FUNCNAME}: group unspecified"
@@ -219,11 +234,6 @@ modproject() {
     fi
 
     local PROJECT_GROUP="/project/$GROUP"
-    # mkproject is currently running, we skip adding more folder under the project
-    while [ -d /var/lock/mkproject.$GROUP.lock ]; do
-        echo "WARN::${FUNCNAME}: $GROUP $USERNAMES group folder is locked, waiting 2s..."
-        sleep 2
-    done
 
     if [ -z "${BASEDN}" ]; then
         local BASEDN=$(grep -o -P "basedn = \K(.*)" /etc/ipa/default.conf)
@@ -232,8 +242,10 @@ modproject() {
     # Retrieve the group information that are only available in LDAP:
     # - does the group exist?
     # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
+    # - which users are direct members?
+    local GROUP_INFO
+    if ! GROUP_INFO=$(ldapsearch -Y EXTERNAL -H "${LDAP_URI}" -Q -o ldif-wrap=no -LLL -s base \
+        -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" objectClass member); then
         echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
         return 1
     fi
@@ -245,10 +257,10 @@ modproject() {
 
     # If group is not posix, we disable folder creation.
     if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-        WITH_FOLDER="false"
+        MANAGE_PROJECT_DIR="false"
     fi
 
-    if [[ "${WITH_FOLDER}" == "true" ]]; then
+    if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
         local GROUP_LINK=$(readlink /project/${GROUP})
         if [[ -z "${GROUP_LINK}" ]]; then
             echo "ERROR::${FUNCNAME}: $GROUP $USERNAMES mkproject has yet been ran for this group"
@@ -260,181 +272,165 @@ modproject() {
             return 1
         fi
     fi
-    # The operation that add users to a group would have operations with a uid.
-    # If we found none, $USERNAMES will be empty, and it means we don't have
-    # anything to add to Slurm and /project
-    if [[ ! -z "${USERNAMES}" ]]; then
-        if [[ "${WITH_FOLDER}" == "true" ]]; then
+    # Reconcile direct user members from the same LDAP snapshot used above.
+    # Nested group members are unsupported and are not expanded.
+    local GROUP_MEMBERS SLURM_MEMBERS MISSING_MEMBERS OBSOLETE_MEMBERS
+    GROUP_MEMBERS=$(echo "${GROUP_INFO}" |
+        grep -oP '^member: uid=\K[^,]+(?=,cn=users,cn=accounts,)' | LC_ALL=C sort -u)
+    if ! SLURM_MEMBERS=$(/opt/software/slurm/bin/sacctmgr list assoc account="${GROUP}" format=user --noheader -P); then
+        echo "ERROR::${FUNCNAME} ${GROUP}: could not retrieve Slurm membership"
+        return 1
+    fi
+    SLURM_MEMBERS=$(echo "${SLURM_MEMBERS}" | awk NF | LC_ALL=C sort -u)
+    MISSING_MEMBERS=$(LC_ALL=C comm -23 <(printf '%s\n' "${GROUP_MEMBERS}" | awk NF) <(printf '%s\n' "${SLURM_MEMBERS}" | awk NF))
+    OBSOLETE_MEMBERS=$(LC_ALL=C comm -13 <(printf '%s\n' "${GROUP_MEMBERS}" | awk NF) <(printf '%s\n' "${SLURM_MEMBERS}" | awk NF))
+
+    # Revoke obsolete associations before adding new ones.
+    USERNAMES=${OBSOLETE_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
+        delproject "${GROUP}" "${USERNAMES}" || return 1
+    fi
+
+    # Ensure folders also exist for users already associated with Slurm.
+    USERNAMES=${GROUP_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
+        if [[ "${MANAGE_PROJECT_DIR}" == "true" ]]; then
             for USERNAME in $USERNAMES; do
-                if ! getent passwd -s sss $USERNAME > /dev/null; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                    sss_cache --user=${USERNAME} 2> /dev/null
-                    return 1
-                fi
-            done
-            for USERNAME in $USERNAMES; do
-                # Slurm needs the UID to be available via SSSD
-                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                local USER_UID=${USER_INFO[0]}
-                local USER_GID=${USER_INFO[1]}
-                local USER_HOME=${USER_INFO[2]}
-
-                if [ -z "${USER_UID}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                local USER_UID USER_GID USER_HOME
+                if ! get_user_info "${USERNAME}"; then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
                     return 1
                 fi
 
-                if [ -z "${USER_GID}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                if [[ ! "${USER_UID}" =~ ^[0-9]+$ ]]; then
+                    echo "ERROR::${FUNCNAME} ${USERNAME}: UID not defined or invalid in LDAP"
                     return 1
                 fi
 
-                if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
-                    return 1
-                fi
+                local PROJECT_CHANGED=false
+                if [[ "${MANAGE_HOME_DIR}" == "true" ]]; then
+                    if [[ ! "${USER_GID}" =~ ^[0-9]+$ ]]; then
+                        echo "ERROR::${FUNCNAME} ${USERNAME}: GID not defined or invalid in LDAP"
+                        return 1
+                    fi
 
-                mkdir -p "${USER_HOME}/projects"
-                chgrp "${USER_GID}" "${USER_HOME}/projects"
-                chmod 0755 "${USER_HOME}/projects"
-                ln -sfT "${PROJECT_GROUP}" "${USER_HOME}/projects/${GROUP}"
+                    if [ -z "${USER_HOME}" ]; then
+                        echo "ERROR::${FUNCNAME} ${USERNAME}: home path not defined in LDAP"
+                        return 1
+                    fi
+
+                    if [ ! -d "${USER_HOME}/projects" ]; then
+                        mkdir -m 0755 -Z -p "${USER_HOME}/projects" || return 1
+                        PROJECT_CHANGED=true
+                    fi
+                    local PROJECTS_OWNER_GID
+                    PROJECTS_OWNER_GID=$(stat -c '%g' -- "${USER_HOME}/projects") || return 1
+                    if [[ "${PROJECTS_OWNER_GID}" == "0" && "${USER_GID}" != "0" ]]; then
+                        chgrp "${USER_GID}" "${USER_HOME}/projects" || return 1
+                        PROJECT_CHANGED=true
+                    fi
+
+                    local PROJECT_LINK="${USER_HOME}/projects/${GROUP}"
+                    if [[ ! -L "${PROJECT_LINK}" || "$(readlink -- "${PROJECT_LINK}")" != "${PROJECT_GROUP}" ]]; then
+                        ln -sfT "${PROJECT_GROUP}" "${PROJECT_LINK}" || return 1
+                        PROJECT_CHANGED=true
+                    fi
+                fi
 
                 local PROJECT_USER="${PROJECT_GROUP}/${USERNAME}"
                 if [ ! -d "${PROJECT_USER}" ]; then
-                    mkdir -p ${PROJECT_USER}
-                    chown "${USER_UID}" "${PROJECT_USER}"
-                    chmod 2700 "${PROJECT_USER}"
-                    restorecon -F -R "${PROJECT_USER}"
-                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: created ${PROJECT_USER}"
-                else
-                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} already exists"
+                    mkdir -Z -m 2700 ${PROJECT_USER} || return 1
+                    PROJECT_CHANGED=true
+                fi
+                if [ -O "${PROJECT_USER}" ] && [[ "${USER_UID}" != "0" ]]; then
+                    chown "${USER_UID}" "${PROJECT_USER}" || return 1
+                    PROJECT_CHANGED=true
+                fi
+                if [[ "${PROJECT_CHANGED}" == "true" ]]; then
+                    echo "INFO::${FUNCNAME} ${GROUP} ${USERNAME}: ${PROJECT_USER} configured"
                 fi
             done
         fi
+    fi
+    USERNAMES=${MISSING_MEMBERS}
+    if [[ -n "${USERNAMES}" ]]; then
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr add user ${USERNAMES} Account=${GROUP} -i 2>&1); then
-            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES} added to ${GROUP} in SlurmDB"
+            echo "INFO::${FUNCNAME} ${GROUP}: ${USERNAMES//[$'\n']/ } added to ${GROUP} in SlurmDB"
         elif [[ "${sacctmgr_output}" == *"Request didn't affect anything"*"Nothing added"* ]]; then
-            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: already added to SlurmDB account"
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES//[$'\n']/ }: already added to SlurmDB account"
         else
-            echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES} added to ${GROUP}"
+            echo "ERROR::${FUNCNAME} ${GROUP}: could not add ${USERNAMES//[$'\n']/ } added to ${GROUP}"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
-    else
-        # If group has been modified but no uid were found in the log, it means
-        # user(s) have been removed from the groups.
-        # We identify which ones by comparing Slurm account with group.
-        local SLURM_ACCOUNT=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
-        local USER_GROUP=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "member" | grep -oP "uid=\K(.*)(?=,cn=users)" | sort)
-        local USERNAMES=$(comm -2 -3 <(echo "$SLURM_ACCOUNT") <(echo "$USER_GROUP"))
-        if [[ ! -z "$USERNAMES" ]]; then
-            if [[ "${WITH_FOLDER}" == "true" ]]; then
-                for USERNAME in $USERNAMES; do
-                    if ! getent passwd -s sss $USERNAME > /dev/null; then
-                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                        sss_cache --user=${USERNAME} 2> /dev/null
-                        return 1
-                    fi
-                done
-                for USERNAME in $USERNAMES; do
-                    local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                    local USER_HOME=${USER_INFO[2]}
-
-                    if [ -z "${USER_HOME}" ]; then
-                        echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
-                        sss_cache --user=${USERNAME} 2> /dev/null
-                        return 1
-                    fi
-
-                    if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
-                        echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
-                        continue
-                    fi
-
-                    local RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1)
-                    if [ $? -eq 0 ]; then
-                        echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
-                    else
-                        echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
-                        echo "\t${RM_OUTPUT}"
-                        return 1
-                    fi
-                done
-            fi
-            if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
-                echo "INFO::${FUNCNAME} ${GROUP}: removed ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-            elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
-                echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
-            else
-                echo "ERROR::${FUNCNAME} ${GROUP}: removing ${USERNAMES//[$'\n']/ } from ${GROUP} in SlurmDB"
-                echo "${sacctmgr_output}" | sed 's/^/\t/'
-                return 1
-            fi
-            REMOVED_USERNAMES=$USERNAMES
-        else
-            echo "WARN::${FUNCNAME} ${GROUP}: Could not find usernames to remove from ${GROUP}"
-        fi
     fi
+    return 0
 }
 
 delproject() {
+    # Remove users from a group, if no users is provided in argument
+    # every users from that group in SlurmDB are removed.
     local GROUP=$1
-    local WITH_FOLDER=$2
+    local USERNAMES=$2
+    local MANAGE_HOME_DIR="${MANAGE_HOME_DIR:-true}"
+    local MANAGE_PROJECT_DIR="${MANAGE_PROJECT_DIR:-true}"
 
-    # Retrieve the group information that are only available in LDAP:
-    # - does the group exist?
-    # - is it a posix group (objectClass: posixgroup)?
-    local GROUP_INFO=$(kexec ldapsearch -Q -o ldif-wrap=no -LLL -b "cn=${GROUP},cn=groups,cn=accounts,${BASEDN}" "objectClass")
-    if [ ! $? -eq 0 ]; then
-        echo "ERROR::${FUNCNAME} ${GROUP}: error while searching for group name in LDAP"
-        return 1
+    local PROJECT_GROUP="/project/$GROUP"
+    # If group folder does not exist, we disable folder and symlinks removal.
+    if [ ! -L "${PROJECT_GROUP}" ]; then
+        MANAGE_PROJECT_DIR="false"
     fi
 
-    # If group is not posix, we disable folder creation.
-    if ! echo "${GROUP_INFO}" | grep -q "objectClass: posixgroup"; then
-        WITH_FOLDER="false"
+    if [[ -z "${USERNAMES}" ]]; then
+        if USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P); then
+            USERNAMES=$(echo "${USERNAMES}" | awk NF | sort)
+        else
+            echo "ERROR::${FUNCNAME}: failure while querying ${GROUP} in SlurmDB"
+            return 1
+        fi
     fi
-
-    # A group has been removed.
-    # Since we do not want to delete any data we only remove the
-    # symlinks and remove the users from the slurm account.
-    local USERNAMES=$(/opt/software/slurm/bin/sacctmgr list assoc account=$GROUP format=user --noheader -P | awk NF | sort)
     if [[ ! -z "$USERNAMES" ]]; then
-        if [[ "${WITH_FOLDER}" == "true" ]]; then
+        if [[ "${MANAGE_PROJECT_DIR}" == "true" && "${MANAGE_HOME_DIR}" == "true" ]]; then
+            local USER_UID USER_GID USER_HOME
             for USERNAME in $USERNAMES; do
-                if ! getent passwd -s sss $USERNAME > /dev/null; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not find user in password database"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                get_user_info "${USERNAME}"
+                local LDAP_OUTPUT=$?
+                if [[ "${LDAP_OUTPUT}" -eq 32 ]]; then
+                    # LDAP noSuchObject: the user was already deleted.
+                    echo "WARN::${FUNCNAME} ${GROUP} ${USERNAME}: user not found in LDAP - skipping home symlink cleanup"
+                    continue
+                elif [[ ! "${LDAP_OUTPUT}" -eq 0 ]]; then
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: could not retrieve user attributes from LDAP"
                     return 1
                 fi
-            done
-            for USERNAME in $USERNAMES; do
-                local USER_INFO=($(getent passwd -s sss $USERNAME | cut -d: --output-delimiter=' ' -f3,4,6))
-                local USER_HOME=${USER_INFO[2]}
 
                 if [ -z "${USER_HOME}" ]; then
-                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined"
-                    sss_cache --user=${USERNAME} 2> /dev/null
+                    echo "ERROR::${FUNCNAME} ${GROUP} ${USERNAME}: home path not defined in LDAP"
                     return 1
                 fi
-
                 if [ ! -L "${USER_HOME}/projects/$GROUP" ]; then
                     echo "WARN::${FUNCNAME} ${GROUP}: symlink ${USER_HOME}/projects/$GROUP does not exist"
                     continue
                 fi
-
-                rm "${USER_HOME}/projects/$GROUP"
+                local RM_OUTPUT
+                if RM_OUTPUT=$(rm "${USER_HOME}/projects/$GROUP" 2>&1); then
+                    echo "INFO::${FUNCNAME} ${GROUP}: removed symlink $USER_HOME/projects/$GROUP"
+                else
+                    echo "ERROR::${FUNCNAME} ${GROUP}: could not remove symlink $USER_HOME/projects/$GROUP"
+                    echo "\t${RM_OUTPUT}"
+                    return 1
+                fi
             done
         fi
         if sacctmgr_output=$(/opt/software/slurm/bin/sacctmgr remove user $USERNAMES Account=${GROUP} -i 2>&1); then
             echo "INFO::${FUNCNAME}: removed ${USERNAMES} from ${GROUP} in SlurmDB"
+        elif [[ "${sacctmgr_output}" == *"Nothing deleted"* ]]; then
+            echo "WARN::${FUNCNAME} ${GROUP} ${USERNAMES}: nothing deleted from SlurmDB"
         else
             echo "ERROR::${FUNCNAME}: could not remove ${USERNAME} from ${GROUP} in SlurmDB"
             echo "${sacctmgr_output}" | sed 's/^/\t/'
             return 1
         fi
     fi
+    return 0
 }
