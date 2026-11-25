@@ -9,7 +9,7 @@
 class profile::slurm::base (
   String[1, 40] $cluster_name,
   String $auth_key,
-  Enum['25.05', '25.11', '26.05'] $slurm_version,
+  Enum['25.05', '25.11', '26.05', '26.11'] $slurm_version,
   Integer $os_reserved_memory,
   Integer $suspend_time = 3600,
   Integer $suspend_rate = 20,
