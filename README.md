@@ -1652,7 +1652,7 @@ to all Slurm's roles.
 | :---------------------- | :----------------------- | :------ |
 | `cluster_name`          | Name of the cluster      | String  |
 | `auth_key`             | Base64 encoded Slurm auth key | String  |
-| `slurm_version`         | Slurm version to install | Enum['25.05', '25.11', '26.05'] |
+| `slurm_version`         | Slurm version to install | Enum['25.05', '25.11', '26.05', '26.11'] |
 | `os_reserved_memory`    | Memory in MB reserved for the operating system on the compute nodes | Integer |
 | `suspend_time`          | Idle time (seconds) for nodes to becomes eligible for suspension. | Integer |
 | `suspend_rate`          | The rate (nodes per minute) at which nodes are placed into power save mode.| Integer |
