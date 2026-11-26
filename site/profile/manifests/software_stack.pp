@@ -15,18 +15,11 @@ class profile::software_stack (
     source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
   }
 
-  package { 'computecanada-release-2.0-1.noarch':
+  package { 'cvmfs-config-computecanada':
     ensure   => 'installed',
     provider => 'rpm',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-2.0-1.noarch.rpm',
-  }
-
-  package { 'cvmfs-config-computecanada':
-    ensure  => 'installed',
-    require => [
-      Package['cvmfs'],
-      Package['computecanada-release-2.0-1.noarch']
-    ],
+    require  => Package['cvmfs'],
+    source   => 'https://git.computecanada.ca/cc-cvmfs-public/cvmfs-config/-/raw/master/prod/RPM/cvmfs-config-computecanada-2.1.0-1.noarch.rpm',
   }
 
   if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
