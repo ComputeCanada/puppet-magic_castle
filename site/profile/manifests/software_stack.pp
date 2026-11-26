@@ -8,13 +8,12 @@ class profile::software_stack (
   include profile::consul
   include profile::cvmfs::client
 
+  package { 'cvmfs-config-default':
+    ensure  => installed,
+    require => Yumrepo['cvmfs-repo'],
+  }
+
   if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
-    package { 'cvmfs-config-computecanada':
-      ensure   => 'installed',
-      provider => 'rpm',
-      require  => Package['cvmfs'],
-      source   => 'https://git.computecanada.ca/cc-cvmfs-public/cvmfs-config/-/raw/master/prod/RPM/cvmfs-config-computecanada-2.1.0-1.noarch.rpm',
-    }
     if $facts['os']['architecture'] != 'x86_64' {
       fail("${facts['software_stack']} software stack does not support: ${facts['os']['architecture']}")
     }
@@ -36,12 +35,6 @@ class profile::software_stack (
     $software_stack_meta = { arch => $facts['cpu_ext'] }
   }
   if $facts['software_stack'] == 'eessi' {
-    package { 'cvmfs-config-eessi':
-      ensure   => 'installed',
-      provider => 'rpm',
-      require  => Package['cvmfs'],
-      source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
-    }
     if $version {
       $software_stack_meta = { 'version' => $version }
     } else {
