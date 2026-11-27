@@ -8,12 +8,19 @@ class profile::software_stack (
   include profile::consul
   include profile::cvmfs::client
 
+  $stack_name = $facts['software_stack'] ? {
+    'computecanada' => 'computecanada',
+    'alliance'      => 'computecanada',
+    'eessi'         => 'eessi',
+    default         => undef,
+  }
+
   package { 'cvmfs-config-default':
     ensure  => installed,
     require => Yumrepo['cvmfs-repo'],
   }
 
-  if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
+  if $stack_name == 'computecanada' {
     $repositories = lookup('profile::cvmfs::client::repositories', undef, undef, [])
     if 'cvmfs-config.computecanada.ca' in $repositories {
       package { 'cvmfs-config-computecanada':
@@ -44,7 +51,7 @@ class profile::software_stack (
     }
     $software_stack_meta = { arch => $facts['cpu_ext'] }
   }
-  if $facts['software_stack'] == 'eessi' {
+  if $stack_name == 'eessi' {
     if $version {
       $software_stack_meta = { 'version' => $version }
     } else {
@@ -52,15 +59,13 @@ class profile::software_stack (
     }
   }
 
-  $ensure_stack = $facts['software_stack'] ? {
+  $ensure_stack = $stack_name ? {
     'computecanada' => 'present',
-    'alliance'      => 'present',
     'eessi'         => 'present',
     default         => 'absent',
   }
-  $ensure_rsnt_arch = $facts['software_stack'] ? {
+  $ensure_rsnt_arch = $stack_name ? {
     'computecanada' => 'present',
-    'alliance'      => 'present',
     default         => 'absent'
   }
 
