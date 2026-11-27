@@ -45,6 +45,20 @@ class profile::cvmfs::client (
     require => [Yumrepo['cvmfs-repo']],
   }
 
+  package { 'cvmfs-config-default':
+    ensure  => installed,
+    require => Yumrepo['cvmfs-repo'],
+  }
+
+  if 'cvmfs-config.computecanada.ca' in $repositories {
+    package { 'cvmfs-config-computecanada':
+      ensure   => 'installed',
+      provider => 'rpm',
+      require  => Package['cvmfs'],
+      source   => 'https://git.computecanada.ca/cc-cvmfs-public/cvmfs-config/-/raw/master/prod/RPM/cvmfs-config-computecanada-2.1.0-1.noarch.rpm',
+    }
+  }
+
   file { $cvmfs_root:
     ensure  => directory,
     seltype => 'root_t',
@@ -119,7 +133,6 @@ class profile::cvmfs::client (
           File_line['cvmfs_default'],
         ],
       }
-      Package<| tag == profile::software_stack |> -> Mount["${cvmfs_root}/${repository}"]
     }
   } else {
     file { '/etc/auto.master.d/cvmfs.autofs':

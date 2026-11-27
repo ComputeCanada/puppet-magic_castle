@@ -8,28 +8,14 @@ class profile::software_stack (
   include profile::consul
   include profile::cvmfs::client
 
-  package { 'cvmfs-config-eessi':
-    ensure   => 'installed',
-    provider => 'rpm',
-    require  => Package['cvmfs'],
-    source   => 'https://github.com/EESSI/filesystem-layer/releases/download/latest/cvmfs-config-eessi-latest.noarch.rpm',
+  $stack_name = $facts['software_stack'] ? {
+    'computecanada' => 'computecanada',
+    'alliance'      => 'computecanada',
+    'eessi'         => 'eessi',
+    default         => undef,
   }
 
-  package { 'computecanada-release-2.0-1.noarch':
-    ensure   => 'installed',
-    provider => 'rpm',
-    source   => 'https://package.computecanada.ca/yum/cc-cvmfs-public/prod/RPM/computecanada-release-2.0-1.noarch.rpm',
-  }
-
-  package { 'cvmfs-config-computecanada':
-    ensure  => 'installed',
-    require => [
-      Package['cvmfs'],
-      Package['computecanada-release-2.0-1.noarch']
-    ],
-  }
-
-  if $facts['software_stack'] == 'computecanada' or $facts['software_stack'] == 'alliance' {
+  if $stack_name == 'computecanada' {
     if $facts['os']['architecture'] != 'x86_64' {
       fail("${facts['software_stack']} software stack does not support: ${facts['os']['architecture']}")
     }
@@ -49,21 +35,27 @@ class profile::software_stack (
       },
     }
     $software_stack_meta = { arch => $facts['cpu_ext'] }
-  } else {
-    file { '/etc/profile.d/z-00-rsnt_arch.sh':
-      ensure => 'absent',
-    }
-    $software_stack_meta = ($facts['software_stack'] == 'eessi' and $version) ? {
-      true    => { version => $version },
-      default => {},
+  }
+  if $stack_name == 'eessi' {
+    if $version {
+      $software_stack_meta = { 'version' => $version }
+    } else {
+      $software_stack_meta = {}
     }
   }
 
-  $ensure_stack = $facts['software_stack'] ? {
+  $ensure_stack = $stack_name ? {
     'computecanada' => 'present',
-    'alliance'      => 'present',
     'eessi'         => 'present',
     default         => 'absent',
+  }
+  $ensure_rsnt_arch = $stack_name ? {
+    'computecanada' => 'present',
+    default         => 'absent'
+  }
+
+  file { '/etc/profile.d/z-00-rsnt_arch.sh':
+    ensure => $ensure_rsnt_arch,
   }
 
   file { '/etc/profile.d/z-01-site.sh':

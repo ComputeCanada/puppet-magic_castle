@@ -304,10 +304,6 @@ profile::squid::server::cvmfs_acl_regex:
 
 profile::cvmfs::client::disable_autofs: "%{facts.is_unprivileged_container}"
 profile::cvmfs::client::quota_limit: 4096
-profile::cvmfs::client::repositories:
-  - software.eessi.io
-  - cvmfs-config.computecanada.ca
-  - soft.computecanada.ca
 profile::cvmfs::local_user::group: 'cvmfs-reserved'
 profile::cvmfs::local_user::uid: 13000004
 profile::cvmfs::local_user::gid: 8000131
