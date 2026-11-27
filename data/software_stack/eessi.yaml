@@ -1,4 +1,5 @@
 profile::cvmfs::client::repositories:
+  - cvmfs-config.cern.ch
   - software.eessi.io
 
 profile::software_stack::version: "2025.06"
